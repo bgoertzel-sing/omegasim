@@ -1,0 +1,32 @@
+[project]
+name = "omegasim"
+version = "0.1.0"
+description = "OmegaHive1 and Moltbook-style multi-agent dynamics simulator."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "mesa",
+  "networkx",
+  "numpy",
+  "pandas",
+  "pydantic",
+  "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+]
+analysis = [
+  "plotly",
+  "scikit-learn",
+  "umap-learn",
+  "hdbscan",
+  "ruptures",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
