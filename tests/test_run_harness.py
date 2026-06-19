@@ -388,6 +388,72 @@ def test_manifest_records_environment_provenance(tmp_path: Path) -> None:
     }
 
 
+def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+
+    actions = ["idle", "message", "create_task", "work_task"]
+    agent_ids = [f"agent_{index:02d}" for index in range(1, 16)]
+    roles = {
+        agent_id: BASELINE_ROLES[(index - 1) % len(BASELINE_ROLES)]
+        for index, agent_id in enumerate(agent_ids, start=1)
+    }
+    expected_config = {
+        "run": {
+            "experiment_id": "a0_smoke",
+            "ticks": 100,
+        },
+        "model": {
+            "agent_count": 15,
+            "actions": actions,
+        },
+        "outputs": {
+            "write_manifest": True,
+            "write_metrics": True,
+            "write_events": True,
+            "write_summary": True,
+        },
+    }
+
+    assert normalized_config == expected_config
+    assert set(manifest) == {
+        "experiment_id",
+        "seed",
+        "ticks",
+        "agent_count",
+        "actions",
+        "outputs",
+        "artifacts",
+        "environment",
+        "model",
+        "config",
+    }
+    assert manifest["experiment_id"] == "a0_smoke"
+    assert manifest["seed"] == 1
+    assert manifest["ticks"] == 100
+    assert manifest["agent_count"] == 15
+    assert manifest["actions"] == actions
+    assert manifest["outputs"] == expected_config["outputs"]
+    assert manifest["artifacts"] == [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+    assert manifest["config"] == normalized_config
+    assert manifest["model"] == {
+        "agent_ids": agent_ids,
+        "roles": roles,
+        "bus_nodes": 16,
+        "bus_edges": 15,
+    }
+
+
 def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "minimal_outputs.yaml"
     out_dir = tmp_path / "minimal_outputs"
