@@ -446,3 +446,54 @@ def test_fixed_seed_lobe_and_transition_totals_are_stable(tmp_path: Path) -> Non
 
     assert observed == expected
     assert len({tuple(seed_totals["lobes"].items()) for seed_totals in observed.values()}) == len(expected)
+
+
+def test_fixed_seed_queue_age_summaries_are_stable(tmp_path: Path) -> None:
+    expected = {
+        1: {
+            "final_max_age": 47,
+            "final_mean_age": 18.4,
+            "peak_max_age": 47,
+            "mean_mean_age": 8.038303,
+        },
+        2: {
+            "final_max_age": 63,
+            "final_mean_age": 25.142857,
+            "peak_max_age": 64,
+            "mean_mean_age": 13.034658,
+        },
+        17: {
+            "final_max_age": 73,
+            "final_mean_age": 29.914439,
+            "peak_max_age": 73,
+            "mean_mean_age": 15.881428,
+        },
+    }
+
+    observed = {}
+    for seed in expected:
+        out_dir = tmp_path / f"seed{seed}"
+        result = run_experiment(CONFIG, seed=seed, out_dir=out_dir)
+        final_metrics = result.metrics[-1]
+        summary = (out_dir / "summary.md").read_text()
+
+        observed[seed] = {
+            "final_max_age": final_metrics["queued_task_age_max_tick"],
+            "final_mean_age": final_metrics["queued_task_age_mean_tick"],
+            "peak_max_age": max(
+                int(row["queued_task_age_max_tick"])
+                for row in result.metrics
+            ),
+            "mean_mean_age": round(
+                sum(float(row["queued_task_age_mean_tick"]) for row in result.metrics)
+                / len(result.metrics),
+                6,
+            ),
+        }
+
+        assert f"- final queued task max age: {expected[seed]['final_max_age']}" in summary
+        assert f"- final queued task mean age: {expected[seed]['final_mean_age']}" in summary
+        assert f"- peak queued task max age: {expected[seed]['peak_max_age']}" in summary
+        assert f"- mean queued task mean age: {expected[seed]['mean_mean_age']}" in summary
+
+    assert observed == expected
