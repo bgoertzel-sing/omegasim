@@ -32,6 +32,9 @@ def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     assert len(result.agents) == 15
     assert len(result.metrics) == 100
     assert len(result.events) == 1500
+    assert result.metrics[0]["bus_density"] == 0.125
+    assert result.metrics[0]["bus_mean_degree"] == 1.875
+    assert result.metrics[0]["bus_degree_centralization"] == 1.0
     assert (out_dir / "manifest.yaml").is_file()
     assert (out_dir / "metrics.csv").is_file()
     assert (out_dir / "events.csv").is_file()
@@ -41,6 +44,21 @@ def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     assert manifest["seed"] == 1
     assert manifest["agent_count"] == 15
     assert manifest["model"]["bus_edges"] == 15
+
+
+def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    metrics_header = (out_dir / "metrics.csv").read_text().splitlines()[0].split(",")
+    first_row = (out_dir / "metrics.csv").read_text().splitlines()[1].split(",")
+    row = dict(zip(metrics_header, first_row))
+
+    assert row["bus_density"] == "0.125"
+    assert row["bus_mean_degree"] == "1.875"
+    assert row["bus_degree_centralization"] == "1.0"
+    assert "- bus density: 0.125" in (out_dir / "summary.md").read_text()
 
 
 def test_manifest_records_environment_provenance(tmp_path: Path) -> None:

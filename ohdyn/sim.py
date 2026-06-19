@@ -50,6 +50,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
     rng = np.random.default_rng(seed)
     agents = _make_agents(config.model.agent_count, rng)
     bus_graph = _make_bus_graph(agents)
+    bus_metrics = _bus_graph_metrics(bus_graph)
     task_queue: deque[Task] = deque()
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
@@ -130,6 +131,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 "agent_count": len(agents),
                 "bus_nodes": bus_graph.number_of_nodes(),
                 "bus_edges": bus_graph.number_of_edges(),
+                **bus_metrics,
                 "queue_depth": len(task_queue),
                 "tasks_created_total": task_counter,
                 "tasks_completed_total": completed_tasks,
@@ -173,6 +175,30 @@ def _make_bus_graph(agents: tuple[AgentState, ...]) -> nx.Graph:
         graph.add_node(agent.agent_id, kind="agent", role=agent.role)
         graph.add_edge("bus", agent.agent_id, channel="omega_bus", weight=1.0)
     return graph
+
+
+def _bus_graph_metrics(graph: nx.Graph) -> dict[str, float]:
+    node_count = graph.number_of_nodes()
+    if node_count <= 1:
+        return {
+            "bus_density": 0.0,
+            "bus_mean_degree": 0.0,
+            "bus_degree_centralization": 0.0,
+        }
+
+    degrees = [degree for _, degree in graph.degree()]
+    max_degree = max(degrees)
+    centralization_denominator = (node_count - 1) * (node_count - 2)
+    if centralization_denominator == 0:
+        degree_centralization = 0.0
+    else:
+        degree_centralization = sum(max_degree - degree for degree in degrees) / centralization_denominator
+
+    return {
+        "bus_density": round(float(nx.density(graph)), 6),
+        "bus_mean_degree": round(float(np.mean(degrees)), 6),
+        "bus_degree_centralization": round(float(degree_centralization), 6),
+    }
 
 
 def _choose_action(
