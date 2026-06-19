@@ -174,6 +174,18 @@ def _summary(result: SimulationResult) -> str:
     lines.extend(
         [
             "",
+            "## Baseline lobe dwell runs",
+            "",
+        ]
+    )
+    for label, dwell in _baseline_lobe_dwell_runs(result).items():
+        lines.append(
+            f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
+            f"max_run={dwell['max_run']}, mean_run={dwell['mean_run']}"
+        )
+    lines.extend(
+        [
+            "",
             "## Role action totals",
             "",
         ]
@@ -208,6 +220,40 @@ def _baseline_lobe_transition_totals(result: SimulationResult) -> dict[str, int]
         if row.get("baseline_lobe_transition") not in {"", "start", "stable"}
     )
     return dict(sorted(counts.items()))
+
+
+def _baseline_lobe_dwell_runs(result: SimulationResult) -> dict[str, dict[str, int | float]]:
+    runs_by_label: dict[str, list[int]] = {label: [] for label in BASELINE_LOBE_LABELS}
+    previous_label = ""
+    current_run_length = 0
+
+    for row in result.metrics:
+        label = str(row.get("baseline_lobe_label", ""))
+        if not label:
+            continue
+        if label == previous_label:
+            current_run_length += 1
+        else:
+            if previous_label:
+                runs_by_label.setdefault(previous_label, []).append(current_run_length)
+            previous_label = label
+            current_run_length = 1
+
+    if previous_label:
+        runs_by_label.setdefault(previous_label, []).append(current_run_length)
+
+    dwell: dict[str, dict[str, int | float]] = {}
+    for label in BASELINE_LOBE_LABELS:
+        runs = runs_by_label.get(label, [])
+        if not runs:
+            continue
+        dwell[label] = {
+            "runs": len(runs),
+            "total_ticks": sum(runs),
+            "max_run": max(runs),
+            "mean_run": round(sum(runs) / len(runs), 6),
+        }
+    return dwell
 
 
 def _role_action_totals(result: SimulationResult) -> dict[str, dict[str, int]]:

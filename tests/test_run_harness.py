@@ -257,6 +257,20 @@ def test_metrics_csv_records_baseline_lobe_transitions(tmp_path: Path) -> None:
         assert f"- {transition}: {count}" in summary
 
 
+def test_summary_records_baseline_lobe_dwell_runs(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    result = run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "## Baseline lobe dwell runs" in summary
+    for label, dwell in _lobe_dwell_runs(result.metrics).items():
+        assert (
+            f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
+            f"max_run={dwell['max_run']}, mean_run={dwell['mean_run']}"
+        ) in summary
+
+
 def test_manifest_records_environment_provenance(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -459,6 +473,44 @@ def test_fixed_seed_lobe_and_transition_totals_are_stable(tmp_path: Path) -> Non
     assert len({tuple(seed_totals["lobes"].items()) for seed_totals in observed.values()}) == len(expected)
 
 
+def test_fixed_seed_lobe_dwell_runs_are_stable(tmp_path: Path) -> None:
+    expected = {
+        1: {
+            "backlog_growth": {"runs": 24, "total_ticks": 44, "max_run": 6, "mean_run": 1.833333},
+            "coordination": {"runs": 17, "total_ticks": 25, "max_run": 3, "mean_run": 1.470588},
+            "execution": {"runs": 21, "total_ticks": 29, "max_run": 4, "mean_run": 1.380952},
+            "low_activity": {"runs": 2, "total_ticks": 2, "max_run": 1, "mean_run": 1.0},
+        },
+        2: {
+            "backlog_growth": {"runs": 28, "total_ticks": 49, "max_run": 5, "mean_run": 1.75},
+            "coordination": {"runs": 13, "total_ticks": 16, "max_run": 3, "mean_run": 1.230769},
+            "execution": {"runs": 24, "total_ticks": 31, "max_run": 3, "mean_run": 1.291667},
+            "low_activity": {"runs": 4, "total_ticks": 4, "max_run": 1, "mean_run": 1.0},
+        },
+        17: {
+            "backlog_growth": {"runs": 25, "total_ticks": 52, "max_run": 4, "mean_run": 2.08},
+            "coordination": {"runs": 19, "total_ticks": 24, "max_run": 2, "mean_run": 1.263158},
+            "execution": {"runs": 15, "total_ticks": 22, "max_run": 3, "mean_run": 1.466667},
+            "low_activity": {"runs": 2, "total_ticks": 2, "max_run": 1, "mean_run": 1.0},
+        },
+    }
+
+    observed = {}
+    for seed in expected:
+        out_dir = tmp_path / f"seed{seed}"
+        result = run_experiment(CONFIG, seed=seed, out_dir=out_dir)
+        summary = (out_dir / "summary.md").read_text()
+        observed[seed] = _lobe_dwell_runs(result.metrics)
+
+        for label, dwell in expected[seed].items():
+            assert (
+                f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
+                f"max_run={dwell['max_run']}, mean_run={dwell['mean_run']}"
+            ) in summary
+
+    assert observed == expected
+
+
 def test_fixed_seed_queue_age_summaries_are_stable(tmp_path: Path) -> None:
     expected = {
         1: {
@@ -508,6 +560,36 @@ def test_fixed_seed_queue_age_summaries_are_stable(tmp_path: Path) -> None:
         assert f"- mean queued task mean age: {expected[seed]['mean_mean_age']}" in summary
 
     assert observed == expected
+
+
+def _lobe_dwell_runs(metrics: list[dict[str, object]]) -> dict[str, dict[str, int | float]]:
+    runs_by_label: dict[str, list[int]] = {label: [] for label in BASELINE_LOBE_LABELS}
+    previous_label = ""
+    current_run_length = 0
+
+    for row in metrics:
+        label = str(row["baseline_lobe_label"])
+        if label == previous_label:
+            current_run_length += 1
+        else:
+            if previous_label:
+                runs_by_label[previous_label].append(current_run_length)
+            previous_label = label
+            current_run_length = 1
+
+    if previous_label:
+        runs_by_label[previous_label].append(current_run_length)
+
+    return {
+        label: {
+            "runs": len(runs),
+            "total_ticks": sum(runs),
+            "max_run": max(runs),
+            "mean_run": round(sum(runs) / len(runs), 6),
+        }
+        for label, runs in runs_by_label.items()
+        if runs
+    }
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
