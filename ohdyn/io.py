@@ -139,6 +139,10 @@ def _summary(result: SimulationResult) -> str:
         f"- tasks created: {last.get('tasks_created_total', 0)}",
         f"- tasks completed: {last.get('tasks_completed_total', 0)}",
         f"- final queue depth: {last.get('queue_depth', 0)}",
+        f"- final backlog pressure: {last.get('backlog_pressure_tick', 0)}",
+        f"- created-completed balance: {_created_completed_balance(result)}",
+        f"- created-worked balance: {_created_worked_balance(result)}",
+        f"- work-completion gap: {_work_completion_gap(result)}",
         "",
         "## Baseline lobe totals",
         "",
@@ -199,3 +203,15 @@ def _role_action_totals(result: SimulationResult) -> dict[str, dict[str, int]]:
         }
         for role in BASELINE_ROLES
     }
+
+
+def _created_completed_balance(result: SimulationResult) -> int:
+    return sum(int(row.get("created_completed_balance_tick", 0)) for row in result.metrics)
+
+
+def _created_worked_balance(result: SimulationResult) -> int:
+    return sum(int(row.get("created_worked_balance_tick", 0)) for row in result.metrics)
+
+
+def _work_completion_gap(result: SimulationResult) -> int:
+    return sum(int(row.get("work_completion_gap_tick", 0)) for row in result.metrics)

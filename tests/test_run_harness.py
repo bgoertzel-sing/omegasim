@@ -121,6 +121,43 @@ def test_metrics_csv_records_baseline_lobe_labels(tmp_path: Path) -> None:
     assert "- backlog_growth: " in summary
 
 
+def test_metrics_csv_records_queue_pressure_balances(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows
+    created_completed_balance = 0
+    created_worked_balance = 0
+    work_completion_gap = 0
+    for row in rows:
+        created = int(row["tasks_created_tick"])
+        worked = int(row["tasks_worked_tick"])
+        completed = int(row["tasks_completed_tick"])
+
+        assert int(row["created_completed_balance_tick"]) == created - completed
+        assert int(row["created_worked_balance_tick"]) == created - worked
+        assert int(row["work_completion_gap_tick"]) == worked - completed
+        assert int(row["backlog_pressure_tick"]) == int(row["queue_depth"])
+
+        created_completed_balance += int(row["created_completed_balance_tick"])
+        created_worked_balance += int(row["created_worked_balance_tick"])
+        work_completion_gap += int(row["work_completion_gap_tick"])
+
+    last = rows[-1]
+    assert created_completed_balance == int(last["queue_depth"])
+    assert created_completed_balance == created_worked_balance + work_completion_gap
+
+    summary = (out_dir / "summary.md").read_text()
+    assert f"- final backlog pressure: {last['queue_depth']}" in summary
+    assert f"- created-completed balance: {created_completed_balance}" in summary
+    assert f"- created-worked balance: {created_worked_balance}" in summary
+    assert f"- work-completion gap: {work_completion_gap}" in summary
+
+
 def test_metrics_csv_records_baseline_lobe_transitions(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
