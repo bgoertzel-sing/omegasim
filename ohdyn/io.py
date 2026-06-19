@@ -39,13 +39,7 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
         "agent_count": result.config.model.agent_count,
         "actions": list(result.config.model.actions),
         "outputs": asdict(result.config.outputs),
-        "artifacts": [
-            "config.yaml",
-            "manifest.yaml",
-            "metrics.csv",
-            "events.csv",
-            "summary.md",
-        ],
+        "artifacts": _artifact_names(result),
         "model": {
             "agent_ids": [agent.agent_id for agent in result.agents],
             "roles": {agent.agent_id: agent.role for agent in result.agents},
@@ -54,6 +48,19 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
         },
         "config": result.config.to_dict(),
     }
+
+
+def _artifact_names(result: SimulationResult) -> list[str]:
+    artifacts = ["config.yaml"]
+    if result.config.outputs.write_manifest:
+        artifacts.append("manifest.yaml")
+    if result.config.outputs.write_metrics:
+        artifacts.append("metrics.csv")
+    if result.config.outputs.write_events:
+        artifacts.append("events.csv")
+    if result.config.outputs.write_summary:
+        artifacts.append("summary.md")
+    return artifacts
 
 
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:

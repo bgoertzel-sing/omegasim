@@ -61,14 +61,14 @@ def load_config(path: str | Path) -> OmegaConfig:
             ticks=_positive_int(run.get("ticks"), "run.ticks"),
         ),
         model=ModelConfig(
-            agent_count=_min_int(model.get("agent_count"), "model.agent_count", minimum=2),
+            agent_count=_exact_int(model.get("agent_count"), "model.agent_count", expected=15),
             actions=actions,
         ),
         outputs=OutputsConfig(
-            write_manifest=bool(outputs.get("write_manifest", True)),
-            write_metrics=bool(outputs.get("write_metrics", True)),
-            write_events=bool(outputs.get("write_events", True)),
-            write_summary=bool(outputs.get("write_summary", True)),
+            write_manifest=_bool(outputs.get("write_manifest", True), "outputs.write_manifest"),
+            write_metrics=_bool(outputs.get("write_metrics", True), "outputs.write_metrics"),
+            write_events=_bool(outputs.get("write_events", True), "outputs.write_events"),
+            write_summary=_bool(outputs.get("write_summary", True), "outputs.write_summary"),
         ),
     )
     _validate_actions(cfg.model.actions)
@@ -93,11 +93,17 @@ def _positive_int(value: Any, name: str) -> int:
     return value
 
 
-def _min_int(value: Any, name: str, minimum: int) -> int:
+def _exact_int(value: Any, name: str, expected: int) -> int:
     parsed = _positive_int(value, name)
-    if parsed < minimum:
-        raise ValueError(f"Config value {name!r} must be at least {minimum}.")
+    if parsed != expected:
+        raise ValueError(f"Config value {name!r} must be exactly {expected} for the A0/A1 baseline.")
     return parsed
+
+
+def _bool(value: Any, name: str) -> bool:
+    if not isinstance(value, bool):
+        raise ValueError(f"Config value {name!r} must be a boolean.")
+    return value
 
 
 def _validate_actions(actions: tuple[str, ...]) -> None:

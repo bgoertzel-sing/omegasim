@@ -8,9 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: pending automation update
-- Changed: initial status file added
-- Verified: not yet updated by automation
-- Blockers: none recorded
-- Next step: automation should update this file after its next run
-
+- Status: ok, 2026-06-19 environment recovery and A0 guardrail update
+- Changed: fixed package discovery for editable installs, ignored the local `.venv-conda`, tightened A0/A1 config validation to require 15 agents and real YAML booleans, and made the manifest list only artifacts actually written.
+- Verified: `.venv-conda/bin/python -m pytest -q` passed with 7 tests; `.venv-conda/bin/python -c "import pytest, yaml"` succeeded.
+- Blockers: none for local OmegaSim execution.
+- Next step: resume the OmegaSim research automation on top of the now-working Python 3.11 environment.
