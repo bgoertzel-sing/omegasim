@@ -59,10 +59,12 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
 
     for tick in range(config.run.ticks):
         action_counts: Counter[str] = Counter()
+        role_action_counts: Counter[tuple[str, str]] = Counter()
         completed_this_tick = 0
         for agent in agents:
             action = _choose_action(config.model.actions, bool(task_queue), agent, rng)
             action_counts[action] += 1
+            role_action_counts[(agent.role, action)] += 1
 
             if action == "message":
                 target = _choose_target(agent, agents, rng)
@@ -140,6 +142,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 "tasks_created_tick": action_counts["create_task"],
                 "tasks_worked_tick": action_counts["work_task"],
                 "idle_tick": action_counts["idle"],
+                **_role_action_metrics(config.model.actions, role_action_counts),
                 "mean_agent_bias": round(float(np.mean([agent.bias for agent in agents])), 6),
             }
         )
@@ -198,6 +201,17 @@ def _bus_graph_metrics(graph: nx.Graph) -> dict[str, float]:
         "bus_density": round(float(nx.density(graph)), 6),
         "bus_mean_degree": round(float(np.mean(degrees)), 6),
         "bus_degree_centralization": round(float(degree_centralization), 6),
+    }
+
+
+def _role_action_metrics(
+    actions: tuple[str, ...],
+    role_action_counts: Counter[tuple[str, str]],
+) -> dict[str, int]:
+    return {
+        f"role_{role}_{action}_tick": role_action_counts[(role, action)]
+        for role in BASELINE_ROLES
+        for action in actions
     }
 
 

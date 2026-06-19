@@ -6,6 +6,7 @@ import sys
 import pytest
 import yaml
 
+from ohdyn.sim import BASELINE_ROLES
 from ohdyn.config import load_config
 from ohdyn.run import run_experiment
 
@@ -59,6 +60,38 @@ def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
     assert row["bus_mean_degree"] == "1.875"
     assert row["bus_degree_centralization"] == "1.0"
     assert "- bus density: 0.125" in (out_dir / "summary.md").read_text()
+
+
+def test_metrics_csv_records_role_action_counts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    metrics_lines = (out_dir / "metrics.csv").read_text().splitlines()
+    metrics_header = metrics_lines[0].split(",")
+    first_row = dict(zip(metrics_header, metrics_lines[1].split(",")))
+    actions = ("idle", "message", "create_task", "work_task")
+
+    for role in BASELINE_ROLES:
+        assert {f"role_{role}_{action}_tick" for action in actions} <= set(metrics_header)
+        assert sum(int(first_row[f"role_{role}_{action}_tick"]) for action in actions) == 3
+
+    assert sum(int(first_row[f"role_{role}_message_tick"]) for role in BASELINE_ROLES) == int(
+        first_row["messages_sent_tick"]
+    )
+    assert sum(int(first_row[f"role_{role}_create_task_tick"]) for role in BASELINE_ROLES) == int(
+        first_row["tasks_created_tick"]
+    )
+    assert sum(int(first_row[f"role_{role}_work_task_tick"]) for role in BASELINE_ROLES) == int(
+        first_row["tasks_worked_tick"]
+    )
+    assert sum(int(first_row[f"role_{role}_idle_tick"]) for role in BASELINE_ROLES) == int(
+        first_row["idle_tick"]
+    )
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "## Role action totals" in summary
+    assert "- coordinator: idle=" in summary
 
 
 def test_manifest_records_environment_provenance(tmp_path: Path) -> None:

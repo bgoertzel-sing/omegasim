@@ -12,7 +12,7 @@ from typing import Any
 
 import yaml
 
-from ohdyn.sim import SimulationResult
+from ohdyn.sim import BASELINE_ROLES, SimulationResult
 
 
 def write_outputs(result: SimulationResult, out_dir: str | Path) -> None:
@@ -123,22 +123,42 @@ def _summary(result: SimulationResult) -> str:
     total_events = len(result.events)
     total_messages = sum(1 for event in result.events if event["event_type"] == "message_sent")
     total_work = sum(1 for event in result.events if event["event_type"] == "task_worked")
-    return "\n".join(
-        [
-            f"# {result.config.run.experiment_id}",
-            "",
-            f"- seed: {result.seed}",
-            f"- ticks: {result.config.run.ticks}",
-            f"- agents: {result.config.model.agent_count}",
-            f"- bus graph: {result.bus_graph.number_of_nodes()} nodes, {result.bus_graph.number_of_edges()} edges",
-            f"- bus density: {last.get('bus_density', 0)}",
-            f"- bus degree centralization: {last.get('bus_degree_centralization', 0)}",
-            f"- events: {total_events}",
-            f"- messages sent: {total_messages}",
-            f"- task work events: {total_work}",
-            f"- tasks created: {last.get('tasks_created_total', 0)}",
-            f"- tasks completed: {last.get('tasks_completed_total', 0)}",
-            f"- final queue depth: {last.get('queue_depth', 0)}",
-            "",
-        ]
-    )
+    lines = [
+        f"# {result.config.run.experiment_id}",
+        "",
+        f"- seed: {result.seed}",
+        f"- ticks: {result.config.run.ticks}",
+        f"- agents: {result.config.model.agent_count}",
+        f"- bus graph: {result.bus_graph.number_of_nodes()} nodes, {result.bus_graph.number_of_edges()} edges",
+        f"- bus density: {last.get('bus_density', 0)}",
+        f"- bus degree centralization: {last.get('bus_degree_centralization', 0)}",
+        f"- events: {total_events}",
+        f"- messages sent: {total_messages}",
+        f"- task work events: {total_work}",
+        f"- tasks created: {last.get('tasks_created_total', 0)}",
+        f"- tasks completed: {last.get('tasks_completed_total', 0)}",
+        f"- final queue depth: {last.get('queue_depth', 0)}",
+        "",
+        "## Role action totals",
+        "",
+    ]
+    for role, totals in _role_action_totals(result).items():
+        lines.append(
+            f"- {role}: idle={totals['idle']}, message={totals['message']}, "
+            f"create_task={totals['create_task']}, work_task={totals['work_task']}"
+        )
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _role_action_totals(result: SimulationResult) -> dict[str, dict[str, int]]:
+    return {
+        role: {
+            action: sum(
+                int(row.get(f"role_{role}_{action}_tick", 0))
+                for row in result.metrics
+            )
+            for action in result.config.model.actions
+        }
+        for role in BASELINE_ROLES
+    }
