@@ -148,9 +148,18 @@ def _summary(result: SimulationResult) -> str:
         f"- created-worked balance: {_created_worked_balance(result)}",
         f"- work-completion gap: {_work_completion_gap(result)}",
         "",
-        "## Baseline lobe totals",
+        "## Event type totals",
         "",
     ]
+    for event_type, count in _event_type_totals(result).items():
+        lines.append(f"- {event_type}: {count}")
+    lines.extend(
+        [
+            "",
+            "## Baseline lobe totals",
+            "",
+        ]
+    )
     for label, count in _baseline_lobe_totals(result).items():
         lines.append(f"- {label}: {count}")
     lines.extend(
@@ -185,6 +194,11 @@ def _baseline_lobe_totals(result: SimulationResult) -> dict[str, int]:
         for label in BASELINE_LOBE_LABELS
         if counts[label] > 0
     }
+
+
+def _event_type_totals(result: SimulationResult) -> dict[str, int]:
+    counts = Counter(str(event.get("event_type", "")) for event in result.events)
+    return dict(sorted((event_type, count) for event_type, count in counts.items() if event_type))
 
 
 def _baseline_lobe_transition_totals(result: SimulationResult) -> dict[str, int]:

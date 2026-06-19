@@ -96,6 +96,17 @@ def test_metrics_csv_records_role_action_counts(tmp_path: Path) -> None:
     assert "- coordinator: idle=" in summary
 
 
+def test_summary_records_event_type_totals(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    result = run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "## Event type totals" in summary
+    for event_type, count in sorted(Counter(event["event_type"] for event in result.events).items()):
+        assert f"- {event_type}: {count}" in summary
+
+
 def test_metrics_csv_records_baseline_lobe_labels(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -580,5 +591,8 @@ def test_fixed_seed_event_type_totals_are_stable(tmp_path: Path) -> None:
         observed[seed] = dict(sorted(Counter(event["event_type"] for event in result.events).items()))
         assert dict(sorted(Counter(row["event_type"] for row in event_rows).items())) == expected[seed]
         assert sum(observed[seed].values()) == 1500
+        summary = (out_dir / "summary.md").read_text()
+        for event_type, count in expected[seed].items():
+            assert f"- {event_type}: {count}" in summary
 
     assert observed == expected
