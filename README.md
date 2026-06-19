@@ -19,11 +19,60 @@ python -m ohdyn.run --config configs/a0_smoke.yaml --seed 1 --out runs/a0_seed1
 The first run harness should produce:
 
 ```text
+config.yaml
 manifest.yaml
 metrics.csv
 events.csv
 summary.md
 ```
+
+## Current A0/A1 Baseline
+
+The baseline runner loads one YAML config, creates 15 static OmegaHive-like agents, connects them through one NetworkX bus graph, advances one in-memory task queue for the configured tick count, and writes deterministic artifacts for the supplied seed. The only supported baseline actions are `idle`, `message`, `create_task`, and `work_task`.
+
+The 15 agents cycle through five roles, with three agents per role:
+
+- `coordinator`
+- `researcher`
+- `architect`
+- `implementer`
+- `reviewer`
+
+Baseline lobe labels are derived from per-tick queue movement and dominant action counts:
+
+- `backlog_growth`
+- `execution`
+- `task_generation`
+- `coordination`
+- `low_activity`
+
+## Output Schema
+
+Every run writes `config.yaml`, a normalized copy of the loaded config. Optional artifact flags in the config control the remaining outputs.
+
+`manifest.yaml` records run provenance and model shape:
+
+- `experiment_id`, `seed`, `ticks`, `agent_count`, and configured `actions`
+- `outputs`, the artifact flags used by the run
+- `artifacts`, the exact files written for the run
+- `environment.git_commit`, `environment.python_version`, and package versions
+- `model.agent_ids`, `model.roles`, `model.bus_nodes`, and `model.bus_edges`
+- `config`, the normalized run config
+
+`metrics.csv` has one row per tick. The current fields include:
+
+- Tick and static graph state: `tick`, `agent_count`, `bus_nodes`, `bus_edges`, `bus_density`, `bus_mean_degree`, `bus_degree_centralization`
+- Queue and task totals: `queue_depth`, `queue_delta_tick`, `tasks_created_total`, `tasks_completed_total`, `tasks_completed_tick`
+- Per-tick action counts: `messages_sent_tick`, `tasks_created_tick`, `tasks_worked_tick`, `idle_tick`
+- Queue pressure balances: `created_completed_balance_tick`, `created_worked_balance_tick`, `work_completion_gap_tick`, `backlog_pressure_tick`
+- Queue age metrics: `queued_task_age_max_tick`, `queued_task_age_mean_tick`
+- Lobe state: `baseline_lobe_label`, `baseline_lobe_previous_label`, `baseline_lobe_transition`, `baseline_lobe_transition_tick`, `baseline_lobe_run_id`, `baseline_lobe_current_run_length`
+- Role/action counts named `role_<role>_<action>_tick`
+- Agent population summary: `mean_agent_bias`
+
+`events.csv` has one row per agent action per tick. The current fields are `tick`, `event_type`, `agent_id`, `action`, `target_id`, `task_id`, `work_units`, `remaining_work`, and `completed`. Event types are `agent_idle`, `message_sent`, `task_created`, and `task_worked`.
+
+`summary.md` is a human-readable run summary with bus, event, task, queue pressure, queue age, lobe total, lobe transition, lobe dwell-run, and role/action aggregate sections.
 
 ## Early Guardrails
 
@@ -45,4 +94,3 @@ summary.md
 - pytest
 - Plotly/Jupyter later
 - UMAP/HDBSCAN/ruptures/PySINDy later
-
