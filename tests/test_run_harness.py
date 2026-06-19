@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, deque
 from pathlib import Path
 import csv
 import sys
@@ -156,6 +156,59 @@ def test_metrics_csv_records_queue_pressure_balances(tmp_path: Path) -> None:
     assert f"- created-completed balance: {created_completed_balance}" in summary
     assert f"- created-worked balance: {created_worked_balance}" in summary
     assert f"- work-completion gap: {work_completion_gap}" in summary
+
+
+def test_metrics_csv_records_queued_task_age(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    events_by_tick: dict[int, list[dict[str, str]]] = {}
+    for event in event_rows:
+        events_by_tick.setdefault(int(event["tick"]), []).append(event)
+
+    task_queue: deque[dict[str, int | str]] = deque()
+    expected_peak_age = 0
+    expected_mean_age_sum = 0.0
+    for row in metrics_rows:
+        tick = int(row["tick"])
+        for event in events_by_tick[tick]:
+            if event["event_type"] == "task_created":
+                task_queue.append(
+                    {
+                        "task_id": event["task_id"],
+                        "created_tick": tick,
+                        "remaining_work": int(event["work_units"]),
+                    }
+                )
+            elif event["event_type"] == "task_worked":
+                task = task_queue.popleft()
+                assert task["task_id"] == event["task_id"]
+                task["remaining_work"] = int(event["remaining_work"])
+                if event["completed"] != "True":
+                    task_queue.append(task)
+
+        ages = [tick - int(task["created_tick"]) for task in task_queue]
+        expected_max_age = max(ages, default=0)
+        expected_mean_age = round(sum(ages) / len(ages), 6) if ages else 0.0
+        expected_peak_age = max(expected_peak_age, expected_max_age)
+        expected_mean_age_sum += expected_mean_age
+
+        assert int(row["queued_task_age_max_tick"]) == expected_max_age
+        assert float(row["queued_task_age_mean_tick"]) == expected_mean_age
+
+    final = metrics_rows[-1]
+    expected_mean_of_means = round(expected_mean_age_sum / len(metrics_rows), 6)
+    summary = (out_dir / "summary.md").read_text()
+    assert f"- final queued task max age: {final['queued_task_age_max_tick']}" in summary
+    assert f"- final queued task mean age: {final['queued_task_age_mean_tick']}" in summary
+    assert f"- peak queued task max age: {expected_peak_age}" in summary
+    assert f"- mean queued task mean age: {expected_mean_of_means}" in summary
 
 
 def test_metrics_csv_records_baseline_lobe_transitions(tmp_path: Path) -> None:

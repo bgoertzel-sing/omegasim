@@ -139,6 +139,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
 
         queue_depth_end = len(task_queue)
         queue_delta = queue_depth_end - queue_depth_start
+        queue_age_metrics = _queue_age_metrics(task_queue, tick)
         baseline_lobe_label = _baseline_lobe_label(
             action_counts=action_counts,
             queue_depth_start=queue_depth_start,
@@ -173,6 +174,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 "created_worked_balance_tick": action_counts["create_task"] - action_counts["work_task"],
                 "work_completion_gap_tick": action_counts["work_task"] - completed_this_tick,
                 "backlog_pressure_tick": queue_depth_end,
+                **queue_age_metrics,
                 "idle_tick": action_counts["idle"],
                 **_role_action_metrics(config.model.actions, role_action_counts),
                 "mean_agent_bias": round(float(np.mean([agent.bias for agent in agents])), 6),
@@ -245,6 +247,20 @@ def _role_action_metrics(
         f"role_{role}_{action}_tick": role_action_counts[(role, action)]
         for role in BASELINE_ROLES
         for action in actions
+    }
+
+
+def _queue_age_metrics(task_queue: deque[Task], tick: int) -> dict[str, float | int]:
+    if not task_queue:
+        return {
+            "queued_task_age_max_tick": 0,
+            "queued_task_age_mean_tick": 0.0,
+        }
+
+    ages = [tick - task.created_tick for task in task_queue]
+    return {
+        "queued_task_age_max_tick": max(ages),
+        "queued_task_age_mean_tick": round(float(np.mean(ages)), 6),
     }
 
 

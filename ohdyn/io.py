@@ -140,6 +140,10 @@ def _summary(result: SimulationResult) -> str:
         f"- tasks completed: {last.get('tasks_completed_total', 0)}",
         f"- final queue depth: {last.get('queue_depth', 0)}",
         f"- final backlog pressure: {last.get('backlog_pressure_tick', 0)}",
+        f"- final queued task max age: {last.get('queued_task_age_max_tick', 0)}",
+        f"- final queued task mean age: {last.get('queued_task_age_mean_tick', 0)}",
+        f"- peak queued task max age: {_peak_queued_task_age(result)}",
+        f"- mean queued task mean age: {_mean_queued_task_mean_age(result)}",
         f"- created-completed balance: {_created_completed_balance(result)}",
         f"- created-worked balance: {_created_worked_balance(result)}",
         f"- work-completion gap: {_work_completion_gap(result)}",
@@ -215,3 +219,17 @@ def _created_worked_balance(result: SimulationResult) -> int:
 
 def _work_completion_gap(result: SimulationResult) -> int:
     return sum(int(row.get("work_completion_gap_tick", 0)) for row in result.metrics)
+
+
+def _peak_queued_task_age(result: SimulationResult) -> int:
+    return max((int(row.get("queued_task_age_max_tick", 0)) for row in result.metrics), default=0)
+
+
+def _mean_queued_task_mean_age(result: SimulationResult) -> float:
+    if not result.metrics:
+        return 0.0
+    return round(
+        sum(float(row.get("queued_task_age_mean_tick", 0.0)) for row in result.metrics)
+        / len(result.metrics),
+        6,
+    )
