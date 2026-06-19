@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import csv
+import subprocess
+import sys
 from dataclasses import asdict
+from importlib import metadata
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +43,7 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
         "actions": list(result.config.model.actions),
         "outputs": asdict(result.config.outputs),
         "artifacts": _artifact_names(result),
+        "environment": _environment_manifest(),
         "model": {
             "agent_ids": [agent.agent_id for agent in result.agents],
             "roles": {agent.agent_id: agent.role for agent in result.agents},
@@ -48,6 +52,47 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
         },
         "config": result.config.to_dict(),
     }
+
+
+def _environment_manifest() -> dict[str, Any]:
+    return {
+        "git_commit": _git_commit(),
+        "python_version": sys.version.split()[0],
+        "package_versions": _package_versions(
+            [
+                "mesa",
+                "networkx",
+                "numpy",
+                "pandas",
+                "pydantic",
+                "pyyaml",
+            ]
+        ),
+    }
+
+
+def _git_commit() -> str:
+    project_root = Path(__file__).resolve().parents[1]
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(project_root), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return "unknown"
+    return completed.stdout.strip() or "unknown"
+
+
+def _package_versions(packages: list[str]) -> dict[str, str]:
+    versions = {}
+    for package in packages:
+        try:
+            versions[package] = metadata.version(package)
+        except metadata.PackageNotFoundError:
+            versions[package] = "not-installed"
+    return versions
 
 
 def _artifact_names(result: SimulationResult) -> list[str]:

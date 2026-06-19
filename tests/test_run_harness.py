@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
 import pytest
 import yaml
@@ -40,6 +41,26 @@ def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     assert manifest["seed"] == 1
     assert manifest["agent_count"] == 15
     assert manifest["model"]["bus_edges"] == 15
+
+
+def test_manifest_records_environment_provenance(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    environment = manifest["environment"]
+
+    assert environment["git_commit"]
+    assert environment["python_version"] == sys.version.split()[0]
+    assert set(environment["package_versions"]) == {
+        "mesa",
+        "networkx",
+        "numpy",
+        "pandas",
+        "pydantic",
+        "pyyaml",
+    }
 
 
 def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:
