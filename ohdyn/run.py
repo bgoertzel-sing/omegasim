@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import yaml
 
 from ohdyn.config import load_config
 from ohdyn.io import write_outputs
@@ -26,8 +27,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    run_experiment(args.config, args.seed, args.out)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        run_experiment(args.config, args.seed, args.out)
+    except (OSError, ValueError, yaml.YAMLError) as exc:
+        parser.error(str(exc))
     return 0
 
 

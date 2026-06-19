@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter, deque
 from pathlib import Path
 import csv
+import subprocess
 import sys
 
 import pytest
@@ -622,6 +623,49 @@ model:
 
     with pytest.raises(ValueError, match=message):
         load_config(config_path)
+
+
+def test_cli_validation_error_does_not_write_artifacts(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_actions.yaml"
+    out_dir = tmp_path / "invalid_run"
+    config_path.write_text(
+        """
+run:
+  experiment_id: invalid_actions
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+    - browse_web
+"""
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error: model.actions contains unsupported baseline actions: browse_web" in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert not out_dir.exists()
 
 
 def test_a0_baseline_requires_fifteen_agents(tmp_path: Path) -> None:
