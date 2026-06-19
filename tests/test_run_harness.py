@@ -497,3 +497,52 @@ def test_fixed_seed_queue_age_summaries_are_stable(tmp_path: Path) -> None:
         assert f"- mean queued task mean age: {expected[seed]['mean_mean_age']}" in summary
 
     assert observed == expected
+
+
+def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
+    expected = {
+        1: {
+            "coordinator": {"idle": 58, "message": 102, "create_task": 61, "work_task": 79},
+            "researcher": {"idle": 42, "message": 106, "create_task": 57, "work_task": 95},
+            "architect": {"idle": 51, "message": 93, "create_task": 82, "work_task": 74},
+            "implementer": {"idle": 54, "message": 114, "create_task": 56, "work_task": 76},
+            "reviewer": {"idle": 43, "message": 117, "create_task": 63, "work_task": 77},
+        },
+        2: {
+            "coordinator": {"idle": 51, "message": 99, "create_task": 60, "work_task": 90},
+            "researcher": {"idle": 54, "message": 95, "create_task": 63, "work_task": 88},
+            "architect": {"idle": 69, "message": 94, "create_task": 62, "work_task": 75},
+            "implementer": {"idle": 63, "message": 100, "create_task": 76, "work_task": 61},
+            "reviewer": {"idle": 52, "message": 104, "create_task": 71, "work_task": 73},
+        },
+        17: {
+            "coordinator": {"idle": 56, "message": 110, "create_task": 72, "work_task": 62},
+            "researcher": {"idle": 54, "message": 107, "create_task": 71, "work_task": 68},
+            "architect": {"idle": 59, "message": 107, "create_task": 56, "work_task": 78},
+            "implementer": {"idle": 53, "message": 102, "create_task": 69, "work_task": 76},
+            "reviewer": {"idle": 45, "message": 125, "create_task": 68, "work_task": 62},
+        },
+    }
+    actions = ("idle", "message", "create_task", "work_task")
+
+    observed = {}
+    for seed in expected:
+        out_dir = tmp_path / f"seed{seed}"
+        result = run_experiment(CONFIG, seed=seed, out_dir=out_dir)
+        summary = (out_dir / "summary.md").read_text()
+
+        observed[seed] = {
+            role: {
+                action: sum(int(row[f"role_{role}_{action}_tick"]) for row in result.metrics)
+                for action in actions
+            }
+            for role in BASELINE_ROLES
+        }
+
+        for role, totals in expected[seed].items():
+            assert (
+                f"- {role}: idle={totals['idle']}, message={totals['message']}, "
+                f"create_task={totals['create_task']}, work_task={totals['work_task']}"
+            ) in summary
+
+    assert observed == expected
