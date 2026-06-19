@@ -120,6 +120,41 @@ def test_metrics_csv_records_baseline_lobe_labels(tmp_path: Path) -> None:
     assert "- backlog_growth: " in summary
 
 
+def test_metrics_csv_records_baseline_lobe_transitions(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows[0]["baseline_lobe_previous_label"] == ""
+    assert rows[0]["baseline_lobe_transition"] == "start"
+    assert rows[0]["baseline_lobe_transition_tick"] == "0"
+
+    transition_counts: dict[str, int] = {}
+    previous_label = rows[0]["baseline_lobe_label"]
+    for row in rows[1:]:
+        current_label = row["baseline_lobe_label"]
+        expected_transition = (
+            "stable"
+            if previous_label == current_label
+            else f"{previous_label}->{current_label}"
+        )
+        assert row["baseline_lobe_previous_label"] == previous_label
+        assert row["baseline_lobe_transition"] == expected_transition
+        assert row["baseline_lobe_transition_tick"] == str(int(previous_label != current_label))
+        if expected_transition != "stable":
+            transition_counts[expected_transition] = transition_counts.get(expected_transition, 0) + 1
+        previous_label = current_label
+
+    assert transition_counts
+    summary = (out_dir / "summary.md").read_text()
+    assert "## Baseline lobe transitions" in summary
+    for transition, count in transition_counts.items():
+        assert f"- {transition}: {count}" in summary
+
+
 def test_manifest_records_environment_provenance(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 

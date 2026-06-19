@@ -148,6 +148,15 @@ def _summary(result: SimulationResult) -> str:
     lines.extend(
         [
             "",
+            "## Baseline lobe transitions",
+            "",
+        ]
+    )
+    for transition, count in _baseline_lobe_transition_totals(result).items():
+        lines.append(f"- {transition}: {count}")
+    lines.extend(
+        [
+            "",
             "## Role action totals",
             "",
         ]
@@ -168,6 +177,15 @@ def _baseline_lobe_totals(result: SimulationResult) -> dict[str, int]:
         for label in BASELINE_LOBE_LABELS
         if counts[label] > 0
     }
+
+
+def _baseline_lobe_transition_totals(result: SimulationResult) -> dict[str, int]:
+    counts = Counter(
+        str(row.get("baseline_lobe_transition", ""))
+        for row in result.metrics
+        if row.get("baseline_lobe_transition") not in {"", "start", "stable"}
+    )
+    return dict(sorted(counts.items()))
 
 
 def _role_action_totals(result: SimulationResult) -> dict[str, dict[str, int]]:

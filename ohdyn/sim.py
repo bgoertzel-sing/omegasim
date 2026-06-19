@@ -64,6 +64,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
     metrics: list[dict[str, Any]] = []
     task_counter = 0
     completed_tasks = 0
+    previous_lobe_label = ""
 
     for tick in range(config.run.ticks):
         queue_depth_start = len(task_queue)
@@ -138,6 +139,15 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
 
         queue_depth_end = len(task_queue)
         queue_delta = queue_depth_end - queue_depth_start
+        baseline_lobe_label = _baseline_lobe_label(
+            action_counts=action_counts,
+            queue_depth_start=queue_depth_start,
+            queue_depth_end=queue_depth_end,
+        )
+        baseline_lobe_transition = _baseline_lobe_transition(
+            previous_lobe_label,
+            baseline_lobe_label,
+        )
         metrics.append(
             {
                 "tick": tick,
@@ -147,10 +157,11 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 **bus_metrics,
                 "queue_depth": queue_depth_end,
                 "queue_delta_tick": queue_delta,
-                "baseline_lobe_label": _baseline_lobe_label(
-                    action_counts=action_counts,
-                    queue_depth_start=queue_depth_start,
-                    queue_depth_end=queue_depth_end,
+                "baseline_lobe_label": baseline_lobe_label,
+                "baseline_lobe_previous_label": previous_lobe_label,
+                "baseline_lobe_transition": baseline_lobe_transition,
+                "baseline_lobe_transition_tick": int(
+                    bool(previous_lobe_label) and previous_lobe_label != baseline_lobe_label
                 ),
                 "tasks_created_total": task_counter,
                 "tasks_completed_total": completed_tasks,
@@ -163,6 +174,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 "mean_agent_bias": round(float(np.mean([agent.bias for agent in agents])), 6),
             }
         )
+        previous_lobe_label = baseline_lobe_label
 
     return SimulationResult(
         config=config,
@@ -254,6 +266,14 @@ def _baseline_lobe_label(
     if dominant_action == "message":
         return "coordination"
     return "low_activity"
+
+
+def _baseline_lobe_transition(previous_label: str, current_label: str) -> str:
+    if not previous_label:
+        return "start"
+    if previous_label == current_label:
+        return "stable"
+    return f"{previous_label}->{current_label}"
 
 
 def _dominant_action(action_counts: Counter[str]) -> str:
