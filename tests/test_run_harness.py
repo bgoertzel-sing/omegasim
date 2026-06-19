@@ -513,6 +513,117 @@ outputs:
         load_config(config_path)
 
 
+@pytest.mark.parametrize(
+    ("config_text", "message"),
+    [
+        (
+            """
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+""",
+            "section 'run'",
+        ),
+        (
+            """
+run:
+  experiment_id: missing_model
+  ticks: 3
+""",
+            "section 'model'",
+        ),
+        (
+            """
+run:
+  experiment_id: list_outputs
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  - write_metrics
+""",
+            "section 'outputs'",
+        ),
+    ],
+)
+def test_required_config_sections_must_be_yaml_mappings(
+    tmp_path: Path,
+    config_text: str,
+    message: str,
+) -> None:
+    config_path = tmp_path / "invalid_section.yaml"
+    config_path.write_text(config_text)
+
+    with pytest.raises(ValueError, match=message):
+        load_config(config_path)
+
+
+@pytest.mark.parametrize(
+    ("actions_yaml", "message"),
+    [
+        (
+            """
+    - idle
+    - message
+    - create_task
+""",
+            "missing required baseline actions: work_task",
+        ),
+        (
+            """
+    - idle
+    - message
+    - create_task
+    - work_task
+    - browse_web
+""",
+            "unsupported baseline actions: browse_web",
+        ),
+        (
+            """
+    - idle
+    - message
+    - create_task
+    - work_task
+    - work_task
+""",
+            "must not contain duplicates",
+        ),
+    ],
+)
+def test_baseline_actions_must_be_required_unique_and_supported(
+    tmp_path: Path,
+    actions_yaml: str,
+    message: str,
+) -> None:
+    config_path = tmp_path / "invalid_actions.yaml"
+    config_path.write_text(
+        f"""
+run:
+  experiment_id: invalid_actions
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:{actions_yaml}
+"""
+    )
+
+    with pytest.raises(ValueError, match=message):
+        load_config(config_path)
+
+
 def test_a0_baseline_requires_fifteen_agents(tmp_path: Path) -> None:
     config_path = tmp_path / "wrong_agent_count.yaml"
     config_path.write_text(
