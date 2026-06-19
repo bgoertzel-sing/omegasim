@@ -20,6 +20,14 @@ BASELINE_ROLES = (
     "reviewer",
 )
 
+BASELINE_LOBE_LABELS = (
+    "backlog_growth",
+    "execution",
+    "task_generation",
+    "coordination",
+    "low_activity",
+)
+
 
 @dataclass(frozen=True)
 class AgentState:
@@ -58,6 +66,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
     completed_tasks = 0
 
     for tick in range(config.run.ticks):
+        queue_depth_start = len(task_queue)
         action_counts: Counter[str] = Counter()
         role_action_counts: Counter[tuple[str, str]] = Counter()
         completed_this_tick = 0
@@ -127,6 +136,8 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                     )
                 )
 
+        queue_depth_end = len(task_queue)
+        queue_delta = queue_depth_end - queue_depth_start
         metrics.append(
             {
                 "tick": tick,
@@ -134,7 +145,13 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 "bus_nodes": bus_graph.number_of_nodes(),
                 "bus_edges": bus_graph.number_of_edges(),
                 **bus_metrics,
-                "queue_depth": len(task_queue),
+                "queue_depth": queue_depth_end,
+                "queue_delta_tick": queue_delta,
+                "baseline_lobe_label": _baseline_lobe_label(
+                    action_counts=action_counts,
+                    queue_depth_start=queue_depth_start,
+                    queue_depth_end=queue_depth_end,
+                ),
                 "tasks_created_total": task_counter,
                 "tasks_completed_total": completed_tasks,
                 "tasks_completed_tick": completed_this_tick,
@@ -213,6 +230,35 @@ def _role_action_metrics(
         for role in BASELINE_ROLES
         for action in actions
     }
+
+
+def _baseline_lobe_label(
+    *,
+    action_counts: Counter[str],
+    queue_depth_start: int,
+    queue_depth_end: int,
+) -> str:
+    queue_delta = queue_depth_end - queue_depth_start
+    if (
+        queue_depth_end > 0
+        and queue_delta > 0
+        and action_counts["create_task"] >= action_counts["work_task"]
+    ):
+        return "backlog_growth"
+
+    dominant_action = _dominant_action(action_counts)
+    if dominant_action == "work_task":
+        return "execution"
+    if dominant_action == "create_task":
+        return "task_generation"
+    if dominant_action == "message":
+        return "coordination"
+    return "low_activity"
+
+
+def _dominant_action(action_counts: Counter[str]) -> str:
+    priority = ("work_task", "create_task", "message", "idle")
+    return max(priority, key=lambda action: (action_counts[action], -priority.index(action)))
 
 
 def _choose_action(

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+import csv
 import sys
 
 import pytest
 import yaml
 
-from ohdyn.sim import BASELINE_ROLES
+from ohdyn.sim import BASELINE_LOBE_LABELS, BASELINE_ROLES
 from ohdyn.config import load_config
 from ohdyn.run import run_experiment
 
@@ -92,6 +93,31 @@ def test_metrics_csv_records_role_action_counts(tmp_path: Path) -> None:
     summary = (out_dir / "summary.md").read_text()
     assert "## Role action totals" in summary
     assert "- coordinator: idle=" in summary
+
+
+def test_metrics_csv_records_baseline_lobe_labels(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows
+    assert set(row["baseline_lobe_label"] for row in rows) <= set(BASELINE_LOBE_LABELS)
+    assert any(row["baseline_lobe_label"] == "backlog_growth" for row in rows)
+    assert any(row["baseline_lobe_label"] == "execution" for row in rows)
+
+    previous_queue_depth = 0
+    for row in rows:
+        queue_depth = int(row["queue_depth"])
+        queue_delta = int(row["queue_delta_tick"])
+        assert queue_depth - previous_queue_depth == queue_delta
+        previous_queue_depth = queue_depth
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "## Baseline lobe totals" in summary
+    assert "- backlog_growth: " in summary
 
 
 def test_manifest_records_environment_provenance(tmp_path: Path) -> None:

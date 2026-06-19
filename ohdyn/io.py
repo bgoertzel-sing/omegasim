@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import subprocess
 import sys
+from collections import Counter
 from dataclasses import asdict
 from importlib import metadata
 from pathlib import Path
@@ -12,7 +13,7 @@ from typing import Any
 
 import yaml
 
-from ohdyn.sim import BASELINE_ROLES, SimulationResult
+from ohdyn.sim import BASELINE_LOBE_LABELS, BASELINE_ROLES, SimulationResult
 
 
 def write_outputs(result: SimulationResult, out_dir: str | Path) -> None:
@@ -139,9 +140,18 @@ def _summary(result: SimulationResult) -> str:
         f"- tasks completed: {last.get('tasks_completed_total', 0)}",
         f"- final queue depth: {last.get('queue_depth', 0)}",
         "",
-        "## Role action totals",
+        "## Baseline lobe totals",
         "",
     ]
+    for label, count in _baseline_lobe_totals(result).items():
+        lines.append(f"- {label}: {count}")
+    lines.extend(
+        [
+            "",
+            "## Role action totals",
+            "",
+        ]
+    )
     for role, totals in _role_action_totals(result).items():
         lines.append(
             f"- {role}: idle={totals['idle']}, message={totals['message']}, "
@@ -149,6 +159,15 @@ def _summary(result: SimulationResult) -> str:
         )
     lines.append("")
     return "\n".join(lines)
+
+
+def _baseline_lobe_totals(result: SimulationResult) -> dict[str, int]:
+    counts = Counter(str(row.get("baseline_lobe_label", "")) for row in result.metrics)
+    return {
+        label: counts[label]
+        for label in BASELINE_LOBE_LABELS
+        if counts[label] > 0
+    }
 
 
 def _role_action_totals(result: SimulationResult) -> dict[str, dict[str, int]]:
