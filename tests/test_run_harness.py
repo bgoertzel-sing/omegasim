@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 import csv
 import sys
@@ -275,3 +276,83 @@ def test_different_seed_changes_events(tmp_path: Path) -> None:
     run_experiment(CONFIG, seed=2, out_dir=second)
 
     assert (first / "events.csv").read_text() != (second / "events.csv").read_text()
+
+
+def test_fixed_seed_lobe_and_transition_totals_are_stable(tmp_path: Path) -> None:
+    expected = {
+        1: {
+            "lobes": {
+                "backlog_growth": 44,
+                "coordination": 25,
+                "execution": 29,
+                "low_activity": 2,
+            },
+            "transitions": {
+                "backlog_growth->coordination": 10,
+                "backlog_growth->execution": 11,
+                "backlog_growth->low_activity": 2,
+                "coordination->backlog_growth": 8,
+                "coordination->execution": 9,
+                "execution->backlog_growth": 15,
+                "execution->coordination": 6,
+                "low_activity->coordination": 1,
+                "low_activity->execution": 1,
+            },
+        },
+        2: {
+            "lobes": {
+                "backlog_growth": 49,
+                "coordination": 16,
+                "execution": 31,
+                "low_activity": 4,
+            },
+            "transitions": {
+                "backlog_growth->coordination": 8,
+                "backlog_growth->execution": 18,
+                "backlog_growth->low_activity": 1,
+                "coordination->backlog_growth": 8,
+                "coordination->execution": 5,
+                "execution->backlog_growth": 18,
+                "execution->coordination": 3,
+                "execution->low_activity": 3,
+                "low_activity->backlog_growth": 1,
+                "low_activity->coordination": 2,
+                "low_activity->execution": 1,
+            },
+        },
+        17: {
+            "lobes": {
+                "backlog_growth": 52,
+                "coordination": 24,
+                "execution": 22,
+                "low_activity": 2,
+            },
+            "transitions": {
+                "backlog_growth->coordination": 14,
+                "backlog_growth->execution": 9,
+                "backlog_growth->low_activity": 2,
+                "coordination->backlog_growth": 12,
+                "coordination->execution": 6,
+                "execution->backlog_growth": 11,
+                "execution->coordination": 4,
+                "low_activity->backlog_growth": 2,
+            },
+        },
+    }
+
+    observed = {}
+    for seed in expected:
+        result = run_experiment(CONFIG, seed=seed, out_dir=tmp_path / f"seed{seed}")
+        lobe_totals = Counter(row["baseline_lobe_label"] for row in result.metrics)
+        transition_totals = Counter(
+            row["baseline_lobe_transition"]
+            for row in result.metrics
+            if row["baseline_lobe_transition"] not in {"start", "stable"}
+        )
+        observed[seed] = {
+            "lobes": dict(sorted(lobe_totals.items())),
+            "transitions": dict(sorted(transition_totals.items())),
+        }
+
+    assert observed == expected
+    assert len({tuple(seed_totals["lobes"].items()) for seed_totals in observed.values()}) == len(expected)
