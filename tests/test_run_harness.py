@@ -546,3 +546,39 @@ def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
             ) in summary
 
     assert observed == expected
+
+
+def test_fixed_seed_event_type_totals_are_stable(tmp_path: Path) -> None:
+    expected = {
+        1: {
+            "agent_idle": 248,
+            "message_sent": 532,
+            "task_created": 319,
+            "task_worked": 401,
+        },
+        2: {
+            "agent_idle": 289,
+            "message_sent": 492,
+            "task_created": 332,
+            "task_worked": 387,
+        },
+        17: {
+            "agent_idle": 267,
+            "message_sent": 551,
+            "task_created": 336,
+            "task_worked": 346,
+        },
+    }
+
+    observed = {}
+    for seed in expected:
+        out_dir = tmp_path / f"seed{seed}"
+        result = run_experiment(CONFIG, seed=seed, out_dir=out_dir)
+        with (out_dir / "events.csv").open() as handle:
+            event_rows = list(csv.DictReader(handle))
+
+        observed[seed] = dict(sorted(Counter(event["event_type"] for event in result.events).items()))
+        assert dict(sorted(Counter(row["event_type"] for row in event_rows).items())) == expected[seed]
+        assert sum(observed[seed].values()) == 1500
+
+    assert observed == expected
