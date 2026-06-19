@@ -43,7 +43,10 @@ class OmegaConfig:
 
 def load_config(path: str | Path) -> OmegaConfig:
     config_path = Path(path)
-    raw = yaml.safe_load(config_path.read_text()) or {}
+    try:
+        raw = yaml.safe_load(config_path.read_text()) or {}
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Config {config_path} contains invalid YAML: {exc}") from exc
     if not isinstance(raw, dict):
         raise ValueError(f"Config {config_path} must contain a YAML mapping.")
 

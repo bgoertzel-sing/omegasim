@@ -668,6 +668,51 @@ model:
     assert not out_dir.exists()
 
 
+def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
+    config_path = tmp_path / "malformed.yaml"
+    out_dir = tmp_path / "malformed_run"
+    config_path.write_text(
+        """
+run:
+  experiment_id: malformed
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+    - [unterminated
+"""
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error:" in completed.stderr
+    assert str(config_path) in completed.stderr
+    assert "expected ',' or ']'" in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert not out_dir.exists()
+
+
 def test_a0_baseline_requires_fifteen_agents(tmp_path: Path) -> None:
     config_path = tmp_path / "wrong_agent_count.yaml"
     config_path.write_text(
