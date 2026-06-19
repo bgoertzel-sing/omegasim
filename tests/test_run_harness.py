@@ -257,6 +257,43 @@ def test_metrics_csv_records_baseline_lobe_transitions(tmp_path: Path) -> None:
         assert f"- {transition}: {count}" in summary
 
 
+def test_metrics_csv_records_baseline_lobe_run_state(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows
+    assert rows[0]["baseline_lobe_run_id"] == "1"
+    assert rows[0]["baseline_lobe_current_run_length"] == "1"
+
+    previous_label = ""
+    expected_run_id = 0
+    expected_run_length = 0
+    completed_runs: list[tuple[int, str, int]] = []
+    for row in rows:
+        label = row["baseline_lobe_label"]
+        if label == previous_label:
+            expected_run_length += 1
+        else:
+            if previous_label:
+                completed_runs.append((expected_run_id, previous_label, expected_run_length))
+            expected_run_id += 1
+            expected_run_length = 1
+
+        assert int(row["baseline_lobe_run_id"]) == expected_run_id
+        assert int(row["baseline_lobe_current_run_length"]) == expected_run_length
+        previous_label = label
+
+    completed_runs.append((expected_run_id, previous_label, expected_run_length))
+    assert expected_run_id == sum(dwell["runs"] for dwell in _lobe_dwell_runs(rows).values())
+    assert max(run_length for _, _, run_length in completed_runs) == max(
+        dwell["max_run"] for dwell in _lobe_dwell_runs(rows).values()
+    )
+
+
 def test_summary_records_baseline_lobe_dwell_runs(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -507,6 +544,38 @@ def test_fixed_seed_lobe_dwell_runs_are_stable(tmp_path: Path) -> None:
                 f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
                 f"max_run={dwell['max_run']}, mean_run={dwell['mean_run']}"
             ) in summary
+
+    assert observed == expected
+
+
+def test_fixed_seed_lobe_run_state_is_stable(tmp_path: Path) -> None:
+    expected = {
+        1: {
+            "final_label": "backlog_growth",
+            "final_run_id": 64,
+            "final_run_length": 1,
+        },
+        2: {
+            "final_label": "backlog_growth",
+            "final_run_id": 69,
+            "final_run_length": 3,
+        },
+        17: {
+            "final_label": "coordination",
+            "final_run_id": 61,
+            "final_run_length": 1,
+        },
+    }
+
+    observed = {}
+    for seed in expected:
+        result = run_experiment(CONFIG, seed=seed, out_dir=tmp_path / f"seed{seed}")
+        final = result.metrics[-1]
+        observed[seed] = {
+            "final_label": final["baseline_lobe_label"],
+            "final_run_id": final["baseline_lobe_run_id"],
+            "final_run_length": final["baseline_lobe_current_run_length"],
+        }
 
     assert observed == expected
 

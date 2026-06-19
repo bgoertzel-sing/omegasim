@@ -65,6 +65,8 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
     task_counter = 0
     completed_tasks = 0
     previous_lobe_label = ""
+    baseline_lobe_run_id = 0
+    baseline_lobe_current_run_length = 0
 
     for tick in range(config.run.ticks):
         queue_depth_start = len(task_queue)
@@ -149,6 +151,11 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
             previous_lobe_label,
             baseline_lobe_label,
         )
+        if previous_lobe_label == baseline_lobe_label:
+            baseline_lobe_current_run_length += 1
+        else:
+            baseline_lobe_run_id += 1
+            baseline_lobe_current_run_length = 1
         metrics.append(
             {
                 "tick": tick,
@@ -164,6 +171,8 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 "baseline_lobe_transition_tick": int(
                     bool(previous_lobe_label) and previous_lobe_label != baseline_lobe_label
                 ),
+                "baseline_lobe_run_id": baseline_lobe_run_id,
+                "baseline_lobe_current_run_length": baseline_lobe_current_run_length,
                 "tasks_created_total": task_counter,
                 "tasks_completed_total": completed_tasks,
                 "tasks_completed_tick": completed_this_tick,
