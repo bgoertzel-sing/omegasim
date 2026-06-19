@@ -96,6 +96,66 @@ def test_metrics_csv_records_role_action_counts(tmp_path: Path) -> None:
     assert "- coordinator: idle=" in summary
 
 
+def test_metrics_and_events_headers_match_documented_a0_schema(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        events_header = next(csv.reader(handle))
+
+    role_action_headers = [
+        f"role_{role}_{action}_tick"
+        for role in BASELINE_ROLES
+        for action in ("idle", "message", "create_task", "work_task")
+    ]
+    assert metrics_header == [
+        "tick",
+        "agent_count",
+        "bus_nodes",
+        "bus_edges",
+        "bus_density",
+        "bus_mean_degree",
+        "bus_degree_centralization",
+        "queue_depth",
+        "queue_delta_tick",
+        "baseline_lobe_label",
+        "baseline_lobe_previous_label",
+        "baseline_lobe_transition",
+        "baseline_lobe_transition_tick",
+        "baseline_lobe_run_id",
+        "baseline_lobe_current_run_length",
+        "tasks_created_total",
+        "tasks_completed_total",
+        "tasks_completed_tick",
+        "messages_sent_tick",
+        "tasks_created_tick",
+        "tasks_worked_tick",
+        "created_completed_balance_tick",
+        "created_worked_balance_tick",
+        "work_completion_gap_tick",
+        "backlog_pressure_tick",
+        "queued_task_age_max_tick",
+        "queued_task_age_mean_tick",
+        "idle_tick",
+        *role_action_headers,
+        "mean_agent_bias",
+    ]
+    assert events_header == [
+        "tick",
+        "event_type",
+        "agent_id",
+        "action",
+        "target_id",
+        "task_id",
+        "work_units",
+        "remaining_work",
+        "completed",
+    ]
+
+
 def test_summary_records_event_type_totals(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
