@@ -10,9 +10,11 @@ import pytest
 import yaml
 
 from ohdyn.sim import (
+    BASELINE_EVENT_TYPES,
     BASELINE_LOBE_LABELS,
     BASELINE_LOBE_TRANSITION_FIELDS,
     BASELINE_ROLES,
+    EVENT_FIELDS,
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     role_action_metric_fields,
@@ -523,6 +525,10 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
             "pressure_fields": list(QUEUE_PRESSURE_METRIC_FIELDS),
             "queued_task_age_fields": list(QUEUED_TASK_AGE_METRIC_FIELDS),
         },
+        "events": {
+            "types": list(BASELINE_EVENT_TYPES),
+            "fields": list(EVENT_FIELDS),
+        },
         "role_action_metrics": {
             "roles": list(BASELINE_ROLES),
             "actions": actions,
@@ -589,6 +595,26 @@ def test_manifest_records_queue_dynamics_metric_provenance(tmp_path: Path) -> No
         *queue_dynamics_metrics["queued_task_age_fields"],
     ]:
         assert field in metrics_header
+
+
+def test_manifest_records_event_schema_provenance(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    event_schema = manifest["model"]["events"]
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    assert event_schema == {
+        "types": list(BASELINE_EVENT_TYPES),
+        "fields": list(EVENT_FIELDS),
+    }
+    assert event_rows
+    assert list(event_rows[0]) == list(EVENT_FIELDS)
+    assert set(event["event_type"] for event in event_rows) <= set(BASELINE_EVENT_TYPES)
+    assert set(event["event_type"] for event in event_rows) == set(BASELINE_EVENT_TYPES)
 
 
 def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:

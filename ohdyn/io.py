@@ -14,9 +14,11 @@ from typing import Any
 import yaml
 
 from ohdyn.sim import (
+    BASELINE_EVENT_TYPES,
     BASELINE_LOBE_LABELS,
     BASELINE_LOBE_TRANSITION_FIELDS,
     BASELINE_ROLES,
+    EVENT_FIELDS,
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
@@ -80,6 +82,10 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "queue_dynamics_metrics": {
                 "pressure_fields": list(QUEUE_PRESSURE_METRIC_FIELDS),
                 "queued_task_age_fields": list(QUEUED_TASK_AGE_METRIC_FIELDS),
+            },
+            "events": {
+                "types": list(BASELINE_EVENT_TYPES),
+                "fields": list(EVENT_FIELDS),
             },
             "role_action_metrics": {
                 "roles": list(BASELINE_ROLES),

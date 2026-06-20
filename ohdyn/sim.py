@@ -36,6 +36,25 @@ BASELINE_LOBE_TRANSITION_FIELDS = (
     "baseline_lobe_current_run_length",
 )
 
+BASELINE_EVENT_TYPES = (
+    "agent_idle",
+    "message_sent",
+    "task_created",
+    "task_worked",
+)
+
+EVENT_FIELDS = (
+    "tick",
+    "event_type",
+    "agent_id",
+    "action",
+    "target_id",
+    "task_id",
+    "work_units",
+    "remaining_work",
+    "completed",
+)
+
 QUEUE_PRESSURE_METRIC_FIELDS = (
     "created_completed_balance_tick",
     "created_worked_balance_tick",
