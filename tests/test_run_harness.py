@@ -1529,29 +1529,7 @@ def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(
 def test_run_experiment_config_only_rerun_preserves_disabled_artifact_sentinels(
     tmp_path: Path,
 ) -> None:
-    config_path = tmp_path / "config_only_rerun_with_disabled_sentinels.yaml"
     out_dir = tmp_path / "config_only_rerun_with_disabled_sentinels"
-    config_path.write_text(
-        """
-run:
-  experiment_id: config_only_rerun_with_disabled_sentinels
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
     disabled_sentinels = {
         "manifest.yaml": b"sentinel disabled manifest\n",
         "metrics.csv": b"sentinel disabled metrics\n",
@@ -1559,13 +1537,13 @@ outputs:
         "summary.md": b"sentinel disabled summary\n",
     }
 
-    run_experiment(config_path, seed=17, out_dir=out_dir)
+    run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
     for artifact, content in disabled_sentinels.items():
         (out_dir / artifact).write_bytes(content)
     before = {path.name: path.read_bytes() for path in out_dir.iterdir()}
 
     with pytest.raises(FileExistsError) as exc_info:
-        run_experiment(config_path, seed=17, out_dir=out_dir)
+        run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
 
     message = str(exc_info.value)
     assert "already contains run artifacts: config.yaml" in message
@@ -1577,6 +1555,14 @@ outputs:
         ["config.yaml", *disabled_sentinels]
     )
     assert {path.name: path.read_bytes() for path in out_dir.iterdir()} == before
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    assert normalized_config["run"]["experiment_id"] == "a0_config_only"
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
 
 
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
