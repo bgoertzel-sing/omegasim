@@ -646,6 +646,21 @@ def test_summary_written_artifacts_match_manifest_artifacts(tmp_path: Path) -> N
     assert summary_artifacts == manifest["artifacts"]
 
 
+def test_summary_written_artifacts_match_output_directory_contents(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+    written_artifacts_line = next(
+        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
+    )
+    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
+
+    assert sorted(summary_artifacts) == sorted(directory_artifacts)
+
+
 def test_summary_records_disabled_manifest_output_flag(tmp_path: Path) -> None:
     out_dir = tmp_path / "no_manifest"
 
