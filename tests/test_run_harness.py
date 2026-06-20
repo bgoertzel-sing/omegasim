@@ -796,6 +796,66 @@ def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
     assert not (out_dir / "summary.md").exists()
 
 
+def test_documented_cli_manifest_only_records_full_schema_provenance_without_disabled_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "manifest_only_cli_schema"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(MANIFEST_ONLY),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    actions = ("idle", "message", "create_task", "work_task")
+
+    assert manifest["outputs"] == {
+        "write_manifest": True,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "events.csv").exists()
+    assert not (out_dir / "summary.md").exists()
+    assert manifest["model"]["baseline_lobes"] == {
+        "labels": list(BASELINE_LOBE_LABELS),
+        "transition_fields": list(BASELINE_LOBE_TRANSITION_FIELDS),
+    }
+    assert manifest["model"]["queue_dynamics_metrics"] == {
+        "pressure_fields": list(QUEUE_PRESSURE_METRIC_FIELDS),
+        "queued_task_age_fields": list(QUEUED_TASK_AGE_METRIC_FIELDS),
+    }
+    assert manifest["model"]["events"] == {
+        "types": list(BASELINE_EVENT_TYPES),
+        "fields": list(EVENT_FIELDS),
+    }
+    assert manifest["model"]["metrics"] == {
+        "fields": list(metrics_fieldnames(actions)),
+    }
+    assert manifest["model"]["role_action_metrics"] == {
+        "roles": list(BASELINE_ROLES),
+        "actions": list(actions),
+        "fields": list(role_action_metric_fields(actions)),
+    }
+
+
 def test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinels(
     tmp_path: Path,
 ) -> None:
