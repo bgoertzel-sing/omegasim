@@ -1302,6 +1302,50 @@ model:
     assert not out_dir.exists()
 
 
+def test_run_experiment_refuses_to_overwrite_complete_run_directory(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed17"
+    artifacts = [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    run_experiment(CONFIG, seed=17, out_dir=out_dir)
+    before = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts"):
+        run_experiment(CONFIG, seed=17, out_dir=out_dir)
+
+    after = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(artifacts)
+    assert after == before
+
+
+def test_run_experiment_refuses_partial_output_directory_without_writing_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "partial_collision"
+    out_dir.mkdir()
+    sentinels = {
+        "config.yaml": "sentinel config\n",
+        "events.csv": "sentinel events\n",
+    }
+    for artifact, content in sentinels.items():
+        (out_dir / artifact).write_text(content)
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts"):
+        run_experiment(CONFIG, seed=17, out_dir=out_dir)
+
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    for artifact, content in sentinels.items():
+        assert (out_dir / artifact).read_text() == content
+    assert not (out_dir / "manifest.yaml").exists()
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "summary.md").exists()
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
