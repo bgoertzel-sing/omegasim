@@ -1809,29 +1809,7 @@ outputs:
 def test_cli_config_artifact_collision_blocks_when_all_optional_outputs_disabled(
     tmp_path: Path,
 ) -> None:
-    config_path = tmp_path / "config_only_cli_collision.yaml"
     out_dir = tmp_path / "config_only_cli_collision"
-    config_path.write_text(
-        """
-run:
-  experiment_id: config_only_cli_collision
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
     disabled_sentinels = {
         "metrics.csv": "sentinel disabled metrics\n",
         "events.csv": "sentinel disabled events\n",
@@ -1849,7 +1827,7 @@ outputs:
             "-m",
             "ohdyn.run",
             "--config",
-            str(config_path),
+            str(CONFIG_ONLY),
             "--seed",
             "17",
             "--out",
