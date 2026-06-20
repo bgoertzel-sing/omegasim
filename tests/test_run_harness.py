@@ -1213,31 +1213,8 @@ def test_documented_cli_no_manifest_emitted_artifacts_preserve_schema_provenance
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert not (out_dir / "manifest.yaml").exists()
 
-    actions = ("idle", "message", "create_task", "work_task")
-    with (out_dir / "metrics.csv").open() as handle:
-        metrics_header = next(csv.reader(handle))
-    with (out_dir / "events.csv").open() as handle:
-        events_header = next(csv.reader(handle))
-        event_rows = list(csv.DictReader(handle, fieldnames=events_header))
-    summary = (out_dir / "summary.md").read_text()
-
-    assert metrics_header == list(metrics_fieldnames(actions))
-    assert events_header == list(EVENT_FIELDS)
-    assert event_rows
-    assert set(event["event_type"] for event in event_rows) <= set(BASELINE_EVENT_TYPES)
-    assert "## Artifact schema provenance" in summary
-    assert f"- metrics fields: {len(metrics_header)}" in summary
-    assert f"- event fields: {len(events_header)}" in summary
-    assert f"- event types: {len(BASELINE_EVENT_TYPES)}" in summary
-    assert f"- baseline lobe labels: {len(BASELINE_LOBE_LABELS)}" in summary
-    assert f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}" in summary
-    assert f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}" in summary
-    assert f"- queued task age fields: {len(QUEUED_TASK_AGE_METRIC_FIELDS)}" in summary
-    assert f"- role/action fields: {len(role_action_metric_fields(actions))}" in summary
-    assert "- metrics schema source: ohdyn.sim.metrics_fieldnames" in summary
-    assert "- events schema source: ohdyn.sim.EVENT_FIELDS" in summary
+    _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(out_dir)
 
 
 def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
@@ -1382,31 +1359,8 @@ def test_run_api_no_manifest_emitted_artifacts_preserve_schema_provenance(
     assert result.config.run.experiment_id == "a0_no_manifest"
     assert result.seed == 1
     assert result.config.outputs.write_manifest is False
-    assert not (out_dir / "manifest.yaml").exists()
 
-    actions = ("idle", "message", "create_task", "work_task")
-    with (out_dir / "metrics.csv").open() as handle:
-        metrics_header = next(csv.reader(handle))
-    with (out_dir / "events.csv").open() as handle:
-        events_header = next(csv.reader(handle))
-        event_rows = list(csv.DictReader(handle, fieldnames=events_header))
-    summary = (out_dir / "summary.md").read_text()
-
-    assert metrics_header == list(metrics_fieldnames(actions))
-    assert events_header == list(EVENT_FIELDS)
-    assert event_rows
-    assert set(event["event_type"] for event in event_rows) <= set(BASELINE_EVENT_TYPES)
-    assert "## Artifact schema provenance" in summary
-    assert f"- metrics fields: {len(metrics_header)}" in summary
-    assert f"- event fields: {len(events_header)}" in summary
-    assert f"- event types: {len(BASELINE_EVENT_TYPES)}" in summary
-    assert f"- baseline lobe labels: {len(BASELINE_LOBE_LABELS)}" in summary
-    assert f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}" in summary
-    assert f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}" in summary
-    assert f"- queued task age fields: {len(QUEUED_TASK_AGE_METRIC_FIELDS)}" in summary
-    assert f"- role/action fields: {len(role_action_metric_fields(actions))}" in summary
-    assert "- metrics schema source: ohdyn.sim.metrics_fieldnames" in summary
-    assert "- events schema source: ohdyn.sim.EVENT_FIELDS" in summary
+    _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(out_dir)
 
 
 @pytest.mark.parametrize("collision_artifact", ["config.yaml", "metrics.csv", "events.csv", "summary.md"])
@@ -3331,6 +3285,36 @@ def _lobe_dwell_runs(metrics: list[dict[str, object]]) -> dict[str, dict[str, in
         for label, runs in runs_by_label.items()
         if runs
     }
+
+
+def _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(
+    out_dir: Path,
+) -> None:
+    actions = ("idle", "message", "create_task", "work_task")
+
+    assert not (out_dir / "manifest.yaml").exists()
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        events_header = next(csv.reader(handle))
+        event_rows = list(csv.DictReader(handle, fieldnames=events_header))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert metrics_header == list(metrics_fieldnames(actions))
+    assert events_header == list(EVENT_FIELDS)
+    assert event_rows
+    assert set(event["event_type"] for event in event_rows) <= set(BASELINE_EVENT_TYPES)
+    assert "## Artifact schema provenance" in summary
+    assert f"- metrics fields: {len(metrics_header)}" in summary
+    assert f"- event fields: {len(events_header)}" in summary
+    assert f"- event types: {len(BASELINE_EVENT_TYPES)}" in summary
+    assert f"- baseline lobe labels: {len(BASELINE_LOBE_LABELS)}" in summary
+    assert f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}" in summary
+    assert f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}" in summary
+    assert f"- queued task age fields: {len(QUEUED_TASK_AGE_METRIC_FIELDS)}" in summary
+    assert f"- role/action fields: {len(role_action_metric_fields(actions))}" in summary
+    assert "- metrics schema source: ohdyn.sim.metrics_fieldnames" in summary
+    assert "- events schema source: ohdyn.sim.EVENT_FIELDS" in summary
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
