@@ -915,6 +915,73 @@ outputs:
     assert not (out_dir / "summary.md").exists()
 
 
+def test_documented_cli_respects_disabled_manifest_output(tmp_path: Path) -> None:
+    config_path = tmp_path / "no_manifest_cli_outputs.yaml"
+    out_dir = tmp_path / "no_manifest_cli_outputs"
+    expected_artifacts = [
+        "config.yaml",
+        "events.csv",
+        "metrics.csv",
+        "summary.md",
+    ]
+    config_path.write_text(
+        """
+run:
+  experiment_id: no_manifest_cli_outputs
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: true
+  write_events: true
+  write_summary: true
+"""
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "17",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert sorted(path.name for path in out_dir.iterdir()) == expected_artifacts
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    assert not (out_dir / "manifest.yaml").exists()
+    with (out_dir / "metrics.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 3
+    with (out_dir / "events.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 45
+    assert "# no_manifest_cli_outputs" in (out_dir / "summary.md").read_text()
+
+
 def test_documented_cli_different_seeds_change_events_but_preserve_schema(tmp_path: Path) -> None:
     first = tmp_path / "a0_seed17"
     second = tmp_path / "a0_seed18"
