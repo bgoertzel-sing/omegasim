@@ -50,6 +50,18 @@ Baseline lobe labels are derived from per-tick queue movement and dominant actio
 
 Every run writes `config.yaml`, a normalized copy of the loaded config. Optional artifact flags in the config control the remaining outputs.
 
+The `outputs` section may disable any optional artifact:
+
+```yaml
+outputs:
+  write_manifest: false
+  write_metrics: false
+  write_events: false
+  write_summary: false
+```
+
+With all optional outputs disabled, the run still simulates normally and writes only `config.yaml`. Output directories are append-safe: a run refuses to start when any artifact it would write already exists. Disabled artifacts are ignored for collision checks and are preserved byte-for-byte, so stale or sentinel `manifest.yaml`, `metrics.csv`, `events.csv`, or `summary.md` files do not block a config-only run. The mandatory `config.yaml` always participates in collision checks and blocks reruns into the same directory.
+
 `manifest.yaml` records run provenance and model shape:
 
 - `experiment_id`, `seed`, `ticks`, `agent_count`, and configured `actions`
