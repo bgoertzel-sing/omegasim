@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 documented CLI manifest-only stale disabled artifact preservation regression
-- Changed: added a documented CLI regression asserting manifest-only runs preserve stale disabled `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte while still writing fresh `config.yaml` and `manifest.yaml` with manifest artifacts limited to the written outputs.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinels -q` passed with 1 test; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 95 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 documented CLI config-only stale disabled artifact preservation regression
+- Changed: added a documented CLI regression asserting config-only first runs preserve stale disabled `manifest.yaml`, `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte while writing only a fresh normalized `config.yaml`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels -q` passed with 1 test; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 96 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a documented CLI regression for config-only first runs preserving stale disabled `manifest.yaml`, `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte while writing only `config.yaml`.
+- Next step: add the matching run API regression for config-only first runs preserving stale disabled `manifest.yaml`, `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte while writing only `config.yaml`.
