@@ -942,23 +942,7 @@ def test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels(
     for artifact, content in stale_disabled_artifacts.items():
         assert (out_dir / artifact).read_bytes() == content
 
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    assert normalized_config == {
-        "run": {
-            "experiment_id": "a0_config_only",
-            "ticks": 3,
-        },
-        "model": {
-            "agent_count": 15,
-            "actions": ["idle", "message", "create_task", "work_task"],
-        },
-        "outputs": {
-            "write_manifest": False,
-            "write_metrics": False,
-            "write_events": False,
-            "write_summary": False,
-        },
-    }
+    _assert_config_only_writes_normalized_config(out_dir)
 
 
 def test_run_api_config_only_preserves_stale_disabled_artifact_sentinels(
@@ -991,23 +975,7 @@ def test_run_api_config_only_preserves_stale_disabled_artifact_sentinels(
     for artifact, content in stale_disabled_artifacts.items():
         assert (out_dir / artifact).read_bytes() == content
 
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    assert normalized_config == {
-        "run": {
-            "experiment_id": "a0_config_only",
-            "ticks": 3,
-        },
-        "model": {
-            "agent_count": 15,
-            "actions": ["idle", "message", "create_task", "work_task"],
-        },
-        "outputs": {
-            "write_manifest": False,
-            "write_metrics": False,
-            "write_events": False,
-            "write_summary": False,
-        },
-    }
+    _assert_config_only_writes_normalized_config(out_dir)
 
 
 def test_run_api_manifest_only_preserves_stale_disabled_artifact_sentinels(
@@ -3256,6 +3224,27 @@ def _assert_manifest_only_preserves_full_schema_provenance(out_dir: Path) -> Non
         "roles": list(BASELINE_ROLES),
         "actions": list(actions),
         "fields": list(role_action_metric_fields(actions)),
+    }
+
+
+def _assert_config_only_writes_normalized_config(out_dir: Path) -> None:
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+
+    assert normalized_config == {
+        "run": {
+            "experiment_id": "a0_config_only",
+            "ticks": 3,
+        },
+        "model": {
+            "agent_count": 15,
+            "actions": ["idle", "message", "create_task", "work_task"],
+        },
+        "outputs": {
+            "write_manifest": False,
+            "write_metrics": False,
+            "write_events": False,
+            "write_summary": False,
+        },
     }
 
 
