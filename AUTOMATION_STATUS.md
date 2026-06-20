@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 output-directory artifact assertion helper
-- Changed: factored repeated output-directory artifact listing checks into `_directory_artifacts()`, `_assert_artifacts_match_output_directory()`, and `_assert_summary_written_artifacts_match_output_directory()`, then routed manifest-backed and no-manifest parity regressions through the shared helpers.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_summary_written_artifacts_match_output_directory_contents tests/test_run_harness.py::test_summary_written_artifacts_match_output_directory_contents_without_manifest tests/test_run_harness.py::test_manifest_artifacts_match_output_directory_contents_when_manifest_only tests/test_run_harness.py::test_documented_cli_manifest_only_artifacts_match_output_directory_contents tests/test_run_harness.py::test_documented_cli_no_manifest_summary_artifacts_match_output_directory_contents tests/test_run_harness.py::test_run_api_respects_no_manifest_fixture_outputs -q` passed with 6 tests; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 artifact-set assertion consolidation
+- Changed: routed the remaining direct output-directory artifact-set assertions in smoke, default-output, manifest-only, no-manifest, config-only, collision, stale-sentinel, and reproducibility regressions through `_assert_artifacts_match_output_directory()` while preserving sentinel byte-content checks.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "artifact or artifacts or outputs or collision or config_only or no_manifest or manifest_only" -q` passed with 73 tests and 42 deselected; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: consolidate the remaining direct artifact-set assertions in default-output, config-only, and stale-sentinel regressions through the shared output-directory helper.
+- Next step: consolidate repeated byte-identical artifact comparison loops in reproducibility regressions through a shared helper.

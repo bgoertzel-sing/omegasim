@@ -1319,7 +1319,7 @@ def test_documented_cli_smoke_writes_required_a0_artifacts(tmp_path: Path) -> No
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(expected_artifacts)
+    _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     assert manifest["artifacts"] == expected_artifacts
@@ -1356,7 +1356,7 @@ def test_documented_cli_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: 
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(expected_artifacts)
+    _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
 
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
@@ -1404,7 +1404,7 @@ def test_documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_arti
 
         assert completed.returncode == 0
         assert completed.stderr == ""
-        assert sorted(path.name for path in out_dir.iterdir()) == sorted(artifacts)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
@@ -1456,7 +1456,7 @@ def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifa
     assert "config.yaml" in completed.stderr
     assert "events.csv" in completed.stderr
     assert "Traceback" not in completed.stderr
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    _assert_artifacts_match_output_directory(out_dir, list(sentinels))
     for artifact, content in sentinels.items():
         assert (out_dir / artifact).read_text() == content
     assert not (out_dir / "manifest.yaml").exists()
@@ -1476,7 +1476,7 @@ def test_run_api_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -
 
     result = run_experiment(DEFAULT_OUTPUTS, seed=1, out_dir=out_dir)
 
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(expected_artifacts)
+    _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
     assert result.config.outputs.write_manifest is True
     assert result.config.outputs.write_metrics is True
     assert result.config.outputs.write_events is True
@@ -1518,8 +1518,8 @@ def test_run_api_omitted_outputs_same_seed_reproduces_byte_identical_artifacts(
     first_result = run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=first)
     second_result = run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=second)
 
-    assert sorted(path.name for path in first.iterdir()) == sorted(artifacts)
-    assert sorted(path.name for path in second.iterdir()) == sorted(artifacts)
+    _assert_artifacts_match_output_directory(first, artifacts)
+    _assert_artifacts_match_output_directory(second, artifacts)
     assert first_result.config.to_dict() == second_result.config.to_dict()
     assert first_result.seed == second_result.seed == 17
     assert first_result.metrics == second_result.metrics
@@ -1547,7 +1547,7 @@ def test_run_api_omitted_outputs_refuses_collision_without_partial_artifacts(
     assert str(out_dir) in message
     assert "config.yaml" in message
     assert "events.csv" in message
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    _assert_artifacts_match_output_directory(out_dir, list(sentinels))
     for artifact, content in sentinels.items():
         assert (out_dir / artifact).read_text() == content
     assert not (out_dir / "manifest.yaml").exists()
@@ -1701,7 +1701,7 @@ def test_documented_cli_same_seed_reproduces_byte_identical_a0_artifacts(tmp_pat
 
         assert completed.returncode == 0
         assert completed.stderr == ""
-        assert sorted(path.name for path in out_dir.iterdir()) == sorted(artifacts)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
 
     for artifact in artifacts:
         assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
@@ -1740,7 +1740,7 @@ def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Pa
     assert "error:" in second.stderr
     assert "already contains run artifacts" in second.stderr
     assert "Traceback" not in second.stderr
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(artifacts)
+    _assert_artifacts_match_output_directory(out_dir, artifacts)
     assert after == before
 
 
@@ -1770,7 +1770,7 @@ def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> No
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert sorted(path.name for path in out_dir.iterdir()) == expected_artifacts
+    _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     assert manifest["artifacts"] == expected_artifacts
@@ -1828,7 +1828,7 @@ def test_run_api_respects_no_manifest_fixture_outputs(tmp_path: Path) -> None:
 
     result = run_experiment(NO_MANIFEST, seed=17, out_dir=out_dir)
 
-    assert sorted(path.name for path in out_dir.iterdir()) == expected_artifacts
+    _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
     assert (out_dir / "manifest.yaml").read_text() == stale_manifest
     assert result.config.outputs.write_manifest is False
     assert len(result.metrics) == 3
@@ -1859,7 +1859,7 @@ def test_run_api_without_manifest_refuses_enabled_artifact_collisions(tmp_path: 
     assert "metrics.csv" in message
     assert "summary.md" in message
     assert "manifest.yaml" not in message
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    _assert_artifacts_match_output_directory(out_dir, list(sentinels))
     for artifact, content in sentinels.items():
         assert (out_dir / artifact).read_text() == content
     assert not (out_dir / "config.yaml").exists()
@@ -1898,7 +1898,7 @@ def test_documented_cli_same_seed_without_manifest_reproduces_byte_identical_art
 
         assert completed.returncode == 0
         assert completed.stderr == ""
-        assert sorted(path.name for path in out_dir.iterdir()) == sorted(artifacts)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
         assert not (out_dir / "manifest.yaml").exists()
 
     for artifact in artifacts:
@@ -1942,7 +1942,7 @@ def test_documented_cli_without_manifest_refuses_partial_output_directory(
     assert "events.csv" in completed.stderr
     assert "manifest.yaml" not in completed.stderr
     assert "Traceback" not in completed.stderr
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    _assert_artifacts_match_output_directory(out_dir, list(sentinels))
     for artifact, content in sentinels.items():
         assert (out_dir / artifact).read_text() == content
     assert not (out_dir / "metrics.csv").exists()
@@ -2159,7 +2159,7 @@ def test_run_experiment_refuses_to_overwrite_complete_run_directory(tmp_path: Pa
         run_experiment(CONFIG, seed=17, out_dir=out_dir)
 
     after = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(artifacts)
+    _assert_artifacts_match_output_directory(out_dir, artifacts)
     assert after == before
 
 
@@ -2178,7 +2178,7 @@ def test_run_experiment_refuses_partial_output_directory_without_writing_artifac
     with pytest.raises(FileExistsError, match="already contains run artifacts"):
         run_experiment(CONFIG, seed=17, out_dir=out_dir)
 
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    _assert_artifacts_match_output_directory(out_dir, list(sentinels))
     for artifact, content in sentinels.items():
         assert (out_dir / artifact).read_text() == content
     assert not (out_dir / "manifest.yaml").exists()
@@ -2208,7 +2208,7 @@ def test_run_experiment_output_artifact_collision_does_not_write_partial_artifac
         run_experiment(CONFIG, seed=1, out_dir=out_dir)
 
     assert existing_metrics.read_text() == "sentinel metrics\n"
-    assert sorted(path.name for path in out_dir.iterdir()) == ["metrics.csv"]
+    _assert_artifacts_match_output_directory(out_dir, ["metrics.csv"])
     assert not (out_dir / "config.yaml").exists()
     assert not (out_dir / "manifest.yaml").exists()
     assert not (out_dir / "events.csv").exists()
@@ -2247,9 +2247,7 @@ def test_run_experiment_ignores_disabled_output_collisions_but_blocks_enabled_ar
         run_experiment(MANIFEST_ONLY, seed=17, out_dir=blocked_dir)
 
     assert (blocked_dir / "manifest.yaml").read_text() == "sentinel enabled manifest\n"
-    assert sorted(path.name for path in blocked_dir.iterdir()) == sorted(
-        [*disabled_sentinels, "manifest.yaml"]
-    )
+    _assert_artifacts_match_output_directory(blocked_dir, [*disabled_sentinels, "manifest.yaml"])
     assert not (blocked_dir / "config.yaml").exists()
     for artifact, content in disabled_sentinels.items():
         assert (blocked_dir / artifact).read_text() == content
@@ -2280,8 +2278,8 @@ def test_run_experiment_config_only_outputs_succeed_and_are_byte_stable(
     first_result = run_experiment(CONFIG_ONLY, seed=17, out_dir=first)
     second_result = run_experiment(CONFIG_ONLY, seed=17, out_dir=second)
 
-    assert sorted(path.name for path in first.iterdir()) == ["config.yaml"]
-    assert sorted(path.name for path in second.iterdir()) == ["config.yaml"]
+    _assert_artifacts_match_output_directory(first, ["config.yaml"])
+    _assert_artifacts_match_output_directory(second, ["config.yaml"])
     assert (first / "config.yaml").read_bytes() == (second / "config.yaml").read_bytes()
     normalized_config = yaml.safe_load((first / "config.yaml").read_text())
     assert normalized_config["outputs"] == {
@@ -2308,7 +2306,7 @@ def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(
     with pytest.raises(FileExistsError, match="already contains run artifacts: config.yaml"):
         run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
 
-    assert sorted(path.name for path in out_dir.iterdir()) == ["config.yaml"]
+    _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
     assert (out_dir / "config.yaml").read_bytes() == before
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
@@ -2345,9 +2343,7 @@ def test_run_experiment_config_only_rerun_preserves_disabled_artifact_sentinels(
     assert "metrics.csv" not in message
     assert "events.csv" not in message
     assert "summary.md" not in message
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        ["config.yaml", *disabled_sentinels]
-    )
+    _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *disabled_sentinels])
     assert {path.name: path.read_bytes() for path in out_dir.iterdir()} == before
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
@@ -2528,9 +2524,7 @@ def test_cli_ignores_disabled_output_collisions_but_blocks_enabled_artifacts(
     assert "summary.md" not in blocked.stderr
     assert "Traceback" not in blocked.stderr
     assert (blocked_dir / "manifest.yaml").read_text() == "sentinel enabled manifest\n"
-    assert sorted(path.name for path in blocked_dir.iterdir()) == sorted(
-        [*disabled_sentinels, "manifest.yaml"]
-    )
+    _assert_artifacts_match_output_directory(blocked_dir, [*disabled_sentinels, "manifest.yaml"])
     assert not (blocked_dir / "config.yaml").exists()
     for artifact, content in disabled_sentinels.items():
         assert (blocked_dir / artifact).read_text() == content
@@ -2599,7 +2593,7 @@ def test_cli_config_only_outputs_succeed_and_are_byte_stable(tmp_path: Path) -> 
 
         assert completed.returncode == 0
         assert completed.stderr == ""
-        assert sorted(path.name for path in out_dir.iterdir()) == ["config.yaml"]
+        _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
 
     assert (first / "config.yaml").read_bytes() == (second / "config.yaml").read_bytes()
     normalized_config = yaml.safe_load((first / "config.yaml").read_text())
@@ -2643,7 +2637,7 @@ def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Pa
     assert "events.csv" not in second.stderr
     assert "summary.md" not in second.stderr
     assert "Traceback" not in second.stderr
-    assert sorted(path.name for path in out_dir.iterdir()) == ["config.yaml"]
+    _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
     assert (out_dir / "config.yaml").read_bytes() == before
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
@@ -2693,9 +2687,7 @@ def test_cli_config_only_rerun_preserves_disabled_artifact_sentinels(tmp_path: P
     assert "events.csv" not in second.stderr
     assert "summary.md" not in second.stderr
     assert "Traceback" not in second.stderr
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        ["config.yaml", *disabled_sentinels]
-    )
+    _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *disabled_sentinels])
     assert {path.name: path.read_bytes() for path in out_dir.iterdir()} == before
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
@@ -3067,8 +3059,9 @@ def _assert_manifest_only_preserves_stale_disabled_artifacts(
 ) -> None:
     assert (out_dir / "config.yaml").is_file()
     assert (out_dir / "manifest.yaml").is_file()
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        ["config.yaml", "manifest.yaml", *stale_disabled_artifacts]
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        ["config.yaml", "manifest.yaml", *stale_disabled_artifacts],
     )
     for artifact, content in stale_disabled_artifacts.items():
         assert (out_dir / artifact).read_bytes() == content
@@ -3096,8 +3089,9 @@ def _assert_manifest_only_collision_preserves_stale_disabled_artifacts(
     for artifact, content in stale_disabled_artifacts.items():
         assert (out_dir / artifact).read_bytes() == content
     assert (out_dir / collision_artifact).read_bytes() == collision_content
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        {*stale_disabled_artifacts, collision_artifact}
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        [*stale_disabled_artifacts, collision_artifact],
     )
 
 
@@ -3143,9 +3137,7 @@ def _assert_config_only_preserves_stale_disabled_artifacts(
     stale_disabled_artifacts: dict[str, bytes],
 ) -> None:
     assert (out_dir / "config.yaml").is_file()
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        ["config.yaml", *stale_disabled_artifacts]
-    )
+    _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *stale_disabled_artifacts])
     for artifact, content in stale_disabled_artifacts.items():
         assert (out_dir / artifact).read_bytes() == content
 
@@ -3166,9 +3158,7 @@ def _assert_config_only_collision_preserves_stale_disabled_artifacts(
     collision_content: bytes,
 ) -> None:
     assert (out_dir / "config.yaml").read_bytes() == collision_content
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        ["config.yaml", *stale_disabled_artifacts]
-    )
+    _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *stale_disabled_artifacts])
     for artifact, content in stale_disabled_artifacts.items():
         assert (out_dir / artifact).read_bytes() == content
 
@@ -3278,9 +3268,7 @@ def _assert_no_manifest_collision_preserves_stale_manifest(
 ) -> None:
     assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
     assert (out_dir / collision_artifact).read_bytes() == collision_content
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        {"manifest.yaml", collision_artifact}
-    )
+    _assert_artifacts_match_output_directory(out_dir, ["manifest.yaml", collision_artifact])
 
 
 def _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(
