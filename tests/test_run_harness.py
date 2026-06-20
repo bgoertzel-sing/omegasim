@@ -1437,6 +1437,54 @@ outputs:
         assert (blocked_dir / artifact).read_text() == content
 
 
+def test_run_experiment_config_artifact_collision_blocks_when_all_optional_outputs_disabled(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "config_only_collision.yaml"
+    out_dir = tmp_path / "config_only_collision"
+    config_path.write_text(
+        """
+run:
+  experiment_id: config_only_collision
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+    disabled_sentinels = {
+        "metrics.csv": "sentinel disabled metrics\n",
+        "events.csv": "sentinel disabled events\n",
+        "summary.md": "sentinel disabled summary\n",
+        "manifest.yaml": "sentinel disabled manifest\n",
+    }
+    out_dir.mkdir()
+    (out_dir / "config.yaml").write_text("sentinel mandatory config\n")
+    for artifact, content in disabled_sentinels.items():
+        (out_dir / artifact).write_text(content)
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts: config.yaml"):
+        run_experiment(config_path, seed=17, out_dir=out_dir)
+
+    assert (out_dir / "config.yaml").read_text() == "sentinel mandatory config\n"
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        ["config.yaml", *disabled_sentinels]
+    )
+    for artifact, content in disabled_sentinels.items():
+        assert (out_dir / artifact).read_text() == content
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
@@ -1634,6 +1682,77 @@ outputs:
     assert not (blocked_dir / "config.yaml").exists()
     for artifact, content in disabled_sentinels.items():
         assert (blocked_dir / artifact).read_text() == content
+
+
+def test_cli_config_artifact_collision_blocks_when_all_optional_outputs_disabled(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "config_only_cli_collision.yaml"
+    out_dir = tmp_path / "config_only_cli_collision"
+    config_path.write_text(
+        """
+run:
+  experiment_id: config_only_cli_collision
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+    disabled_sentinels = {
+        "metrics.csv": "sentinel disabled metrics\n",
+        "events.csv": "sentinel disabled events\n",
+        "summary.md": "sentinel disabled summary\n",
+        "manifest.yaml": "sentinel disabled manifest\n",
+    }
+    out_dir.mkdir()
+    (out_dir / "config.yaml").write_text("sentinel mandatory config\n")
+    for artifact, content in disabled_sentinels.items():
+        (out_dir / artifact).write_text(content)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "17",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error:" in completed.stderr
+    assert str(out_dir) in completed.stderr
+    assert "config.yaml" in completed.stderr
+    assert "manifest.yaml" not in completed.stderr
+    assert "metrics.csv" not in completed.stderr
+    assert "events.csv" not in completed.stderr
+    assert "summary.md" not in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert (out_dir / "config.yaml").read_text() == "sentinel mandatory config\n"
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        ["config.yaml", *disabled_sentinels]
+    )
+    for artifact, content in disabled_sentinels.items():
+        assert (out_dir / artifact).read_text() == content
 
 
 def test_cli_output_path_file_does_not_overwrite_or_traceback(tmp_path: Path) -> None:

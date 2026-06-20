@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 disabled optional artifact collision regression
-- Changed: added direct API and CLI regression coverage proving disabled optional artifacts (`metrics.csv`, `events.csv`, `summary.md`) are ignored when those outputs are off, while an enabled artifact collision (`manifest.yaml`) still blocks the run before `config.yaml` or partial artifacts are written.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_run_experiment_ignores_disabled_output_collisions_but_blocks_enabled_artifacts tests/test_run_harness.py::test_cli_ignores_disabled_output_collisions_but_blocks_enabled_artifacts -q` passed with 2 tests; `.venv-conda/bin/python -m pytest -q` passed with 59 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 mandatory config artifact collision regression
+- Changed: added direct API and CLI regression coverage proving `config.yaml` remains a mandatory run artifact and blocks reruns even when every optional output flag is disabled, while disabled optional artifact sentinels are ignored and left untouched.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_run_experiment_config_artifact_collision_blocks_when_all_optional_outputs_disabled tests/test_run_harness.py::test_cli_config_artifact_collision_blocks_when_all_optional_outputs_disabled -q` passed with 2 tests; `.venv-conda/bin/python -m pytest -q` passed with 61 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a focused regression that `config.yaml` remains the first mandatory artifact and always blocks reruns even when every optional output flag is disabled.
+- Next step: add focused direct API and CLI regressions that a config-only run with all optional outputs disabled succeeds, writes exactly `config.yaml`, and is byte-stable for the same seed.
