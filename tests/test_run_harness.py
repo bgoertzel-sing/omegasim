@@ -662,6 +662,46 @@ def test_documented_cli_smoke_writes_required_a0_artifacts(tmp_path: Path) -> No
     assert manifest["experiment_id"] == "a0_smoke"
 
 
+def test_documented_cli_smoke_writes_expected_metrics_and_events_rows(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(CONFIG),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    config = load_config(CONFIG)
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    assert len(metric_rows) == config.run.ticks
+    assert len(event_rows) == config.run.ticks * config.model.agent_count
+    assert [int(row["tick"]) for row in metric_rows] == list(range(config.run.ticks))
+
+    events_by_tick = Counter(int(row["tick"]) for row in event_rows)
+    assert events_by_tick == {
+        tick: config.model.agent_count
+        for tick in range(config.run.ticks)
+    }
+
+
 def test_cli_validation_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "invalid_actions.yaml"
     out_dir = tmp_path / "invalid_run"
