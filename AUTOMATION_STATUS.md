@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 documented CLI different-seed divergence regression
-- Changed: added a documented CLI regression for `python -m ohdyn.run --config configs/a0_smoke.yaml --seed ... --out ...` that runs seeds 17 and 18, asserts the A0/A1 metrics/events schemas and row counts remain stable, asserts event streams differ, and confirms manifest model shape/actions remain unchanged while recording distinct seeds.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_different_seeds_change_events_but_preserve_schema -q` passed; `.venv-conda/bin/python -m pytest -q` passed with 41 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 documented CLI overwrite-refusal regression
+- Changed: added a documented CLI regression for `python -m ohdyn.run --config configs/a0_smoke.yaml --seed 17 --out ...` that creates a complete run directory, reruns the same command, asserts the CLI exits with a clean argparse error instead of a traceback, and verifies all existing artifacts remain byte-identical with no extra files.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_refuses_to_overwrite_complete_run_directory -q` passed; `.venv-conda/bin/python -m pytest -q` passed with 42 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a smoke regression that the documented CLI refuses to overwrite an existing complete run directory and leaves all existing artifacts byte-identical.
+- Next step: add a smoke regression that a documented CLI run with disabled optional outputs writes only `config.yaml` plus the enabled artifacts and still records the exact artifact list in `manifest.yaml`.

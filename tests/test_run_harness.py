@@ -813,6 +813,43 @@ def test_documented_cli_same_seed_reproduces_byte_identical_a0_artifacts(tmp_pat
         assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
 
 
+def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed17"
+    artifacts = [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+    command = [
+        sys.executable,
+        "-m",
+        "ohdyn.run",
+        "--config",
+        str(CONFIG),
+        "--seed",
+        "17",
+        "--out",
+        str(out_dir),
+    ]
+
+    first = subprocess.run(command, capture_output=True, text=True, check=False)
+    before = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
+
+    second = subprocess.run(command, capture_output=True, text=True, check=False)
+    after = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
+
+    assert first.returncode == 0
+    assert first.stderr == ""
+    assert second.returncode != 0
+    assert "error:" in second.stderr
+    assert "already contains run artifacts" in second.stderr
+    assert "Traceback" not in second.stderr
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(artifacts)
+    assert after == before
+
+
 def test_documented_cli_different_seeds_change_events_but_preserve_schema(tmp_path: Path) -> None:
     first = tmp_path / "a0_seed17"
     second = tmp_path / "a0_seed18"
