@@ -754,6 +754,62 @@ def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
     assert not (out_dir / "summary.md").exists()
 
 
+def test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinels(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "manifest_only_cli_stale_disabled"
+    out_dir.mkdir()
+    stale_disabled_artifacts = {
+        "metrics.csv": b"stale disabled metrics sentinel\n",
+        "events.csv": b"stale disabled events sentinel\n",
+        "summary.md": b"stale disabled summary sentinel\n",
+    }
+    for artifact, content in stale_disabled_artifacts.items():
+        (out_dir / artifact).write_bytes(content)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(MANIFEST_ONLY),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert (out_dir / "config.yaml").is_file()
+    assert (out_dir / "manifest.yaml").is_file()
+    assert sorted(path.name for path in out_dir.iterdir()) == [
+        "config.yaml",
+        "events.csv",
+        "manifest.yaml",
+        "metrics.csv",
+        "summary.md",
+    ]
+    for artifact, content in stale_disabled_artifacts.items():
+        assert (out_dir / artifact).read_bytes() == content
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["outputs"] == {
+        "write_manifest": True,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+    assert manifest["seed"] == 1
+    assert manifest["experiment_id"] == "a0_manifest_only"
+
+
 def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_contents(
     tmp_path: Path,
 ) -> None:
