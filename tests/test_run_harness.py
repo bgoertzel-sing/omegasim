@@ -2320,26 +2320,16 @@ def test_run_experiment_config_artifact_collision_blocks_when_all_optional_outpu
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "config_only_collision"
-    disabled_sentinels = {
-        "metrics.csv": "sentinel disabled metrics\n",
-        "events.csv": "sentinel disabled events\n",
-        "summary.md": "sentinel disabled summary\n",
-        "manifest.yaml": "sentinel disabled manifest\n",
-    }
-    out_dir.mkdir()
-    (out_dir / "config.yaml").write_text("sentinel mandatory config\n")
-    for artifact, content in disabled_sentinels.items():
-        (out_dir / artifact).write_text(content)
+    stale_disabled_artifacts, collision_content = _write_config_only_collision_sentinels(out_dir)
 
     with pytest.raises(FileExistsError, match="already contains run artifacts: config.yaml"):
         run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
 
-    assert (out_dir / "config.yaml").read_text() == "sentinel mandatory config\n"
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        ["config.yaml", *disabled_sentinels]
+    _assert_config_only_collision_preserves_stale_disabled_artifacts(
+        out_dir,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+        collision_content=collision_content,
     )
-    for artifact, content in disabled_sentinels.items():
-        assert (out_dir / artifact).read_text() == content
 
 
 def test_run_experiment_config_only_outputs_succeed_and_are_byte_stable(
@@ -2611,16 +2601,7 @@ def test_cli_config_artifact_collision_blocks_when_all_optional_outputs_disabled
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "config_only_cli_collision"
-    disabled_sentinels = {
-        "metrics.csv": "sentinel disabled metrics\n",
-        "events.csv": "sentinel disabled events\n",
-        "summary.md": "sentinel disabled summary\n",
-        "manifest.yaml": "sentinel disabled manifest\n",
-    }
-    out_dir.mkdir()
-    (out_dir / "config.yaml").write_text("sentinel mandatory config\n")
-    for artifact, content in disabled_sentinels.items():
-        (out_dir / artifact).write_text(content)
+    stale_disabled_artifacts, collision_content = _write_config_only_collision_sentinels(out_dir)
 
     completed = subprocess.run(
         [
@@ -2648,12 +2629,11 @@ def test_cli_config_artifact_collision_blocks_when_all_optional_outputs_disabled
     assert "events.csv" not in completed.stderr
     assert "summary.md" not in completed.stderr
     assert "Traceback" not in completed.stderr
-    assert (out_dir / "config.yaml").read_text() == "sentinel mandatory config\n"
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        ["config.yaml", *disabled_sentinels]
+    _assert_config_only_collision_preserves_stale_disabled_artifacts(
+        out_dir,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+        collision_content=collision_content,
     )
-    for artifact, content in disabled_sentinels.items():
-        assert (out_dir / artifact).read_text() == content
 
 
 def test_cli_config_only_outputs_succeed_and_are_byte_stable(tmp_path: Path) -> None:
@@ -3224,6 +3204,29 @@ def _assert_config_only_preserves_stale_disabled_artifacts(
     stale_disabled_artifacts: dict[str, bytes],
 ) -> None:
     assert (out_dir / "config.yaml").is_file()
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        ["config.yaml", *stale_disabled_artifacts]
+    )
+    for artifact, content in stale_disabled_artifacts.items():
+        assert (out_dir / artifact).read_bytes() == content
+
+
+def _write_config_only_collision_sentinels(out_dir: Path) -> tuple[dict[str, bytes], bytes]:
+    stale_disabled_artifacts = _write_config_only_disabled_artifact_sentinels(out_dir)
+    collision_content = b"sentinel mandatory config\n"
+
+    (out_dir / "config.yaml").write_bytes(collision_content)
+
+    return stale_disabled_artifacts, collision_content
+
+
+def _assert_config_only_collision_preserves_stale_disabled_artifacts(
+    out_dir: Path,
+    *,
+    stale_disabled_artifacts: dict[str, bytes],
+    collision_content: bytes,
+) -> None:
+    assert (out_dir / "config.yaml").read_bytes() == collision_content
     assert sorted(path.name for path in out_dir.iterdir()) == sorted(
         ["config.yaml", *stale_disabled_artifacts]
     )
