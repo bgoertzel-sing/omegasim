@@ -1375,6 +1375,68 @@ def test_run_experiment_output_artifact_collision_does_not_write_partial_artifac
     assert not (out_dir / "summary.md").exists()
 
 
+def test_run_experiment_ignores_disabled_output_collisions_but_blocks_enabled_artifacts(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "disabled_optional_collisions.yaml"
+    success_dir = tmp_path / "disabled_optional_collisions_success"
+    blocked_dir = tmp_path / "disabled_optional_collisions_blocked"
+    config_path.write_text(
+        """
+run:
+  experiment_id: disabled_optional_collisions
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: true
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+    disabled_sentinels = {
+        "metrics.csv": "sentinel disabled metrics\n",
+        "events.csv": "sentinel disabled events\n",
+        "summary.md": "sentinel disabled summary\n",
+    }
+    success_dir.mkdir()
+    for artifact, content in disabled_sentinels.items():
+        (success_dir / artifact).write_text(content)
+
+    run_experiment(config_path, seed=17, out_dir=success_dir)
+
+    assert (success_dir / "config.yaml").is_file()
+    assert (success_dir / "manifest.yaml").is_file()
+    for artifact, content in disabled_sentinels.items():
+        assert (success_dir / artifact).read_text() == content
+    manifest = yaml.safe_load((success_dir / "manifest.yaml").read_text())
+    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+
+    blocked_dir.mkdir()
+    for artifact, content in disabled_sentinels.items():
+        (blocked_dir / artifact).write_text(content)
+    (blocked_dir / "manifest.yaml").write_text("sentinel enabled manifest\n")
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts"):
+        run_experiment(config_path, seed=17, out_dir=blocked_dir)
+
+    assert (blocked_dir / "manifest.yaml").read_text() == "sentinel enabled manifest\n"
+    assert sorted(path.name for path in blocked_dir.iterdir()) == sorted(
+        [*disabled_sentinels, "manifest.yaml"]
+    )
+    assert not (blocked_dir / "config.yaml").exists()
+    for artifact, content in disabled_sentinels.items():
+        assert (blocked_dir / artifact).read_text() == content
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
@@ -1482,6 +1544,96 @@ def test_cli_output_artifact_collision_does_not_write_partial_artifacts(tmp_path
     assert not (out_dir / "manifest.yaml").exists()
     assert not (out_dir / "events.csv").exists()
     assert not (out_dir / "summary.md").exists()
+
+
+def test_cli_ignores_disabled_output_collisions_but_blocks_enabled_artifacts(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "disabled_optional_cli_collisions.yaml"
+    success_dir = tmp_path / "disabled_optional_cli_collisions_success"
+    blocked_dir = tmp_path / "disabled_optional_cli_collisions_blocked"
+    config_path.write_text(
+        """
+run:
+  experiment_id: disabled_optional_cli_collisions
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: true
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+    disabled_sentinels = {
+        "metrics.csv": "sentinel disabled metrics\n",
+        "events.csv": "sentinel disabled events\n",
+        "summary.md": "sentinel disabled summary\n",
+    }
+    command = [
+        sys.executable,
+        "-m",
+        "ohdyn.run",
+        "--config",
+        str(config_path),
+        "--seed",
+        "17",
+    ]
+    success_dir.mkdir()
+    for artifact, content in disabled_sentinels.items():
+        (success_dir / artifact).write_text(content)
+
+    success = subprocess.run(
+        [*command, "--out", str(success_dir)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert success.returncode == 0
+    assert success.stderr == ""
+    assert (success_dir / "config.yaml").is_file()
+    assert (success_dir / "manifest.yaml").is_file()
+    for artifact, content in disabled_sentinels.items():
+        assert (success_dir / artifact).read_text() == content
+    manifest = yaml.safe_load((success_dir / "manifest.yaml").read_text())
+    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+
+    blocked_dir.mkdir()
+    for artifact, content in disabled_sentinels.items():
+        (blocked_dir / artifact).write_text(content)
+    (blocked_dir / "manifest.yaml").write_text("sentinel enabled manifest\n")
+
+    blocked = subprocess.run(
+        [*command, "--out", str(blocked_dir)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert blocked.returncode != 0
+    assert "error:" in blocked.stderr
+    assert str(blocked_dir) in blocked.stderr
+    assert "manifest.yaml" in blocked.stderr
+    assert "metrics.csv" not in blocked.stderr
+    assert "events.csv" not in blocked.stderr
+    assert "summary.md" not in blocked.stderr
+    assert "Traceback" not in blocked.stderr
+    assert (blocked_dir / "manifest.yaml").read_text() == "sentinel enabled manifest\n"
+    assert sorted(path.name for path in blocked_dir.iterdir()) == sorted(
+        [*disabled_sentinels, "manifest.yaml"]
+    )
+    assert not (blocked_dir / "config.yaml").exists()
+    for artifact, content in disabled_sentinels.items():
+        assert (blocked_dir / artifact).read_text() == content
 
 
 def test_cli_output_path_file_does_not_overwrite_or_traceback(tmp_path: Path) -> None:

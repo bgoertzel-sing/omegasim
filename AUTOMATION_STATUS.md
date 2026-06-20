@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 direct API optional artifact collision regression
-- Changed: added direct `run_experiment` regression coverage for refusing a run directory that already contains a single optional artifact (`metrics.csv`), proving API callers preserve the sentinel file and do not write partial artifacts before raising.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_run_experiment_output_artifact_collision_does_not_write_partial_artifacts -q` passed with 1 test; `.venv-conda/bin/python -m pytest -q` passed with 57 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 disabled optional artifact collision regression
+- Changed: added direct API and CLI regression coverage proving disabled optional artifacts (`metrics.csv`, `events.csv`, `summary.md`) are ignored when those outputs are off, while an enabled artifact collision (`manifest.yaml`) still blocks the run before `config.yaml` or partial artifacts are written.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_run_experiment_ignores_disabled_output_collisions_but_blocks_enabled_artifacts tests/test_run_harness.py::test_cli_ignores_disabled_output_collisions_but_blocks_enabled_artifacts -q` passed with 2 tests; `.venv-conda/bin/python -m pytest -q` passed with 59 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add CLI/API regression coverage for artifact collision behavior when optional outputs are disabled, ensuring disabled artifacts are ignored while enabled artifacts still block writes.
+- Next step: add a focused regression that `config.yaml` remains the first mandatory artifact and always blocks reruns even when every optional output flag is disabled.
