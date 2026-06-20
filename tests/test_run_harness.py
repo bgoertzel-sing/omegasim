@@ -631,6 +631,21 @@ def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> N
     assert "- write_summary: enabled" in summary
 
 
+def test_summary_written_artifacts_match_manifest_artifacts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    written_artifacts_line = next(
+        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
+    )
+    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+
+    assert summary_artifacts == manifest["artifacts"]
+
+
 def test_summary_records_disabled_manifest_output_flag(tmp_path: Path) -> None:
     out_dir = tmp_path / "no_manifest"
 
