@@ -1158,11 +1158,10 @@ def test_documented_cli_no_manifest_refuses_enabled_artifact_collisions_while_pr
     collision_artifact: str,
 ) -> None:
     out_dir = tmp_path / f"no_manifest_cli_collision_{collision_artifact.replace('.', '_')}"
-    out_dir.mkdir()
-    stale_manifest = b"stale disabled manifest sentinel\n"
-    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
-    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
-    (out_dir / collision_artifact).write_bytes(collision_content)
+    stale_manifest, collision_content = _write_no_manifest_collision_sentinels(
+        out_dir,
+        collision_artifact,
+    )
 
     completed = subprocess.run(
         [
@@ -1188,10 +1187,11 @@ def test_documented_cli_no_manifest_refuses_enabled_artifact_collisions_while_pr
     assert collision_artifact in completed.stderr
     assert "manifest.yaml" not in completed.stderr
     assert "Traceback" not in completed.stderr
-    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
-    assert (out_dir / collision_artifact).read_bytes() == collision_content
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        {"manifest.yaml", collision_artifact}
+    _assert_no_manifest_collision_preserves_stale_manifest(
+        out_dir,
+        collision_artifact,
+        stale_manifest=stale_manifest,
+        collision_content=collision_content,
     )
 
 
@@ -1241,19 +1241,19 @@ def test_run_api_no_manifest_refuses_enabled_artifact_collisions_while_ignoring_
     collision_artifact: str,
 ) -> None:
     out_dir = tmp_path / f"no_manifest_api_collision_{collision_artifact.replace('.', '_')}"
-    out_dir.mkdir()
-    stale_manifest = b"stale disabled manifest sentinel\n"
-    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
-    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
-    (out_dir / collision_artifact).write_bytes(collision_content)
+    stale_manifest, collision_content = _write_no_manifest_collision_sentinels(
+        out_dir,
+        collision_artifact,
+    )
 
     with pytest.raises(FileExistsError, match=collision_artifact):
         run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
 
-    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
-    assert (out_dir / collision_artifact).read_bytes() == collision_content
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        {"manifest.yaml", collision_artifact}
+    _assert_no_manifest_collision_preserves_stale_manifest(
+        out_dir,
+        collision_artifact,
+        stale_manifest=stale_manifest,
+        collision_content=collision_content,
     )
 
 
@@ -3250,6 +3250,34 @@ def _assert_no_manifest_writes_enabled_artifacts(
         assert not (out_dir / "manifest.yaml").exists()
     else:
         assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
+
+
+def _write_no_manifest_collision_sentinels(
+    out_dir: Path,
+    collision_artifact: str,
+) -> tuple[bytes, bytes]:
+    out_dir.mkdir()
+    stale_manifest = b"stale disabled manifest sentinel\n"
+    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
+
+    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
+    (out_dir / collision_artifact).write_bytes(collision_content)
+
+    return stale_manifest, collision_content
+
+
+def _assert_no_manifest_collision_preserves_stale_manifest(
+    out_dir: Path,
+    collision_artifact: str,
+    *,
+    stale_manifest: bytes,
+    collision_content: bytes,
+) -> None:
+    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
+    assert (out_dir / collision_artifact).read_bytes() == collision_content
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        {"manifest.yaml", collision_artifact}
+    )
 
 
 def _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(
