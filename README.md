@@ -110,7 +110,7 @@ python -m ohdyn.run --config configs/a0_no_manifest.yaml --seed 1 --out runs/a0_
 
 `events.csv` has one row per agent action per tick. The current fields are `tick`, `event_type`, `agent_id`, `action`, `target_id`, `task_id`, `work_units`, `remaining_work`, and `completed`. Event types are `agent_idle`, `message_sent`, `task_created`, and `task_worked`.
 
-`summary.md` is a human-readable run summary with bus, event, task, queue pressure, queue age, artifact schema provenance, lobe total, lobe transition, lobe dwell-run, and role/action aggregate sections. The schema provenance section reports the emitted metrics/event field counts, lobe/queue/role-action schema counts, and the helper names that define the CSV schemas mirrored in `manifest.yaml`.
+`summary.md` is a human-readable run summary with bus, event, task, queue pressure, queue age, written-artifact/output-flag, artifact schema provenance, lobe total, lobe transition, lobe dwell-run, and role/action aggregate sections. The written-artifact/output-flag section reports the exact artifacts written for the run and whether each optional output class was enabled. The schema provenance section reports the emitted metrics/event field counts, lobe/queue/role-action schema counts, and the helper names that define the CSV schemas mirrored in `manifest.yaml`.
 
 ## Early Guardrails
 

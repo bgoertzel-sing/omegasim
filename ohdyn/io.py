@@ -203,6 +203,10 @@ def _summary(result: SimulationResult) -> str:
         f"- created-worked balance: {_created_worked_balance(result)}",
         f"- work-completion gap: {_work_completion_gap(result)}",
         "",
+        "## Run artifacts and outputs",
+        "",
+        *_artifact_output_summary(result),
+        "",
         "## Artifact schema provenance",
         "",
         *_artifact_schema_provenance(result),
@@ -270,6 +274,17 @@ def _baseline_lobe_totals(result: SimulationResult) -> dict[str, int]:
 def _event_type_totals(result: SimulationResult) -> dict[str, int]:
     counts = Counter(str(event.get("event_type", "")) for event in result.events)
     return dict(sorted((event_type, count) for event_type, count in counts.items() if event_type))
+
+
+def _artifact_output_summary(result: SimulationResult) -> list[str]:
+    output_flags = asdict(result.config.outputs)
+    return [
+        f"- written artifacts: {', '.join(_artifact_names(result))}",
+        *[
+            f"- {name}: {'enabled' if enabled else 'disabled'}"
+            for name, enabled in output_flags.items()
+        ],
+    ]
 
 
 def _artifact_schema_provenance(result: SimulationResult) -> list[str]:

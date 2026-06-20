@@ -617,6 +617,34 @@ def test_summary_records_artifact_schema_provenance(tmp_path: Path) -> None:
     assert manifest["model"]["events"]["fields"] == events_header
 
 
+def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "## Run artifacts and outputs" in summary
+    assert "- written artifacts: config.yaml, manifest.yaml, metrics.csv, events.csv, summary.md" in summary
+    assert "- write_manifest: enabled" in summary
+    assert "- write_metrics: enabled" in summary
+    assert "- write_events: enabled" in summary
+    assert "- write_summary: enabled" in summary
+
+
+def test_summary_records_disabled_manifest_output_flag(tmp_path: Path) -> None:
+    out_dir = tmp_path / "no_manifest"
+
+    run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "- written artifacts: config.yaml, metrics.csv, events.csv, summary.md" in summary
+    assert "- write_manifest: disabled" in summary
+    assert "- write_metrics: enabled" in summary
+    assert "- write_events: enabled" in summary
+    assert "- write_summary: enabled" in summary
+    assert not (out_dir / "manifest.yaml").exists()
+
+
 def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "manifest_only"
 
