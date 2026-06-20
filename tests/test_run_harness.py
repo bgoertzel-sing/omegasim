@@ -740,6 +740,55 @@ def test_documented_cli_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: 
     assert manifest["experiment_id"] == "a0_default_outputs"
 
 
+def test_documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_artifacts(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "default_outputs_seed17_first"
+    second = tmp_path / "default_outputs_seed17_second"
+    artifacts = [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    for out_dir in [first, second]:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "ohdyn.run",
+                "--config",
+                str(DEFAULT_OUTPUTS),
+                "--seed",
+                "17",
+                "--out",
+                str(out_dir),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert completed.returncode == 0
+        assert completed.stderr == ""
+        assert sorted(path.name for path in out_dir.iterdir()) == sorted(artifacts)
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    assert first_manifest["experiment_id"] == "a0_default_outputs"
+    assert second_manifest["experiment_id"] == "a0_default_outputs"
+    assert first_manifest["outputs"] == second_manifest["outputs"] == {
+        "write_manifest": True,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    for artifact in artifacts:
+        assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
+
+
 def test_run_api_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "default_outputs_api_seed1"
     expected_artifacts = [
