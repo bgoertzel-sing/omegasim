@@ -62,6 +62,12 @@ outputs:
 
 With all optional outputs disabled, the run still simulates normally and writes only `config.yaml`. Output directories are append-safe: a run refuses to start when any artifact it would write already exists. Disabled artifacts are ignored for collision checks and are preserved byte-for-byte, so stale or sentinel `manifest.yaml`, `metrics.csv`, `events.csv`, or `summary.md` files do not block a config-only run. The mandatory `config.yaml` always participates in collision checks and blocks reruns into the same directory.
 
+The checked-in config-only fixture can be exercised with:
+
+```bash
+python -m ohdyn.run --config configs/a0_config_only.yaml --seed 1 --out runs/a0_config_only_seed1
+```
+
 `manifest.yaml` records run provenance and model shape:
 
 - `experiment_id`, `seed`, `ticks`, `agent_count`, and configured `actions`

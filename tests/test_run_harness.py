@@ -15,6 +15,7 @@ from ohdyn.run import run_experiment
 
 
 CONFIG = Path("configs/a0_smoke.yaml")
+CONFIG_ONLY = Path("configs/a0_config_only.yaml")
 
 
 def test_loads_a0_smoke_config() -> None:
@@ -24,6 +25,19 @@ def test_loads_a0_smoke_config() -> None:
     assert config.run.ticks == 100
     assert config.model.agent_count == 15
     assert set(config.model.actions) == {"idle", "message", "create_task", "work_task"}
+
+
+def test_loads_a0_config_only_fixture() -> None:
+    config = load_config(CONFIG_ONLY)
+
+    assert config.run.experiment_id == "a0_config_only"
+    assert config.run.ticks == 3
+    assert config.model.agent_count == 15
+    assert config.model.actions == ("idle", "message", "create_task", "work_task")
+    assert config.outputs.write_manifest is False
+    assert config.outputs.write_metrics is False
+    assert config.outputs.write_events is False
+    assert config.outputs.write_summary is False
 
 
 def test_run_writes_required_artifacts(tmp_path: Path) -> None:
@@ -1886,30 +1900,8 @@ outputs:
 
 
 def test_cli_config_only_outputs_succeed_and_are_byte_stable(tmp_path: Path) -> None:
-    config_path = tmp_path / "config_only_cli.yaml"
     first = tmp_path / "config_only_cli_first"
     second = tmp_path / "config_only_cli_second"
-    config_path.write_text(
-        """
-run:
-  experiment_id: config_only_cli
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
 
     for out_dir in [first, second]:
         completed = subprocess.run(
@@ -1918,7 +1910,7 @@ outputs:
                 "-m",
                 "ohdyn.run",
                 "--config",
-                str(config_path),
+                str(CONFIG_ONLY),
                 "--seed",
                 "17",
                 "--out",
@@ -1941,6 +1933,7 @@ outputs:
         "write_events": False,
         "write_summary": False,
     }
+    assert normalized_config["run"]["experiment_id"] == "a0_config_only"
 
 
 def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Path) -> None:
