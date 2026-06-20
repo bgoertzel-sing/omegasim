@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 documented CLI config-only stale disabled artifact preservation regression
-- Changed: added a documented CLI regression asserting config-only first runs preserve stale disabled `manifest.yaml`, `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte while writing only a fresh normalized `config.yaml`.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels -q` passed with 1 test; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 96 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 run API config-only stale disabled artifact preservation regression
+- Changed: added the matching `run_experiment` API regression asserting config-only first runs preserve stale disabled `manifest.yaml`, `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte while writing only a fresh normalized `config.yaml` and still returning populated deterministic simulation metrics/events.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_run_api_config_only_preserves_stale_disabled_artifact_sentinels -q` passed with 1 test; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 97 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add the matching run API regression for config-only first runs preserving stale disabled `manifest.yaml`, `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte while writing only `config.yaml`.
+- Next step: add the matching run API regression for manifest-only first runs preserving stale disabled `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte while writing only `config.yaml` and `manifest.yaml`.

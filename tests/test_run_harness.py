@@ -872,6 +872,55 @@ def test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels(
     }
 
 
+def test_run_api_config_only_preserves_stale_disabled_artifact_sentinels(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "config_only_api_stale_disabled"
+    out_dir.mkdir()
+    stale_disabled_artifacts = {
+        "manifest.yaml": b"stale disabled manifest sentinel\n",
+        "metrics.csv": b"stale disabled metrics sentinel\n",
+        "events.csv": b"stale disabled events sentinel\n",
+        "summary.md": b"stale disabled summary sentinel\n",
+    }
+    for artifact, content in stale_disabled_artifacts.items():
+        (out_dir / artifact).write_bytes(content)
+
+    result = run_experiment(CONFIG_ONLY, seed=1, out_dir=out_dir)
+
+    assert result.config.run.experiment_id == "a0_config_only"
+    assert result.seed == 1
+    assert len(result.metrics) == 3
+    assert len(result.events) == 45
+    assert sorted(path.name for path in out_dir.iterdir()) == [
+        "config.yaml",
+        "events.csv",
+        "manifest.yaml",
+        "metrics.csv",
+        "summary.md",
+    ]
+    for artifact, content in stale_disabled_artifacts.items():
+        assert (out_dir / artifact).read_bytes() == content
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    assert normalized_config == {
+        "run": {
+            "experiment_id": "a0_config_only",
+            "ticks": 3,
+        },
+        "model": {
+            "agent_count": 15,
+            "actions": ["idle", "message", "create_task", "work_task"],
+        },
+        "outputs": {
+            "write_manifest": False,
+            "write_metrics": False,
+            "write_events": False,
+            "write_summary": False,
+        },
+    }
+
+
 def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_contents(
     tmp_path: Path,
 ) -> None:
