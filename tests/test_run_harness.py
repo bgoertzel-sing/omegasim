@@ -958,6 +958,66 @@ def test_documented_cli_respects_disabled_manifest_output(tmp_path: Path) -> Non
     assert "# a0_no_manifest" in (out_dir / "summary.md").read_text()
 
 
+def test_run_api_respects_no_manifest_fixture_outputs(tmp_path: Path) -> None:
+    out_dir = tmp_path / "no_manifest_api_outputs"
+    out_dir.mkdir()
+    stale_manifest = "stale manifest sentinel\n"
+    (out_dir / "manifest.yaml").write_text(stale_manifest)
+    expected_artifacts = [
+        "config.yaml",
+        "events.csv",
+        "manifest.yaml",
+        "metrics.csv",
+        "summary.md",
+    ]
+
+    result = run_experiment(NO_MANIFEST, seed=17, out_dir=out_dir)
+
+    assert sorted(path.name for path in out_dir.iterdir()) == expected_artifacts
+    assert (out_dir / "manifest.yaml").read_text() == stale_manifest
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    assert result.config.outputs.write_manifest is False
+    assert len(result.metrics) == 3
+    assert len(result.events) == 45
+    with (out_dir / "metrics.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 3
+    with (out_dir / "events.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 45
+    assert "# a0_no_manifest" in (out_dir / "summary.md").read_text()
+
+
+def test_run_api_without_manifest_refuses_enabled_artifact_collisions(tmp_path: Path) -> None:
+    out_dir = tmp_path / "no_manifest_api_collision"
+    out_dir.mkdir()
+    sentinels = {
+        "manifest.yaml": "ignored stale manifest\n",
+        "metrics.csv": "sentinel metrics\n",
+        "summary.md": "sentinel summary\n",
+    }
+    for artifact, content in sentinels.items():
+        (out_dir / artifact).write_text(content)
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts") as exc_info:
+        run_experiment(NO_MANIFEST, seed=17, out_dir=out_dir)
+
+    message = str(exc_info.value)
+    assert str(out_dir) in message
+    assert "metrics.csv" in message
+    assert "summary.md" in message
+    assert "manifest.yaml" not in message
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    for artifact, content in sentinels.items():
+        assert (out_dir / artifact).read_text() == content
+    assert not (out_dir / "config.yaml").exists()
+    assert not (out_dir / "events.csv").exists()
+
+
 def test_documented_cli_same_seed_without_manifest_reproduces_byte_identical_artifacts(
     tmp_path: Path,
 ) -> None:
