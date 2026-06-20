@@ -1562,6 +1562,59 @@ outputs:
     assert (out_dir / "config.yaml").read_bytes() == before
 
 
+def test_run_experiment_config_only_rerun_preserves_disabled_artifact_sentinels(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "config_only_rerun_with_disabled_sentinels.yaml"
+    out_dir = tmp_path / "config_only_rerun_with_disabled_sentinels"
+    config_path.write_text(
+        """
+run:
+  experiment_id: config_only_rerun_with_disabled_sentinels
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+    disabled_sentinels = {
+        "manifest.yaml": b"sentinel disabled manifest\n",
+        "metrics.csv": b"sentinel disabled metrics\n",
+        "events.csv": b"sentinel disabled events\n",
+        "summary.md": b"sentinel disabled summary\n",
+    }
+
+    run_experiment(config_path, seed=17, out_dir=out_dir)
+    for artifact, content in disabled_sentinels.items():
+        (out_dir / artifact).write_bytes(content)
+    before = {path.name: path.read_bytes() for path in out_dir.iterdir()}
+
+    with pytest.raises(FileExistsError) as exc_info:
+        run_experiment(config_path, seed=17, out_dir=out_dir)
+
+    message = str(exc_info.value)
+    assert "already contains run artifacts: config.yaml" in message
+    assert "manifest.yaml" not in message
+    assert "metrics.csv" not in message
+    assert "events.csv" not in message
+    assert "summary.md" not in message
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        ["config.yaml", *disabled_sentinels]
+    )
+    assert {path.name: path.read_bytes() for path in out_dir.iterdir()} == before
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
@@ -1945,6 +1998,72 @@ outputs:
     assert "Traceback" not in second.stderr
     assert sorted(path.name for path in out_dir.iterdir()) == ["config.yaml"]
     assert (out_dir / "config.yaml").read_bytes() == before
+
+
+def test_cli_config_only_rerun_preserves_disabled_artifact_sentinels(tmp_path: Path) -> None:
+    config_path = tmp_path / "config_only_cli_rerun_with_disabled_sentinels.yaml"
+    out_dir = tmp_path / "config_only_cli_rerun_with_disabled_sentinels"
+    config_path.write_text(
+        """
+run:
+  experiment_id: config_only_cli_rerun_with_disabled_sentinels
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+    disabled_sentinels = {
+        "manifest.yaml": b"sentinel disabled manifest\n",
+        "metrics.csv": b"sentinel disabled metrics\n",
+        "events.csv": b"sentinel disabled events\n",
+        "summary.md": b"sentinel disabled summary\n",
+    }
+    command = [
+        sys.executable,
+        "-m",
+        "ohdyn.run",
+        "--config",
+        str(config_path),
+        "--seed",
+        "17",
+        "--out",
+        str(out_dir),
+    ]
+
+    first = subprocess.run(command, capture_output=True, text=True, check=False)
+    for artifact, content in disabled_sentinels.items():
+        (out_dir / artifact).write_bytes(content)
+    before = {path.name: path.read_bytes() for path in out_dir.iterdir()}
+
+    second = subprocess.run(command, capture_output=True, text=True, check=False)
+
+    assert first.returncode == 0
+    assert first.stderr == ""
+    assert second.returncode != 0
+    assert "error:" in second.stderr
+    assert str(out_dir) in second.stderr
+    assert "already contains run artifacts: config.yaml" in second.stderr
+    assert "manifest.yaml" not in second.stderr
+    assert "metrics.csv" not in second.stderr
+    assert "events.csv" not in second.stderr
+    assert "summary.md" not in second.stderr
+    assert "Traceback" not in second.stderr
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        ["config.yaml", *disabled_sentinels]
+    )
+    assert {path.name: path.read_bytes() for path in out_dir.iterdir()} == before
 
 
 def test_cli_output_path_file_does_not_overwrite_or_traceback(tmp_path: Path) -> None:
