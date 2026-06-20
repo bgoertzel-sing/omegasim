@@ -789,6 +789,50 @@ def test_documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_arti
         assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
 
 
+def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "default_outputs_collision"
+    out_dir.mkdir()
+    sentinels = {
+        "config.yaml": "sentinel config\n",
+        "events.csv": "sentinel events\n",
+    }
+    for artifact, content in sentinels.items():
+        (out_dir / artifact).write_text(content)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(DEFAULT_OUTPUTS),
+            "--seed",
+            "17",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error:" in completed.stderr
+    assert str(out_dir) in completed.stderr
+    assert "already contains run artifacts" in completed.stderr
+    assert "config.yaml" in completed.stderr
+    assert "events.csv" in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    for artifact, content in sentinels.items():
+        assert (out_dir / artifact).read_text() == content
+    assert not (out_dir / "manifest.yaml").exists()
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "summary.md").exists()
+
+
 def test_run_api_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "default_outputs_api_seed1"
     expected_artifacts = [
