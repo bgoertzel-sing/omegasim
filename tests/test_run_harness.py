@@ -601,18 +601,12 @@ def test_summary_records_artifact_schema_provenance(tmp_path: Path) -> None:
         events_header = next(csv.reader(handle))
     summary = (out_dir / "summary.md").read_text()
 
-    assert "## Artifact schema provenance" in summary
-    assert f"- metrics fields: {len(metrics_header)}" in summary
-    assert f"- event fields: {len(events_header)}" in summary
-    assert f"- event types: {len(BASELINE_EVENT_TYPES)}" in summary
-    assert f"- baseline lobe labels: {len(BASELINE_LOBE_LABELS)}" in summary
-    assert f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}" in summary
-    assert f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}" in summary
-    assert f"- queued task age fields: {len(QUEUED_TASK_AGE_METRIC_FIELDS)}" in summary
-    assert f"- role/action fields: {len(role_action_metric_fields(tuple(manifest['actions'])))}" in summary
-    assert "- metrics schema source: ohdyn.sim.metrics_fieldnames" in summary
-    assert "- events schema source: ohdyn.sim.EVENT_FIELDS" in summary
-    assert "- manifest mirrors emitted artifact schemas: yes" in summary
+    _assert_summary_records_artifact_schema_provenance(
+        summary,
+        metrics_header=metrics_header,
+        events_header=events_header,
+        actions=tuple(manifest["actions"]),
+    )
     assert manifest["model"]["metrics"]["fields"] == metrics_header
     assert manifest["model"]["events"]["fields"] == events_header
 
@@ -3329,6 +3323,21 @@ def _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(
     assert events_header == list(EVENT_FIELDS)
     assert event_rows
     assert set(event["event_type"] for event in event_rows) <= set(BASELINE_EVENT_TYPES)
+    _assert_summary_records_artifact_schema_provenance(
+        summary,
+        metrics_header=metrics_header,
+        events_header=events_header,
+        actions=actions,
+    )
+
+
+def _assert_summary_records_artifact_schema_provenance(
+    summary: str,
+    *,
+    metrics_header: list[str],
+    events_header: list[str],
+    actions: tuple[str, ...],
+) -> None:
     assert "## Artifact schema provenance" in summary
     assert f"- metrics fields: {len(metrics_header)}" in summary
     assert f"- event fields: {len(events_header)}" in summary
@@ -3340,6 +3349,7 @@ def _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(
     assert f"- role/action fields: {len(role_action_metric_fields(actions))}" in summary
     assert "- metrics schema source: ohdyn.sim.metrics_fieldnames" in summary
     assert "- events schema source: ohdyn.sim.EVENT_FIELDS" in summary
+    assert "- manifest mirrors emitted artifact schemas: yes" in summary
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
