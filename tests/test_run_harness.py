@@ -661,6 +661,24 @@ def test_summary_written_artifacts_match_output_directory_contents(tmp_path: Pat
     assert sorted(summary_artifacts) == sorted(directory_artifacts)
 
 
+def test_summary_written_artifacts_match_output_directory_contents_without_manifest(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "no_manifest"
+
+    run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+    written_artifacts_line = next(
+        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
+    )
+    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
+
+    assert sorted(summary_artifacts) == sorted(directory_artifacts)
+    assert "manifest.yaml" not in summary_artifacts
+
+
 def test_summary_records_disabled_manifest_output_flag(tmp_path: Path) -> None:
     out_dir = tmp_path / "no_manifest"
 
