@@ -642,11 +642,7 @@ def test_summary_written_artifacts_match_output_directory_contents(tmp_path: Pat
 
     run_experiment(CONFIG, seed=1, out_dir=out_dir)
 
-    summary = (out_dir / "summary.md").read_text()
-    summary_artifacts = _summary_written_artifacts(summary)
-    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
-
-    assert sorted(summary_artifacts) == sorted(directory_artifacts)
+    _assert_summary_written_artifacts_match_output_directory(out_dir)
 
 
 def test_summary_written_artifacts_match_output_directory_contents_without_manifest(
@@ -656,11 +652,8 @@ def test_summary_written_artifacts_match_output_directory_contents_without_manif
 
     run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
 
-    summary = (out_dir / "summary.md").read_text()
-    summary_artifacts = _summary_written_artifacts(summary)
-    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
+    summary_artifacts = _assert_summary_written_artifacts_match_output_directory(out_dir)
 
-    assert sorted(summary_artifacts) == sorted(directory_artifacts)
     assert "manifest.yaml" not in summary_artifacts
 
 
@@ -698,9 +691,8 @@ def test_manifest_artifacts_match_output_directory_contents_when_manifest_only(
     run_experiment(MANIFEST_ONLY, seed=1, out_dir=out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
-    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
 
-    assert sorted(manifest["artifacts"]) == sorted(directory_artifacts)
+    _assert_artifacts_match_output_directory(out_dir, manifest["artifacts"])
     assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
 
 
@@ -740,9 +732,8 @@ def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
     assert completed.stderr == ""
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
-    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
 
-    assert sorted(manifest["artifacts"]) == sorted(directory_artifacts)
+    _assert_artifacts_match_output_directory(out_dir, manifest["artifacts"])
     assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
     assert not (out_dir / "metrics.csv").exists()
     assert not (out_dir / "events.csv").exists()
@@ -997,11 +988,7 @@ def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_con
     assert completed.returncode == 0
     assert completed.stderr == ""
 
-    summary = (out_dir / "summary.md").read_text()
-    summary_artifacts = _summary_written_artifacts(summary)
-    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
-
-    assert sorted(summary_artifacts) == sorted(directory_artifacts)
+    _assert_summary_written_artifacts_match_output_directory(out_dir)
     _assert_no_manifest_writes_enabled_artifacts(out_dir)
 
 
@@ -3198,16 +3185,15 @@ def _assert_no_manifest_writes_enabled_artifacts(
         "write_events": True,
         "write_summary": True,
     }
-    expected_directory_artifacts = sorted(
-        [*expected_artifacts, *(["manifest.yaml"] if stale_manifest is not None else [])]
-    )
-
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
     summary_artifacts = _summary_written_artifacts(summary)
 
     assert summary_artifacts == expected_artifacts
-    assert sorted(path.name for path in out_dir.iterdir()) == expected_directory_artifacts
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        [*expected_artifacts, *(["manifest.yaml"] if stale_manifest is not None else [])],
+    )
     assert normalized_config["outputs"] == expected_outputs
     assert "- write_manifest: disabled" in summary
     assert "- write_metrics: enabled" in summary
@@ -3232,6 +3218,23 @@ def _summary_written_artifacts(summary: str) -> list[str]:
         line for line in summary.splitlines() if line.startswith("- written artifacts: ")
     )
     return written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+
+
+def _directory_artifacts(out_dir: Path) -> list[str]:
+    return sorted(path.name for path in out_dir.iterdir() if path.is_file())
+
+
+def _assert_artifacts_match_output_directory(
+    out_dir: Path,
+    artifacts: list[str],
+) -> None:
+    assert sorted(artifacts) == _directory_artifacts(out_dir)
+
+
+def _assert_summary_written_artifacts_match_output_directory(out_dir: Path) -> list[str]:
+    summary_artifacts = _summary_written_artifacts((out_dir / "summary.md").read_text())
+    _assert_artifacts_match_output_directory(out_dir, summary_artifacts)
+    return summary_artifacts
 
 
 def _write_no_manifest_disabled_manifest_sentinel(out_dir: Path) -> bytes:
