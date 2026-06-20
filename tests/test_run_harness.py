@@ -796,14 +796,7 @@ def test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinel
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "manifest_only_cli_stale_disabled"
-    out_dir.mkdir()
-    stale_disabled_artifacts = {
-        "metrics.csv": b"stale disabled metrics sentinel\n",
-        "events.csv": b"stale disabled events sentinel\n",
-        "summary.md": b"stale disabled summary sentinel\n",
-    }
-    for artifact, content in stale_disabled_artifacts.items():
-        (out_dir / artifact).write_bytes(content)
+    stale_disabled_artifacts = _write_manifest_only_disabled_artifact_sentinels(out_dir)
 
     completed = subprocess.run(
         [
@@ -824,17 +817,10 @@ def test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinel
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert (out_dir / "config.yaml").is_file()
-    assert (out_dir / "manifest.yaml").is_file()
-    assert sorted(path.name for path in out_dir.iterdir()) == [
-        "config.yaml",
-        "events.csv",
-        "manifest.yaml",
-        "metrics.csv",
-        "summary.md",
-    ]
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
+    _assert_manifest_only_preserves_stale_disabled_artifacts(
+        out_dir,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+    )
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
@@ -854,16 +840,10 @@ def test_documented_cli_manifest_only_refuses_enabled_artifact_collisions_while_
     collision_artifact: str,
 ) -> None:
     out_dir = tmp_path / f"manifest_only_cli_collision_{collision_artifact.replace('.', '_')}"
-    out_dir.mkdir()
-    stale_disabled_artifacts = {
-        "metrics.csv": b"stale disabled metrics sentinel\n",
-        "events.csv": b"stale disabled events sentinel\n",
-        "summary.md": b"stale disabled summary sentinel\n",
-    }
-    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
-    for artifact, content in stale_disabled_artifacts.items():
-        (out_dir / artifact).write_bytes(content)
-    (out_dir / collision_artifact).write_bytes(collision_content)
+    stale_disabled_artifacts, collision_content = _write_manifest_only_collision_sentinels(
+        out_dir,
+        collision_artifact,
+    )
 
     completed = subprocess.run(
         [
@@ -891,11 +871,11 @@ def test_documented_cli_manifest_only_refuses_enabled_artifact_collisions_while_
     assert "events.csv" not in completed.stderr
     assert "summary.md" not in completed.stderr
     assert "Traceback" not in completed.stderr
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
-    assert (out_dir / collision_artifact).read_bytes() == collision_content
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        {*stale_disabled_artifacts, collision_artifact}
+    _assert_manifest_only_collision_preserves_stale_disabled_artifacts(
+        out_dir,
+        collision_artifact,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+        collision_content=collision_content,
     )
 
 
@@ -982,14 +962,7 @@ def test_run_api_manifest_only_preserves_stale_disabled_artifact_sentinels(
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "manifest_only_api_stale_disabled"
-    out_dir.mkdir()
-    stale_disabled_artifacts = {
-        "metrics.csv": b"stale disabled metrics sentinel\n",
-        "events.csv": b"stale disabled events sentinel\n",
-        "summary.md": b"stale disabled summary sentinel\n",
-    }
-    for artifact, content in stale_disabled_artifacts.items():
-        (out_dir / artifact).write_bytes(content)
+    stale_disabled_artifacts = _write_manifest_only_disabled_artifact_sentinels(out_dir)
 
     result = run_experiment(MANIFEST_ONLY, seed=1, out_dir=out_dir)
 
@@ -997,17 +970,10 @@ def test_run_api_manifest_only_preserves_stale_disabled_artifact_sentinels(
     assert result.seed == 1
     assert len(result.metrics) == 3
     assert len(result.events) == 45
-    assert (out_dir / "config.yaml").is_file()
-    assert (out_dir / "manifest.yaml").is_file()
-    assert sorted(path.name for path in out_dir.iterdir()) == [
-        "config.yaml",
-        "events.csv",
-        "manifest.yaml",
-        "metrics.csv",
-        "summary.md",
-    ]
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
+    _assert_manifest_only_preserves_stale_disabled_artifacts(
+        out_dir,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+    )
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
@@ -1027,16 +993,10 @@ def test_run_api_manifest_only_refuses_enabled_artifact_collisions_while_preserv
     collision_artifact: str,
 ) -> None:
     out_dir = tmp_path / f"manifest_only_api_collision_{collision_artifact.replace('.', '_')}"
-    out_dir.mkdir()
-    stale_disabled_artifacts = {
-        "metrics.csv": b"stale disabled metrics sentinel\n",
-        "events.csv": b"stale disabled events sentinel\n",
-        "summary.md": b"stale disabled summary sentinel\n",
-    }
-    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
-    for artifact, content in stale_disabled_artifacts.items():
-        (out_dir / artifact).write_bytes(content)
-    (out_dir / collision_artifact).write_bytes(collision_content)
+    stale_disabled_artifacts, collision_content = _write_manifest_only_collision_sentinels(
+        out_dir,
+        collision_artifact,
+    )
 
     with pytest.raises(FileExistsError, match="already contains run artifacts") as exc_info:
         run_experiment(MANIFEST_ONLY, seed=1, out_dir=out_dir)
@@ -1047,11 +1007,11 @@ def test_run_api_manifest_only_refuses_enabled_artifact_collisions_while_preserv
     assert "metrics.csv" not in message
     assert "events.csv" not in message
     assert "summary.md" not in message
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
-    assert (out_dir / collision_artifact).read_bytes() == collision_content
-    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
-        {*stale_disabled_artifacts, collision_artifact}
+    _assert_manifest_only_collision_preserves_stale_disabled_artifacts(
+        out_dir,
+        collision_artifact,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+        collision_content=collision_content,
     )
 
 
@@ -3193,6 +3153,61 @@ def _assert_manifest_only_preserves_full_schema_provenance(out_dir: Path) -> Non
         "actions": list(actions),
         "fields": list(role_action_metric_fields(actions)),
     }
+
+
+def _write_manifest_only_disabled_artifact_sentinels(out_dir: Path) -> dict[str, bytes]:
+    out_dir.mkdir()
+    stale_disabled_artifacts = {
+        "metrics.csv": b"stale disabled metrics sentinel\n",
+        "events.csv": b"stale disabled events sentinel\n",
+        "summary.md": b"stale disabled summary sentinel\n",
+    }
+
+    for artifact, content in stale_disabled_artifacts.items():
+        (out_dir / artifact).write_bytes(content)
+
+    return stale_disabled_artifacts
+
+
+def _assert_manifest_only_preserves_stale_disabled_artifacts(
+    out_dir: Path,
+    *,
+    stale_disabled_artifacts: dict[str, bytes],
+) -> None:
+    assert (out_dir / "config.yaml").is_file()
+    assert (out_dir / "manifest.yaml").is_file()
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        ["config.yaml", "manifest.yaml", *stale_disabled_artifacts]
+    )
+    for artifact, content in stale_disabled_artifacts.items():
+        assert (out_dir / artifact).read_bytes() == content
+
+
+def _write_manifest_only_collision_sentinels(
+    out_dir: Path,
+    collision_artifact: str,
+) -> tuple[dict[str, bytes], bytes]:
+    stale_disabled_artifacts = _write_manifest_only_disabled_artifact_sentinels(out_dir)
+    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
+
+    (out_dir / collision_artifact).write_bytes(collision_content)
+
+    return stale_disabled_artifacts, collision_content
+
+
+def _assert_manifest_only_collision_preserves_stale_disabled_artifacts(
+    out_dir: Path,
+    collision_artifact: str,
+    *,
+    stale_disabled_artifacts: dict[str, bytes],
+    collision_content: bytes,
+) -> None:
+    for artifact, content in stale_disabled_artifacts.items():
+        assert (out_dir / artifact).read_bytes() == content
+    assert (out_dir / collision_artifact).read_bytes() == collision_content
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        {*stale_disabled_artifacts, collision_artifact}
+    )
 
 
 def _assert_config_only_writes_normalized_config(out_dir: Path) -> None:
