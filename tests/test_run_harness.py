@@ -1043,6 +1043,73 @@ outputs:
         assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
 
 
+def test_documented_cli_without_manifest_refuses_partial_output_directory(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "no_manifest_partial_collision.yaml"
+    out_dir = tmp_path / "no_manifest_partial_collision"
+    config_path.write_text(
+        """
+run:
+  experiment_id: no_manifest_partial_collision
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: true
+  write_events: true
+  write_summary: true
+"""
+    )
+    out_dir.mkdir()
+    sentinels = {
+        "config.yaml": "sentinel config\n",
+        "events.csv": "sentinel events\n",
+    }
+    for artifact, content in sentinels.items():
+        (out_dir / artifact).write_text(content)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "17",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error:" in completed.stderr
+    assert str(out_dir) in completed.stderr
+    assert "already contains run artifacts" in completed.stderr
+    assert "config.yaml" in completed.stderr
+    assert "events.csv" in completed.stderr
+    assert "manifest.yaml" not in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    for artifact, content in sentinels.items():
+        assert (out_dir / artifact).read_text() == content
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "summary.md").exists()
+    assert not (out_dir / "manifest.yaml").exists()
+
+
 def test_documented_cli_different_seeds_change_events_but_preserve_schema(tmp_path: Path) -> None:
     first = tmp_path / "a0_seed17"
     second = tmp_path / "a0_seed18"
