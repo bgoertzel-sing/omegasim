@@ -705,6 +705,20 @@ def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:
     assert not (out_dir / "summary.md").exists()
 
 
+def test_manifest_artifacts_match_output_directory_contents_when_manifest_only(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "manifest_only"
+
+    run_experiment(MANIFEST_ONLY, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
+
+    assert sorted(manifest["artifacts"]) == sorted(directory_artifacts)
+    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+
+
 def test_output_flags_must_be_yaml_booleans(tmp_path: Path) -> None:
     config_path = tmp_path / "string_bool.yaml"
     config_path.write_text(
