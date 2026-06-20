@@ -1091,6 +1091,28 @@ def test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel(
     assert "- write_summary: enabled" in summary
 
 
+@pytest.mark.parametrize("collision_artifact", ["config.yaml", "metrics.csv", "events.csv", "summary.md"])
+def test_run_api_no_manifest_refuses_enabled_artifact_collisions_while_ignoring_stale_manifest(
+    tmp_path: Path,
+    collision_artifact: str,
+) -> None:
+    out_dir = tmp_path / f"no_manifest_api_collision_{collision_artifact.replace('.', '_')}"
+    out_dir.mkdir()
+    stale_manifest = b"stale disabled manifest sentinel\n"
+    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
+    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
+    (out_dir / collision_artifact).write_bytes(collision_content)
+
+    with pytest.raises(FileExistsError, match=collision_artifact):
+        run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
+
+    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
+    assert (out_dir / collision_artifact).read_bytes() == collision_content
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        {"manifest.yaml", collision_artifact}
+    )
+
+
 def test_output_flags_must_be_yaml_booleans(tmp_path: Path) -> None:
     config_path = tmp_path / "string_bool.yaml"
     config_path.write_text(
