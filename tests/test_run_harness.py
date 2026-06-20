@@ -792,6 +792,50 @@ def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_con
     assert not (out_dir / "manifest.yaml").exists()
 
 
+def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "no_manifest_cli_stale_manifest"
+    out_dir.mkdir()
+    stale_manifest = b"stale disabled manifest sentinel\n"
+    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(NO_MANIFEST),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
+    assert sorted(path.name for path in out_dir.iterdir()) == [
+        "config.yaml",
+        "events.csv",
+        "manifest.yaml",
+        "metrics.csv",
+        "summary.md",
+    ]
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "- written artifacts: config.yaml, metrics.csv, events.csv, summary.md" in summary
+    assert "- write_manifest: disabled" in summary
+    assert "- write_metrics: enabled" in summary
+    assert "- write_events: enabled" in summary
+    assert "- write_summary: enabled" in summary
+
+
 def test_output_flags_must_be_yaml_booleans(tmp_path: Path) -> None:
     config_path = tmp_path / "string_bool.yaml"
     config_path.write_text(
