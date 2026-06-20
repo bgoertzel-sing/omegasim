@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 no-manifest emitted-artifact schema provenance test helper
-- Changed: factored the duplicated CLI/API no-manifest emitted-artifact schema provenance assertions into `_assert_no_manifest_emitted_artifacts_preserve_schema_provenance()`.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_no_manifest_emitted_artifacts_preserve_schema_provenance tests/test_run_harness.py::test_run_api_no_manifest_emitted_artifacts_preserve_schema_provenance -q` passed with 2 tests; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 manifest-only full-schema provenance test helper
+- Changed: factored the duplicated API/CLI manifest-only full-schema provenance assertions into `_assert_manifest_only_preserves_full_schema_provenance()`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_manifest_only_records_full_schema_provenance_without_disabled_artifacts tests/test_run_harness.py::test_documented_cli_manifest_only_records_full_schema_provenance_without_disabled_artifacts -q` passed with 2 tests; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: factor the repeated manifest-only full-schema provenance assertions into a local test helper shared by CLI and API manifest-only regressions.
+- Next step: factor the repeated config-only normalized-config assertions into a local helper shared by CLI and API config-only regressions.
