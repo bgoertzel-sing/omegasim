@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 CLI config-only disabled-sentinel fixture promotion
-- Changed: promoted `test_cli_config_only_rerun_preserves_disabled_artifact_sentinels` to use the checked-in `configs/a0_config_only.yaml` fixture instead of constructing an inline all-optional-disabled YAML file, and added normalized fixture metadata assertions for the preserved `config.yaml`.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_cli_config_only_rerun_preserves_disabled_artifact_sentinels -q` passed; `.venv-conda/bin/python -m pytest -q` passed with 68 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 manifest-only disabled-output fixture promotion
+- Changed: added checked-in `configs/a0_manifest_only.yaml`, documented its CLI invocation, and promoted matching manifest-only API/CLI disabled-output and collision regressions away from inline YAML fixtures.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_loads_a0_manifest_only_fixture tests/test_run_harness.py::test_manifest_lists_only_written_artifacts tests/test_run_harness.py::test_documented_cli_respects_disabled_optional_outputs tests/test_run_harness.py::test_run_experiment_ignores_disabled_output_collisions_but_blocks_enabled_artifacts tests/test_run_harness.py::test_cli_ignores_disabled_output_collisions_but_blocks_enabled_artifacts -q` passed with 5 tests; `.venv-conda/bin/python -m pytest -q` passed with 69 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: promote the remaining inline disabled-output CLI fixture regressions to checked-in or shared fixtures where their behavior matches an existing baseline config.
+- Next step: add a checked-in no-manifest baseline fixture for the remaining inline metrics/events/summary-only output regressions.

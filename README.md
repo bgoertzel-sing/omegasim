@@ -68,6 +68,12 @@ The checked-in config-only fixture can be exercised with:
 python -m ohdyn.run --config configs/a0_config_only.yaml --seed 1 --out runs/a0_config_only_seed1
 ```
 
+The checked-in manifest-only fixture disables metrics, events, and summary output while preserving manifest provenance:
+
+```bash
+python -m ohdyn.run --config configs/a0_manifest_only.yaml --seed 1 --out runs/a0_manifest_only_seed1
+```
+
 `manifest.yaml` records run provenance and model shape:
 
 - `experiment_id`, `seed`, `ticks`, `agent_count`, and configured `actions`

@@ -16,6 +16,7 @@ from ohdyn.run import run_experiment
 
 CONFIG = Path("configs/a0_smoke.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
+MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
 
 
 def test_loads_a0_smoke_config() -> None:
@@ -35,6 +36,19 @@ def test_loads_a0_config_only_fixture() -> None:
     assert config.model.agent_count == 15
     assert config.model.actions == ("idle", "message", "create_task", "work_task")
     assert config.outputs.write_manifest is False
+    assert config.outputs.write_metrics is False
+    assert config.outputs.write_events is False
+    assert config.outputs.write_summary is False
+
+
+def test_loads_a0_manifest_only_fixture() -> None:
+    config = load_config(MANIFEST_ONLY)
+
+    assert config.run.experiment_id == "a0_manifest_only"
+    assert config.run.ticks == 3
+    assert config.model.agent_count == 15
+    assert config.model.actions == ("idle", "message", "create_task", "work_task")
+    assert config.outputs.write_manifest is True
     assert config.outputs.write_metrics is False
     assert config.outputs.write_events is False
     assert config.outputs.write_summary is False
@@ -470,31 +484,9 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
 
 
 def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:
-    config_path = tmp_path / "minimal_outputs.yaml"
-    out_dir = tmp_path / "minimal_outputs"
-    config_path.write_text(
-        """
-run:
-  experiment_id: minimal_outputs
-  ticks: 3
+    out_dir = tmp_path / "manifest_only"
 
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: true
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
-
-    run_experiment(config_path, seed=1, out_dir=out_dir)
+    run_experiment(MANIFEST_ONLY, seed=1, out_dir=out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
@@ -865,33 +857,11 @@ def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Pa
 
 
 def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> None:
-    config_path = tmp_path / "minimal_cli_outputs.yaml"
-    out_dir = tmp_path / "minimal_cli_outputs"
+    out_dir = tmp_path / "manifest_only_cli_outputs"
     expected_artifacts = [
         "config.yaml",
         "manifest.yaml",
     ]
-    config_path.write_text(
-        """
-run:
-  experiment_id: minimal_cli_outputs
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: true
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
 
     completed = subprocess.run(
         [
@@ -899,7 +869,7 @@ outputs:
             "-m",
             "ohdyn.run",
             "--config",
-            str(config_path),
+            str(MANIFEST_ONLY),
             "--seed",
             "17",
             "--out",
@@ -923,7 +893,7 @@ outputs:
         "write_summary": False,
     }
     assert manifest["seed"] == 17
-    assert manifest["experiment_id"] == "minimal_cli_outputs"
+    assert manifest["experiment_id"] == "a0_manifest_only"
     assert not (out_dir / "metrics.csv").exists()
     assert not (out_dir / "events.csv").exists()
     assert not (out_dir / "summary.md").exists()
@@ -1392,30 +1362,8 @@ def test_run_experiment_output_artifact_collision_does_not_write_partial_artifac
 def test_run_experiment_ignores_disabled_output_collisions_but_blocks_enabled_artifacts(
     tmp_path: Path,
 ) -> None:
-    config_path = tmp_path / "disabled_optional_collisions.yaml"
     success_dir = tmp_path / "disabled_optional_collisions_success"
     blocked_dir = tmp_path / "disabled_optional_collisions_blocked"
-    config_path.write_text(
-        """
-run:
-  experiment_id: disabled_optional_collisions
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: true
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
     disabled_sentinels = {
         "metrics.csv": "sentinel disabled metrics\n",
         "events.csv": "sentinel disabled events\n",
@@ -1425,7 +1373,7 @@ outputs:
     for artifact, content in disabled_sentinels.items():
         (success_dir / artifact).write_text(content)
 
-    run_experiment(config_path, seed=17, out_dir=success_dir)
+    run_experiment(MANIFEST_ONLY, seed=17, out_dir=success_dir)
 
     assert (success_dir / "config.yaml").is_file()
     assert (success_dir / "manifest.yaml").is_file()
@@ -1440,7 +1388,7 @@ outputs:
     (blocked_dir / "manifest.yaml").write_text("sentinel enabled manifest\n")
 
     with pytest.raises(FileExistsError, match="already contains run artifacts"):
-        run_experiment(config_path, seed=17, out_dir=blocked_dir)
+        run_experiment(MANIFEST_ONLY, seed=17, out_dir=blocked_dir)
 
     assert (blocked_dir / "manifest.yaml").read_text() == "sentinel enabled manifest\n"
     assert sorted(path.name for path in blocked_dir.iterdir()) == sorted(
@@ -1677,30 +1625,8 @@ def test_cli_output_artifact_collision_does_not_write_partial_artifacts(tmp_path
 def test_cli_ignores_disabled_output_collisions_but_blocks_enabled_artifacts(
     tmp_path: Path,
 ) -> None:
-    config_path = tmp_path / "disabled_optional_cli_collisions.yaml"
     success_dir = tmp_path / "disabled_optional_cli_collisions_success"
     blocked_dir = tmp_path / "disabled_optional_cli_collisions_blocked"
-    config_path.write_text(
-        """
-run:
-  experiment_id: disabled_optional_cli_collisions
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: true
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
     disabled_sentinels = {
         "metrics.csv": "sentinel disabled metrics\n",
         "events.csv": "sentinel disabled events\n",
@@ -1711,7 +1637,7 @@ outputs:
         "-m",
         "ohdyn.run",
         "--config",
-        str(config_path),
+        str(MANIFEST_ONLY),
         "--seed",
         "17",
     ]
