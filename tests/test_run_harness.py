@@ -17,6 +17,7 @@ from ohdyn.sim import (
     EVENT_FIELDS,
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
+    metrics_fieldnames,
     role_action_metric_fields,
 )
 from ohdyn.config import load_config
@@ -172,54 +173,8 @@ def test_metrics_and_events_headers_match_documented_a0_schema(tmp_path: Path) -
     with (out_dir / "events.csv").open() as handle:
         events_header = next(csv.reader(handle))
 
-    role_action_headers = [
-        f"role_{role}_{action}_tick"
-        for role in BASELINE_ROLES
-        for action in ("idle", "message", "create_task", "work_task")
-    ]
-    assert metrics_header == [
-        "tick",
-        "agent_count",
-        "bus_nodes",
-        "bus_edges",
-        "bus_density",
-        "bus_mean_degree",
-        "bus_degree_centralization",
-        "queue_depth",
-        "queue_delta_tick",
-        "baseline_lobe_label",
-        "baseline_lobe_previous_label",
-        "baseline_lobe_transition",
-        "baseline_lobe_transition_tick",
-        "baseline_lobe_run_id",
-        "baseline_lobe_current_run_length",
-        "tasks_created_total",
-        "tasks_completed_total",
-        "tasks_completed_tick",
-        "messages_sent_tick",
-        "tasks_created_tick",
-        "tasks_worked_tick",
-        "created_completed_balance_tick",
-        "created_worked_balance_tick",
-        "work_completion_gap_tick",
-        "backlog_pressure_tick",
-        "queued_task_age_max_tick",
-        "queued_task_age_mean_tick",
-        "idle_tick",
-        *role_action_headers,
-        "mean_agent_bias",
-    ]
-    assert events_header == [
-        "tick",
-        "event_type",
-        "agent_id",
-        "action",
-        "target_id",
-        "task_id",
-        "work_units",
-        "remaining_work",
-        "completed",
-    ]
+    assert metrics_header == list(metrics_fieldnames(("idle", "message", "create_task", "work_task")))
+    assert events_header == list(EVENT_FIELDS)
 
 
 def test_summary_records_event_type_totals(tmp_path: Path) -> None:
@@ -529,6 +484,9 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
             "types": list(BASELINE_EVENT_TYPES),
             "fields": list(EVENT_FIELDS),
         },
+        "metrics": {
+            "fields": list(metrics_fieldnames(tuple(actions))),
+        },
         "role_action_metrics": {
             "roles": list(BASELINE_ROLES),
             "actions": actions,
@@ -595,6 +553,20 @@ def test_manifest_records_queue_dynamics_metric_provenance(tmp_path: Path) -> No
         *queue_dynamics_metrics["queued_task_age_fields"],
     ]:
         assert field in metrics_header
+
+
+def test_manifest_records_full_metrics_schema_provenance(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    expected_fields = list(metrics_fieldnames(tuple(manifest["actions"])))
+    assert manifest["model"]["metrics"] == {"fields": expected_fields}
+    assert metrics_header == expected_fields
 
 
 def test_manifest_records_event_schema_provenance(tmp_path: Path) -> None:

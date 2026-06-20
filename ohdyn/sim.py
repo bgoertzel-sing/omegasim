@@ -68,6 +68,33 @@ QUEUED_TASK_AGE_METRIC_FIELDS = (
 )
 
 
+def metrics_fieldnames(actions: tuple[str, ...]) -> tuple[str, ...]:
+    return (
+        "tick",
+        "agent_count",
+        "bus_nodes",
+        "bus_edges",
+        "bus_density",
+        "bus_mean_degree",
+        "bus_degree_centralization",
+        "queue_depth",
+        "queue_delta_tick",
+        "baseline_lobe_label",
+        *BASELINE_LOBE_TRANSITION_FIELDS,
+        "tasks_created_total",
+        "tasks_completed_total",
+        "tasks_completed_tick",
+        "messages_sent_tick",
+        "tasks_created_tick",
+        "tasks_worked_tick",
+        *QUEUE_PRESSURE_METRIC_FIELDS,
+        *QUEUED_TASK_AGE_METRIC_FIELDS,
+        "idle_tick",
+        *role_action_metric_fields(actions),
+        "mean_agent_bias",
+    )
+
+
 def role_action_metric_fields(actions: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(
         f"role_{role}_{action}_tick"

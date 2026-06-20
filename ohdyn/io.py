@@ -22,6 +22,7 @@ from ohdyn.sim import (
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
+    metrics_fieldnames,
     role_action_metric_fields,
 )
 
@@ -39,9 +40,13 @@ def write_outputs(result: SimulationResult, out_dir: str | Path) -> None:
             yaml.safe_dump(_manifest(result), sort_keys=True)
         )
     if result.config.outputs.write_metrics:
-        _write_csv(output_path / "metrics.csv", result.metrics)
+        _write_csv(
+            output_path / "metrics.csv",
+            result.metrics,
+            fieldnames=metrics_fieldnames(result.config.model.actions),
+        )
     if result.config.outputs.write_events:
-        _write_csv(output_path / "events.csv", result.events)
+        _write_csv(output_path / "events.csv", result.events, fieldnames=EVENT_FIELDS)
     if result.config.outputs.write_summary:
         (output_path / "summary.md").write_text(_summary(result))
 
@@ -86,6 +91,9 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "events": {
                 "types": list(BASELINE_EVENT_TYPES),
                 "fields": list(EVENT_FIELDS),
+            },
+            "metrics": {
+                "fields": list(metrics_fieldnames(result.config.model.actions)),
             },
             "role_action_metrics": {
                 "roles": list(BASELINE_ROLES),
@@ -151,12 +159,17 @@ def _artifact_names(result: SimulationResult) -> list[str]:
     return artifacts
 
 
-def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+def _write_csv(
+    path: Path,
+    rows: list[dict[str, Any]],
+    *,
+    fieldnames: tuple[str, ...] | None = None,
+) -> None:
     if not rows:
         path.write_text("")
         return
     with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames or rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
 

@@ -93,6 +93,7 @@ python -m ohdyn.run --config configs/a0_no_manifest.yaml --seed 1 --out runs/a0_
 - `model.queue_dynamics_metrics.queued_task_age_fields`, the queued-task-age metric fields
 - `model.events.types`, the supported baseline event type vocabulary
 - `model.events.fields`, the event schema fields emitted in `events.csv`
+- `model.metrics.fields`, the complete metrics schema field order emitted in `metrics.csv`
 - `model.role_action_metrics.fields`, the role/action metric fields emitted in `metrics.csv`
 - `config`, the normalized run config
 
