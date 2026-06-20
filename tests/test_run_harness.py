@@ -702,6 +702,80 @@ def test_documented_cli_smoke_writes_expected_metrics_and_events_rows(tmp_path: 
     }
 
 
+def test_documented_cli_smoke_writes_core_a0_summary_sections(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(CONFIG),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    for heading in [
+        "## Event type totals",
+        "## Baseline lobe totals",
+        "## Baseline lobe transitions",
+        "## Baseline lobe dwell runs",
+        "## Role action totals",
+    ]:
+        assert heading in summary
+
+    event_type_totals = Counter(row["event_type"] for row in event_rows)
+    lobe_totals = Counter(row["baseline_lobe_label"] for row in metric_rows)
+    lobe_transitions = Counter(
+        row["baseline_lobe_transition"]
+        for row in metric_rows
+        if row["baseline_lobe_transition"] not in {"start", "stable"}
+    )
+    role_action_totals = {
+        role: {
+            action: sum(int(row[f"role_{role}_{action}_tick"]) for row in metric_rows)
+            for action in ("idle", "message", "create_task", "work_task")
+        }
+        for role in BASELINE_ROLES
+    }
+
+    assert event_type_totals
+    assert lobe_totals
+    assert lobe_transitions
+    for event_type, count in sorted(event_type_totals.items()):
+        assert f"- {event_type}: {count}" in summary
+    for label, count in sorted(lobe_totals.items()):
+        assert f"- {label}: {count}" in summary
+    for transition, count in sorted(lobe_transitions.items()):
+        assert f"- {transition}: {count}" in summary
+    for label, dwell in _lobe_dwell_runs(metric_rows).items():
+        assert (
+            f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
+            f"max_run={dwell['max_run']}, mean_run={dwell['mean_run']}"
+        ) in summary
+    for role, totals in role_action_totals.items():
+        assert (
+            f"- {role}: idle={totals['idle']}, message={totals['message']}, "
+            f"create_task={totals['create_task']}, work_task={totals['work_task']}"
+        ) in summary
+
+
 def test_cli_validation_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "invalid_actions.yaml"
     out_dir = tmp_path / "invalid_run"
