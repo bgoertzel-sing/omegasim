@@ -1046,6 +1046,49 @@ def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
     assert "- write_summary: enabled" in summary
 
 
+@pytest.mark.parametrize("collision_artifact", ["config.yaml", "metrics.csv", "events.csv", "summary.md"])
+def test_documented_cli_no_manifest_refuses_enabled_artifact_collisions_while_preserving_stale_manifest(
+    tmp_path: Path,
+    collision_artifact: str,
+) -> None:
+    out_dir = tmp_path / f"no_manifest_cli_collision_{collision_artifact.replace('.', '_')}"
+    out_dir.mkdir()
+    stale_manifest = b"stale disabled manifest sentinel\n"
+    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
+    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
+    (out_dir / collision_artifact).write_bytes(collision_content)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(NO_MANIFEST),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error:" in completed.stderr
+    assert str(out_dir) in completed.stderr
+    assert "already contains run artifacts" in completed.stderr
+    assert collision_artifact in completed.stderr
+    assert "manifest.yaml" not in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
+    assert (out_dir / collision_artifact).read_bytes() == collision_content
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        {"manifest.yaml", collision_artifact}
+    )
+
+
 def test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel(
     tmp_path: Path,
 ) -> None:
