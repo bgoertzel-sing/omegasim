@@ -589,6 +589,34 @@ def test_manifest_records_event_schema_provenance(tmp_path: Path) -> None:
     assert set(event["event_type"] for event in event_rows) == set(BASELINE_EVENT_TYPES)
 
 
+def test_summary_records_artifact_schema_provenance(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        events_header = next(csv.reader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert "## Artifact schema provenance" in summary
+    assert f"- metrics fields: {len(metrics_header)}" in summary
+    assert f"- event fields: {len(events_header)}" in summary
+    assert f"- event types: {len(BASELINE_EVENT_TYPES)}" in summary
+    assert f"- baseline lobe labels: {len(BASELINE_LOBE_LABELS)}" in summary
+    assert f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}" in summary
+    assert f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}" in summary
+    assert f"- queued task age fields: {len(QUEUED_TASK_AGE_METRIC_FIELDS)}" in summary
+    assert f"- role/action fields: {len(role_action_metric_fields(tuple(manifest['actions'])))}" in summary
+    assert "- metrics schema source: ohdyn.sim.metrics_fieldnames" in summary
+    assert "- events schema source: ohdyn.sim.EVENT_FIELDS" in summary
+    assert "- manifest mirrors emitted artifact schemas: yes" in summary
+    assert manifest["model"]["metrics"]["fields"] == metrics_header
+    assert manifest["model"]["events"]["fields"] == events_header
+
+
 def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "manifest_only"
 
@@ -1072,6 +1100,7 @@ def test_documented_cli_smoke_writes_core_a0_summary_sections(tmp_path: Path) ->
     summary = (out_dir / "summary.md").read_text()
 
     for heading in [
+        "## Artifact schema provenance",
         "## Event type totals",
         "## Baseline lobe totals",
         "## Baseline lobe transitions",

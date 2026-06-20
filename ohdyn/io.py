@@ -203,6 +203,10 @@ def _summary(result: SimulationResult) -> str:
         f"- created-worked balance: {_created_worked_balance(result)}",
         f"- work-completion gap: {_work_completion_gap(result)}",
         "",
+        "## Artifact schema provenance",
+        "",
+        *_artifact_schema_provenance(result),
+        "",
         "## Event type totals",
         "",
     ]
@@ -266,6 +270,25 @@ def _baseline_lobe_totals(result: SimulationResult) -> dict[str, int]:
 def _event_type_totals(result: SimulationResult) -> dict[str, int]:
     counts = Counter(str(event.get("event_type", "")) for event in result.events)
     return dict(sorted((event_type, count) for event_type, count in counts.items() if event_type))
+
+
+def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
+    metrics_fields = metrics_fieldnames(result.config.model.actions)
+    event_fields = EVENT_FIELDS
+    role_action_fields = role_action_metric_fields(result.config.model.actions)
+    return [
+        f"- metrics fields: {len(metrics_fields)}",
+        f"- event fields: {len(event_fields)}",
+        f"- event types: {len(BASELINE_EVENT_TYPES)}",
+        f"- baseline lobe labels: {len(BASELINE_LOBE_LABELS)}",
+        f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}",
+        f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}",
+        f"- queued task age fields: {len(QUEUED_TASK_AGE_METRIC_FIELDS)}",
+        f"- role/action fields: {len(role_action_fields)}",
+        "- metrics schema source: ohdyn.sim.metrics_fieldnames",
+        "- events schema source: ohdyn.sim.EVENT_FIELDS",
+        "- manifest mirrors emitted artifact schemas: yes",
+    ]
 
 
 def _baseline_lobe_transition_totals(result: SimulationResult) -> dict[str, int]:
