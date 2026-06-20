@@ -1227,6 +1227,19 @@ def test_cli_invalid_seed_error_does_not_write_artifacts(tmp_path: Path) -> None
     assert not out_dir.exists()
 
 
+@pytest.mark.parametrize("seed", [-1, True, "1"])
+def test_run_experiment_invalid_seed_error_does_not_write_artifacts(
+    tmp_path: Path,
+    seed: object,
+) -> None:
+    out_dir = tmp_path / "invalid_seed_run"
+
+    with pytest.raises(ValueError, match="seed must be a non-negative integer"):
+        run_experiment(tmp_path / "missing_config.yaml", seed=seed, out_dir=out_dir)  # type: ignore[arg-type]
+
+    assert not out_dir.exists()
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
