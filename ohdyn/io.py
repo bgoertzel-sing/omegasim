@@ -18,6 +18,7 @@ from ohdyn.sim import BASELINE_LOBE_LABELS, BASELINE_ROLES, SimulationResult
 
 def write_outputs(result: SimulationResult, out_dir: str | Path) -> None:
     output_path = Path(out_dir)
+    _ensure_output_paths_available(output_path, _artifact_names(result))
     output_path.mkdir(parents=True, exist_ok=True)
     (output_path / "config.yaml").write_text(
         yaml.safe_dump(result.config.to_dict(), sort_keys=True)
@@ -33,6 +34,20 @@ def write_outputs(result: SimulationResult, out_dir: str | Path) -> None:
         _write_csv(output_path / "events.csv", result.events)
     if result.config.outputs.write_summary:
         (output_path / "summary.md").write_text(_summary(result))
+
+
+def _ensure_output_paths_available(output_path: Path, artifact_names: list[str]) -> None:
+    if output_path.exists() and not output_path.is_dir():
+        raise FileExistsError(f"Output path {output_path} exists and is not a directory.")
+
+    collisions = [
+        artifact_name
+        for artifact_name in artifact_names
+        if (output_path / artifact_name).exists()
+    ]
+    if collisions:
+        names = ", ".join(collisions)
+        raise FileExistsError(f"Output path {output_path} already contains run artifacts: {names}")
 
 
 def _manifest(result: SimulationResult) -> dict[str, Any]:
