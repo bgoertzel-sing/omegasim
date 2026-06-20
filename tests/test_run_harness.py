@@ -1055,9 +1055,7 @@ def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "no_manifest_cli_stale_manifest"
-    out_dir.mkdir()
-    stale_manifest = b"stale disabled manifest sentinel\n"
-    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
+    stale_manifest = _write_no_manifest_disabled_manifest_sentinel(out_dir)
 
     completed = subprocess.run(
         [
@@ -1078,7 +1076,7 @@ def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    _assert_no_manifest_writes_enabled_artifacts(
+    _assert_no_manifest_preserves_stale_disabled_manifest(
         out_dir,
         stale_manifest=stale_manifest,
     )
@@ -1131,9 +1129,7 @@ def test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel(
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "no_manifest_api_stale_manifest"
-    out_dir.mkdir()
-    stale_manifest = b"stale disabled manifest sentinel\n"
-    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
+    stale_manifest = _write_no_manifest_disabled_manifest_sentinel(out_dir)
 
     result = run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
 
@@ -1142,7 +1138,7 @@ def test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel(
     assert result.config.outputs.write_manifest is False
     assert len(result.metrics) == 3
     assert len(result.events) == 45
-    _assert_no_manifest_writes_enabled_artifacts(
+    _assert_no_manifest_preserves_stale_disabled_manifest(
         out_dir,
         stale_manifest=stale_manifest,
     )
@@ -3268,6 +3264,24 @@ def _assert_no_manifest_writes_enabled_artifacts(
         assert not (out_dir / "manifest.yaml").exists()
     else:
         assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
+
+
+def _write_no_manifest_disabled_manifest_sentinel(out_dir: Path) -> bytes:
+    out_dir.mkdir()
+    stale_manifest = b"stale disabled manifest sentinel\n"
+    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
+    return stale_manifest
+
+
+def _assert_no_manifest_preserves_stale_disabled_manifest(
+    out_dir: Path,
+    *,
+    stale_manifest: bytes,
+) -> None:
+    _assert_no_manifest_writes_enabled_artifacts(
+        out_dir,
+        stale_manifest=stale_manifest,
+    )
 
 
 def _write_no_manifest_collision_sentinels(
