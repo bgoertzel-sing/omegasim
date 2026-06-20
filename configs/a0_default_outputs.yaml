@@ -1,0 +1,11 @@
+run:
+  experiment_id: a0_default_outputs
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task

@@ -15,6 +15,7 @@ from ohdyn.run import run_experiment
 
 
 CONFIG = Path("configs/a0_smoke.yaml")
+DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
 MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
 NO_MANIFEST = Path("configs/a0_no_manifest.yaml")
@@ -27,6 +28,19 @@ def test_loads_a0_smoke_config() -> None:
     assert config.run.ticks == 100
     assert config.model.agent_count == 15
     assert set(config.model.actions) == {"idle", "message", "create_task", "work_task"}
+
+
+def test_loads_a0_default_outputs_fixture() -> None:
+    config = load_config(DEFAULT_OUTPUTS)
+
+    assert config.run.experiment_id == "a0_default_outputs"
+    assert config.run.ticks == 3
+    assert config.model.agent_count == 15
+    assert config.model.actions == ("idle", "message", "create_task", "work_task")
+    assert config.outputs.write_manifest is True
+    assert config.outputs.write_metrics is True
+    assert config.outputs.write_events is True
+    assert config.outputs.write_summary is True
 
 
 def test_loads_a0_config_only_fixture() -> None:
@@ -680,6 +694,50 @@ def test_documented_cli_smoke_writes_required_a0_artifacts(tmp_path: Path) -> No
     assert manifest["artifacts"] == expected_artifacts
     assert manifest["seed"] == 1
     assert manifest["experiment_id"] == "a0_smoke"
+
+
+def test_documented_cli_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "default_outputs_seed1"
+    expected_artifacts = [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(DEFAULT_OUTPUTS),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(expected_artifacts)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert normalized_config["outputs"] == {
+        "write_manifest": True,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    assert manifest["outputs"] == normalized_config["outputs"]
+    assert manifest["artifacts"] == expected_artifacts
+    assert manifest["experiment_id"] == "a0_default_outputs"
 
 
 def test_documented_cli_smoke_writes_expected_metrics_and_events_rows(tmp_path: Path) -> None:

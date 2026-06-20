@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 no-manifest API regression coverage
-- Changed: added fixture-backed `run_experiment()` coverage proving the no-manifest config writes metrics/events/summary without rewriting a disabled stale manifest, and proving enabled-artifact collisions are refused without modifying existing files.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_run_api_respects_no_manifest_fixture_outputs tests/test_run_harness.py::test_run_api_without_manifest_refuses_enabled_artifact_collisions -q` passed with 2 tests; `.venv-conda/bin/python -m pytest -q` passed with 72 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 omitted-output defaults regression coverage
+- Changed: added `configs/a0_default_outputs.yaml` with no `outputs` section, plus API config-load coverage and CLI coverage proving omitted outputs normalize to manifest/metrics/events/summary enabled and write the full A0 artifact set.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_loads_a0_default_outputs_fixture tests/test_run_harness.py::test_documented_cli_omitted_outputs_defaults_to_full_a0_artifacts -q` passed with 2 tests; `.venv-conda/bin/python -m pytest -q` passed with 74 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add config fixture coverage for omitted `outputs` defaults so the baseline smoke config behavior is pinned through both API and CLI paths.
+- Next step: add API-level `run_experiment()` coverage for the omitted-outputs fixture so default artifact writing is pinned without going through the subprocess CLI path.
