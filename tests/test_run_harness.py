@@ -1201,6 +1201,32 @@ model:
     assert not out_dir.exists()
 
 
+def test_cli_invalid_seed_error_does_not_write_artifacts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "invalid_seed_run"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(CONFIG),
+            "--seed",
+            "-1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error: seed must be a non-negative integer." in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert not out_dir.exists()
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"

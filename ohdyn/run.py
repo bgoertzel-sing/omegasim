@@ -12,10 +12,16 @@ from ohdyn.sim import SimulationResult, simulate
 
 
 def run_experiment(config_path: str | Path, seed: int, out_dir: str | Path) -> SimulationResult:
+    _validate_seed(seed)
     config = load_config(config_path)
     result = simulate(config, seed)
     write_outputs(result, out_dir)
     return result
+
+
+def _validate_seed(seed: int) -> None:
+    if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
+        raise ValueError("seed must be a non-negative integer.")
 
 
 def build_parser() -> argparse.ArgumentParser:
