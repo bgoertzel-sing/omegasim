@@ -778,6 +778,32 @@ def test_run_api_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -
     assert "# a0_default_outputs" in (out_dir / "summary.md").read_text()
 
 
+def test_run_api_omitted_outputs_same_seed_reproduces_byte_identical_artifacts(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "default_outputs_api_seed17_first"
+    second = tmp_path / "default_outputs_api_seed17_second"
+    artifacts = [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    first_result = run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=first)
+    second_result = run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=second)
+
+    assert sorted(path.name for path in first.iterdir()) == sorted(artifacts)
+    assert sorted(path.name for path in second.iterdir()) == sorted(artifacts)
+    assert first_result.config.to_dict() == second_result.config.to_dict()
+    assert first_result.seed == second_result.seed == 17
+    assert first_result.metrics == second_result.metrics
+    assert first_result.events == second_result.events
+    for artifact in artifacts:
+        assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
+
+
 def test_documented_cli_smoke_writes_expected_metrics_and_events_rows(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
