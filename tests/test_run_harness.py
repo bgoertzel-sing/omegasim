@@ -1046,6 +1046,51 @@ def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
     assert "- write_summary: enabled" in summary
 
 
+def test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "no_manifest_api_stale_manifest"
+    out_dir.mkdir()
+    stale_manifest = b"stale disabled manifest sentinel\n"
+    (out_dir / "manifest.yaml").write_bytes(stale_manifest)
+
+    result = run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
+
+    assert result.config.run.experiment_id == "a0_no_manifest"
+    assert result.seed == 1
+    assert result.config.outputs.write_manifest is False
+    assert len(result.metrics) == 3
+    assert len(result.events) == 45
+    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
+    assert sorted(path.name for path in out_dir.iterdir()) == [
+        "config.yaml",
+        "events.csv",
+        "manifest.yaml",
+        "metrics.csv",
+        "summary.md",
+    ]
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+
+    with (out_dir / "metrics.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 3
+    with (out_dir / "events.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 45
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "- written artifacts: config.yaml, metrics.csv, events.csv, summary.md" in summary
+    assert "- write_manifest: disabled" in summary
+    assert "- write_metrics: enabled" in summary
+    assert "- write_events: enabled" in summary
+    assert "- write_summary: enabled" in summary
+
+
 def test_output_flags_must_be_yaml_booleans(tmp_path: Path) -> None:
     config_path = tmp_path / "string_bool.yaml"
     config_path.write_text(
