@@ -36,6 +36,18 @@ BASELINE_LOBE_TRANSITION_FIELDS = (
     "baseline_lobe_current_run_length",
 )
 
+QUEUE_PRESSURE_METRIC_FIELDS = (
+    "created_completed_balance_tick",
+    "created_worked_balance_tick",
+    "work_completion_gap_tick",
+    "backlog_pressure_tick",
+)
+
+QUEUED_TASK_AGE_METRIC_FIELDS = (
+    "queued_task_age_max_tick",
+    "queued_task_age_mean_tick",
+)
+
 
 def role_action_metric_fields(actions: tuple[str, ...]) -> tuple[str, ...]:
     return tuple(

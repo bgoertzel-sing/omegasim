@@ -17,6 +17,8 @@ from ohdyn.sim import (
     BASELINE_LOBE_LABELS,
     BASELINE_LOBE_TRANSITION_FIELDS,
     BASELINE_ROLES,
+    QUEUE_PRESSURE_METRIC_FIELDS,
+    QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
     role_action_metric_fields,
 )
@@ -74,6 +76,10 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "baseline_lobes": {
                 "labels": list(BASELINE_LOBE_LABELS),
                 "transition_fields": list(BASELINE_LOBE_TRANSITION_FIELDS),
+            },
+            "queue_dynamics_metrics": {
+                "pressure_fields": list(QUEUE_PRESSURE_METRIC_FIELDS),
+                "queued_task_age_fields": list(QUEUED_TASK_AGE_METRIC_FIELDS),
             },
             "role_action_metrics": {
                 "roles": list(BASELINE_ROLES),

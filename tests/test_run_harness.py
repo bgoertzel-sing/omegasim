@@ -13,6 +13,8 @@ from ohdyn.sim import (
     BASELINE_LOBE_LABELS,
     BASELINE_LOBE_TRANSITION_FIELDS,
     BASELINE_ROLES,
+    QUEUE_PRESSURE_METRIC_FIELDS,
+    QUEUED_TASK_AGE_METRIC_FIELDS,
     role_action_metric_fields,
 )
 from ohdyn.config import load_config
@@ -517,6 +519,10 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
             "labels": list(BASELINE_LOBE_LABELS),
             "transition_fields": list(BASELINE_LOBE_TRANSITION_FIELDS),
         },
+        "queue_dynamics_metrics": {
+            "pressure_fields": list(QUEUE_PRESSURE_METRIC_FIELDS),
+            "queued_task_age_fields": list(QUEUED_TASK_AGE_METRIC_FIELDS),
+        },
         "role_action_metrics": {
             "roles": list(BASELINE_ROLES),
             "actions": actions,
@@ -561,6 +567,27 @@ def test_manifest_records_role_action_metric_provenance(tmp_path: Path) -> None:
         "fields": expected_fields,
     }
     for field in role_action_metrics["fields"]:
+        assert field in metrics_header
+
+
+def test_manifest_records_queue_dynamics_metric_provenance(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    queue_dynamics_metrics = manifest["model"]["queue_dynamics_metrics"]
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    assert queue_dynamics_metrics == {
+        "pressure_fields": list(QUEUE_PRESSURE_METRIC_FIELDS),
+        "queued_task_age_fields": list(QUEUED_TASK_AGE_METRIC_FIELDS),
+    }
+    for field in [
+        *queue_dynamics_metrics["pressure_fields"],
+        *queue_dynamics_metrics["queued_task_age_fields"],
+    ]:
         assert field in metrics_header
 
 

@@ -89,6 +89,8 @@ python -m ohdyn.run --config configs/a0_no_manifest.yaml --seed 1 --out runs/a0_
 - `model.agent_ids`, `model.roles`, `model.bus_nodes`, and `model.bus_edges`
 - `model.baseline_lobes.labels`, the baseline lobe vocabulary used in `metrics.csv`
 - `model.baseline_lobes.transition_fields`, the lobe transition/run-state metric fields
+- `model.queue_dynamics_metrics.pressure_fields`, the queue pressure balance metric fields
+- `model.queue_dynamics_metrics.queued_task_age_fields`, the queued-task-age metric fields
 - `model.role_action_metrics.fields`, the role/action metric fields emitted in `metrics.csv`
 - `config`, the normalized run config
 
