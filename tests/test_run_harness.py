@@ -719,6 +719,41 @@ def test_manifest_artifacts_match_output_directory_contents_when_manifest_only(
     assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
 
 
+def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "manifest_only_cli"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(MANIFEST_ONLY),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
+
+    assert sorted(manifest["artifacts"]) == sorted(directory_artifacts)
+    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "events.csv").exists()
+    assert not (out_dir / "summary.md").exists()
+
+
 def test_output_flags_must_be_yaml_booleans(tmp_path: Path) -> None:
     config_path = tmp_path / "string_bool.yaml"
     config_path.write_text(
