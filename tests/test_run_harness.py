@@ -850,6 +850,71 @@ def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Pa
     assert after == before
 
 
+def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> None:
+    config_path = tmp_path / "minimal_cli_outputs.yaml"
+    out_dir = tmp_path / "minimal_cli_outputs"
+    expected_artifacts = [
+        "config.yaml",
+        "manifest.yaml",
+    ]
+    config_path.write_text(
+        """
+run:
+  experiment_id: minimal_cli_outputs
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: true
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "17",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert sorted(path.name for path in out_dir.iterdir()) == expected_artifacts
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["artifacts"] == expected_artifacts
+    assert manifest["outputs"] == {
+        "write_manifest": True,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+    assert manifest["seed"] == 17
+    assert manifest["experiment_id"] == "minimal_cli_outputs"
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "events.csv").exists()
+    assert not (out_dir / "summary.md").exists()
+
+
 def test_documented_cli_different_seeds_change_events_but_preserve_schema(tmp_path: Path) -> None:
     first = tmp_path / "a0_seed17"
     second = tmp_path / "a0_seed18"
