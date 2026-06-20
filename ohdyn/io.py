@@ -13,7 +13,12 @@ from typing import Any
 
 import yaml
 
-from ohdyn.sim import BASELINE_LOBE_LABELS, BASELINE_ROLES, SimulationResult
+from ohdyn.sim import (
+    BASELINE_LOBE_LABELS,
+    BASELINE_LOBE_TRANSITION_FIELDS,
+    BASELINE_ROLES,
+    SimulationResult,
+)
 
 
 def write_outputs(result: SimulationResult, out_dir: str | Path) -> None:
@@ -65,6 +70,10 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "roles": {agent.agent_id: agent.role for agent in result.agents},
             "bus_nodes": result.bus_graph.number_of_nodes(),
             "bus_edges": result.bus_graph.number_of_edges(),
+            "baseline_lobes": {
+                "labels": list(BASELINE_LOBE_LABELS),
+                "transition_fields": list(BASELINE_LOBE_TRANSITION_FIELDS),
+            },
         },
         "config": result.config.to_dict(),
     }

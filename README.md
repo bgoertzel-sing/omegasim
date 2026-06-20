@@ -87,6 +87,8 @@ python -m ohdyn.run --config configs/a0_no_manifest.yaml --seed 1 --out runs/a0_
 - `artifacts`, the exact files written for the run
 - `environment.git_commit`, `environment.python_version`, and package versions
 - `model.agent_ids`, `model.roles`, `model.bus_nodes`, and `model.bus_edges`
+- `model.baseline_lobes.labels`, the baseline lobe vocabulary used in `metrics.csv`
+- `model.baseline_lobes.transition_fields`, the lobe transition/run-state metric fields
 - `config`, the normalized run config
 
 `metrics.csv` has one row per tick. The current fields include:

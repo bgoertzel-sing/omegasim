@@ -9,7 +9,7 @@ import sys
 import pytest
 import yaml
 
-from ohdyn.sim import BASELINE_LOBE_LABELS, BASELINE_ROLES
+from ohdyn.sim import BASELINE_LOBE_LABELS, BASELINE_LOBE_TRANSITION_FIELDS, BASELINE_ROLES
 from ohdyn.config import load_config
 from ohdyn.run import run_experiment
 
@@ -508,7 +508,30 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
         "roles": roles,
         "bus_nodes": 16,
         "bus_edges": 15,
+        "baseline_lobes": {
+            "labels": list(BASELINE_LOBE_LABELS),
+            "transition_fields": list(BASELINE_LOBE_TRANSITION_FIELDS),
+        },
     }
+
+
+def test_manifest_records_baseline_lobe_metric_provenance(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    baseline_lobes = manifest["model"]["baseline_lobes"]
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    assert baseline_lobes == {
+        "labels": list(BASELINE_LOBE_LABELS),
+        "transition_fields": list(BASELINE_LOBE_TRANSITION_FIELDS),
+    }
+    assert "baseline_lobe_label" in metrics_header
+    for field in baseline_lobes["transition_fields"]:
+        assert field in metrics_header
 
 
 def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:

@@ -28,6 +28,14 @@ BASELINE_LOBE_LABELS = (
     "low_activity",
 )
 
+BASELINE_LOBE_TRANSITION_FIELDS = (
+    "baseline_lobe_previous_label",
+    "baseline_lobe_transition",
+    "baseline_lobe_transition_tick",
+    "baseline_lobe_run_id",
+    "baseline_lobe_current_run_length",
+)
+
 
 @dataclass(frozen=True)
 class AgentState:

@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 omitted-output defaults API collision coverage
-- Changed: added API-level collision coverage for `configs/a0_default_outputs.yaml`, asserting `run_experiment` refuses an output directory containing enabled default artifacts, preserves sentinel artifact bytes, and does not write partial `manifest.yaml`, `metrics.csv`, or `summary.md` artifacts.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_run_api_omitted_outputs_refuses_collision_without_partial_artifacts -q` passed with 1 test; `.venv-conda/bin/python -m pytest -q` passed with 79 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 baseline lobe manifest provenance
+- Changed: added `model.baseline_lobes.labels` and `model.baseline_lobes.transition_fields` to `manifest.yaml`, backed by simulator constants; documented the new manifest fields in `README.md`; added manifest schema coverage that verifies the declared lobe transition fields exist in `metrics.csv`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_manifest_records_baseline_lobe_metric_provenance -q` passed with 1 test; `.venv-conda/bin/python -m pytest -q` passed with 80 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add manifest provenance for the baseline lobe label vocabulary and transition fields so lobe metrics are discoverable from `manifest.yaml`.
+- Next step: add manifest provenance for role/action metric fields so role aggregate metrics are discoverable from `manifest.yaml`.
