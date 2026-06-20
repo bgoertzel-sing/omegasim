@@ -1189,6 +1189,57 @@ def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_con
     assert not (out_dir / "manifest.yaml").exists()
 
 
+def test_documented_cli_no_manifest_emitted_artifacts_preserve_schema_provenance(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "no_manifest_cli_schema"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(NO_MANIFEST),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert not (out_dir / "manifest.yaml").exists()
+
+    actions = ("idle", "message", "create_task", "work_task")
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        events_header = next(csv.reader(handle))
+        event_rows = list(csv.DictReader(handle, fieldnames=events_header))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert metrics_header == list(metrics_fieldnames(actions))
+    assert events_header == list(EVENT_FIELDS)
+    assert event_rows
+    assert set(event["event_type"] for event in event_rows) <= set(BASELINE_EVENT_TYPES)
+    assert "## Artifact schema provenance" in summary
+    assert f"- metrics fields: {len(metrics_header)}" in summary
+    assert f"- event fields: {len(events_header)}" in summary
+    assert f"- event types: {len(BASELINE_EVENT_TYPES)}" in summary
+    assert f"- baseline lobe labels: {len(BASELINE_LOBE_LABELS)}" in summary
+    assert f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}" in summary
+    assert f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}" in summary
+    assert f"- queued task age fields: {len(QUEUED_TASK_AGE_METRIC_FIELDS)}" in summary
+    assert f"- role/action fields: {len(role_action_metric_fields(actions))}" in summary
+    assert "- metrics schema source: ohdyn.sim.metrics_fieldnames" in summary
+    assert "- events schema source: ohdyn.sim.EVENT_FIELDS" in summary
+
+
 def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
     tmp_path: Path,
 ) -> None:
