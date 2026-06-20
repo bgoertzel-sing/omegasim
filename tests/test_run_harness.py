@@ -1525,6 +1525,43 @@ outputs:
     assert len(first_result.events) == len(second_result.events) == 45
 
 
+def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "config_only_rerun.yaml"
+    out_dir = tmp_path / "config_only_rerun"
+    config_path.write_text(
+        """
+run:
+  experiment_id: config_only_rerun
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+
+    run_experiment(config_path, seed=17, out_dir=out_dir)
+    before = (out_dir / "config.yaml").read_bytes()
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts: config.yaml"):
+        run_experiment(config_path, seed=17, out_dir=out_dir)
+
+    assert sorted(path.name for path in out_dir.iterdir()) == ["config.yaml"]
+    assert (out_dir / "config.yaml").read_bytes() == before
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
@@ -1851,6 +1888,63 @@ outputs:
         "write_events": False,
         "write_summary": False,
     }
+
+
+def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Path) -> None:
+    config_path = tmp_path / "config_only_cli_rerun.yaml"
+    out_dir = tmp_path / "config_only_cli_rerun"
+    config_path.write_text(
+        """
+run:
+  experiment_id: config_only_cli_rerun
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: false
+  write_events: false
+  write_summary: false
+"""
+    )
+    command = [
+        sys.executable,
+        "-m",
+        "ohdyn.run",
+        "--config",
+        str(config_path),
+        "--seed",
+        "17",
+        "--out",
+        str(out_dir),
+    ]
+
+    first = subprocess.run(command, capture_output=True, text=True, check=False)
+    before = (out_dir / "config.yaml").read_bytes()
+
+    second = subprocess.run(command, capture_output=True, text=True, check=False)
+
+    assert first.returncode == 0
+    assert first.stderr == ""
+    assert second.returncode != 0
+    assert "error:" in second.stderr
+    assert str(out_dir) in second.stderr
+    assert "already contains run artifacts" in second.stderr
+    assert "config.yaml" in second.stderr
+    assert "manifest.yaml" not in second.stderr
+    assert "metrics.csv" not in second.stderr
+    assert "events.csv" not in second.stderr
+    assert "summary.md" not in second.stderr
+    assert "Traceback" not in second.stderr
+    assert sorted(path.name for path in out_dir.iterdir()) == ["config.yaml"]
+    assert (out_dir / "config.yaml").read_bytes() == before
 
 
 def test_cli_output_path_file_does_not_overwrite_or_traceback(tmp_path: Path) -> None:
