@@ -813,6 +813,54 @@ def test_documented_cli_same_seed_reproduces_byte_identical_a0_artifacts(tmp_pat
         assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
 
 
+def test_documented_cli_different_seeds_change_events_but_preserve_schema(tmp_path: Path) -> None:
+    first = tmp_path / "a0_seed17"
+    second = tmp_path / "a0_seed18"
+
+    for seed, out_dir in [(17, first), (18, second)]:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "ohdyn.run",
+                "--config",
+                str(CONFIG),
+                "--seed",
+                str(seed),
+                "--out",
+                str(out_dir),
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        assert completed.returncode == 0
+        assert completed.stderr == ""
+
+    with (first / "metrics.csv").open() as handle:
+        first_metrics = list(csv.reader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metrics = list(csv.reader(handle))
+    with (first / "events.csv").open() as handle:
+        first_events = list(csv.reader(handle))
+    with (second / "events.csv").open() as handle:
+        second_events = list(csv.reader(handle))
+
+    assert first_metrics[0] == second_metrics[0]
+    assert first_events[0] == second_events[0]
+    assert len(first_metrics) == len(second_metrics) == 101
+    assert len(first_events) == len(second_events) == 1501
+    assert first_events[1:] != second_events[1:]
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    assert first_manifest["seed"] == 17
+    assert second_manifest["seed"] == 18
+    assert first_manifest["actions"] == second_manifest["actions"]
+    assert first_manifest["model"] == second_manifest["model"]
+
+
 def test_cli_validation_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "invalid_actions.yaml"
     out_dir = tmp_path / "invalid_run"
