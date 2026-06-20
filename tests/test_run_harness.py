@@ -1894,29 +1894,7 @@ def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Pa
 
 
 def test_cli_config_only_rerun_preserves_disabled_artifact_sentinels(tmp_path: Path) -> None:
-    config_path = tmp_path / "config_only_cli_rerun_with_disabled_sentinels.yaml"
     out_dir = tmp_path / "config_only_cli_rerun_with_disabled_sentinels"
-    config_path.write_text(
-        """
-run:
-  experiment_id: config_only_cli_rerun_with_disabled_sentinels
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
     disabled_sentinels = {
         "manifest.yaml": b"sentinel disabled manifest\n",
         "metrics.csv": b"sentinel disabled metrics\n",
@@ -1928,7 +1906,7 @@ outputs:
         "-m",
         "ohdyn.run",
         "--config",
-        str(config_path),
+        str(CONFIG_ONLY),
         "--seed",
         "17",
         "--out",
@@ -1957,6 +1935,14 @@ outputs:
         ["config.yaml", *disabled_sentinels]
     )
     assert {path.name: path.read_bytes() for path in out_dir.iterdir()} == before
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    assert normalized_config["run"]["experiment_id"] == "a0_config_only"
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
 
 
 def test_cli_output_path_file_does_not_overwrite_or_traceback(tmp_path: Path) -> None:
