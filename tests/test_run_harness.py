@@ -9,7 +9,12 @@ import sys
 import pytest
 import yaml
 
-from ohdyn.sim import BASELINE_LOBE_LABELS, BASELINE_LOBE_TRANSITION_FIELDS, BASELINE_ROLES
+from ohdyn.sim import (
+    BASELINE_LOBE_LABELS,
+    BASELINE_LOBE_TRANSITION_FIELDS,
+    BASELINE_ROLES,
+    role_action_metric_fields,
+)
 from ohdyn.config import load_config
 from ohdyn.run import run_experiment
 
@@ -512,6 +517,11 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
             "labels": list(BASELINE_LOBE_LABELS),
             "transition_fields": list(BASELINE_LOBE_TRANSITION_FIELDS),
         },
+        "role_action_metrics": {
+            "roles": list(BASELINE_ROLES),
+            "actions": actions,
+            "fields": list(role_action_metric_fields(tuple(actions))),
+        },
     }
 
 
@@ -531,6 +541,26 @@ def test_manifest_records_baseline_lobe_metric_provenance(tmp_path: Path) -> Non
     }
     assert "baseline_lobe_label" in metrics_header
     for field in baseline_lobes["transition_fields"]:
+        assert field in metrics_header
+
+
+def test_manifest_records_role_action_metric_provenance(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    role_action_metrics = manifest["model"]["role_action_metrics"]
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    expected_fields = list(role_action_metric_fields(tuple(manifest["actions"])))
+    assert role_action_metrics == {
+        "roles": list(BASELINE_ROLES),
+        "actions": manifest["actions"],
+        "fields": expected_fields,
+    }
+    for field in role_action_metrics["fields"]:
         assert field in metrics_header
 
 

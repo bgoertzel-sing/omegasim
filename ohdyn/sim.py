@@ -37,6 +37,14 @@ BASELINE_LOBE_TRANSITION_FIELDS = (
 )
 
 
+def role_action_metric_fields(actions: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(
+        f"role_{role}_{action}_tick"
+        for role in BASELINE_ROLES
+        for action in actions
+    )
+
+
 @dataclass(frozen=True)
 class AgentState:
     agent_id: str
@@ -261,9 +269,10 @@ def _role_action_metrics(
     role_action_counts: Counter[tuple[str, str]],
 ) -> dict[str, int]:
     return {
-        f"role_{role}_{action}_tick": role_action_counts[(role, action)]
+        field: role_action_counts[(role, action)]
         for role in BASELINE_ROLES
         for action in actions
+        for field in (f"role_{role}_{action}_tick",)
     }
 
 

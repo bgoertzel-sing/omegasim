@@ -18,6 +18,7 @@ from ohdyn.sim import (
     BASELINE_LOBE_TRANSITION_FIELDS,
     BASELINE_ROLES,
     SimulationResult,
+    role_action_metric_fields,
 )
 
 
@@ -73,6 +74,11 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "baseline_lobes": {
                 "labels": list(BASELINE_LOBE_LABELS),
                 "transition_fields": list(BASELINE_LOBE_TRANSITION_FIELDS),
+            },
+            "role_action_metrics": {
+                "roles": list(BASELINE_ROLES),
+                "actions": list(result.config.model.actions),
+                "fields": list(role_action_metric_fields(result.config.model.actions)),
             },
         },
         "config": result.config.to_dict(),
