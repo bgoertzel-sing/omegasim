@@ -1454,29 +1454,7 @@ outputs:
 def test_run_experiment_config_artifact_collision_blocks_when_all_optional_outputs_disabled(
     tmp_path: Path,
 ) -> None:
-    config_path = tmp_path / "config_only_collision.yaml"
     out_dir = tmp_path / "config_only_collision"
-    config_path.write_text(
-        """
-run:
-  experiment_id: config_only_collision
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
     disabled_sentinels = {
         "metrics.csv": "sentinel disabled metrics\n",
         "events.csv": "sentinel disabled events\n",
@@ -1489,7 +1467,7 @@ outputs:
         (out_dir / artifact).write_text(content)
 
     with pytest.raises(FileExistsError, match="already contains run artifacts: config.yaml"):
-        run_experiment(config_path, seed=17, out_dir=out_dir)
+        run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
 
     assert (out_dir / "config.yaml").read_text() == "sentinel mandatory config\n"
     assert sorted(path.name for path in out_dir.iterdir()) == sorted(
