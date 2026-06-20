@@ -883,15 +883,7 @@ def test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels(
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "config_only_cli_stale_disabled"
-    out_dir.mkdir()
-    stale_disabled_artifacts = {
-        "manifest.yaml": b"stale disabled manifest sentinel\n",
-        "metrics.csv": b"stale disabled metrics sentinel\n",
-        "events.csv": b"stale disabled events sentinel\n",
-        "summary.md": b"stale disabled summary sentinel\n",
-    }
-    for artifact, content in stale_disabled_artifacts.items():
-        (out_dir / artifact).write_bytes(content)
+    stale_disabled_artifacts = _write_config_only_disabled_artifact_sentinels(out_dir)
 
     completed = subprocess.run(
         [
@@ -912,16 +904,10 @@ def test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels(
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert sorted(path.name for path in out_dir.iterdir()) == [
-        "config.yaml",
-        "events.csv",
-        "manifest.yaml",
-        "metrics.csv",
-        "summary.md",
-    ]
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
-
+    _assert_config_only_preserves_stale_disabled_artifacts(
+        out_dir,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+    )
     _assert_config_only_writes_normalized_config(out_dir)
 
 
@@ -929,15 +915,7 @@ def test_run_api_config_only_preserves_stale_disabled_artifact_sentinels(
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "config_only_api_stale_disabled"
-    out_dir.mkdir()
-    stale_disabled_artifacts = {
-        "manifest.yaml": b"stale disabled manifest sentinel\n",
-        "metrics.csv": b"stale disabled metrics sentinel\n",
-        "events.csv": b"stale disabled events sentinel\n",
-        "summary.md": b"stale disabled summary sentinel\n",
-    }
-    for artifact, content in stale_disabled_artifacts.items():
-        (out_dir / artifact).write_bytes(content)
+    stale_disabled_artifacts = _write_config_only_disabled_artifact_sentinels(out_dir)
 
     result = run_experiment(CONFIG_ONLY, seed=1, out_dir=out_dir)
 
@@ -945,16 +923,10 @@ def test_run_api_config_only_preserves_stale_disabled_artifact_sentinels(
     assert result.seed == 1
     assert len(result.metrics) == 3
     assert len(result.events) == 45
-    assert sorted(path.name for path in out_dir.iterdir()) == [
-        "config.yaml",
-        "events.csv",
-        "manifest.yaml",
-        "metrics.csv",
-        "summary.md",
-    ]
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
-
+    _assert_config_only_preserves_stale_disabled_artifacts(
+        out_dir,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+    )
     _assert_config_only_writes_normalized_config(out_dir)
 
 
@@ -3229,6 +3201,34 @@ def _assert_config_only_writes_normalized_config(out_dir: Path) -> None:
             "write_summary": False,
         },
     }
+
+
+def _write_config_only_disabled_artifact_sentinels(out_dir: Path) -> dict[str, bytes]:
+    out_dir.mkdir()
+    stale_disabled_artifacts = {
+        "manifest.yaml": b"stale disabled manifest sentinel\n",
+        "metrics.csv": b"stale disabled metrics sentinel\n",
+        "events.csv": b"stale disabled events sentinel\n",
+        "summary.md": b"stale disabled summary sentinel\n",
+    }
+
+    for artifact, content in stale_disabled_artifacts.items():
+        (out_dir / artifact).write_bytes(content)
+
+    return stale_disabled_artifacts
+
+
+def _assert_config_only_preserves_stale_disabled_artifacts(
+    out_dir: Path,
+    *,
+    stale_disabled_artifacts: dict[str, bytes],
+) -> None:
+    assert (out_dir / "config.yaml").is_file()
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        ["config.yaml", *stale_disabled_artifacts]
+    )
+    for artifact, content in stale_disabled_artifacts.items():
+        assert (out_dir / artifact).read_bytes() == content
 
 
 def _assert_no_manifest_writes_enabled_artifacts(
