@@ -1015,6 +1015,40 @@ def test_run_api_manifest_only_preserves_stale_disabled_artifact_sentinels(
     assert manifest["experiment_id"] == "a0_manifest_only"
 
 
+@pytest.mark.parametrize("collision_artifact", ["config.yaml", "manifest.yaml"])
+def test_run_api_manifest_only_refuses_enabled_artifact_collisions_while_preserving_stale_disabled_artifacts(
+    tmp_path: Path,
+    collision_artifact: str,
+) -> None:
+    out_dir = tmp_path / f"manifest_only_api_collision_{collision_artifact.replace('.', '_')}"
+    out_dir.mkdir()
+    stale_disabled_artifacts = {
+        "metrics.csv": b"stale disabled metrics sentinel\n",
+        "events.csv": b"stale disabled events sentinel\n",
+        "summary.md": b"stale disabled summary sentinel\n",
+    }
+    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
+    for artifact, content in stale_disabled_artifacts.items():
+        (out_dir / artifact).write_bytes(content)
+    (out_dir / collision_artifact).write_bytes(collision_content)
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts") as exc_info:
+        run_experiment(MANIFEST_ONLY, seed=1, out_dir=out_dir)
+
+    message = str(exc_info.value)
+    assert str(out_dir) in message
+    assert collision_artifact in message
+    assert "metrics.csv" not in message
+    assert "events.csv" not in message
+    assert "summary.md" not in message
+    for artifact, content in stale_disabled_artifacts.items():
+        assert (out_dir / artifact).read_bytes() == content
+    assert (out_dir / collision_artifact).read_bytes() == collision_content
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        {*stale_disabled_artifacts, collision_artifact}
+    )
+
+
 def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_contents(
     tmp_path: Path,
 ) -> None:
