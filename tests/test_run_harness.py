@@ -1346,6 +1346,16 @@ def test_run_experiment_refuses_partial_output_directory_without_writing_artifac
     assert not (out_dir / "summary.md").exists()
 
 
+def test_run_experiment_output_path_file_does_not_overwrite(tmp_path: Path) -> None:
+    out_path = tmp_path / "file_output"
+    out_path.write_text("sentinel output path\n")
+
+    with pytest.raises(FileExistsError, match="exists and is not a directory"):
+        run_experiment(CONFIG, seed=17, out_dir=out_path)
+
+    assert out_path.read_text() == "sentinel output path\n"
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
