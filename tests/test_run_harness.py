@@ -625,6 +625,43 @@ model:
         load_config(config_path)
 
 
+def test_documented_cli_smoke_writes_required_a0_artifacts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0_seed1"
+    expected_artifacts = [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(CONFIG),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(expected_artifacts)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["artifacts"] == expected_artifacts
+    assert manifest["seed"] == 1
+    assert manifest["experiment_id"] == "a0_smoke"
+
+
 def test_cli_validation_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "invalid_actions.yaml"
     out_dir = tmp_path / "invalid_run"
