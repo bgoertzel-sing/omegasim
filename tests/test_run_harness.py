@@ -1088,9 +1088,7 @@ def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_con
     directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
 
     assert sorted(summary_artifacts) == sorted(directory_artifacts)
-    assert summary_artifacts == ["config.yaml", "metrics.csv", "events.csv", "summary.md"]
-    assert "manifest.yaml" not in summary_artifacts
-    assert not (out_dir / "manifest.yaml").exists()
+    _assert_no_manifest_writes_enabled_artifacts(out_dir)
 
 
 def test_documented_cli_no_manifest_emitted_artifacts_preserve_schema_provenance(
@@ -1148,21 +1146,10 @@ def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
-    assert sorted(path.name for path in out_dir.iterdir()) == [
-        "config.yaml",
-        "events.csv",
-        "manifest.yaml",
-        "metrics.csv",
-        "summary.md",
-    ]
-
-    summary = (out_dir / "summary.md").read_text()
-    assert "- written artifacts: config.yaml, metrics.csv, events.csv, summary.md" in summary
-    assert "- write_manifest: disabled" in summary
-    assert "- write_metrics: enabled" in summary
-    assert "- write_events: enabled" in summary
-    assert "- write_summary: enabled" in summary
+    _assert_no_manifest_writes_enabled_artifacts(
+        out_dir,
+        stale_manifest=stale_manifest,
+    )
 
 
 @pytest.mark.parametrize("collision_artifact", ["config.yaml", "metrics.csv", "events.csv", "summary.md"])
@@ -1223,34 +1210,15 @@ def test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel(
     assert result.config.outputs.write_manifest is False
     assert len(result.metrics) == 3
     assert len(result.events) == 45
-    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
-    assert sorted(path.name for path in out_dir.iterdir()) == [
-        "config.yaml",
-        "events.csv",
-        "manifest.yaml",
-        "metrics.csv",
-        "summary.md",
-    ]
-
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    assert normalized_config["outputs"] == {
-        "write_manifest": False,
-        "write_metrics": True,
-        "write_events": True,
-        "write_summary": True,
-    }
+    _assert_no_manifest_writes_enabled_artifacts(
+        out_dir,
+        stale_manifest=stale_manifest,
+    )
 
     with (out_dir / "metrics.csv").open() as handle:
         assert len(list(csv.DictReader(handle))) == 3
     with (out_dir / "events.csv").open() as handle:
         assert len(list(csv.DictReader(handle))) == 45
-
-    summary = (out_dir / "summary.md").read_text()
-    assert "- written artifacts: config.yaml, metrics.csv, events.csv, summary.md" in summary
-    assert "- write_manifest: disabled" in summary
-    assert "- write_metrics: enabled" in summary
-    assert "- write_events: enabled" in summary
-    assert "- write_summary: enabled" in summary
 
 
 def test_run_api_no_manifest_emitted_artifacts_preserve_schema_provenance(
@@ -3246,6 +3214,42 @@ def _assert_config_only_writes_normalized_config(out_dir: Path) -> None:
             "write_summary": False,
         },
     }
+
+
+def _assert_no_manifest_writes_enabled_artifacts(
+    out_dir: Path,
+    *,
+    stale_manifest: bytes | None = None,
+) -> None:
+    expected_artifacts = ["config.yaml", "metrics.csv", "events.csv", "summary.md"]
+    expected_outputs = {
+        "write_manifest": False,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    expected_directory_artifacts = sorted(
+        [*expected_artifacts, *(["manifest.yaml"] if stale_manifest is not None else [])]
+    )
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    written_artifacts_line = next(
+        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
+    )
+    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+
+    assert summary_artifacts == expected_artifacts
+    assert sorted(path.name for path in out_dir.iterdir()) == expected_directory_artifacts
+    assert normalized_config["outputs"] == expected_outputs
+    assert "- write_manifest: disabled" in summary
+    assert "- write_metrics: enabled" in summary
+    assert "- write_events: enabled" in summary
+    assert "- write_summary: enabled" in summary
+    if stale_manifest is None:
+        assert not (out_dir / "manifest.yaml").exists()
+    else:
+        assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
 
 
 def _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(

@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 config-only normalized-config test helper
-- Changed: factored the duplicated API/CLI config-only normalized-config assertions into `_assert_config_only_writes_normalized_config()`.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels tests/test_run_harness.py::test_run_api_config_only_preserves_stale_disabled_artifact_sentinels -q` passed with 2 tests; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 no-manifest artifact/output test helper
+- Changed: factored the repeated no-manifest artifact set, disabled-manifest, normalized output flag, and summary output flag assertions into `_assert_no_manifest_writes_enabled_artifacts()`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_no_manifest_summary_artifacts_match_output_directory_contents tests/test_run_harness.py::test_documented_cli_no_manifest_preserves_stale_manifest_sentinel tests/test_run_harness.py::test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel -q` passed with 3 tests; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: factor repeated no-manifest output flag and artifact assertions shared by CLI/API no-manifest regressions.
+- Next step: factor repeated stale-manifest collision assertions shared by CLI/API no-manifest collision regressions.
