@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 no-manifest enabled-artifact row-count test helper
-- Changed: centralized no-manifest enabled-artifact CSV row-count assertions into `_assert_no_manifest_enabled_artifact_row_counts()` and routed CLI/API no-manifest output regressions through `_assert_no_manifest_writes_enabled_artifacts()`.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_respects_disabled_manifest_output tests/test_run_harness.py::test_run_api_respects_no_manifest_fixture_outputs tests/test_run_harness.py::test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel -q` passed with 3 tests; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 summary written-artifact parsing helper
+- Changed: centralized repeated `summary.md` written-artifact line parsing into `_summary_written_artifacts()` and routed manifest-backed, no-manifest, CLI, and API output-directory regressions through the shared helper.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_summary_written_artifacts_match_manifest_artifacts tests/test_run_harness.py::test_summary_written_artifacts_match_output_directory_contents tests/test_run_harness.py::test_summary_written_artifacts_match_output_directory_contents_without_manifest tests/test_run_harness.py::test_documented_cli_no_manifest_summary_artifacts_match_output_directory_contents tests/test_run_harness.py::test_run_api_respects_no_manifest_fixture_outputs -q` passed with 5 tests; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: factor repeated summary written-artifact line parsing shared by manifest-backed and no-manifest output-directory regressions.
+- Next step: factor repeated output-directory artifact listing assertions shared by manifest-backed and no-manifest output regressions.

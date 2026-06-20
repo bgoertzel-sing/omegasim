@@ -632,10 +632,7 @@ def test_summary_written_artifacts_match_manifest_artifacts(tmp_path: Path) -> N
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
-    written_artifacts_line = next(
-        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
-    )
-    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+    summary_artifacts = _summary_written_artifacts(summary)
 
     assert summary_artifacts == manifest["artifacts"]
 
@@ -646,10 +643,7 @@ def test_summary_written_artifacts_match_output_directory_contents(tmp_path: Pat
     run_experiment(CONFIG, seed=1, out_dir=out_dir)
 
     summary = (out_dir / "summary.md").read_text()
-    written_artifacts_line = next(
-        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
-    )
-    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+    summary_artifacts = _summary_written_artifacts(summary)
     directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
 
     assert sorted(summary_artifacts) == sorted(directory_artifacts)
@@ -663,10 +657,7 @@ def test_summary_written_artifacts_match_output_directory_contents_without_manif
     run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
 
     summary = (out_dir / "summary.md").read_text()
-    written_artifacts_line = next(
-        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
-    )
-    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+    summary_artifacts = _summary_written_artifacts(summary)
     directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
 
     assert sorted(summary_artifacts) == sorted(directory_artifacts)
@@ -1007,10 +998,7 @@ def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_con
     assert completed.stderr == ""
 
     summary = (out_dir / "summary.md").read_text()
-    written_artifacts_line = next(
-        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
-    )
-    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+    summary_artifacts = _summary_written_artifacts(summary)
     directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
 
     assert sorted(summary_artifacts) == sorted(directory_artifacts)
@@ -3216,10 +3204,7 @@ def _assert_no_manifest_writes_enabled_artifacts(
 
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
-    written_artifacts_line = next(
-        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
-    )
-    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+    summary_artifacts = _summary_written_artifacts(summary)
 
     assert summary_artifacts == expected_artifacts
     assert sorted(path.name for path in out_dir.iterdir()) == expected_directory_artifacts
@@ -3240,6 +3225,13 @@ def _assert_no_manifest_enabled_artifact_row_counts(out_dir: Path) -> None:
         assert len(list(csv.DictReader(handle))) == 3
     with (out_dir / "events.csv").open() as handle:
         assert len(list(csv.DictReader(handle))) == 45
+
+
+def _summary_written_artifacts(summary: str) -> list[str]:
+    written_artifacts_line = next(
+        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
+    )
+    return written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
 
 
 def _write_no_manifest_disabled_manifest_sentinel(out_dir: Path) -> bytes:
