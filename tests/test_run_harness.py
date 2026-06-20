@@ -740,6 +740,44 @@ def test_documented_cli_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: 
     assert manifest["experiment_id"] == "a0_default_outputs"
 
 
+def test_run_api_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "default_outputs_api_seed1"
+    expected_artifacts = [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    result = run_experiment(DEFAULT_OUTPUTS, seed=1, out_dir=out_dir)
+
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(expected_artifacts)
+    assert result.config.outputs.write_manifest is True
+    assert result.config.outputs.write_metrics is True
+    assert result.config.outputs.write_events is True
+    assert result.config.outputs.write_summary is True
+    assert len(result.metrics) == 3
+    assert len(result.events) == 45
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert normalized_config["outputs"] == {
+        "write_manifest": True,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    assert manifest["outputs"] == normalized_config["outputs"]
+    assert manifest["artifacts"] == expected_artifacts
+    assert manifest["experiment_id"] == "a0_default_outputs"
+    with (out_dir / "metrics.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 3
+    with (out_dir / "events.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 45
+    assert "# a0_default_outputs" in (out_dir / "summary.md").read_text()
+
+
 def test_documented_cli_smoke_writes_expected_metrics_and_events_rows(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
