@@ -1356,6 +1356,25 @@ def test_run_experiment_output_path_file_does_not_overwrite(tmp_path: Path) -> N
     assert out_path.read_text() == "sentinel output path\n"
 
 
+def test_run_experiment_output_artifact_collision_does_not_write_partial_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "collision_run"
+    out_dir.mkdir()
+    existing_metrics = out_dir / "metrics.csv"
+    existing_metrics.write_text("sentinel metrics\n")
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts"):
+        run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    assert existing_metrics.read_text() == "sentinel metrics\n"
+    assert sorted(path.name for path in out_dir.iterdir()) == ["metrics.csv"]
+    assert not (out_dir / "config.yaml").exists()
+    assert not (out_dir / "manifest.yaml").exists()
+    assert not (out_dir / "events.csv").exists()
+    assert not (out_dir / "summary.md").exists()
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
