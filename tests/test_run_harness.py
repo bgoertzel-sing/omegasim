@@ -897,6 +897,33 @@ def test_run_api_omitted_outputs_same_seed_reproduces_byte_identical_artifacts(
         assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
 
 
+def test_run_api_omitted_outputs_refuses_collision_without_partial_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "default_outputs_api_collision"
+    out_dir.mkdir()
+    sentinels = {
+        "config.yaml": "sentinel config\n",
+        "events.csv": "sentinel events\n",
+    }
+    for artifact, content in sentinels.items():
+        (out_dir / artifact).write_text(content)
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts") as exc_info:
+        run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=out_dir)
+
+    message = str(exc_info.value)
+    assert str(out_dir) in message
+    assert "config.yaml" in message
+    assert "events.csv" in message
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(sentinels)
+    for artifact, content in sentinels.items():
+        assert (out_dir / artifact).read_text() == content
+    assert not (out_dir / "manifest.yaml").exists()
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "summary.md").exists()
+
+
 def test_documented_cli_smoke_writes_expected_metrics_and_events_rows(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
