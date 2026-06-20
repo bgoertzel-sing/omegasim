@@ -1,0 +1,17 @@
+run:
+  experiment_id: a0_no_manifest
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: false
+  write_metrics: true
+  write_events: true
+  write_summary: true

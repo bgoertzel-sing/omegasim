@@ -74,6 +74,12 @@ The checked-in manifest-only fixture disables metrics, events, and summary outpu
 python -m ohdyn.run --config configs/a0_manifest_only.yaml --seed 1 --out runs/a0_manifest_only_seed1
 ```
 
+The checked-in no-manifest fixture writes metrics, events, and summary output without manifest provenance:
+
+```bash
+python -m ohdyn.run --config configs/a0_no_manifest.yaml --seed 1 --out runs/a0_no_manifest_seed1
+```
+
 `manifest.yaml` records run provenance and model shape:
 
 - `experiment_id`, `seed`, `ticks`, `agent_count`, and configured `actions`

@@ -17,6 +17,7 @@ from ohdyn.run import run_experiment
 CONFIG = Path("configs/a0_smoke.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
 MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
+NO_MANIFEST = Path("configs/a0_no_manifest.yaml")
 
 
 def test_loads_a0_smoke_config() -> None:
@@ -52,6 +53,19 @@ def test_loads_a0_manifest_only_fixture() -> None:
     assert config.outputs.write_metrics is False
     assert config.outputs.write_events is False
     assert config.outputs.write_summary is False
+
+
+def test_loads_a0_no_manifest_fixture() -> None:
+    config = load_config(NO_MANIFEST)
+
+    assert config.run.experiment_id == "a0_no_manifest"
+    assert config.run.ticks == 3
+    assert config.model.agent_count == 15
+    assert config.model.actions == ("idle", "message", "create_task", "work_task")
+    assert config.outputs.write_manifest is False
+    assert config.outputs.write_metrics is True
+    assert config.outputs.write_events is True
+    assert config.outputs.write_summary is True
 
 
 def test_run_writes_required_artifacts(tmp_path: Path) -> None:
@@ -900,7 +914,6 @@ def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> No
 
 
 def test_documented_cli_respects_disabled_manifest_output(tmp_path: Path) -> None:
-    config_path = tmp_path / "no_manifest_cli_outputs.yaml"
     out_dir = tmp_path / "no_manifest_cli_outputs"
     expected_artifacts = [
         "config.yaml",
@@ -908,27 +921,6 @@ def test_documented_cli_respects_disabled_manifest_output(tmp_path: Path) -> Non
         "metrics.csv",
         "summary.md",
     ]
-    config_path.write_text(
-        """
-run:
-  experiment_id: no_manifest_cli_outputs
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: true
-  write_events: true
-  write_summary: true
-"""
-    )
 
     completed = subprocess.run(
         [
@@ -936,7 +928,7 @@ outputs:
             "-m",
             "ohdyn.run",
             "--config",
-            str(config_path),
+            str(NO_MANIFEST),
             "--seed",
             "17",
             "--out",
@@ -963,13 +955,12 @@ outputs:
         assert len(list(csv.DictReader(handle))) == 3
     with (out_dir / "events.csv").open() as handle:
         assert len(list(csv.DictReader(handle))) == 45
-    assert "# no_manifest_cli_outputs" in (out_dir / "summary.md").read_text()
+    assert "# a0_no_manifest" in (out_dir / "summary.md").read_text()
 
 
 def test_documented_cli_same_seed_without_manifest_reproduces_byte_identical_artifacts(
     tmp_path: Path,
 ) -> None:
-    config_path = tmp_path / "no_manifest_repro.yaml"
     first = tmp_path / "no_manifest_repro_first"
     second = tmp_path / "no_manifest_repro_second"
     artifacts = [
@@ -978,27 +969,6 @@ def test_documented_cli_same_seed_without_manifest_reproduces_byte_identical_art
         "events.csv",
         "summary.md",
     ]
-    config_path.write_text(
-        """
-run:
-  experiment_id: no_manifest_repro
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: true
-  write_events: true
-  write_summary: true
-"""
-    )
 
     for out_dir in [first, second]:
         completed = subprocess.run(
@@ -1007,7 +977,7 @@ outputs:
                 "-m",
                 "ohdyn.run",
                 "--config",
-                str(config_path),
+                str(NO_MANIFEST),
                 "--seed",
                 "17",
                 "--out",
@@ -1030,29 +1000,7 @@ outputs:
 def test_documented_cli_without_manifest_refuses_partial_output_directory(
     tmp_path: Path,
 ) -> None:
-    config_path = tmp_path / "no_manifest_partial_collision.yaml"
     out_dir = tmp_path / "no_manifest_partial_collision"
-    config_path.write_text(
-        """
-run:
-  experiment_id: no_manifest_partial_collision
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: true
-  write_events: true
-  write_summary: true
-"""
-    )
     out_dir.mkdir()
     sentinels = {
         "config.yaml": "sentinel config\n",
@@ -1067,7 +1015,7 @@ outputs:
             "-m",
             "ohdyn.run",
             "--config",
-            str(config_path),
+            str(NO_MANIFEST),
             "--seed",
             "17",
             "--out",

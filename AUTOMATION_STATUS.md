@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 manifest-only disabled-output fixture promotion
-- Changed: added checked-in `configs/a0_manifest_only.yaml`, documented its CLI invocation, and promoted matching manifest-only API/CLI disabled-output and collision regressions away from inline YAML fixtures.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_loads_a0_manifest_only_fixture tests/test_run_harness.py::test_manifest_lists_only_written_artifacts tests/test_run_harness.py::test_documented_cli_respects_disabled_optional_outputs tests/test_run_harness.py::test_run_experiment_ignores_disabled_output_collisions_but_blocks_enabled_artifacts tests/test_run_harness.py::test_cli_ignores_disabled_output_collisions_but_blocks_enabled_artifacts -q` passed with 5 tests; `.venv-conda/bin/python -m pytest -q` passed with 69 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 no-manifest disabled-output fixture promotion
+- Changed: added checked-in `configs/a0_no_manifest.yaml`, documented its CLI invocation, and promoted the remaining no-manifest metrics/events/summary-only CLI regressions away from inline YAML fixtures.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_loads_a0_no_manifest_fixture tests/test_run_harness.py::test_documented_cli_respects_disabled_manifest_output tests/test_run_harness.py::test_documented_cli_same_seed_without_manifest_reproduces_byte_identical_artifacts tests/test_run_harness.py::test_documented_cli_without_manifest_refuses_partial_output_directory -q` passed with 4 tests; `.venv-conda/bin/python -m pytest -q` passed with 70 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a checked-in no-manifest baseline fixture for the remaining inline metrics/events/summary-only output regressions.
+- Next step: add fixture-backed API coverage for no-manifest output behavior and collision handling to match the CLI coverage.
