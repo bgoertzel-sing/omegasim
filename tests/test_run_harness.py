@@ -777,6 +777,35 @@ def test_cli_output_artifact_collision_does_not_write_partial_artifacts(tmp_path
     assert not (out_dir / "summary.md").exists()
 
 
+def test_cli_output_path_file_does_not_overwrite_or_traceback(tmp_path: Path) -> None:
+    out_path = tmp_path / "file_output"
+    out_path.write_text("sentinel output path\n")
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(CONFIG),
+            "--seed",
+            "1",
+            "--out",
+            str(out_path),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error:" in completed.stderr
+    assert str(out_path) in completed.stderr
+    assert "exists and is not a directory" in completed.stderr
+    assert "Traceback" not in completed.stderr
+    assert out_path.read_text() == "sentinel output path\n"
+
+
 def test_a0_baseline_requires_fifteen_agents(tmp_path: Path) -> None:
     config_path = tmp_path / "wrong_agent_count.yaml"
     config_path.write_text(
