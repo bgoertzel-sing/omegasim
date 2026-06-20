@@ -810,6 +810,57 @@ def test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinel
     assert manifest["experiment_id"] == "a0_manifest_only"
 
 
+@pytest.mark.parametrize("collision_artifact", ["config.yaml", "manifest.yaml"])
+def test_documented_cli_manifest_only_refuses_enabled_artifact_collisions_while_preserving_stale_disabled_artifacts(
+    tmp_path: Path,
+    collision_artifact: str,
+) -> None:
+    out_dir = tmp_path / f"manifest_only_cli_collision_{collision_artifact.replace('.', '_')}"
+    out_dir.mkdir()
+    stale_disabled_artifacts = {
+        "metrics.csv": b"stale disabled metrics sentinel\n",
+        "events.csv": b"stale disabled events sentinel\n",
+        "summary.md": b"stale disabled summary sentinel\n",
+    }
+    collision_content = f"preexisting enabled {collision_artifact} sentinel\n".encode()
+    for artifact, content in stale_disabled_artifacts.items():
+        (out_dir / artifact).write_bytes(content)
+    (out_dir / collision_artifact).write_bytes(collision_content)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(MANIFEST_ONLY),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "error:" in completed.stderr
+    assert str(out_dir) in completed.stderr
+    assert "already contains run artifacts" in completed.stderr
+    assert collision_artifact in completed.stderr
+    assert "metrics.csv" not in completed.stderr
+    assert "events.csv" not in completed.stderr
+    assert "summary.md" not in completed.stderr
+    assert "Traceback" not in completed.stderr
+    for artifact, content in stale_disabled_artifacts.items():
+        assert (out_dir / artifact).read_bytes() == content
+    assert (out_dir / collision_artifact).read_bytes() == collision_content
+    assert sorted(path.name for path in out_dir.iterdir()) == sorted(
+        {*stale_disabled_artifacts, collision_artifact}
+    )
+
+
 def test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels(
     tmp_path: Path,
 ) -> None:

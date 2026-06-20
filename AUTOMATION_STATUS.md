@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 documented CLI no-manifest enabled artifact collision regression
-- Changed: added a parametrized documented CLI regression asserting no-manifest runs refuse collisions on each enabled artifact (`config.yaml`, `metrics.csv`, `events.csv`, `summary.md`) while ignoring and preserving a stale disabled `manifest.yaml` sentinel byte-for-byte.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_no_manifest_refuses_enabled_artifact_collisions_while_preserving_stale_manifest -q` passed with 4 tests; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 107 tests; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 107 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 documented CLI manifest-only enabled artifact collision regression
+- Changed: added a parametrized documented CLI regression asserting manifest-only runs refuse collisions on each enabled artifact (`config.yaml`, `manifest.yaml`) while ignoring and preserving stale disabled `metrics.csv`, `events.csv`, and `summary.md` sentinels byte-for-byte.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_manifest_only_refuses_enabled_artifact_collisions_while_preserving_stale_disabled_artifacts -q` passed with 2 tests; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 109 tests; `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest -q` passed with 109 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a parametrized manifest-only enabled artifact collision regression for `config.yaml` and `manifest.yaml` while preserving stale disabled `metrics.csv`, `events.csv`, and `summary.md` sentinels.
+- Next step: add a parametrized run API manifest-only enabled artifact collision regression for `config.yaml` and `manifest.yaml` while preserving stale disabled `metrics.csv`, `events.csv`, and `summary.md` sentinels.
