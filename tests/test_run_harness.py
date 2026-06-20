@@ -1851,35 +1851,13 @@ def test_cli_config_only_outputs_succeed_and_are_byte_stable(tmp_path: Path) -> 
 
 
 def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Path) -> None:
-    config_path = tmp_path / "config_only_cli_rerun.yaml"
     out_dir = tmp_path / "config_only_cli_rerun"
-    config_path.write_text(
-        """
-run:
-  experiment_id: config_only_cli_rerun
-  ticks: 3
-
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
     command = [
         sys.executable,
         "-m",
         "ohdyn.run",
         "--config",
-        str(config_path),
+        str(CONFIG_ONLY),
         "--seed",
         "17",
         "--out",
@@ -1905,6 +1883,14 @@ outputs:
     assert "Traceback" not in second.stderr
     assert sorted(path.name for path in out_dir.iterdir()) == ["config.yaml"]
     assert (out_dir / "config.yaml").read_bytes() == before
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    assert normalized_config["run"]["experiment_id"] == "a0_config_only"
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
 
 
 def test_cli_config_only_rerun_preserves_disabled_artifact_sentinels(tmp_path: Path) -> None:
