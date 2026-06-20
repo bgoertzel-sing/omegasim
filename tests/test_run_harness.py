@@ -1480,37 +1480,23 @@ def test_run_experiment_config_artifact_collision_blocks_when_all_optional_outpu
 def test_run_experiment_config_only_outputs_succeed_and_are_byte_stable(
     tmp_path: Path,
 ) -> None:
-    config_path = tmp_path / "config_only.yaml"
     first = tmp_path / "config_only_first"
     second = tmp_path / "config_only_second"
-    config_path.write_text(
-        """
-run:
-  experiment_id: config_only
-  ticks: 3
 
-model:
-  agent_count: 15
-  actions:
-    - idle
-    - message
-    - create_task
-    - work_task
-
-outputs:
-  write_manifest: false
-  write_metrics: false
-  write_events: false
-  write_summary: false
-"""
-    )
-
-    first_result = run_experiment(config_path, seed=17, out_dir=first)
-    second_result = run_experiment(config_path, seed=17, out_dir=second)
+    first_result = run_experiment(CONFIG_ONLY, seed=17, out_dir=first)
+    second_result = run_experiment(CONFIG_ONLY, seed=17, out_dir=second)
 
     assert sorted(path.name for path in first.iterdir()) == ["config.yaml"]
     assert sorted(path.name for path in second.iterdir()) == ["config.yaml"]
     assert (first / "config.yaml").read_bytes() == (second / "config.yaml").read_bytes()
+    normalized_config = yaml.safe_load((first / "config.yaml").read_text())
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+    assert normalized_config["run"]["experiment_id"] == "a0_config_only"
     assert first_result.config.to_dict() == second_result.config.to_dict()
     assert first_result.seed == second_result.seed == 17
     assert len(first_result.metrics) == len(second_result.metrics) == 3
