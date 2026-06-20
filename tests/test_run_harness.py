@@ -754,6 +754,44 @@ def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
     assert not (out_dir / "summary.md").exists()
 
 
+def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_contents(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "no_manifest_cli"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(NO_MANIFEST),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    written_artifacts_line = next(
+        line for line in summary.splitlines() if line.startswith("- written artifacts: ")
+    )
+    summary_artifacts = written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+    directory_artifacts = [path.name for path in out_dir.iterdir() if path.is_file()]
+
+    assert sorted(summary_artifacts) == sorted(directory_artifacts)
+    assert summary_artifacts == ["config.yaml", "metrics.csv", "events.csv", "summary.md"]
+    assert "manifest.yaml" not in summary_artifacts
+    assert not (out_dir / "manifest.yaml").exists()
+
+
 def test_output_flags_must_be_yaml_booleans(tmp_path: Path) -> None:
     config_path = tmp_path / "string_bool.yaml"
     config_path.write_text(
