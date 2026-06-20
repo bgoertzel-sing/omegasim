@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-20 A0/A1 artifact schema provenance test helper
-- Changed: centralized repeated summary artifact-schema provenance assertions into `_assert_summary_records_artifact_schema_provenance()` and reused it from both the manifest-backed summary provenance regression and the no-manifest emitted-artifact schema provenance helper.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_summary_records_artifact_schema_provenance tests/test_run_harness.py::test_documented_cli_no_manifest_emitted_artifacts_preserve_schema_provenance tests/test_run_harness.py::test_run_api_no_manifest_emitted_artifacts_preserve_schema_provenance -q` passed with 3 tests; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-20 A0/A1 no-manifest enabled-artifact row-count test helper
+- Changed: centralized no-manifest enabled-artifact CSV row-count assertions into `_assert_no_manifest_enabled_artifact_row_counts()` and routed CLI/API no-manifest output regressions through `_assert_no_manifest_writes_enabled_artifacts()`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_documented_cli_respects_disabled_manifest_output tests/test_run_harness.py::test_run_api_respects_no_manifest_fixture_outputs tests/test_run_harness.py::test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel -q` passed with 3 tests; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: factor repeated no-manifest enabled-artifact row-count assertions shared by the API and documented CLI no-manifest output regressions.
+- Next step: factor repeated summary written-artifact line parsing shared by manifest-backed and no-manifest output-directory regressions.

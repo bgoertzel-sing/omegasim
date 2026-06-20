@@ -1814,12 +1814,6 @@ def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> No
 
 def test_documented_cli_respects_disabled_manifest_output(tmp_path: Path) -> None:
     out_dir = tmp_path / "no_manifest_cli_outputs"
-    expected_artifacts = [
-        "config.yaml",
-        "events.csv",
-        "metrics.csv",
-        "summary.md",
-    ]
 
     completed = subprocess.run(
         [
@@ -1840,20 +1834,7 @@ def test_documented_cli_respects_disabled_manifest_output(tmp_path: Path) -> Non
 
     assert completed.returncode == 0
     assert completed.stderr == ""
-    assert sorted(path.name for path in out_dir.iterdir()) == expected_artifacts
-
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    assert normalized_config["outputs"] == {
-        "write_manifest": False,
-        "write_metrics": True,
-        "write_events": True,
-        "write_summary": True,
-    }
-    assert not (out_dir / "manifest.yaml").exists()
-    with (out_dir / "metrics.csv").open() as handle:
-        assert len(list(csv.DictReader(handle))) == 3
-    with (out_dir / "events.csv").open() as handle:
-        assert len(list(csv.DictReader(handle))) == 45
+    _assert_no_manifest_writes_enabled_artifacts(out_dir)
     assert "# a0_no_manifest" in (out_dir / "summary.md").read_text()
 
 
@@ -1874,20 +1855,13 @@ def test_run_api_respects_no_manifest_fixture_outputs(tmp_path: Path) -> None:
 
     assert sorted(path.name for path in out_dir.iterdir()) == expected_artifacts
     assert (out_dir / "manifest.yaml").read_text() == stale_manifest
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    assert normalized_config["outputs"] == {
-        "write_manifest": False,
-        "write_metrics": True,
-        "write_events": True,
-        "write_summary": True,
-    }
     assert result.config.outputs.write_manifest is False
     assert len(result.metrics) == 3
     assert len(result.events) == 45
-    with (out_dir / "metrics.csv").open() as handle:
-        assert len(list(csv.DictReader(handle))) == 3
-    with (out_dir / "events.csv").open() as handle:
-        assert len(list(csv.DictReader(handle))) == 45
+    _assert_no_manifest_writes_enabled_artifacts(
+        out_dir,
+        stale_manifest=stale_manifest.encode(),
+    )
     assert "# a0_no_manifest" in (out_dir / "summary.md").read_text()
 
 
@@ -3254,10 +3228,18 @@ def _assert_no_manifest_writes_enabled_artifacts(
     assert "- write_metrics: enabled" in summary
     assert "- write_events: enabled" in summary
     assert "- write_summary: enabled" in summary
+    _assert_no_manifest_enabled_artifact_row_counts(out_dir)
     if stale_manifest is None:
         assert not (out_dir / "manifest.yaml").exists()
     else:
         assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
+
+
+def _assert_no_manifest_enabled_artifact_row_counts(out_dir: Path) -> None:
+    with (out_dir / "metrics.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 3
+    with (out_dir / "events.csv").open() as handle:
+        assert len(list(csv.DictReader(handle))) == 45
 
 
 def _write_no_manifest_disabled_manifest_sentinel(out_dir: Path) -> bytes:
