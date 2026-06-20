@@ -1240,6 +1240,68 @@ def test_run_experiment_invalid_seed_error_does_not_write_artifacts(
     assert not out_dir.exists()
 
 
+def test_run_experiment_missing_config_error_does_not_write_artifacts(tmp_path: Path) -> None:
+    config_path = tmp_path / "missing.yaml"
+    out_dir = tmp_path / "missing_config_run"
+
+    with pytest.raises(FileNotFoundError, match="missing.yaml"):
+        run_experiment(config_path, seed=1, out_dir=out_dir)
+
+    assert not out_dir.exists()
+
+
+def test_run_experiment_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
+    config_path = tmp_path / "malformed.yaml"
+    out_dir = tmp_path / "malformed_run"
+    config_path.write_text(
+        """
+run:
+  experiment_id: malformed
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+    - [unterminated
+"""
+    )
+
+    with pytest.raises(ValueError, match="invalid YAML"):
+        run_experiment(config_path, seed=1, out_dir=out_dir)
+
+    assert not out_dir.exists()
+
+
+def test_run_experiment_invalid_config_error_does_not_write_artifacts(tmp_path: Path) -> None:
+    config_path = tmp_path / "invalid_actions.yaml"
+    out_dir = tmp_path / "invalid_run"
+    config_path.write_text(
+        """
+run:
+  experiment_id: invalid_actions
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+    - browse_web
+"""
+    )
+
+    with pytest.raises(ValueError, match="unsupported baseline actions: browse_web"):
+        run_experiment(config_path, seed=1, out_dir=out_dir)
+
+    assert not out_dir.exists()
+
+
 def test_cli_malformed_yaml_error_does_not_write_artifacts(tmp_path: Path) -> None:
     config_path = tmp_path / "malformed.yaml"
     out_dir = tmp_path / "malformed_run"
