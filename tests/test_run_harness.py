@@ -1416,8 +1416,7 @@ def test_documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_arti
         "write_events": True,
         "write_summary": True,
     }
-    for artifact in artifacts:
-        assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
 def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifacts(
@@ -1524,8 +1523,7 @@ def test_run_api_omitted_outputs_same_seed_reproduces_byte_identical_artifacts(
     assert first_result.seed == second_result.seed == 17
     assert first_result.metrics == second_result.metrics
     assert first_result.events == second_result.events
-    for artifact in artifacts:
-        assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
 def test_run_api_omitted_outputs_refuses_collision_without_partial_artifacts(
@@ -1703,8 +1701,7 @@ def test_documented_cli_same_seed_reproduces_byte_identical_a0_artifacts(tmp_pat
         assert completed.stderr == ""
         _assert_artifacts_match_output_directory(out_dir, artifacts)
 
-    for artifact in artifacts:
-        assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
 def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Path) -> None:
@@ -1901,8 +1898,7 @@ def test_documented_cli_same_seed_without_manifest_reproduces_byte_identical_art
         _assert_artifacts_match_output_directory(out_dir, artifacts)
         assert not (out_dir / "manifest.yaml").exists()
 
-    for artifact in artifacts:
-        assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
 def test_documented_cli_without_manifest_refuses_partial_output_directory(
@@ -2280,7 +2276,7 @@ def test_run_experiment_config_only_outputs_succeed_and_are_byte_stable(
 
     _assert_artifacts_match_output_directory(first, ["config.yaml"])
     _assert_artifacts_match_output_directory(second, ["config.yaml"])
-    assert (first / "config.yaml").read_bytes() == (second / "config.yaml").read_bytes()
+    _assert_artifacts_are_byte_identical(first, second, ["config.yaml"])
     normalized_config = yaml.safe_load((first / "config.yaml").read_text())
     assert normalized_config["outputs"] == {
         "write_manifest": False,
@@ -2595,7 +2591,7 @@ def test_cli_config_only_outputs_succeed_and_are_byte_stable(tmp_path: Path) -> 
         assert completed.stderr == ""
         _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
 
-    assert (first / "config.yaml").read_bytes() == (second / "config.yaml").read_bytes()
+    _assert_artifacts_are_byte_identical(first, second, ["config.yaml"])
     normalized_config = yaml.safe_load((first / "config.yaml").read_text())
     assert normalized_config["outputs"] == {
         "write_manifest": False,
@@ -2757,8 +2753,11 @@ def test_same_seed_reproduces_byte_stable_outputs(tmp_path: Path) -> None:
     run_experiment(CONFIG, seed=17, out_dir=first)
     run_experiment(CONFIG, seed=17, out_dir=second)
 
-    for artifact in ["manifest.yaml", "config.yaml", "metrics.csv", "events.csv", "summary.md"]:
-        assert (first / artifact).read_text() == (second / artifact).read_text()
+    _assert_artifacts_are_byte_identical(
+        first,
+        second,
+        ["manifest.yaml", "config.yaml", "metrics.csv", "events.csv", "summary.md"],
+    )
 
 
 def test_different_seed_changes_events(tmp_path: Path) -> None:
@@ -3219,6 +3218,15 @@ def _assert_artifacts_match_output_directory(
     artifacts: list[str],
 ) -> None:
     assert sorted(artifacts) == _directory_artifacts(out_dir)
+
+
+def _assert_artifacts_are_byte_identical(
+    first: Path,
+    second: Path,
+    artifacts: list[str],
+) -> None:
+    for artifact in artifacts:
+        assert (first / artifact).read_bytes() == (second / artifact).read_bytes()
 
 
 def _assert_summary_written_artifacts_match_output_directory(out_dir: Path) -> list[str]:
