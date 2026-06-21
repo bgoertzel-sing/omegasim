@@ -1320,6 +1320,41 @@ def test_documented_cli_lobe_dwell_run_summary_changes_across_different_seeds_fu
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_role_action_summary_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_role_action_summary_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_role_action_totals = _summary_role_action_totals(first_summary)
+    second_role_action_totals = _summary_role_action_totals(second_summary)
+    actions = ("idle", "message", "create_task", "work_task")
+
+    assert first_role_action_totals == _role_action_totals_from_metrics(
+        first_metric_rows,
+        actions,
+    )
+    assert second_role_action_totals == _role_action_totals_from_metrics(
+        second_metric_rows,
+        actions,
+    )
+    assert first_role_action_totals
+    assert second_role_action_totals
+    assert first_role_action_totals != second_role_action_totals
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4609,6 +4644,31 @@ def _summary_lobe_dwell_runs(summary: str) -> dict[str, dict[str, int | float]]:
         }
 
     return dwell_runs
+
+
+def _summary_role_action_totals(summary: str) -> dict[str, dict[str, int]]:
+    totals: dict[str, dict[str, int]] = {}
+    in_section = False
+
+    for line in summary.splitlines():
+        if line == "## Role action totals":
+            in_section = True
+            continue
+        if in_section and line.startswith("## "):
+            break
+        if not in_section or not line.startswith("- "):
+            continue
+
+        role, raw_fields = line.removeprefix("- ").split(": ", maxsplit=1)
+        fields = dict(field.split("=", maxsplit=1) for field in raw_fields.split(", "))
+        totals[role] = {
+            "idle": int(fields["idle"]),
+            "message": int(fields["message"]),
+            "create_task": int(fields["create_task"]),
+            "work_task": int(fields["work_task"]),
+        }
+
+    return totals
 
 
 def _lobe_transition_totals_from_adjacent_labels(
