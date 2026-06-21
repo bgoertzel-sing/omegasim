@@ -1331,6 +1331,43 @@ def test_documented_cli_lobe_transitions_match_adjacent_labels_across_full_outpu
     _assert_lobe_transitions_match_adjacent_labels(metric_rows)
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_lobe_transition_totals_match_adjacent_labels_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_summary_lobe_transition_totals"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_summary_lobe_transition_totals_match_adjacent_labels(
+        summary,
+        metric_rows=metric_rows,
+    )
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -4469,6 +4506,53 @@ def _assert_lobe_transitions_match_adjacent_labels(
         assert row["baseline_lobe_transition"] == expected_transition
         assert row["baseline_lobe_transition_tick"] == str(int(changed))
         previous_label = current_label
+
+
+def _assert_summary_lobe_transition_totals_match_adjacent_labels(
+    summary: str,
+    *,
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    assert "## Baseline lobe transitions" in summary
+
+    assert _summary_lobe_transition_totals(summary) == _lobe_transition_totals_from_adjacent_labels(
+        metric_rows
+    )
+
+
+def _summary_lobe_transition_totals(summary: str) -> dict[str, int]:
+    totals: dict[str, int] = {}
+    in_section = False
+
+    for line in summary.splitlines():
+        if line == "## Baseline lobe transitions":
+            in_section = True
+            continue
+        if in_section and line.startswith("## "):
+            break
+        if not in_section or not line.startswith("- "):
+            continue
+
+        transition, count = line.removeprefix("- ").split(": ", maxsplit=1)
+        totals[transition] = int(count)
+
+    return totals
+
+
+def _lobe_transition_totals_from_adjacent_labels(
+    metric_rows: list[dict[str, str]],
+) -> dict[str, int]:
+    counts: Counter[str] = Counter()
+    previous_label = metric_rows[0]["baseline_lobe_label"]
+
+    for row in metric_rows[1:]:
+        current_label = row["baseline_lobe_label"]
+        if previous_label != current_label:
+            counts[f"{previous_label}->{current_label}"] += 1
+        previous_label = current_label
+
+    return dict(sorted(counts.items()))
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
