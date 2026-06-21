@@ -1754,6 +1754,43 @@ def test_documented_cli_event_replay_reproduces_queued_task_age_metrics_across_f
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_event_replayed_queued_task_age_metric_sequence_reproduces_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_event_replayed_queue_age_first"
+    second = tmp_path / f"{config_path.stem}_cli_event_replayed_queue_age_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_replayed_sequence = _queued_task_age_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_manifest["ticks"],
+    )
+    second_replayed_sequence = _queued_task_age_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_manifest["ticks"],
+    )
+
+    assert first_replayed_sequence == _queued_task_age_metric_sequence(first_metric_rows)
+    assert second_replayed_sequence == _queued_task_age_metric_sequence(second_metric_rows)
+    assert first_replayed_sequence
+    assert first_replayed_sequence == second_replayed_sequence
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4877,18 +4914,30 @@ def _assert_event_replay_reproduces_queued_task_age_metrics(
     assert metric_rows
     assert event_rows
 
+    assert _queued_task_age_metric_sequence_from_events(
+        event_rows,
+        ticks=len(metric_rows),
+    ) == _queued_task_age_metric_sequence(metric_rows)
+
+
+def _queued_task_age_metric_sequence_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+) -> list[tuple[int, float]]:
+    assert event_rows
+
     events_by_tick: dict[int, list[dict[str, str]]] = {
-        int(row["tick"]): [] for row in metric_rows
+        tick: [] for tick in range(ticks)
     }
     for event in event_rows:
         events_by_tick[int(event["tick"])].append(event)
 
-    expected_ticks = [int(row["tick"]) for row in metric_rows]
-    assert sorted(events_by_tick) == expected_ticks
+    assert sorted({int(event["tick"]) for event in event_rows}) == list(range(ticks))
 
     task_queue: deque[dict[str, int | str]] = deque()
-    for row in metric_rows:
-        tick = int(row["tick"])
+    sequence: list[tuple[int, float]] = []
+    for tick in range(ticks):
         for event in events_by_tick[tick]:
             if event["event_type"] == "task_created":
                 task_queue.append(
@@ -4909,8 +4958,9 @@ def _assert_event_replay_reproduces_queued_task_age_metrics(
         expected_max_age = max(ages, default=0)
         expected_mean_age = round(sum(ages) / len(ages), 6) if ages else 0.0
 
-        assert int(row["queued_task_age_max_tick"]) == expected_max_age
-        assert float(row["queued_task_age_mean_tick"]) == expected_mean_age
+        sequence.append((expected_max_age, expected_mean_age))
+
+    return sequence
 
 
 def _assert_summary_bus_graph_fields_match_metrics_and_manifest(
@@ -5567,6 +5617,18 @@ def _top_level_metric_sequence(metric_rows: list[dict[str, str]]) -> list[tuple[
     )
     return [
         tuple(int(row[field]) for field in fields)
+        for row in metric_rows
+    ]
+
+
+def _queued_task_age_metric_sequence(
+    metric_rows: list[dict[str, str]],
+) -> list[tuple[int, float]]:
+    return [
+        (
+            int(row["queued_task_age_max_tick"]),
+            float(row["queued_task_age_mean_tick"]),
+        )
         for row in metric_rows
     ]
 
