@@ -1639,6 +1639,44 @@ def test_documented_cli_event_replayed_role_action_metric_sequence_changes_acros
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_event_replayed_top_level_metric_sequence_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_event_replayed_top_level_sequence_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_event_replayed_top_level_sequence_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_replayed_sequence = _top_level_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_manifest["ticks"],
+    )
+    second_replayed_sequence = _top_level_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_manifest["ticks"],
+    )
+
+    assert first_replayed_sequence == _top_level_metric_sequence(first_metric_rows)
+    assert second_replayed_sequence == _top_level_metric_sequence(second_metric_rows)
+    assert first_replayed_sequence
+    assert second_replayed_sequence
+    assert first_replayed_sequence != second_replayed_sequence
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4674,6 +4712,62 @@ def _role_action_metric_sequence_from_events(
     ]
 
 
+def _top_level_metric_sequence_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+) -> list[tuple[int, ...]]:
+    assert event_rows
+
+    events_by_tick: dict[int, list[dict[str, str]]] = {
+        tick: [] for tick in range(ticks)
+    }
+    for event in event_rows:
+        events_by_tick[int(event["tick"])].append(event)
+
+    assert sorted({int(event["tick"]) for event in event_rows}) == list(range(ticks))
+
+    sequence: list[tuple[int, ...]] = []
+    created_total = 0
+    completed_total = 0
+    previous_queue_depth = 0
+    for tick in range(ticks):
+        tick_events = events_by_tick[tick]
+        event_type_counts = Counter(event["event_type"] for event in tick_events)
+        tasks_created_tick = event_type_counts["task_created"]
+        tasks_worked_tick = event_type_counts["task_worked"]
+        tasks_completed_tick = sum(
+            1
+            for event in tick_events
+            if event["event_type"] == "task_worked" and event["completed"] == "True"
+        )
+        created_total += tasks_created_tick
+        completed_total += tasks_completed_tick
+        queue_depth = created_total - completed_total
+        queue_delta = queue_depth - previous_queue_depth
+
+        sequence.append(
+            (
+                queue_depth,
+                queue_delta,
+                created_total,
+                completed_total,
+                tasks_completed_tick,
+                event_type_counts["message_sent"],
+                tasks_created_tick,
+                tasks_worked_tick,
+                event_type_counts["agent_idle"],
+                tasks_created_tick - tasks_completed_tick,
+                tasks_created_tick - tasks_worked_tick,
+                tasks_worked_tick - tasks_completed_tick,
+                queue_depth,
+            )
+        )
+        previous_queue_depth = queue_depth
+
+    return sequence
+
+
 def _assert_events_per_tick_task_lifecycle_matches_queue_and_task_metrics(
     *,
     metric_rows: list[dict[str, str]],
@@ -5412,6 +5506,28 @@ def _role_action_metric_sequence(
     actions: tuple[str, ...],
 ) -> list[tuple[int, ...]]:
     fields = role_action_metric_fields(actions)
+    return [
+        tuple(int(row[field]) for field in fields)
+        for row in metric_rows
+    ]
+
+
+def _top_level_metric_sequence(metric_rows: list[dict[str, str]]) -> list[tuple[int, ...]]:
+    fields = (
+        "queue_depth",
+        "queue_delta_tick",
+        "tasks_created_total",
+        "tasks_completed_total",
+        "tasks_completed_tick",
+        "messages_sent_tick",
+        "tasks_created_tick",
+        "tasks_worked_tick",
+        "idle_tick",
+        "created_completed_balance_tick",
+        "created_worked_balance_tick",
+        "work_completion_gap_tick",
+        "backlog_pressure_tick",
+    )
     return [
         tuple(int(row[field]) for field in fields)
         for row in metric_rows
