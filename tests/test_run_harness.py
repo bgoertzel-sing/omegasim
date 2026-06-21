@@ -1092,6 +1092,27 @@ def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_summary_lobe_manifest_labels"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_summary_lobe_totals_use_only_manifest_lobe_labels(
+        summary,
+        manifest=manifest,
+        metric_rows=metric_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_manifest_lobe_fields_match_metrics_header_and_observed_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4053,6 +4074,28 @@ def _assert_manifest_lobe_labels_cover_observed_metrics(
     assert set(row["baseline_lobe_label"] for row in metric_rows) <= set(manifest_labels)
 
 
+def _assert_summary_lobe_totals_use_only_manifest_lobe_labels(
+    summary: str,
+    *,
+    manifest: dict[str, object],
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    baseline_lobes = model["baseline_lobes"]
+    assert isinstance(baseline_lobes, dict)
+
+    manifest_labels = set(baseline_lobes["labels"])
+    observed_totals = Counter(row["baseline_lobe_label"] for row in metric_rows)
+    summary_totals = _summary_lobe_totals(summary)
+
+    assert summary_totals
+    assert set(summary_totals) <= manifest_labels
+    assert set(summary_totals) == set(observed_totals)
+    assert summary_totals == dict(sorted(observed_totals.items()))
+
+
 def _assert_manifest_lobe_fields_match_metrics_header_and_observed_labels(
     manifest: dict[str, object],
     *,
@@ -4179,6 +4222,25 @@ def _summary_lobe_transition_totals(summary: str) -> dict[str, int]:
 
         transition, count = line.removeprefix("- ").split(": ", maxsplit=1)
         totals[transition] = int(count)
+
+    return totals
+
+
+def _summary_lobe_totals(summary: str) -> dict[str, int]:
+    totals: dict[str, int] = {}
+    in_section = False
+
+    for line in summary.splitlines():
+        if line == "## Baseline lobe totals":
+            in_section = True
+            continue
+        if in_section and line.startswith("## "):
+            break
+        if not in_section or not line.startswith("- "):
+            continue
+
+        label, count = line.removeprefix("- ").split(": ", maxsplit=1)
+        totals[label] = int(count)
 
     return totals
 
