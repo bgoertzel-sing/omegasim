@@ -1354,6 +1354,35 @@ def test_documented_cli_role_action_summary_totals_reproduce_across_same_seed_fu
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_role_action_metric_sequence_reproduces_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_role_action_sequence_first"
+    second = tmp_path / f"{config_path.stem}_cli_role_action_sequence_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_sequence = _role_action_metric_sequence(
+        first_metric_rows,
+        ("idle", "message", "create_task", "work_task"),
+    )
+    second_sequence = _role_action_metric_sequence(
+        second_metric_rows,
+        ("idle", "message", "create_task", "work_task"),
+    )
+
+    assert first_sequence
+    assert first_sequence == second_sequence
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4742,6 +4771,17 @@ def _lobe_run_state_sequence(metric_rows: list[dict[str, str]]) -> list[tuple[in
             int(row["baseline_lobe_run_id"]),
             int(row["baseline_lobe_current_run_length"]),
         )
+        for row in metric_rows
+    ]
+
+
+def _role_action_metric_sequence(
+    metric_rows: list[dict[str, str]],
+    actions: tuple[str, ...],
+) -> list[tuple[int, ...]]:
+    fields = role_action_metric_fields(actions)
+    return [
+        tuple(int(row[field]) for field in fields)
         for row in metric_rows
     ]
 
