@@ -864,6 +864,45 @@ def test_documented_cli_summary_top_level_totals_match_metrics_and_events_across
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_bus_graph_fields_match_metrics_and_manifest_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_bus_graph"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_summary_bus_graph_fields_match_metrics_and_manifest(
+        summary,
+        metric_rows=metric_rows,
+        manifest=manifest,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_role_action_totals_match_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -3788,6 +3827,24 @@ def _assert_summary_top_level_totals_match_metrics_and_events(
     assert f"- tasks created: {tasks_created}" in summary
     assert f"- tasks completed: {tasks_completed}" in summary
     assert f"- final queue depth: {final['queue_depth']}" in summary
+
+
+def _assert_summary_bus_graph_fields_match_metrics_and_manifest(
+    summary: str,
+    *,
+    metric_rows: list[dict[str, str]],
+    manifest: dict[str, object],
+) -> None:
+    assert metric_rows
+    final = metric_rows[-1]
+    model = manifest["model"]
+    assert isinstance(model, dict)
+
+    assert int(final["bus_nodes"]) == model["bus_nodes"]
+    assert int(final["bus_edges"]) == model["bus_edges"]
+    assert f"- bus graph: {model['bus_nodes']} nodes, {model['bus_edges']} edges" in summary
+    assert f"- bus density: {final['bus_density']}" in summary
+    assert f"- bus degree centralization: {final['bus_degree_centralization']}" in summary
 
 
 def _assert_summary_role_action_totals_match_metrics(
