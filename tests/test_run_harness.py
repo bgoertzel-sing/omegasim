@@ -1231,6 +1231,40 @@ def test_documented_cli_summary_lobe_aggregates_match_metrics_across_full_output
     _assert_summary_lobe_aggregates_match_metrics(summary, metric_rows=metric_rows)
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_lobe_dwell_runs_summary_matches_metrics_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_lobe_dwell_runs"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_lobe_dwell_run_summary_matches_metrics(summary, metric_rows=metric_rows)
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -4291,6 +4325,17 @@ def _assert_summary_lobe_aggregates_match_metrics(
         assert f"- {label}: {count}" in summary
     for transition, count in sorted(lobe_transitions.items()):
         assert f"- {transition}: {count}" in summary
+    _assert_lobe_dwell_run_summary_matches_metrics(summary, metric_rows=metric_rows)
+
+
+def _assert_lobe_dwell_run_summary_matches_metrics(
+    summary: str,
+    *,
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    assert "## Baseline lobe dwell runs" in summary
+
     for label, dwell in _lobe_dwell_runs(metric_rows).items():
         assert (
             f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
