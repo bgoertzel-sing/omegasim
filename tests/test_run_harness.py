@@ -1460,6 +1460,26 @@ def test_documented_cli_events_per_tick_action_counts_match_metrics_top_level_ac
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_events_task_lifecycle_metrics"
+
+    _run_documented_cli(config_path, out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_events_per_tick_task_lifecycle_matches_queue_and_task_metrics(
+        metric_rows=metric_rows,
+        event_rows=event_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4296,6 +4316,70 @@ def _assert_events_per_tick_action_counts_match_metrics_top_level_action_totals(
         for event_type, metric_field in event_type_metric_fields.items():
             assert event_counts[event_type] == int(row[metric_field])
         assert sum(event_counts.values()) == int(row["agent_count"])
+
+
+def _assert_events_per_tick_task_lifecycle_matches_queue_and_task_metrics(
+    *,
+    metric_rows: list[dict[str, str]],
+    event_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    assert event_rows
+
+    events_by_tick: dict[int, list[dict[str, str]]] = {
+        int(row["tick"]): [] for row in metric_rows
+    }
+    for event in event_rows:
+        events_by_tick[int(event["tick"])].append(event)
+
+    expected_ticks = [int(row["tick"]) for row in metric_rows]
+    assert sorted(events_by_tick) == expected_ticks
+
+    created_total = 0
+    completed_total = 0
+    previous_queue_depth = 0
+    created_task_ids: set[str] = set()
+    worked_task_ids: set[str] = set()
+
+    for row in metric_rows:
+        tick = int(row["tick"])
+        tick_events = events_by_tick[tick]
+        created_events = [
+            event for event in tick_events if event["event_type"] == "task_created"
+        ]
+        worked_events = [
+            event for event in tick_events if event["event_type"] == "task_worked"
+        ]
+        completed_events = [
+            event for event in worked_events if event["completed"] == "True"
+        ]
+
+        for event in created_events:
+            assert event["task_id"]
+            assert int(event["work_units"]) > 0
+            created_task_ids.add(event["task_id"])
+        for event in worked_events:
+            assert event["task_id"]
+            assert int(event["remaining_work"]) >= 0
+            assert event["completed"] in {"False", "True"}
+            worked_task_ids.add(event["task_id"])
+
+        created_total += len(created_events)
+        completed_total += len(completed_events)
+        queue_depth = int(row["queue_depth"])
+
+        assert len(created_events) == int(row["tasks_created_tick"])
+        assert len(worked_events) == int(row["tasks_worked_tick"])
+        assert len(completed_events) == int(row["tasks_completed_tick"])
+        assert created_total == int(row["tasks_created_total"])
+        assert completed_total == int(row["tasks_completed_total"])
+        assert queue_depth - previous_queue_depth == int(row["queue_delta_tick"])
+        assert int(row["queue_delta_tick"]) == len(created_events) - len(completed_events)
+        assert queue_depth == created_total - completed_total
+
+        previous_queue_depth = queue_depth
+
+    assert worked_task_ids <= created_task_ids
 
 
 def _assert_summary_bus_graph_fields_match_metrics_and_manifest(
