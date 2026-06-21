@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-21 A0/A1 documented CLI static bus metric parity regression
-- Changed: added `bus mean degree` to `summary.md`, documented the summary's static bus metrics in `README.md`, and added `test_documented_cli_summary_static_bus_metrics_match_first_metrics_row_across_full_output_fixtures` plus `_assert_summary_static_bus_metrics_match_metrics_row` in `tests/test_run_harness.py` to verify documented full-output CLI runs keep first-row `bus_density`, `bus_mean_degree`, and `bus_degree_centralization` aligned with the summary for both `configs/a0_smoke.yaml` and `configs/a0_default_outputs.yaml`.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "static_bus_metrics or metrics_csv_records_bus_graph_summary" -q` passed with 3 tests and 148 deselected; `.venv-conda/bin/python -m pytest -q` passed with 151 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-21 A0/A1 documented CLI first-row queue pressure parity regression
+- Changed: added `test_documented_cli_first_row_queue_pressure_fields_match_summary_across_full_output_fixtures` plus `_assert_first_row_queue_pressure_fields_match_summary` in `tests/test_run_harness.py` to verify documented full-output CLI runs keep first-row queue pressure identities valid and keep the top-level queue pressure summary lines aligned with metrics-derived final/aggregate values for both `configs/a0_smoke.yaml` and `configs/a0_default_outputs.yaml`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "first_row_queue_pressure or queue_dynamics or static_bus_metrics" -q` passed with 9 tests and 144 deselected; `.venv-conda/bin/python -m pytest -q` passed with 153 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a compact CLI-path regression that documented full-output runs keep first-row queue pressure fields aligned with the top-level queue pressure lines in `summary.md` across both full-output fixtures.
+- Next step: add a compact CLI-path regression that documented full-output runs keep queued-task-age summary lines aligned with metrics-derived final, peak, and mean age values across both full-output fixtures.

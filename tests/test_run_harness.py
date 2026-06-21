@@ -938,6 +938,43 @@ def test_documented_cli_summary_static_bus_metrics_match_first_metrics_row_acros
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_first_row_queue_pressure_fields_match_summary_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_first_row_queue_pressure"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_first_row_queue_pressure_fields_match_summary(
+        summary,
+        metric_rows=metric_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_event_type_totals_match_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4123,6 +4160,36 @@ def _assert_summary_queue_dynamics_match_metrics(
     assert f"- final queued task mean age: {final['queued_task_age_mean_tick']}" in summary
     assert f"- peak queued task max age: {peak_queued_task_age}" in summary
     assert f"- mean queued task mean age: {mean_queued_task_mean_age}" in summary
+    assert (
+        f"- created-completed balance: "
+        f"{pressure_totals['created_completed_balance_tick']}"
+    ) in summary
+    assert (
+        f"- created-worked balance: "
+        f"{pressure_totals['created_worked_balance_tick']}"
+    ) in summary
+    assert f"- work-completion gap: {pressure_totals['work_completion_gap_tick']}" in summary
+
+
+def _assert_first_row_queue_pressure_fields_match_summary(
+    summary: str,
+    *,
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    first = metric_rows[0]
+    pressure_totals = _queue_pressure_totals_from_metrics(metric_rows)
+
+    created = int(first["tasks_created_tick"])
+    worked = int(first["tasks_worked_tick"])
+    completed = int(first["tasks_completed_tick"])
+
+    assert int(first["created_completed_balance_tick"]) == created - completed
+    assert int(first["created_worked_balance_tick"]) == created - worked
+    assert int(first["work_completion_gap_tick"]) == worked - completed
+    assert first["backlog_pressure_tick"] == first["queue_depth"]
+
+    assert f"- final backlog pressure: {metric_rows[-1]['backlog_pressure_tick']}" in summary
     assert (
         f"- created-completed balance: "
         f"{pressure_totals['created_completed_balance_tick']}"
