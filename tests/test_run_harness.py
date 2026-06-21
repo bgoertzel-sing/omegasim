@@ -861,6 +861,45 @@ def test_documented_cli_manifest_agent_identity_and_roles_match_baseline_across_
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_manifest_bus_counts_match_summary_and_first_metrics_row_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_bus_counts"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        first_metrics_row = next(csv.DictReader(handle))
+
+    _assert_manifest_bus_counts_match_summary_and_metrics_row(
+        manifest,
+        summary=summary,
+        metrics_row=first_metrics_row,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_event_type_totals_match_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -3708,6 +3747,23 @@ def _assert_manifest_agent_identity_and_roles_match_baseline(
     assert model["agent_ids"] == expected_agent_ids
     assert model["roles"] == expected_roles
     assert model["role_action_metrics"]["roles"] == list(BASELINE_ROLES)
+
+
+def _assert_manifest_bus_counts_match_summary_and_metrics_row(
+    manifest: dict[str, object],
+    *,
+    summary: str,
+    metrics_row: dict[str, str],
+) -> None:
+    model = manifest["model"]
+    assert isinstance(model, dict)
+
+    bus_nodes = model["bus_nodes"]
+    bus_edges = model["bus_edges"]
+
+    assert int(metrics_row["bus_nodes"]) == bus_nodes
+    assert int(metrics_row["bus_edges"]) == bus_edges
+    assert f"- bus graph: {bus_nodes} nodes, {bus_edges} edges" in summary
 
 
 def _directory_artifacts(out_dir: Path) -> list[str]:
