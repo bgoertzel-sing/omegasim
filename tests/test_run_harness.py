@@ -1492,6 +1492,28 @@ def test_documented_cli_events_replay_to_role_action_metrics_through_manifest_ro
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_events_replay_to_summary_role_action_totals_through_manifest_roles_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_events_summary_role_action_totals"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_events_replay_to_summary_role_action_totals_through_manifest_roles(
+        summary,
+        event_rows=event_rows,
+        manifest_roles=manifest["model"]["roles"],
+        actions=tuple(manifest["actions"]),
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4450,6 +4472,46 @@ def _assert_events_replay_to_role_action_metrics_through_manifest_roles(
                 assert role_action_counts[(role, action)] == int(
                     row[f"role_{role}_{action}_tick"]
                 )
+
+
+def _assert_events_replay_to_summary_role_action_totals_through_manifest_roles(
+    summary: str,
+    *,
+    event_rows: list[dict[str, str]],
+    manifest_roles: dict[str, str],
+    actions: tuple[str, ...],
+) -> None:
+    assert _summary_role_action_totals(summary) == _role_action_totals_from_events(
+        event_rows,
+        manifest_roles=manifest_roles,
+        actions=actions,
+    )
+
+
+def _role_action_totals_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    manifest_roles: dict[str, str],
+    actions: tuple[str, ...],
+) -> dict[str, dict[str, int]]:
+    assert event_rows
+    assert set(actions) == {"idle", "message", "create_task", "work_task"}
+    assert set(manifest_roles.values()) == set(BASELINE_ROLES)
+    for event in event_rows:
+        assert event["agent_id"] in manifest_roles
+        assert event["action"] in actions
+
+    role_action_counts = Counter(
+        (manifest_roles[event["agent_id"]], event["action"])
+        for event in event_rows
+    )
+    return {
+        role: {
+            action: role_action_counts[(role, action)]
+            for action in actions
+        }
+        for role in BASELINE_ROLES
+    }
 
 
 def _assert_events_per_tick_task_lifecycle_matches_queue_and_task_metrics(
