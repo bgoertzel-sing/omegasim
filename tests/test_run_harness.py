@@ -1265,6 +1265,39 @@ def test_documented_cli_lobe_dwell_runs_summary_matches_metrics_across_full_outp
     _assert_lobe_dwell_run_summary_matches_metrics(summary, metric_rows=metric_rows)
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_lobe_run_state_matches_recomputed_dwell_runs_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_lobe_run_state"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_lobe_run_state_matches_recomputed_dwell_runs(metric_rows)
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -4341,6 +4374,43 @@ def _assert_lobe_dwell_run_summary_matches_metrics(
             f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
             f"max_run={dwell['max_run']}, mean_run={dwell['mean_run']}"
         ) in summary
+
+
+def _assert_lobe_run_state_matches_recomputed_dwell_runs(
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+
+    previous_label = ""
+    expected_run_id = 0
+    expected_run_length = 0
+    completed_run_lengths: list[int] = []
+    completed_run_labels: list[str] = []
+
+    for row in metric_rows:
+        label = row["baseline_lobe_label"]
+        if label == previous_label:
+            expected_run_length += 1
+        else:
+            if previous_label:
+                completed_run_labels.append(previous_label)
+                completed_run_lengths.append(expected_run_length)
+            expected_run_id += 1
+            expected_run_length = 1
+
+        assert int(row["baseline_lobe_run_id"]) == expected_run_id
+        assert int(row["baseline_lobe_current_run_length"]) == expected_run_length
+        previous_label = label
+
+    completed_run_labels.append(previous_label)
+    completed_run_lengths.append(expected_run_length)
+
+    dwell_runs = _lobe_dwell_runs(metric_rows)
+    assert expected_run_id == sum(dwell["runs"] for dwell in dwell_runs.values())
+    assert len(completed_run_lengths) == expected_run_id
+    assert sum(completed_run_lengths) == len(metric_rows)
+    assert max(completed_run_lengths) == max(dwell["max_run"] for dwell in dwell_runs.values())
+    assert set(completed_run_labels) == set(dwell_runs)
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
