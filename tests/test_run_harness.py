@@ -579,6 +579,27 @@ def test_manifest_records_role_action_metric_provenance(tmp_path: Path) -> None:
         assert field in metrics_header
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_manifest_role_action_fields_exactly_match_metrics_columns_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / config_path.stem
+
+    run_experiment(config_path, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    emitted_role_action_fields = [
+        field for field in metrics_header if field.startswith("role_")
+    ]
+
+    assert manifest["model"]["role_action_metrics"]["fields"] == emitted_role_action_fields
+    assert emitted_role_action_fields == list(role_action_metric_fields(tuple(manifest["actions"])))
+
+
 def test_manifest_records_queue_dynamics_metric_provenance(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
