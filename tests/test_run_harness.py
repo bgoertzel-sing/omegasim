@@ -53,6 +53,34 @@ def _expected_artifacts(config_path: Path) -> list[str]:
     return list(OUTPUT_FIXTURE_ARTIFACTS[config_path])
 
 
+def _run_documented_cli(
+    config_path: Path,
+    out_dir: Path,
+    *,
+    seed: int = 1,
+) -> subprocess.CompletedProcess[str]:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            str(seed),
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    return completed
+
+
 def test_loads_a0_smoke_config() -> None:
     config = load_config(CONFIG)
 
@@ -727,25 +755,7 @@ def test_documented_cli_summary_schema_provenance_counts_match_manifest_across_f
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_schema_counts"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
@@ -760,25 +770,7 @@ def test_documented_cli_summary_artifacts_and_output_flags_match_manifest_across
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_artifacts_outputs"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
@@ -797,25 +789,7 @@ def test_documented_cli_config_manifest_and_summary_run_fields_match_across_full
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_run_fields"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
@@ -836,25 +810,7 @@ def test_documented_cli_manifest_agent_identity_and_roles_match_baseline_across_
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_agent_identity_roles"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
 
@@ -868,25 +824,7 @@ def test_documented_cli_manifest_bus_counts_match_summary_and_first_metrics_row_
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_bus_counts"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
@@ -907,25 +845,7 @@ def test_documented_cli_summary_static_bus_metrics_match_first_metrics_row_acros
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_static_bus_metrics"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "metrics.csv").open() as handle:
@@ -944,25 +864,7 @@ def test_documented_cli_first_row_queue_pressure_fields_match_summary_across_ful
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_first_row_queue_pressure"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "metrics.csv").open() as handle:
@@ -981,25 +883,7 @@ def test_documented_cli_queued_task_age_summary_matches_metrics_across_full_outp
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_queued_task_age"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "metrics.csv").open() as handle:
@@ -1018,25 +902,7 @@ def test_documented_cli_summary_event_type_totals_match_events_across_full_outpu
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_event_type_totals"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "events.csv").open() as handle:
@@ -1052,25 +918,7 @@ def test_documented_cli_summary_top_level_totals_match_metrics_and_events_across
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_top_level_totals"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "metrics.csv").open() as handle:
@@ -1092,25 +940,7 @@ def test_documented_cli_summary_bus_graph_fields_match_metrics_and_manifest_acro
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_bus_graph"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
@@ -1131,25 +961,7 @@ def test_documented_cli_summary_role_action_totals_match_metrics_across_full_out
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_role_action_totals"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
@@ -1170,25 +982,7 @@ def test_documented_cli_summary_queue_dynamics_match_metrics_across_full_output_
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_queue_dynamics"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "metrics.csv").open() as handle:
@@ -1204,25 +998,7 @@ def test_documented_cli_summary_lobe_aggregates_match_metrics_across_full_output
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_lobe_aggregates"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "metrics.csv").open() as handle:
@@ -1238,25 +1014,7 @@ def test_documented_cli_lobe_dwell_runs_summary_matches_metrics_across_full_outp
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_lobe_dwell_runs"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "metrics.csv").open() as handle:
@@ -1272,25 +1030,7 @@ def test_documented_cli_lobe_run_state_matches_recomputed_dwell_runs_across_full
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_lobe_run_state"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     with (out_dir / "metrics.csv").open() as handle:
         metric_rows = list(csv.DictReader(handle))
@@ -1305,25 +1045,7 @@ def test_documented_cli_lobe_transitions_match_adjacent_labels_across_full_outpu
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_lobe_transitions"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     with (out_dir / "metrics.csv").open() as handle:
         metric_rows = list(csv.DictReader(handle))
@@ -1338,25 +1060,7 @@ def test_documented_cli_summary_lobe_transition_totals_match_adjacent_labels_acr
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_summary_lobe_transition_totals"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     summary = (out_dir / "summary.md").read_text()
     with (out_dir / "metrics.csv").open() as handle:
@@ -1375,25 +1079,7 @@ def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_manifest_lobe_labels"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     with (out_dir / "metrics.csv").open() as handle:
@@ -1412,25 +1098,7 @@ def test_documented_cli_manifest_lobe_fields_match_metrics_header_and_observed_l
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_manifest_lobe_fields"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     with (out_dir / "metrics.csv").open() as handle:
@@ -1452,25 +1120,7 @@ def test_documented_cli_manifest_event_types_cover_observed_events_across_full_o
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_manifest_event_types"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     with (out_dir / "events.csv").open() as handle:
@@ -1489,25 +1139,7 @@ def test_documented_cli_manifest_metrics_fields_exactly_match_metrics_header_acr
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_manifest_metrics_fields"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     with (out_dir / "metrics.csv").open() as handle:
@@ -1526,25 +1158,7 @@ def test_documented_cli_manifest_role_action_fields_exactly_match_metrics_header
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_manifest_role_action_fields"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     with (out_dir / "metrics.csv").open() as handle:
@@ -1563,25 +1177,7 @@ def test_documented_cli_manifest_queue_dynamics_fields_exactly_match_metrics_hea
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_manifest_queue_dynamics_fields"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     with (out_dir / "metrics.csv").open() as handle:
@@ -1600,25 +1196,7 @@ def test_documented_cli_manifest_event_fields_exactly_match_events_header_across
 ) -> None:
     out_dir = tmp_path / f"{config_path.stem}_cli_manifest_event_fields"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(config_path),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(config_path, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     with (out_dir / "events.csv").open() as handle:
@@ -1751,25 +1329,7 @@ def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
 ) -> None:
     out_dir = tmp_path / "manifest_only_cli"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(MANIFEST_ONLY),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(MANIFEST_ONLY, out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
 
@@ -1785,25 +1345,7 @@ def test_documented_cli_manifest_only_records_full_schema_provenance_without_dis
 ) -> None:
     out_dir = tmp_path / "manifest_only_cli_schema"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(MANIFEST_ONLY),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(MANIFEST_ONLY, out_dir)
 
     _assert_manifest_only_preserves_full_schema_provenance(out_dir)
 
@@ -1814,25 +1356,7 @@ def test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinel
     out_dir = tmp_path / "manifest_only_cli_stale_disabled"
     stale_disabled_artifacts = _write_manifest_only_disabled_artifact_sentinels(out_dir)
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(MANIFEST_ONLY),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(MANIFEST_ONLY, out_dir)
     _assert_manifest_only_preserves_stale_disabled_artifacts(
         out_dir,
         stale_disabled_artifacts=stale_disabled_artifacts,
@@ -1901,25 +1425,7 @@ def test_documented_cli_config_only_preserves_stale_disabled_artifact_sentinels(
     out_dir = tmp_path / "config_only_cli_stale_disabled"
     stale_disabled_artifacts = _write_config_only_disabled_artifact_sentinels(out_dir)
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(CONFIG_ONLY),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(CONFIG_ONLY, out_dir)
     _assert_config_only_preserves_stale_disabled_artifacts(
         out_dir,
         stale_disabled_artifacts=stale_disabled_artifacts,
@@ -2008,25 +1514,7 @@ def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_con
 ) -> None:
     out_dir = tmp_path / "no_manifest_cli"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(NO_MANIFEST),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(NO_MANIFEST, out_dir)
 
     _assert_summary_written_artifacts_match_output_directory(out_dir)
     _assert_no_manifest_writes_enabled_artifacts(out_dir)
@@ -2037,25 +1525,7 @@ def test_documented_cli_no_manifest_emitted_artifacts_preserve_schema_provenance
 ) -> None:
     out_dir = tmp_path / "no_manifest_cli_schema"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(NO_MANIFEST),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(NO_MANIFEST, out_dir)
 
     _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(out_dir)
 
@@ -2066,25 +1536,7 @@ def test_documented_cli_no_manifest_preserves_stale_manifest_sentinel(
     out_dir = tmp_path / "no_manifest_cli_stale_manifest"
     stale_manifest = _write_no_manifest_disabled_manifest_sentinel(out_dir)
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(NO_MANIFEST),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(NO_MANIFEST, out_dir)
     _assert_no_manifest_preserves_stale_disabled_manifest(
         out_dir,
         stale_manifest=stale_manifest,
@@ -2334,25 +1786,7 @@ def test_documented_cli_smoke_writes_required_a0_artifacts(tmp_path: Path) -> No
     out_dir = tmp_path / "a0_seed1"
     expected_artifacts = _expected_artifacts(CONFIG)
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(CONFIG),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(CONFIG, out_dir)
     _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
@@ -2365,25 +1799,7 @@ def test_documented_cli_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: 
     out_dir = tmp_path / "default_outputs_seed1"
     expected_artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(DEFAULT_OUTPUTS),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(DEFAULT_OUTPUTS, out_dir)
     _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
 
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
@@ -2407,25 +1823,7 @@ def test_documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_arti
     artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
 
     for out_dir in [first, second]:
-        completed = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "ohdyn.run",
-                "--config",
-                str(DEFAULT_OUTPUTS),
-                "--seed",
-                "17",
-                "--out",
-                str(out_dir),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert completed.returncode == 0
-        assert completed.stderr == ""
+        _run_documented_cli(DEFAULT_OUTPUTS, out_dir, seed=17)
         _assert_artifacts_match_output_directory(out_dir, artifacts)
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
@@ -2566,25 +1964,7 @@ def test_run_api_omitted_outputs_refuses_collision_without_partial_artifacts(
 def test_documented_cli_smoke_writes_expected_metrics_and_events_rows(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(CONFIG),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(CONFIG, out_dir)
 
     config = load_config(CONFIG)
     with (out_dir / "metrics.csv").open() as handle:
@@ -2606,25 +1986,7 @@ def test_documented_cli_smoke_writes_expected_metrics_and_events_rows(tmp_path: 
 def test_documented_cli_smoke_writes_core_a0_summary_sections(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(CONFIG),
-            "--seed",
-            "1",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(CONFIG, out_dir)
 
     with (out_dir / "metrics.csv").open() as handle:
         metric_rows = list(csv.DictReader(handle))
@@ -2684,25 +2046,7 @@ def test_documented_cli_same_seed_reproduces_byte_identical_a0_artifacts(tmp_pat
     artifacts = _expected_artifacts(CONFIG)
 
     for out_dir in [first, second]:
-        completed = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "ohdyn.run",
-                "--config",
-                str(CONFIG),
-                "--seed",
-                "17",
-                "--out",
-                str(out_dir),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert completed.returncode == 0
-        assert completed.stderr == ""
+        _run_documented_cli(CONFIG, out_dir, seed=17)
         _assert_artifacts_match_output_directory(out_dir, artifacts)
 
     _assert_artifacts_are_byte_identical(first, second, artifacts)
@@ -2742,25 +2086,7 @@ def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> No
     out_dir = tmp_path / "manifest_only_cli_outputs"
     expected_artifacts = _expected_artifacts(MANIFEST_ONLY)
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(MANIFEST_ONLY),
-            "--seed",
-            "17",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(MANIFEST_ONLY, out_dir, seed=17)
     _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
@@ -2781,25 +2107,7 @@ def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> No
 def test_documented_cli_respects_disabled_manifest_output(tmp_path: Path) -> None:
     out_dir = tmp_path / "no_manifest_cli_outputs"
 
-    completed = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "ohdyn.run",
-            "--config",
-            str(NO_MANIFEST),
-            "--seed",
-            "17",
-            "--out",
-            str(out_dir),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert completed.returncode == 0
-    assert completed.stderr == ""
+    _run_documented_cli(NO_MANIFEST, out_dir, seed=17)
     _assert_no_manifest_writes_enabled_artifacts(out_dir)
     assert "# a0_no_manifest" in (out_dir / "summary.md").read_text()
 
@@ -2864,25 +2172,7 @@ def test_documented_cli_same_seed_without_manifest_reproduces_byte_identical_art
     ]
 
     for out_dir in [first, second]:
-        completed = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "ohdyn.run",
-                "--config",
-                str(NO_MANIFEST),
-                "--seed",
-                "17",
-                "--out",
-                str(out_dir),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert completed.returncode == 0
-        assert completed.stderr == ""
+        _run_documented_cli(NO_MANIFEST, out_dir, seed=17)
         _assert_artifacts_match_output_directory(out_dir, artifacts)
         assert not (out_dir / "manifest.yaml").exists()
 
@@ -2939,25 +2229,7 @@ def test_documented_cli_different_seeds_change_events_but_preserve_schema(tmp_pa
     second = tmp_path / "a0_seed18"
 
     for seed, out_dir in [(17, first), (18, second)]:
-        completed = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "ohdyn.run",
-                "--config",
-                str(CONFIG),
-                "--seed",
-                str(seed),
-                "--out",
-                str(out_dir),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert completed.returncode == 0
-        assert completed.stderr == ""
+        _run_documented_cli(CONFIG, out_dir, seed=seed)
 
     with (first / "metrics.csv").open() as handle:
         first_metrics = list(csv.reader(handle))
@@ -3561,25 +2833,7 @@ def test_cli_config_only_outputs_succeed_and_are_byte_stable(tmp_path: Path) -> 
     second = tmp_path / "config_only_cli_second"
 
     for out_dir in [first, second]:
-        completed = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "ohdyn.run",
-                "--config",
-                str(CONFIG_ONLY),
-                "--seed",
-                "17",
-                "--out",
-                str(out_dir),
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-        assert completed.returncode == 0
-        assert completed.stderr == ""
+        _run_documented_cli(CONFIG_ONLY, out_dir, seed=17)
         _assert_artifacts_match_output_directory(out_dir, _expected_artifacts(CONFIG_ONLY))
 
     _assert_artifacts_are_byte_identical(first, second, _expected_artifacts(CONFIG_ONLY))
