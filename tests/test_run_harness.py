@@ -1726,10 +1726,9 @@ def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Pa
     ]
 
     first = subprocess.run(command, capture_output=True, text=True, check=False)
-    before = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
+    before = _artifact_bytes_snapshot(out_dir, artifacts)
 
     second = subprocess.run(command, capture_output=True, text=True, check=False)
-    after = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
 
     assert first.returncode == 0
     assert first.stderr == ""
@@ -1738,7 +1737,7 @@ def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Pa
     assert "already contains run artifacts" in second.stderr
     assert "Traceback" not in second.stderr
     _assert_artifacts_match_output_directory(out_dir, artifacts)
-    assert after == before
+    _assert_output_directory_preserved(out_dir, before)
 
 
 def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> None:
@@ -2149,14 +2148,13 @@ def test_run_experiment_refuses_to_overwrite_complete_run_directory(tmp_path: Pa
     ]
 
     run_experiment(CONFIG, seed=17, out_dir=out_dir)
-    before = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
+    before = _artifact_bytes_snapshot(out_dir, artifacts)
 
     with pytest.raises(FileExistsError, match="already contains run artifacts"):
         run_experiment(CONFIG, seed=17, out_dir=out_dir)
 
-    after = {artifact: (out_dir / artifact).read_bytes() for artifact in artifacts}
     _assert_artifacts_match_output_directory(out_dir, artifacts)
-    assert after == before
+    _assert_output_directory_preserved(out_dir, before)
 
 
 def test_run_experiment_refuses_partial_output_directory_without_writing_artifacts(
@@ -2297,13 +2295,13 @@ def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(
     out_dir = tmp_path / "config_only_rerun"
 
     run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
-    before = (out_dir / "config.yaml").read_bytes()
+    before = _artifact_bytes_snapshot(out_dir, ["config.yaml"])
 
     with pytest.raises(FileExistsError, match="already contains run artifacts: config.yaml"):
         run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
 
     _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
-    assert (out_dir / "config.yaml").read_bytes() == before
+    _assert_output_directory_preserved(out_dir, before)
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
     assert normalized_config["outputs"] == {
@@ -2328,7 +2326,7 @@ def test_run_experiment_config_only_rerun_preserves_disabled_artifact_sentinels(
     run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
     for artifact, content in disabled_sentinels.items():
         (out_dir / artifact).write_bytes(content)
-    before = {path.name: path.read_bytes() for path in out_dir.iterdir()}
+    before = _artifact_bytes_snapshot(out_dir)
 
     with pytest.raises(FileExistsError) as exc_info:
         run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
@@ -2340,7 +2338,7 @@ def test_run_experiment_config_only_rerun_preserves_disabled_artifact_sentinels(
     assert "events.csv" not in message
     assert "summary.md" not in message
     _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *disabled_sentinels])
-    assert {path.name: path.read_bytes() for path in out_dir.iterdir()} == before
+    _assert_output_directory_preserved(out_dir, before)
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
     assert normalized_config["outputs"] == {
@@ -2617,7 +2615,7 @@ def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Pa
     ]
 
     first = subprocess.run(command, capture_output=True, text=True, check=False)
-    before = (out_dir / "config.yaml").read_bytes()
+    before = _artifact_bytes_snapshot(out_dir, ["config.yaml"])
 
     second = subprocess.run(command, capture_output=True, text=True, check=False)
 
@@ -2634,7 +2632,7 @@ def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Pa
     assert "summary.md" not in second.stderr
     assert "Traceback" not in second.stderr
     _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
-    assert (out_dir / "config.yaml").read_bytes() == before
+    _assert_output_directory_preserved(out_dir, before)
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
     assert normalized_config["outputs"] == {
@@ -2668,7 +2666,7 @@ def test_cli_config_only_rerun_preserves_disabled_artifact_sentinels(tmp_path: P
     first = subprocess.run(command, capture_output=True, text=True, check=False)
     for artifact, content in disabled_sentinels.items():
         (out_dir / artifact).write_bytes(content)
-    before = {path.name: path.read_bytes() for path in out_dir.iterdir()}
+    before = _artifact_bytes_snapshot(out_dir)
 
     second = subprocess.run(command, capture_output=True, text=True, check=False)
 
@@ -2684,7 +2682,7 @@ def test_cli_config_only_rerun_preserves_disabled_artifact_sentinels(tmp_path: P
     assert "summary.md" not in second.stderr
     assert "Traceback" not in second.stderr
     _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *disabled_sentinels])
-    assert {path.name: path.read_bytes() for path in out_dir.iterdir()} == before
+    _assert_output_directory_preserved(out_dir, before)
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
     assert normalized_config["outputs"] == {
@@ -3218,6 +3216,21 @@ def _assert_artifacts_match_output_directory(
     artifacts: list[str],
 ) -> None:
     assert sorted(artifacts) == _directory_artifacts(out_dir)
+
+
+def _artifact_bytes_snapshot(
+    out_dir: Path,
+    artifacts: list[str] | None = None,
+) -> dict[str, bytes]:
+    artifact_names = artifacts if artifacts is not None else _directory_artifacts(out_dir)
+    return {artifact: (out_dir / artifact).read_bytes() for artifact in artifact_names}
+
+
+def _assert_output_directory_preserved(
+    out_dir: Path,
+    before: dict[str, bytes],
+) -> None:
+    assert _artifact_bytes_snapshot(out_dir) == before
 
 
 def _assert_artifacts_are_byte_identical(
