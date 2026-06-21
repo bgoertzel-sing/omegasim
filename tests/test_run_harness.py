@@ -790,6 +790,40 @@ def test_documented_cli_summary_artifacts_and_output_flags_match_manifest_across
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_event_type_totals_match_events_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_event_type_totals"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_summary_event_type_totals_match_events(summary, event_rows=event_rows)
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_role_action_totals_match_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -3671,6 +3705,19 @@ def _assert_summary_schema_provenance_counts_match_manifest(
         f"{len(queue_dynamics['queued_task_age_fields'])}"
     ) in summary
     assert f"- role/action fields: {len(role_action_metrics['fields'])}" in summary
+
+
+def _assert_summary_event_type_totals_match_events(
+    summary: str,
+    *,
+    event_rows: list[dict[str, str]],
+) -> None:
+    assert event_rows
+    assert "## Event type totals" in summary
+
+    event_type_totals = Counter(row["event_type"] for row in event_rows)
+    for event_type, count in sorted(event_type_totals.items()):
+        assert f"- {event_type}: {count}" in summary
 
 
 def _assert_summary_role_action_totals_match_metrics(
