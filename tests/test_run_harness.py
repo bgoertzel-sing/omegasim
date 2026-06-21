@@ -752,6 +752,43 @@ def test_documented_cli_summary_schema_provenance_counts_match_manifest_across_f
     _assert_summary_schema_provenance_counts_match_manifest(summary, manifest)
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_artifacts_and_output_flags_match_manifest_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_artifacts_outputs"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+
+    assert _summary_written_artifacts(summary) == manifest["artifacts"]
+    assert manifest["artifacts"] == _expected_artifacts(config_path)
+    assert manifest["outputs"] == normalized_config["outputs"]
+    _assert_summary_output_flags_match_config(summary, normalized_config["outputs"])
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -3323,6 +3360,15 @@ def _summary_written_artifacts(summary: str) -> list[str]:
         line for line in summary.splitlines() if line.startswith("- written artifacts: ")
     )
     return written_artifacts_line.removeprefix("- written artifacts: ").split(", ")
+
+
+def _assert_summary_output_flags_match_config(
+    summary: str,
+    output_flags: dict[str, bool],
+) -> None:
+    for name, enabled in output_flags.items():
+        state = "enabled" if enabled else "disabled"
+        assert f"- {name}: {state}" in summary
 
 
 def _directory_artifacts(out_dir: Path) -> list[str]:
