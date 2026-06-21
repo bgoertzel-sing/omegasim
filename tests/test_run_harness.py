@@ -1429,6 +1429,26 @@ def test_documented_cli_events_per_tick_action_counts_match_metrics_top_level_ac
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_events_per_tick_counts_match_configured_agent_population_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_events_tick_population"
+
+    _run_documented_cli(config_path, out_dir)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_events_per_tick_counts_match_configured_agent_population(
+        event_rows=event_rows,
+        ticks=normalized_config["run"]["ticks"],
+        agent_count=normalized_config["model"]["agent_count"],
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4305,6 +4325,25 @@ def _assert_events_per_tick_action_counts_match_metrics_top_level_action_totals(
         for event_type, metric_field in event_type_metric_fields.items():
             assert event_counts[event_type] == int(row[metric_field])
         assert sum(event_counts.values()) == int(row["agent_count"])
+
+
+def _assert_events_per_tick_counts_match_configured_agent_population(
+    *,
+    event_rows: list[dict[str, str]],
+    ticks: int,
+    agent_count: int,
+) -> None:
+    assert event_rows
+
+    expected_ticks = list(range(ticks))
+    events_by_tick = Counter(int(row["tick"]) for row in event_rows)
+
+    assert sorted(events_by_tick) == expected_ticks
+    assert events_by_tick == {
+        tick: agent_count
+        for tick in expected_ticks
+    }
+    assert len(event_rows) == ticks * agent_count
 
 
 def _assert_events_per_tick_task_lifecycle_matches_queue_and_task_metrics(
