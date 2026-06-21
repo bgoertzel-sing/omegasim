@@ -1113,6 +1113,27 @@ def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_lobe_dwell_runs_use_only_manifest_lobe_labels_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_summary_lobe_dwell_manifest_labels"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_summary_lobe_dwell_runs_use_only_manifest_lobe_labels(
+        summary,
+        manifest=manifest,
+        metric_rows=metric_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_manifest_lobe_fields_match_metrics_header_and_observed_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4096,6 +4117,28 @@ def _assert_summary_lobe_totals_use_only_manifest_lobe_labels(
     assert summary_totals == dict(sorted(observed_totals.items()))
 
 
+def _assert_summary_lobe_dwell_runs_use_only_manifest_lobe_labels(
+    summary: str,
+    *,
+    manifest: dict[str, object],
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    baseline_lobes = model["baseline_lobes"]
+    assert isinstance(baseline_lobes, dict)
+
+    manifest_labels = set(baseline_lobes["labels"])
+    observed_dwell_runs = _lobe_dwell_runs(metric_rows)
+    summary_dwell_runs = _summary_lobe_dwell_runs(summary)
+
+    assert summary_dwell_runs
+    assert set(summary_dwell_runs) <= manifest_labels
+    assert set(summary_dwell_runs) == set(observed_dwell_runs)
+    assert summary_dwell_runs == dict(sorted(observed_dwell_runs.items()))
+
+
 def _assert_manifest_lobe_fields_match_metrics_header_and_observed_labels(
     manifest: dict[str, object],
     *,
@@ -4243,6 +4286,31 @@ def _summary_lobe_totals(summary: str) -> dict[str, int]:
         totals[label] = int(count)
 
     return totals
+
+
+def _summary_lobe_dwell_runs(summary: str) -> dict[str, dict[str, int | float]]:
+    dwell_runs: dict[str, dict[str, int | float]] = {}
+    in_section = False
+
+    for line in summary.splitlines():
+        if line == "## Baseline lobe dwell runs":
+            in_section = True
+            continue
+        if in_section and line.startswith("## "):
+            break
+        if not in_section or not line.startswith("- "):
+            continue
+
+        label, raw_fields = line.removeprefix("- ").split(": ", maxsplit=1)
+        fields = dict(field.split("=", maxsplit=1) for field in raw_fields.split(", "))
+        dwell_runs[label] = {
+            "runs": int(fields["runs"]),
+            "total_ticks": int(fields["total_ticks"]),
+            "max_run": int(fields["max_run"]),
+            "mean_run": float(fields["mean_run"]),
+        }
+
+    return dwell_runs
 
 
 def _lobe_transition_totals_from_adjacent_labels(
