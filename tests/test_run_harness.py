@@ -1368,6 +1368,43 @@ def test_documented_cli_summary_lobe_transition_totals_match_adjacent_labels_acr
     )
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_manifest_lobe_labels"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_manifest_lobe_labels_cover_observed_metrics(
+        manifest,
+        metric_rows=metric_rows,
+    )
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -4519,6 +4556,22 @@ def _assert_summary_lobe_transition_totals_match_adjacent_labels(
     assert _summary_lobe_transition_totals(summary) == _lobe_transition_totals_from_adjacent_labels(
         metric_rows
     )
+
+
+def _assert_manifest_lobe_labels_cover_observed_metrics(
+    manifest: dict[str, object],
+    *,
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    baseline_lobes = model["baseline_lobes"]
+    assert isinstance(baseline_lobes, dict)
+
+    manifest_labels = baseline_lobes["labels"]
+    assert manifest_labels == list(BASELINE_LOBE_LABELS)
+    assert set(row["baseline_lobe_label"] for row in metric_rows) <= set(manifest_labels)
 
 
 def _summary_lobe_transition_totals(summary: str) -> dict[str, int]:
