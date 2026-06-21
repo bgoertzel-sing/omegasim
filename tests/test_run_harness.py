@@ -789,6 +789,45 @@ def test_documented_cli_summary_artifacts_and_output_flags_match_manifest_across
     _assert_summary_output_flags_match_config(summary, normalized_config["outputs"])
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_role_action_totals_match_metrics_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_role_action_totals"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_summary_role_action_totals_match_metrics(
+        summary,
+        metric_rows=metric_rows,
+        actions=tuple(manifest["actions"]),
+    )
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -3564,6 +3603,34 @@ def _assert_summary_schema_provenance_counts_match_manifest(
         f"{len(queue_dynamics['queued_task_age_fields'])}"
     ) in summary
     assert f"- role/action fields: {len(role_action_metrics['fields'])}" in summary
+
+
+def _assert_summary_role_action_totals_match_metrics(
+    summary: str,
+    *,
+    metric_rows: list[dict[str, str]],
+    actions: tuple[str, ...],
+) -> None:
+    assert "## Role action totals" in summary
+
+    for role, totals in _role_action_totals_from_metrics(metric_rows, actions).items():
+        assert (
+            f"- {role}: idle={totals['idle']}, message={totals['message']}, "
+            f"create_task={totals['create_task']}, work_task={totals['work_task']}"
+        ) in summary
+
+
+def _role_action_totals_from_metrics(
+    metric_rows: list[dict[str, str]],
+    actions: tuple[str, ...],
+) -> dict[str, dict[str, int]]:
+    return {
+        role: {
+            action: sum(int(row[f"role_{role}_{action}_tick"]) for row in metric_rows)
+            for action in actions
+        }
+        for role in BASELINE_ROLES
+    }
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
