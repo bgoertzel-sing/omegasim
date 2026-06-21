@@ -975,6 +975,43 @@ def test_documented_cli_first_row_queue_pressure_fields_match_summary_across_ful
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_queued_task_age_summary_matches_metrics_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_queued_task_age"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_queued_task_age_summary_matches_metrics(
+        summary,
+        metric_rows=metric_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_event_type_totals_match_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4199,6 +4236,28 @@ def _assert_first_row_queue_pressure_fields_match_summary(
         f"{pressure_totals['created_worked_balance_tick']}"
     ) in summary
     assert f"- work-completion gap: {pressure_totals['work_completion_gap_tick']}" in summary
+
+
+def _assert_queued_task_age_summary_matches_metrics(
+    summary: str,
+    *,
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    final = metric_rows[-1]
+    peak_queued_task_age = max(
+        int(row["queued_task_age_max_tick"]) for row in metric_rows
+    )
+    mean_queued_task_mean_age = round(
+        sum(float(row["queued_task_age_mean_tick"]) for row in metric_rows)
+        / len(metric_rows),
+        6,
+    )
+
+    assert f"- final queued task max age: {final['queued_task_age_max_tick']}" in summary
+    assert f"- final queued task mean age: {final['queued_task_age_mean_tick']}" in summary
+    assert f"- peak queued task max age: {peak_queued_task_age}" in summary
+    assert f"- mean queued task mean age: {mean_queued_task_mean_age}" in summary
 
 
 def _queue_pressure_totals_from_metrics(
