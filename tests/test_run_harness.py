@@ -1298,6 +1298,39 @@ def test_documented_cli_lobe_run_state_matches_recomputed_dwell_runs_across_full
     _assert_lobe_run_state_matches_recomputed_dwell_runs(metric_rows)
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_lobe_transitions_match_adjacent_labels_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_lobe_transitions"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_lobe_transitions_match_adjacent_labels(metric_rows)
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -4411,6 +4444,31 @@ def _assert_lobe_run_state_matches_recomputed_dwell_runs(
     assert sum(completed_run_lengths) == len(metric_rows)
     assert max(completed_run_lengths) == max(dwell["max_run"] for dwell in dwell_runs.values())
     assert set(completed_run_labels) == set(dwell_runs)
+
+
+def _assert_lobe_transitions_match_adjacent_labels(
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+
+    assert metric_rows[0]["baseline_lobe_previous_label"] == ""
+    assert metric_rows[0]["baseline_lobe_transition"] == "start"
+    assert metric_rows[0]["baseline_lobe_transition_tick"] == "0"
+
+    previous_label = metric_rows[0]["baseline_lobe_label"]
+    for row in metric_rows[1:]:
+        current_label = row["baseline_lobe_label"]
+        changed = previous_label != current_label
+        expected_transition = (
+            f"{previous_label}->{current_label}"
+            if changed
+            else "stable"
+        )
+
+        assert row["baseline_lobe_previous_label"] == previous_label
+        assert row["baseline_lobe_transition"] == expected_transition
+        assert row["baseline_lobe_transition_tick"] == str(int(changed))
+        previous_label = current_label
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
