@@ -1383,6 +1383,32 @@ def test_documented_cli_role_action_metric_sequence_reproduces_across_same_seed_
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_role_action_counts_sum_to_role_population_for_every_metrics_row_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_role_action_row_population"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    actions = tuple(manifest["actions"])
+    role_populations = Counter(manifest["model"]["roles"].values())
+
+    assert metric_rows
+    assert role_populations == {role: 3 for role in BASELINE_ROLES}
+    for row in metric_rows:
+        for role, population in role_populations.items():
+            assert (
+                sum(int(row[f"role_{role}_{action}_tick"]) for action in actions)
+                == population
+            )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
