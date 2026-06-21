@@ -2017,6 +2017,40 @@ def test_documented_cli_summary_queued_task_age_aggregates_reproduce_across_same
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_task_queue_pressure_and_age_aggregates_match_metrics_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_summary_queue_integrity"
+
+    _run_documented_cli(config_path, out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    summary_task_queue_totals = _summary_task_and_queue_totals(summary)
+    summary_queue_pressure_totals = _summary_queue_pressure_totals(summary)
+    summary_age_aggregates = _summary_queued_task_age_aggregates(summary)
+
+    assert summary_task_queue_totals == _task_and_queue_totals_from_metrics(metric_rows)
+    assert summary_queue_pressure_totals == _queue_pressure_totals_from_metrics(metric_rows)
+    assert summary_age_aggregates == _queued_task_age_aggregates_from_metrics(metric_rows)
+    assert (
+        summary_task_queue_totals["queue_depth"]
+        == summary_queue_pressure_totals["created_completed_balance_tick"]
+    )
+    assert (
+        summary_age_aggregates["final_queued_task_max_age"]
+        >= summary_age_aggregates["final_queued_task_mean_age"]
+    )
+    assert (
+        summary_age_aggregates["peak_queued_task_max_age"]
+        >= summary_age_aggregates["final_queued_task_max_age"]
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
