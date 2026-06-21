@@ -862,6 +862,40 @@ def test_documented_cli_summary_queue_dynamics_match_metrics_across_full_output_
     _assert_summary_queue_dynamics_match_metrics(summary, metric_rows=metric_rows)
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_lobe_aggregates_match_metrics_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_lobe_aggregates"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_summary_lobe_aggregates_match_metrics(summary, metric_rows=metric_rows)
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -3708,6 +3742,34 @@ def _queue_pressure_totals_from_metrics(
         for field in QUEUE_PRESSURE_METRIC_FIELDS
         if field != "backlog_pressure_tick"
     }
+
+
+def _assert_summary_lobe_aggregates_match_metrics(
+    summary: str,
+    *,
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    assert "## Baseline lobe totals" in summary
+    assert "## Baseline lobe transitions" in summary
+    assert "## Baseline lobe dwell runs" in summary
+
+    lobe_totals = Counter(row["baseline_lobe_label"] for row in metric_rows)
+    lobe_transitions = Counter(
+        row["baseline_lobe_transition"]
+        for row in metric_rows
+        if row["baseline_lobe_transition"] not in {"start", "stable"}
+    )
+
+    for label, count in sorted(lobe_totals.items()):
+        assert f"- {label}: {count}" in summary
+    for transition, count in sorted(lobe_transitions.items()):
+        assert f"- {transition}: {count}" in summary
+    for label, dwell in _lobe_dwell_runs(metric_rows).items():
+        assert (
+            f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
+            f"max_run={dwell['max_run']}, mean_run={dwell['mean_run']}"
+        ) in summary
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
