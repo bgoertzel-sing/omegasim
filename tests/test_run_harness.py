@@ -1845,6 +1845,34 @@ def test_documented_cli_summary_task_and_queue_totals_change_across_different_se
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_event_type_totals_change_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_summary_event_type_totals_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_summary_event_type_totals_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_summary_totals = _summary_event_type_totals(first_summary)
+    second_summary_totals = _summary_event_type_totals(second_summary)
+
+    assert first_summary_totals == _event_type_totals_from_events(first_event_rows)
+    assert second_summary_totals == _event_type_totals_from_events(second_event_rows)
+    assert first_summary_totals
+    assert second_summary_totals
+    assert first_summary_totals != second_summary_totals
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_queued_task_age_aggregates_change_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -5360,6 +5388,32 @@ def _summary_task_and_queue_totals(summary: str) -> dict[str, int]:
 
     assert set(totals) == set(labels.values())
     return totals
+
+
+def _event_type_totals_from_events(
+    event_rows: list[dict[str, str]],
+) -> dict[str, int]:
+    assert event_rows
+    return dict(sorted(Counter(row["event_type"] for row in event_rows).items()))
+
+
+def _summary_event_type_totals(summary: str) -> dict[str, int]:
+    totals: dict[str, int] = {}
+    in_section = False
+    for line in summary.splitlines():
+        if line == "## Event type totals":
+            in_section = True
+            continue
+        if in_section and line.startswith("## "):
+            break
+        if not in_section or not line.startswith("- "):
+            continue
+
+        event_type, count = line.removeprefix("- ").split(": ", maxsplit=1)
+        totals[event_type] = int(count)
+
+    assert totals
+    return dict(sorted(totals.items()))
 
 
 def _queued_task_age_aggregates_from_metrics(
