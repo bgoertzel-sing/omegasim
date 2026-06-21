@@ -1443,6 +1443,43 @@ def test_documented_cli_manifest_event_types_cover_observed_events_across_full_o
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_manifest_metrics_fields_exactly_match_metrics_header_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_manifest_metrics_fields"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    _assert_manifest_metrics_fields_match_metrics_header(
+        manifest,
+        metrics_header=metrics_header,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_manifest_event_fields_exactly_match_events_header_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4662,6 +4699,21 @@ def _assert_manifest_event_types_cover_observed_events(
     manifest_event_types = events["types"]
     assert manifest_event_types == list(BASELINE_EVENT_TYPES)
     assert set(event["event_type"] for event in event_rows) <= set(manifest_event_types)
+
+
+def _assert_manifest_metrics_fields_match_metrics_header(
+    manifest: dict[str, object],
+    *,
+    metrics_header: list[str],
+) -> None:
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    metrics = model["metrics"]
+    assert isinstance(metrics, dict)
+
+    manifest_metrics_fields = metrics["fields"]
+    assert manifest_metrics_fields == metrics_header
+    assert metrics_header == list(metrics_fieldnames(tuple(manifest["actions"])))
 
 
 def _assert_manifest_event_fields_match_events_header(
