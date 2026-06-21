@@ -1113,6 +1113,25 @@ def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_manifest_lobe_labels_cover_previous_metrics_labels_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_manifest_previous_lobe_labels"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_manifest_lobe_labels_cover_previous_metrics_labels(
+        manifest,
+        metric_rows=metric_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4138,6 +4157,26 @@ def _assert_manifest_lobe_labels_cover_observed_metrics(
     manifest_labels = baseline_lobes["labels"]
     assert manifest_labels == list(BASELINE_LOBE_LABELS)
     assert set(row["baseline_lobe_label"] for row in metric_rows) <= set(manifest_labels)
+
+
+def _assert_manifest_lobe_labels_cover_previous_metrics_labels(
+    manifest: dict[str, object],
+    *,
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    baseline_lobes = model["baseline_lobes"]
+    assert isinstance(baseline_lobes, dict)
+
+    manifest_labels = baseline_lobes["labels"]
+    previous_labels = [row["baseline_lobe_previous_label"] for row in metric_rows]
+
+    assert manifest_labels == list(BASELINE_LOBE_LABELS)
+    assert previous_labels[0] == ""
+    assert "" not in previous_labels[1:]
+    assert set(previous_labels[1:]) <= set(manifest_labels)
 
 
 def _assert_summary_lobe_totals_use_only_manifest_lobe_labels(
