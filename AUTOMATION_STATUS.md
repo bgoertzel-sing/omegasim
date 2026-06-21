@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-21 A0/A1 stale disabled artifact assertion consolidation
-- Changed: added `_assert_stale_artifacts_preserved()` and routed manifest-only, config-only, and no-manifest stale-disabled/collision preservation helpers through it, preserving the existing byte-level artifact invariants without simulator behavior changes.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "stale or collision or disabled_optional or config_only_rerun" -q` passed with 32 tests and 83 deselected; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-21 A0/A1 artifact index regression across output fixtures
+- Changed: added `test_artifact_indexes_match_directory_contents_across_output_flag_fixtures()` plus `_assert_artifact_indexes_match_directory_contents()` to verify that actual directory contents, manifest artifact lists when present, and summary written-artifact lines when present stay aligned for default-output, config-only, manifest-only, and no-manifest checked-in fixtures without simulator behavior changes.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "artifact_indexes_match_directory_contents" -q` passed with 4 tests and 115 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "artifact or output or manifest_only or no_manifest or config_only" -q` passed with 83 tests and 36 deselected; `.venv-conda/bin/python -m pytest -q` passed with 119 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add one compact regression test that the artifact lists reported by manifest and summary remain aligned with directory contents across all checked-in output-flag fixtures.
+- Next step: consolidate repeated expected artifact lists in output-flag tests into one local fixture/helper so future output artifact additions update one source in the test suite.

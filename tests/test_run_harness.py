@@ -657,6 +657,30 @@ def test_summary_written_artifacts_match_output_directory_contents_without_manif
     assert "manifest.yaml" not in summary_artifacts
 
 
+@pytest.mark.parametrize(
+    ("config_path", "expected_artifacts"),
+    [
+        (
+            DEFAULT_OUTPUTS,
+            ["config.yaml", "manifest.yaml", "metrics.csv", "events.csv", "summary.md"],
+        ),
+        (CONFIG_ONLY, ["config.yaml"]),
+        (MANIFEST_ONLY, ["config.yaml", "manifest.yaml"]),
+        (NO_MANIFEST, ["config.yaml", "metrics.csv", "events.csv", "summary.md"]),
+    ],
+)
+def test_artifact_indexes_match_directory_contents_across_output_flag_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+    expected_artifacts: list[str],
+) -> None:
+    out_dir = tmp_path / config_path.stem
+
+    run_experiment(config_path, seed=1, out_dir=out_dir)
+
+    _assert_artifact_indexes_match_directory_contents(out_dir, expected_artifacts)
+
+
 def test_summary_records_disabled_manifest_output_flag(tmp_path: Path) -> None:
     out_dir = tmp_path / "no_manifest"
 
@@ -3257,6 +3281,20 @@ def _assert_summary_written_artifacts_match_output_directory(out_dir: Path) -> l
     summary_artifacts = _summary_written_artifacts((out_dir / "summary.md").read_text())
     _assert_artifacts_match_output_directory(out_dir, summary_artifacts)
     return summary_artifacts
+
+
+def _assert_artifact_indexes_match_directory_contents(
+    out_dir: Path,
+    expected_artifacts: list[str],
+) -> None:
+    _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
+
+    if (out_dir / "manifest.yaml").exists():
+        manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+        assert manifest["artifacts"] == expected_artifacts
+
+    if (out_dir / "summary.md").exists():
+        assert _summary_written_artifacts((out_dir / "summary.md").read_text()) == expected_artifacts
 
 
 def _write_no_manifest_disabled_manifest_sentinel(out_dir: Path) -> bytes:
