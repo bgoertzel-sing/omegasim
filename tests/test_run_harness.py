@@ -1292,6 +1292,34 @@ def test_documented_cli_lobe_run_state_sequence_changes_across_different_seeds_f
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_lobe_dwell_run_summary_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_dwell_run_summary_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_dwell_run_summary_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_dwell_runs = _summary_lobe_dwell_runs(first_summary)
+    second_dwell_runs = _summary_lobe_dwell_runs(second_summary)
+
+    assert first_dwell_runs == _lobe_dwell_runs(first_metric_rows)
+    assert second_dwell_runs == _lobe_dwell_runs(second_metric_rows)
+    assert first_dwell_runs
+    assert second_dwell_runs
+    assert first_dwell_runs != second_dwell_runs
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
