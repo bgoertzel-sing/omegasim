@@ -1817,6 +1817,38 @@ def test_documented_cli_summary_queue_pressure_totals_change_across_different_se
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_queued_task_age_aggregates_change_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_summary_queued_task_age_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_summary_queued_task_age_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_summary_aggregates = _summary_queued_task_age_aggregates(first_summary)
+    second_summary_aggregates = _summary_queued_task_age_aggregates(second_summary)
+
+    assert first_summary_aggregates == _queued_task_age_aggregates_from_metrics(
+        first_metric_rows
+    )
+    assert second_summary_aggregates == _queued_task_age_aggregates_from_metrics(
+        second_metric_rows
+    )
+    assert first_summary_aggregates
+    assert second_summary_aggregates
+    assert first_summary_aggregates != second_summary_aggregates
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -5271,6 +5303,43 @@ def _summary_queue_pressure_totals(summary: str) -> dict[str, int]:
 
     assert set(totals) == set(labels.values())
     return totals
+
+
+def _queued_task_age_aggregates_from_metrics(
+    metric_rows: list[dict[str, str]],
+) -> dict[str, float]:
+    assert metric_rows
+    final = metric_rows[-1]
+    return {
+        "final_queued_task_max_age": float(final["queued_task_age_max_tick"]),
+        "final_queued_task_mean_age": float(final["queued_task_age_mean_tick"]),
+        "peak_queued_task_max_age": float(
+            max(int(row["queued_task_age_max_tick"]) for row in metric_rows)
+        ),
+        "mean_queued_task_mean_age": round(
+            sum(float(row["queued_task_age_mean_tick"]) for row in metric_rows)
+            / len(metric_rows),
+            6,
+        ),
+    }
+
+
+def _summary_queued_task_age_aggregates(summary: str) -> dict[str, float]:
+    labels = {
+        "final queued task max age": "final_queued_task_max_age",
+        "final queued task mean age": "final_queued_task_mean_age",
+        "peak queued task max age": "peak_queued_task_max_age",
+        "mean queued task mean age": "mean_queued_task_mean_age",
+    }
+    aggregates: dict[str, float] = {}
+    for line in summary.splitlines():
+        for label, field in labels.items():
+            prefix = f"- {label}: "
+            if line.startswith(prefix):
+                aggregates[field] = float(line.removeprefix(prefix))
+
+    assert set(aggregates) == set(labels.values())
+    return aggregates
 
 
 def _assert_summary_lobe_aggregates_match_metrics(
