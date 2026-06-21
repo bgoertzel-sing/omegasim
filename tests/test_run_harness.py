@@ -1406,6 +1406,46 @@ def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_manifest_lobe_fields_match_metrics_header_and_observed_labels_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_manifest_lobe_fields"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    _assert_manifest_lobe_fields_match_metrics_header_and_observed_labels(
+        manifest,
+        metrics_header=metrics_header,
+        metric_rows=metric_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_manifest_event_types_cover_observed_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4757,6 +4797,30 @@ def _assert_manifest_lobe_labels_cover_observed_metrics(
     manifest_labels = baseline_lobes["labels"]
     assert manifest_labels == list(BASELINE_LOBE_LABELS)
     assert set(row["baseline_lobe_label"] for row in metric_rows) <= set(manifest_labels)
+
+
+def _assert_manifest_lobe_fields_match_metrics_header_and_observed_labels(
+    manifest: dict[str, object],
+    *,
+    metrics_header: list[str],
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    baseline_lobes = model["baseline_lobes"]
+    assert isinstance(baseline_lobes, dict)
+
+    emitted_transition_fields = [
+        field
+        for field in metrics_header
+        if field.startswith("baseline_lobe_") and field != "baseline_lobe_label"
+    ]
+
+    assert baseline_lobes["labels"] == list(BASELINE_LOBE_LABELS)
+    assert baseline_lobes["transition_fields"] == emitted_transition_fields
+    assert emitted_transition_fields == list(BASELINE_LOBE_TRANSITION_FIELDS)
+    assert set(row["baseline_lobe_label"] for row in metric_rows) <= set(BASELINE_LOBE_LABELS)
 
 
 def _assert_manifest_event_types_cover_observed_events(
