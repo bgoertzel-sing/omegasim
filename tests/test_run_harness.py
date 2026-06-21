@@ -1073,6 +1073,27 @@ def test_documented_cli_summary_lobe_transition_totals_match_adjacent_labels_acr
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_lobe_transition_endpoints_use_only_manifest_lobe_labels_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_summary_lobe_transition_manifest_labels"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_summary_lobe_transition_endpoints_use_only_manifest_lobe_labels(
+        summary,
+        manifest=manifest,
+        metric_rows=metric_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4077,6 +4098,30 @@ def _assert_summary_lobe_transition_totals_match_adjacent_labels(
     assert _summary_lobe_transition_totals(summary) == _lobe_transition_totals_from_adjacent_labels(
         metric_rows
     )
+
+
+def _assert_summary_lobe_transition_endpoints_use_only_manifest_lobe_labels(
+    summary: str,
+    *,
+    manifest: dict[str, object],
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    baseline_lobes = model["baseline_lobes"]
+    assert isinstance(baseline_lobes, dict)
+
+    manifest_labels = set(baseline_lobes["labels"])
+    summary_totals = _summary_lobe_transition_totals(summary)
+    observed_totals = _lobe_transition_totals_from_adjacent_labels(metric_rows)
+
+    assert summary_totals
+    assert summary_totals == observed_totals
+    for transition in summary_totals:
+        source_label, target_label = transition.split("->", maxsplit=1)
+        assert source_label in manifest_labels
+        assert target_label in manifest_labels
 
 
 def _assert_manifest_lobe_labels_cover_observed_metrics(
