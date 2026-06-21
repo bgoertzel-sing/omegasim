@@ -1440,6 +1440,26 @@ def test_documented_cli_role_action_counts_sum_to_top_level_action_totals_for_ev
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_events_per_tick_action_counts_match_metrics_top_level_action_totals_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_events_metrics_row_action_totals"
+
+    _run_documented_cli(config_path, out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_events_per_tick_action_counts_match_metrics_top_level_action_totals(
+        metric_rows=metric_rows,
+        event_rows=event_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4239,6 +4259,43 @@ def _assert_summary_top_level_totals_match_metrics_and_events(
     assert f"- tasks created: {tasks_created}" in summary
     assert f"- tasks completed: {tasks_completed}" in summary
     assert f"- final queue depth: {final['queue_depth']}" in summary
+
+
+def _assert_events_per_tick_action_counts_match_metrics_top_level_action_totals(
+    *,
+    metric_rows: list[dict[str, str]],
+    event_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    assert event_rows
+
+    event_type_metric_fields = {
+        "agent_idle": "idle_tick",
+        "message_sent": "messages_sent_tick",
+        "task_created": "tasks_created_tick",
+        "task_worked": "tasks_worked_tick",
+    }
+    expected_ticks = [int(row["tick"]) for row in metric_rows]
+    observed_event_ticks = sorted({int(event["tick"]) for event in event_rows})
+    event_counts_by_tick = {
+        tick: Counter(
+            event["event_type"]
+            for event in event_rows
+            if int(event["tick"]) == tick
+        )
+        for tick in expected_ticks
+    }
+
+    assert set(event_type_metric_fields) == set(BASELINE_EVENT_TYPES)
+    assert observed_event_ticks == expected_ticks
+    assert sorted(event_counts_by_tick) == expected_ticks
+    for row in metric_rows:
+        tick = int(row["tick"])
+        event_counts = event_counts_by_tick[tick]
+
+        for event_type, metric_field in event_type_metric_fields.items():
+            assert event_counts[event_type] == int(row[metric_field])
+        assert sum(event_counts.values()) == int(row["agent_count"])
 
 
 def _assert_summary_bus_graph_fields_match_metrics_and_manifest(
