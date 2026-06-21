@@ -1589,6 +1589,56 @@ def test_documented_cli_event_replayed_role_action_totals_change_across_differen
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_event_replayed_role_action_metric_sequence_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_event_replayed_role_action_sequence_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_event_replayed_role_action_sequence_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_actions = tuple(first_manifest["actions"])
+    second_actions = tuple(second_manifest["actions"])
+    first_replayed_sequence = _role_action_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_manifest["ticks"],
+        manifest_roles=first_manifest["model"]["roles"],
+        actions=first_actions,
+    )
+    second_replayed_sequence = _role_action_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_manifest["ticks"],
+        manifest_roles=second_manifest["model"]["roles"],
+        actions=second_actions,
+    )
+
+    assert first_replayed_sequence == _role_action_metric_sequence(
+        first_metric_rows,
+        first_actions,
+    )
+    assert second_replayed_sequence == _role_action_metric_sequence(
+        second_metric_rows,
+        second_actions,
+    )
+    assert first_replayed_sequence
+    assert second_replayed_sequence
+    assert first_replayed_sequence != second_replayed_sequence
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4587,6 +4637,41 @@ def _role_action_totals_from_events(
         }
         for role in BASELINE_ROLES
     }
+
+
+def _role_action_metric_sequence_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+    manifest_roles: dict[str, str],
+    actions: tuple[str, ...],
+) -> list[tuple[int, ...]]:
+    assert event_rows
+    assert set(actions) == {"idle", "message", "create_task", "work_task"}
+    assert set(manifest_roles.values()) == set(BASELINE_ROLES)
+    for event in event_rows:
+        assert event["agent_id"] in manifest_roles
+        assert event["action"] in actions
+
+    fields = [
+        (role, action)
+        for role in BASELINE_ROLES
+        for action in actions
+    ]
+    role_action_counts_by_tick = {
+        tick: Counter(
+            (manifest_roles[event["agent_id"]], event["action"])
+            for event in event_rows
+            if int(event["tick"]) == tick
+        )
+        for tick in range(ticks)
+    }
+
+    assert sorted({int(event["tick"]) for event in event_rows}) == list(range(ticks))
+    return [
+        tuple(role_action_counts_by_tick[tick][field] for field in fields)
+        for tick in range(ticks)
+    ]
 
 
 def _assert_events_per_tick_task_lifecycle_matches_queue_and_task_metrics(
