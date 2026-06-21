@@ -1751,6 +1751,44 @@ def test_documented_cli_event_replayed_queue_pressure_metric_sequence_reproduces
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_event_replayed_queue_pressure_metric_sequence_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_event_replayed_queue_pressure_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_event_replayed_queue_pressure_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_replayed_sequence = _queue_pressure_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_manifest["ticks"],
+    )
+    second_replayed_sequence = _queue_pressure_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_manifest["ticks"],
+    )
+
+    assert first_replayed_sequence == _queue_pressure_metric_sequence(first_metric_rows)
+    assert second_replayed_sequence == _queue_pressure_metric_sequence(second_metric_rows)
+    assert first_replayed_sequence
+    assert second_replayed_sequence
+    assert first_replayed_sequence != second_replayed_sequence
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
