@@ -1320,6 +1320,40 @@ def test_documented_cli_lobe_dwell_run_summary_changes_across_different_seeds_fu
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_role_action_summary_totals_reproduce_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_role_action_summary_first"
+    second = tmp_path / f"{config_path.stem}_cli_role_action_summary_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_role_action_totals = _summary_role_action_totals(first_summary)
+    second_role_action_totals = _summary_role_action_totals(second_summary)
+    actions = ("idle", "message", "create_task", "work_task")
+
+    assert first_role_action_totals == _role_action_totals_from_metrics(
+        first_metric_rows,
+        actions,
+    )
+    assert second_role_action_totals == _role_action_totals_from_metrics(
+        second_metric_rows,
+        actions,
+    )
+    assert first_role_action_totals
+    assert first_role_action_totals == second_role_action_totals
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
