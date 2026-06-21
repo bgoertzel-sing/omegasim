@@ -1405,6 +1405,43 @@ def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_
     )
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_manifest_event_types_cover_observed_events_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_manifest_event_types"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_manifest_event_types_cover_observed_events(
+        manifest,
+        event_rows=event_rows,
+    )
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -4572,6 +4609,22 @@ def _assert_manifest_lobe_labels_cover_observed_metrics(
     manifest_labels = baseline_lobes["labels"]
     assert manifest_labels == list(BASELINE_LOBE_LABELS)
     assert set(row["baseline_lobe_label"] for row in metric_rows) <= set(manifest_labels)
+
+
+def _assert_manifest_event_types_cover_observed_events(
+    manifest: dict[str, object],
+    *,
+    event_rows: list[dict[str, str]],
+) -> None:
+    assert event_rows
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    events = model["events"]
+    assert isinstance(events, dict)
+
+    manifest_event_types = events["types"]
+    assert manifest_event_types == list(BASELINE_EVENT_TYPES)
+    assert set(event["event_type"] for event in event_rows) <= set(manifest_event_types)
 
 
 def _summary_lobe_transition_totals(summary: str) -> dict[str, int]:
