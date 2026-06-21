@@ -1221,6 +1221,30 @@ def test_documented_cli_lobe_transition_sequence_reproduces_across_same_seed_ful
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_lobe_transition_sequence_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_transition_sequence_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_transition_sequence_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_sequence = _lobe_transition_field_sequence(first_metric_rows)
+    second_sequence = _lobe_transition_field_sequence(second_metric_rows)
+
+    assert first_sequence
+    assert second_sequence
+    assert first_sequence != second_sequence
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_lobe_run_state_sequence_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4556,6 +4580,10 @@ def _lobe_transition_sequence(metric_rows: list[dict[str, str]]) -> list[str]:
         for row in metric_rows
         if row["baseline_lobe_transition"] not in {"start", "stable"}
     ]
+
+
+def _lobe_transition_field_sequence(metric_rows: list[dict[str, str]]) -> list[str]:
+    return [row["baseline_lobe_transition"] for row in metric_rows]
 
 
 def _lobe_label_sequence(metric_rows: list[dict[str, str]]) -> list[str]:
