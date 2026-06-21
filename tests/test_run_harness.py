@@ -1409,6 +1409,37 @@ def test_documented_cli_role_action_counts_sum_to_role_population_for_every_metr
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_role_action_counts_sum_to_top_level_action_totals_for_every_metrics_row_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_role_action_row_action_totals"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    actions = tuple(manifest["actions"])
+    top_level_action_fields = {
+        "idle": "idle_tick",
+        "message": "messages_sent_tick",
+        "create_task": "tasks_created_tick",
+        "work_task": "tasks_worked_tick",
+    }
+
+    assert metric_rows
+    assert set(actions) == set(top_level_action_fields)
+    for row in metric_rows:
+        for action in actions:
+            assert sum(
+                int(row[f"role_{role}_{action}_tick"])
+                for role in BASELINE_ROLES
+            ) == int(row[top_level_action_fields[action]])
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
