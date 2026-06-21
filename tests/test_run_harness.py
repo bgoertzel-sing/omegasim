@@ -790,6 +790,45 @@ def test_documented_cli_summary_artifacts_and_output_flags_match_manifest_across
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_config_manifest_and_summary_run_fields_match_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_run_fields"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+
+    _assert_config_manifest_and_summary_run_fields_match(
+        normalized_config,
+        manifest=manifest,
+        summary=summary,
+        seed=1,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_event_type_totals_match_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -3589,6 +3628,31 @@ def _assert_summary_output_flags_match_config(
     for name, enabled in output_flags.items():
         state = "enabled" if enabled else "disabled"
         assert f"- {name}: {state}" in summary
+
+
+def _assert_config_manifest_and_summary_run_fields_match(
+    normalized_config: dict[str, object],
+    *,
+    manifest: dict[str, object],
+    summary: str,
+    seed: int,
+) -> None:
+    run_config = normalized_config["run"]
+    model_config = normalized_config["model"]
+    assert isinstance(run_config, dict)
+    assert isinstance(model_config, dict)
+
+    assert manifest["config"] == normalized_config
+    assert manifest["experiment_id"] == run_config["experiment_id"]
+    assert manifest["seed"] == seed
+    assert manifest["ticks"] == run_config["ticks"]
+    assert manifest["agent_count"] == model_config["agent_count"]
+    assert manifest["actions"] == model_config["actions"]
+
+    assert f"# {run_config['experiment_id']}" in summary
+    assert f"- seed: {seed}" in summary
+    assert f"- ticks: {run_config['ticks']}" in summary
+    assert f"- agents: {model_config['agent_count']}" in summary
 
 
 def _directory_artifacts(out_dir: Path) -> list[str]:
