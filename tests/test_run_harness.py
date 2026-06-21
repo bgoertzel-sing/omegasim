@@ -1639,6 +1639,43 @@ def test_documented_cli_event_replayed_role_action_metric_sequence_changes_acros
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_event_replayed_top_level_metric_sequence_reproduces_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_event_replayed_top_level_sequence_first"
+    second = tmp_path / f"{config_path.stem}_cli_event_replayed_top_level_sequence_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_replayed_sequence = _top_level_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_manifest["ticks"],
+    )
+    second_replayed_sequence = _top_level_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_manifest["ticks"],
+    )
+
+    assert first_replayed_sequence == _top_level_metric_sequence(first_metric_rows)
+    assert second_replayed_sequence == _top_level_metric_sequence(second_metric_rows)
+    assert first_replayed_sequence
+    assert first_replayed_sequence == second_replayed_sequence
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_event_replayed_top_level_metric_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
