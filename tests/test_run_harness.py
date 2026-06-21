@@ -1817,6 +1817,33 @@ def test_documented_cli_summary_queue_pressure_totals_change_across_different_se
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_queue_pressure_totals_reproduce_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_summary_queue_pressure_first"
+    second = tmp_path / f"{config_path.stem}_cli_summary_queue_pressure_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_summary_totals = _summary_queue_pressure_totals(first_summary)
+    second_summary_totals = _summary_queue_pressure_totals(second_summary)
+
+    assert first_summary_totals == _queue_pressure_totals_from_metrics(first_metric_rows)
+    assert second_summary_totals == _queue_pressure_totals_from_metrics(second_metric_rows)
+    assert first_summary_totals
+    assert first_summary_totals == second_summary_totals
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_task_and_queue_totals_change_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
