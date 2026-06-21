@@ -829,6 +829,38 @@ def test_documented_cli_config_manifest_and_summary_run_fields_match_across_full
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_manifest_agent_identity_and_roles_match_baseline_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_agent_identity_roles"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+
+    _assert_manifest_agent_identity_and_roles_match_baseline(manifest)
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_event_type_totals_match_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -3653,6 +3685,29 @@ def _assert_config_manifest_and_summary_run_fields_match(
     assert f"- seed: {seed}" in summary
     assert f"- ticks: {run_config['ticks']}" in summary
     assert f"- agents: {model_config['agent_count']}" in summary
+
+
+def _assert_manifest_agent_identity_and_roles_match_baseline(
+    manifest: dict[str, object],
+) -> None:
+    model = manifest["model"]
+    assert isinstance(model, dict)
+
+    agent_count = manifest["agent_count"]
+    assert isinstance(agent_count, int)
+    expected_agent_ids = [
+        f"agent_{index:02d}"
+        for index in range(1, agent_count + 1)
+    ]
+    expected_roles = {
+        agent_id: BASELINE_ROLES[(index - 1) % len(BASELINE_ROLES)]
+        for index, agent_id in enumerate(expected_agent_ids, start=1)
+    }
+
+    assert agent_count == 15
+    assert model["agent_ids"] == expected_agent_ids
+    assert model["roles"] == expected_roles
+    assert model["role_action_metrics"]["roles"] == list(BASELINE_ROLES)
 
 
 def _directory_artifacts(out_dir: Path) -> list[str]:
