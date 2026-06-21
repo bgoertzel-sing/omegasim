@@ -1132,6 +1132,25 @@ def test_documented_cli_manifest_lobe_labels_cover_previous_metrics_labels_acros
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_manifest_lobe_labels_cover_metrics_transition_endpoints_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_manifest_transition_lobe_labels"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    _assert_manifest_lobe_labels_cover_metrics_transition_endpoints(
+        manifest,
+        metric_rows=metric_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4177,6 +4196,32 @@ def _assert_manifest_lobe_labels_cover_previous_metrics_labels(
     assert previous_labels[0] == ""
     assert "" not in previous_labels[1:]
     assert set(previous_labels[1:]) <= set(manifest_labels)
+
+
+def _assert_manifest_lobe_labels_cover_metrics_transition_endpoints(
+    manifest: dict[str, object],
+    *,
+    metric_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    model = manifest["model"]
+    assert isinstance(model, dict)
+    baseline_lobes = model["baseline_lobes"]
+    assert isinstance(baseline_lobes, dict)
+
+    manifest_labels = baseline_lobes["labels"]
+    transitions = [
+        row["baseline_lobe_transition"]
+        for row in metric_rows
+        if row["baseline_lobe_transition"] not in {"start", "stable"}
+    ]
+
+    assert manifest_labels == list(BASELINE_LOBE_LABELS)
+    assert transitions
+    for transition in transitions:
+        source_label, target_label = transition.split("->", maxsplit=1)
+        assert source_label in manifest_labels
+        assert target_label in manifest_labels
 
 
 def _assert_summary_lobe_totals_use_only_manifest_lobe_labels(
