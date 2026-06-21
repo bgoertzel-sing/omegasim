@@ -1514,6 +1514,43 @@ def test_documented_cli_events_replay_to_summary_role_action_totals_through_mani
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_event_replayed_role_action_totals_reproduce_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_event_replayed_role_action_first"
+    second = tmp_path / f"{config_path.stem}_cli_event_replayed_role_action_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_replayed_totals = _role_action_totals_from_events(
+        first_event_rows,
+        manifest_roles=first_manifest["model"]["roles"],
+        actions=tuple(first_manifest["actions"]),
+    )
+    second_replayed_totals = _role_action_totals_from_events(
+        second_event_rows,
+        manifest_roles=second_manifest["model"]["roles"],
+        actions=tuple(second_manifest["actions"]),
+    )
+
+    assert first_replayed_totals == _summary_role_action_totals(first_summary)
+    assert second_replayed_totals == _summary_role_action_totals(second_summary)
+    assert first_replayed_totals
+    assert first_replayed_totals == second_replayed_totals
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
