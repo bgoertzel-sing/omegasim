@@ -824,6 +824,46 @@ def test_documented_cli_summary_event_type_totals_match_events_across_full_outpu
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_top_level_totals_match_metrics_and_events_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_top_level_totals"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_summary_top_level_totals_match_metrics_and_events(
+        summary,
+        metric_rows=metric_rows,
+        event_rows=event_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_role_action_totals_match_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -3718,6 +3758,36 @@ def _assert_summary_event_type_totals_match_events(
     event_type_totals = Counter(row["event_type"] for row in event_rows)
     for event_type, count in sorted(event_type_totals.items()):
         assert f"- {event_type}: {count}" in summary
+
+
+def _assert_summary_top_level_totals_match_metrics_and_events(
+    summary: str,
+    *,
+    metric_rows: list[dict[str, str]],
+    event_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    assert event_rows
+    final = metric_rows[-1]
+
+    messages_sent = sum(int(row["messages_sent_tick"]) for row in metric_rows)
+    task_work_events = sum(int(row["tasks_worked_tick"]) for row in metric_rows)
+    tasks_created = sum(int(row["tasks_created_tick"]) for row in metric_rows)
+    tasks_completed = sum(int(row["tasks_completed_tick"]) for row in metric_rows)
+
+    event_type_totals = Counter(row["event_type"] for row in event_rows)
+    assert messages_sent == event_type_totals["message_sent"]
+    assert task_work_events == event_type_totals["task_worked"]
+    assert tasks_created == event_type_totals["task_created"]
+    assert tasks_created == int(final["tasks_created_total"])
+    assert tasks_completed == int(final["tasks_completed_total"])
+
+    assert f"- events: {len(event_rows)}" in summary
+    assert f"- messages sent: {messages_sent}" in summary
+    assert f"- task work events: {task_work_events}" in summary
+    assert f"- tasks created: {tasks_created}" in summary
+    assert f"- tasks completed: {tasks_completed}" in summary
+    assert f"- final queue depth: {final['queue_depth']}" in summary
 
 
 def _assert_summary_role_action_totals_match_metrics(
