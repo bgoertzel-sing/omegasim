@@ -3056,12 +3056,11 @@ def _assert_manifest_only_preserves_stale_disabled_artifacts(
 ) -> None:
     assert (out_dir / "config.yaml").is_file()
     assert (out_dir / "manifest.yaml").is_file()
-    _assert_artifacts_match_output_directory(
+    _assert_stale_artifacts_preserved(
         out_dir,
-        ["config.yaml", "manifest.yaml", *stale_disabled_artifacts],
+        stale_disabled_artifacts,
+        expected_artifacts=["config.yaml", "manifest.yaml", *stale_disabled_artifacts],
     )
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
 
 
 def _write_manifest_only_collision_sentinels(
@@ -3083,12 +3082,10 @@ def _assert_manifest_only_collision_preserves_stale_disabled_artifacts(
     stale_disabled_artifacts: dict[str, bytes],
     collision_content: bytes,
 ) -> None:
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
-    assert (out_dir / collision_artifact).read_bytes() == collision_content
-    _assert_artifacts_match_output_directory(
+    _assert_stale_artifacts_preserved(
         out_dir,
-        [*stale_disabled_artifacts, collision_artifact],
+        {**stale_disabled_artifacts, collision_artifact: collision_content},
+        expected_artifacts=[*stale_disabled_artifacts, collision_artifact],
     )
 
 
@@ -3134,9 +3131,11 @@ def _assert_config_only_preserves_stale_disabled_artifacts(
     stale_disabled_artifacts: dict[str, bytes],
 ) -> None:
     assert (out_dir / "config.yaml").is_file()
-    _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *stale_disabled_artifacts])
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
+    _assert_stale_artifacts_preserved(
+        out_dir,
+        stale_disabled_artifacts,
+        expected_artifacts=["config.yaml", *stale_disabled_artifacts],
+    )
 
 
 def _write_config_only_collision_sentinels(out_dir: Path) -> tuple[dict[str, bytes], bytes]:
@@ -3154,10 +3153,11 @@ def _assert_config_only_collision_preserves_stale_disabled_artifacts(
     stale_disabled_artifacts: dict[str, bytes],
     collision_content: bytes,
 ) -> None:
-    assert (out_dir / "config.yaml").read_bytes() == collision_content
-    _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *stale_disabled_artifacts])
-    for artifact, content in stale_disabled_artifacts.items():
-        assert (out_dir / artifact).read_bytes() == content
+    _assert_stale_artifacts_preserved(
+        out_dir,
+        {**stale_disabled_artifacts, "config.yaml": collision_content},
+        expected_artifacts=["config.yaml", *stale_disabled_artifacts],
+    )
 
 
 def _assert_no_manifest_writes_enabled_artifacts(
@@ -3216,6 +3216,17 @@ def _assert_artifacts_match_output_directory(
     artifacts: list[str],
 ) -> None:
     assert sorted(artifacts) == _directory_artifacts(out_dir)
+
+
+def _assert_stale_artifacts_preserved(
+    out_dir: Path,
+    expected_contents: dict[str, bytes],
+    *,
+    expected_artifacts: list[str],
+) -> None:
+    _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
+    for artifact, content in expected_contents.items():
+        assert (out_dir / artifact).read_bytes() == content
 
 
 def _artifact_bytes_snapshot(
@@ -3287,9 +3298,14 @@ def _assert_no_manifest_collision_preserves_stale_manifest(
     stale_manifest: bytes,
     collision_content: bytes,
 ) -> None:
-    assert (out_dir / "manifest.yaml").read_bytes() == stale_manifest
-    assert (out_dir / collision_artifact).read_bytes() == collision_content
-    _assert_artifacts_match_output_directory(out_dir, ["manifest.yaml", collision_artifact])
+    _assert_stale_artifacts_preserved(
+        out_dir,
+        {
+            "manifest.yaml": stale_manifest,
+            collision_artifact: collision_content,
+        },
+        expected_artifacts=["manifest.yaml", collision_artifact],
+    )
 
 
 def _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(

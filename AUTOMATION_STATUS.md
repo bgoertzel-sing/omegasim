@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-21 A0/A1 rerun/collision preservation helper consolidation
-- Changed: added `_artifact_bytes_snapshot()` and `_assert_output_directory_preserved()` and routed full-output/config-only rerun preservation assertions through them, preserving the existing byte-level invariants without simulator behavior changes.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "refuses_to_overwrite_complete_run_directory or config_only_rerun" -q` passed with 6 tests and 109 deselected; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-21 A0/A1 stale disabled artifact assertion consolidation
+- Changed: added `_assert_stale_artifacts_preserved()` and routed manifest-only, config-only, and no-manifest stale-disabled/collision preservation helpers through it, preserving the existing byte-level artifact invariants without simulator behavior changes.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "stale or collision or disabled_optional or config_only_rerun" -q` passed with 32 tests and 83 deselected; `.venv-conda/bin/python -m pytest -q` passed with 115 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: consolidate repeated stale disabled artifact sentinel preservation assertions across manifest-only, config-only, and no-manifest collision helpers.
+- Next step: add one compact regression test that the artifact lists reported by manifest and summary remain aligned with directory contents across all checked-in output-flag fixtures.
