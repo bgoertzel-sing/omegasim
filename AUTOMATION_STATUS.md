@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-21 A0/A1 documented CLI bus-count parity regression
-- Changed: added `test_documented_cli_manifest_bus_counts_match_summary_and_first_metrics_row_across_full_output_fixtures` and `_assert_manifest_bus_counts_match_summary_and_metrics_row` in `tests/test_run_harness.py` to verify documented full-output CLI runs keep manifest bus node/edge counts aligned with `summary.md` and the first `metrics.csv` row for both `configs/a0_smoke.yaml` and `configs/a0_default_outputs.yaml`. Simulator behavior and output schemas were unchanged.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "manifest_bus_counts_match_summary" -q` passed with 2 tests and 147 deselected; `.venv-conda/bin/python -m pytest -q` passed with 149 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-21 A0/A1 documented CLI static bus metric parity regression
+- Changed: added `bus mean degree` to `summary.md`, documented the summary's static bus metrics in `README.md`, and added `test_documented_cli_summary_static_bus_metrics_match_first_metrics_row_across_full_output_fixtures` plus `_assert_summary_static_bus_metrics_match_metrics_row` in `tests/test_run_harness.py` to verify documented full-output CLI runs keep first-row `bus_density`, `bus_mean_degree`, and `bus_degree_centralization` aligned with the summary for both `configs/a0_smoke.yaml` and `configs/a0_default_outputs.yaml`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "static_bus_metrics or metrics_csv_records_bus_graph_summary" -q` passed with 3 tests and 148 deselected; `.venv-conda/bin/python -m pytest -q` passed with 151 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a compact CLI-path regression that documented full-output runs keep first-row static bus density, mean degree, and degree centralization aligned with the `summary.md` bus metric lines across both full-output fixtures.
+- Next step: add a compact CLI-path regression that documented full-output runs keep first-row queue pressure fields aligned with the top-level queue pressure lines in `summary.md` across both full-output fixtures.

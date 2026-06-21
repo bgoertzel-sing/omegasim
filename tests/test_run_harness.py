@@ -151,6 +151,7 @@ def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
     assert row["bus_mean_degree"] == "1.875"
     assert row["bus_degree_centralization"] == "1.0"
     assert "- bus density: 0.125" in (out_dir / "summary.md").read_text()
+    assert "- bus mean degree: 1.875" in (out_dir / "summary.md").read_text()
 
 
 def test_metrics_csv_records_role_action_counts(tmp_path: Path) -> None:
@@ -895,6 +896,43 @@ def test_documented_cli_manifest_bus_counts_match_summary_and_first_metrics_row_
     _assert_manifest_bus_counts_match_summary_and_metrics_row(
         manifest,
         summary=summary,
+        metrics_row=first_metrics_row,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_static_bus_metrics_match_first_metrics_row_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_static_bus_metrics"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        first_metrics_row = next(csv.DictReader(handle))
+
+    _assert_summary_static_bus_metrics_match_metrics_row(
+        summary,
         metrics_row=first_metrics_row,
     )
 
@@ -3764,6 +3802,19 @@ def _assert_manifest_bus_counts_match_summary_and_metrics_row(
     assert int(metrics_row["bus_nodes"]) == bus_nodes
     assert int(metrics_row["bus_edges"]) == bus_edges
     assert f"- bus graph: {bus_nodes} nodes, {bus_edges} edges" in summary
+
+
+def _assert_summary_static_bus_metrics_match_metrics_row(
+    summary: str,
+    *,
+    metrics_row: dict[str, str],
+) -> None:
+    assert f"- bus density: {metrics_row['bus_density']}" in summary
+    assert f"- bus mean degree: {metrics_row['bus_mean_degree']}" in summary
+    assert (
+        f"- bus degree centralization: "
+        f"{metrics_row['bus_degree_centralization']}"
+    ) in summary
 
 
 def _directory_artifacts(out_dir: Path) -> list[str]:

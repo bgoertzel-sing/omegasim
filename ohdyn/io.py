@@ -187,6 +187,7 @@ def _summary(result: SimulationResult) -> str:
         f"- agents: {result.config.model.agent_count}",
         f"- bus graph: {result.bus_graph.number_of_nodes()} nodes, {result.bus_graph.number_of_edges()} edges",
         f"- bus density: {last.get('bus_density', 0)}",
+        f"- bus mean degree: {last.get('bus_mean_degree', 0)}",
         f"- bus degree centralization: {last.get('bus_degree_centralization', 0)}",
         f"- events: {total_events}",
         f"- messages sent: {total_messages}",
