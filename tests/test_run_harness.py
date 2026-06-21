@@ -1418,6 +1418,40 @@ def test_documented_cli_role_action_summary_totals_changes_across_different_seed
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_role_action_metric_sequence_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_role_action_sequence_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_role_action_sequence_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+        first_header = list(first_metric_rows[0])
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+        second_header = list(second_metric_rows[0])
+
+    actions = ("idle", "message", "create_task", "work_task")
+    expected_fields = list(role_action_metric_fields(actions))
+    first_sequence = _role_action_metric_sequence(first_metric_rows, actions)
+    second_sequence = _role_action_metric_sequence(second_metric_rows, actions)
+
+    assert first_manifest["model"]["role_action_metrics"]["fields"] == expected_fields
+    assert second_manifest["model"]["role_action_metrics"]["fields"] == expected_fields
+    assert [field for field in first_header if field.startswith("role_")] == expected_fields
+    assert [field for field in second_header if field.startswith("role_")] == expected_fields
+    assert first_sequence
+    assert second_sequence
+    assert first_sequence != second_sequence
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
