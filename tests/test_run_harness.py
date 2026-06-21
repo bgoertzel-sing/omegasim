@@ -1480,6 +1480,26 @@ def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_me
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_event_replay_reproduces_queued_task_age_metrics_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_event_replay_queue_age"
+
+    _run_documented_cli(config_path, out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_event_replay_reproduces_queued_task_age_metrics(
+        metric_rows=metric_rows,
+        event_rows=event_rows,
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4380,6 +4400,50 @@ def _assert_events_per_tick_task_lifecycle_matches_queue_and_task_metrics(
         previous_queue_depth = queue_depth
 
     assert worked_task_ids <= created_task_ids
+
+
+def _assert_event_replay_reproduces_queued_task_age_metrics(
+    *,
+    metric_rows: list[dict[str, str]],
+    event_rows: list[dict[str, str]],
+) -> None:
+    assert metric_rows
+    assert event_rows
+
+    events_by_tick: dict[int, list[dict[str, str]]] = {
+        int(row["tick"]): [] for row in metric_rows
+    }
+    for event in event_rows:
+        events_by_tick[int(event["tick"])].append(event)
+
+    expected_ticks = [int(row["tick"]) for row in metric_rows]
+    assert sorted(events_by_tick) == expected_ticks
+
+    task_queue: deque[dict[str, int | str]] = deque()
+    for row in metric_rows:
+        tick = int(row["tick"])
+        for event in events_by_tick[tick]:
+            if event["event_type"] == "task_created":
+                task_queue.append(
+                    {
+                        "task_id": event["task_id"],
+                        "created_tick": tick,
+                        "remaining_work": int(event["work_units"]),
+                    }
+                )
+            elif event["event_type"] == "task_worked":
+                task = task_queue.popleft()
+                assert task["task_id"] == event["task_id"]
+                task["remaining_work"] = int(event["remaining_work"])
+                if event["completed"] != "True":
+                    task_queue.append(task)
+
+        ages = [tick - int(task["created_tick"]) for task in task_queue]
+        expected_max_age = max(ages, default=0)
+        expected_mean_age = round(sum(ages) / len(ages), 6) if ages else 0.0
+
+        assert int(row["queued_task_age_max_tick"]) == expected_max_age
+        assert float(row["queued_task_age_mean_tick"]) == expected_mean_age
 
 
 def _assert_summary_bus_graph_fields_match_metrics_and_manifest(
