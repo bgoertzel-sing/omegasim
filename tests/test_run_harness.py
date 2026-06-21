@@ -1986,6 +1986,37 @@ def test_documented_cli_summary_queued_task_age_aggregates_change_across_differe
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_queued_task_age_aggregates_reproduce_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_summary_queued_task_age_first"
+    second = tmp_path / f"{config_path.stem}_cli_summary_queued_task_age_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_summary_aggregates = _summary_queued_task_age_aggregates(first_summary)
+    second_summary_aggregates = _summary_queued_task_age_aggregates(second_summary)
+
+    assert first_summary_aggregates == _queued_task_age_aggregates_from_metrics(
+        first_metric_rows
+    )
+    assert second_summary_aggregates == _queued_task_age_aggregates_from_metrics(
+        second_metric_rows
+    )
+    assert first_summary_aggregates
+    assert first_summary_aggregates == second_summary_aggregates
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
