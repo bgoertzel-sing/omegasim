@@ -1449,6 +1449,26 @@ def test_documented_cli_events_per_tick_counts_match_configured_agent_population
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_events_per_tick_agent_ids_match_manifest_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_cli_events_tick_manifest_agents"
+
+    _run_documented_cli(config_path, out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    _assert_events_per_tick_agent_ids_match_manifest(
+        event_rows=event_rows,
+        ticks=manifest["ticks"],
+        manifest_agent_ids=manifest["model"]["agent_ids"],
+    )
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -4344,6 +4364,32 @@ def _assert_events_per_tick_counts_match_configured_agent_population(
         for tick in expected_ticks
     }
     assert len(event_rows) == ticks * agent_count
+
+
+def _assert_events_per_tick_agent_ids_match_manifest(
+    *,
+    event_rows: list[dict[str, str]],
+    ticks: int,
+    manifest_agent_ids: list[str],
+) -> None:
+    assert event_rows
+
+    expected_ticks = list(range(ticks))
+    expected_agent_ids = sorted(manifest_agent_ids)
+    agent_ids_by_tick = {
+        tick: [
+            event["agent_id"]
+            for event in event_rows
+            if int(event["tick"]) == tick
+        ]
+        for tick in expected_ticks
+    }
+
+    assert sorted({int(event["tick"]) for event in event_rows}) == expected_ticks
+    for tick, agent_ids in agent_ids_by_tick.items():
+        assert len(agent_ids) == len(expected_agent_ids), tick
+        assert len(set(agent_ids)) == len(expected_agent_ids), tick
+        assert sorted(agent_ids) == expected_agent_ids
 
 
 def _assert_events_per_tick_task_lifecycle_matches_queue_and_task_metrics(
