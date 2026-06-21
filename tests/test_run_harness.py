@@ -30,6 +30,28 @@ CONFIG_ONLY = Path("configs/a0_config_only.yaml")
 MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
 NO_MANIFEST = Path("configs/a0_no_manifest.yaml")
 
+A0_FULL_ARTIFACTS = [
+    "config.yaml",
+    "manifest.yaml",
+    "metrics.csv",
+    "events.csv",
+    "summary.md",
+]
+CONFIG_ONLY_ARTIFACTS = ["config.yaml"]
+MANIFEST_ONLY_ARTIFACTS = ["config.yaml", "manifest.yaml"]
+NO_MANIFEST_ARTIFACTS = ["config.yaml", "metrics.csv", "events.csv", "summary.md"]
+OUTPUT_FIXTURE_ARTIFACTS = {
+    CONFIG: A0_FULL_ARTIFACTS,
+    DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
+    CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
+    MANIFEST_ONLY: MANIFEST_ONLY_ARTIFACTS,
+    NO_MANIFEST: NO_MANIFEST_ARTIFACTS,
+}
+
+
+def _expected_artifacts(config_path: Path) -> list[str]:
+    return list(OUTPUT_FIXTURE_ARTIFACTS[config_path])
+
 
 def test_loads_a0_smoke_config() -> None:
     config = load_config(CONFIG)
@@ -660,13 +682,10 @@ def test_summary_written_artifacts_match_output_directory_contents_without_manif
 @pytest.mark.parametrize(
     ("config_path", "expected_artifacts"),
     [
-        (
-            DEFAULT_OUTPUTS,
-            ["config.yaml", "manifest.yaml", "metrics.csv", "events.csv", "summary.md"],
-        ),
-        (CONFIG_ONLY, ["config.yaml"]),
-        (MANIFEST_ONLY, ["config.yaml", "manifest.yaml"]),
-        (NO_MANIFEST, ["config.yaml", "metrics.csv", "events.csv", "summary.md"]),
+        (DEFAULT_OUTPUTS, _expected_artifacts(DEFAULT_OUTPUTS)),
+        (CONFIG_ONLY, _expected_artifacts(CONFIG_ONLY)),
+        (MANIFEST_ONLY, _expected_artifacts(MANIFEST_ONLY)),
+        (NO_MANIFEST, _expected_artifacts(NO_MANIFEST)),
     ],
 )
 def test_artifact_indexes_match_directory_contents_across_output_flag_fixtures(
@@ -701,7 +720,7 @@ def test_manifest_lists_only_written_artifacts(tmp_path: Path) -> None:
     run_experiment(MANIFEST_ONLY, seed=1, out_dir=out_dir)
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
-    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
     assert not (out_dir / "metrics.csv").exists()
     assert not (out_dir / "events.csv").exists()
     assert not (out_dir / "summary.md").exists()
@@ -717,7 +736,7 @@ def test_manifest_artifacts_match_output_directory_contents_when_manifest_only(
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
 
     _assert_artifacts_match_output_directory(out_dir, manifest["artifacts"])
-    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
 
 
 def test_manifest_only_records_full_schema_provenance_without_disabled_artifacts(
@@ -758,7 +777,7 @@ def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
 
     _assert_artifacts_match_output_directory(out_dir, manifest["artifacts"])
-    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
     assert not (out_dir / "metrics.csv").exists()
     assert not (out_dir / "events.csv").exists()
     assert not (out_dir / "summary.md").exists()
@@ -823,7 +842,7 @@ def test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinel
     )
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
-    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
     assert manifest["outputs"] == {
         "write_manifest": True,
         "write_metrics": False,
@@ -948,7 +967,7 @@ def test_run_api_manifest_only_preserves_stale_disabled_artifact_sentinels(
     )
 
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
-    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
     assert manifest["outputs"] == {
         "write_manifest": True,
         "write_metrics": False,
@@ -1316,13 +1335,7 @@ model:
 
 def test_documented_cli_smoke_writes_required_a0_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
-    expected_artifacts = [
-        "config.yaml",
-        "manifest.yaml",
-        "metrics.csv",
-        "events.csv",
-        "summary.md",
-    ]
+    expected_artifacts = _expected_artifacts(CONFIG)
 
     completed = subprocess.run(
         [
@@ -1353,13 +1366,7 @@ def test_documented_cli_smoke_writes_required_a0_artifacts(tmp_path: Path) -> No
 
 def test_documented_cli_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "default_outputs_seed1"
-    expected_artifacts = [
-        "config.yaml",
-        "manifest.yaml",
-        "metrics.csv",
-        "events.csv",
-        "summary.md",
-    ]
+    expected_artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
 
     completed = subprocess.run(
         [
@@ -1400,13 +1407,7 @@ def test_documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_arti
 ) -> None:
     first = tmp_path / "default_outputs_seed17_first"
     second = tmp_path / "default_outputs_seed17_second"
-    artifacts = [
-        "config.yaml",
-        "manifest.yaml",
-        "metrics.csv",
-        "events.csv",
-        "summary.md",
-    ]
+    artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
 
     for out_dir in [first, second]:
         completed = subprocess.run(
@@ -1489,13 +1490,7 @@ def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifa
 
 def test_run_api_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "default_outputs_api_seed1"
-    expected_artifacts = [
-        "config.yaml",
-        "manifest.yaml",
-        "metrics.csv",
-        "events.csv",
-        "summary.md",
-    ]
+    expected_artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
 
     result = run_experiment(DEFAULT_OUTPUTS, seed=1, out_dir=out_dir)
 
@@ -1530,13 +1525,7 @@ def test_run_api_omitted_outputs_same_seed_reproduces_byte_identical_artifacts(
 ) -> None:
     first = tmp_path / "default_outputs_api_seed17_first"
     second = tmp_path / "default_outputs_api_seed17_second"
-    artifacts = [
-        "config.yaml",
-        "manifest.yaml",
-        "metrics.csv",
-        "events.csv",
-        "summary.md",
-    ]
+    artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
 
     first_result = run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=first)
     second_result = run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=second)
@@ -1695,13 +1684,7 @@ def test_documented_cli_smoke_writes_core_a0_summary_sections(tmp_path: Path) ->
 def test_documented_cli_same_seed_reproduces_byte_identical_a0_artifacts(tmp_path: Path) -> None:
     first = tmp_path / "a0_seed17_first"
     second = tmp_path / "a0_seed17_second"
-    artifacts = [
-        "config.yaml",
-        "manifest.yaml",
-        "metrics.csv",
-        "events.csv",
-        "summary.md",
-    ]
+    artifacts = _expected_artifacts(CONFIG)
 
     for out_dir in [first, second]:
         completed = subprocess.run(
@@ -1730,13 +1713,7 @@ def test_documented_cli_same_seed_reproduces_byte_identical_a0_artifacts(tmp_pat
 
 def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed17"
-    artifacts = [
-        "config.yaml",
-        "manifest.yaml",
-        "metrics.csv",
-        "events.csv",
-        "summary.md",
-    ]
+    artifacts = _expected_artifacts(CONFIG)
     command = [
         sys.executable,
         "-m",
@@ -1766,10 +1743,7 @@ def test_documented_cli_refuses_to_overwrite_complete_run_directory(tmp_path: Pa
 
 def test_documented_cli_respects_disabled_optional_outputs(tmp_path: Path) -> None:
     out_dir = tmp_path / "manifest_only_cli_outputs"
-    expected_artifacts = [
-        "config.yaml",
-        "manifest.yaml",
-    ]
+    expected_artifacts = _expected_artifacts(MANIFEST_ONLY)
 
     completed = subprocess.run(
         [
@@ -1838,13 +1812,7 @@ def test_run_api_respects_no_manifest_fixture_outputs(tmp_path: Path) -> None:
     out_dir.mkdir()
     stale_manifest = "stale manifest sentinel\n"
     (out_dir / "manifest.yaml").write_text(stale_manifest)
-    expected_artifacts = [
-        "config.yaml",
-        "events.csv",
-        "manifest.yaml",
-        "metrics.csv",
-        "summary.md",
-    ]
+    expected_artifacts = [*_expected_artifacts(NO_MANIFEST), "manifest.yaml"]
 
     result = run_experiment(NO_MANIFEST, seed=17, out_dir=out_dir)
 
@@ -2254,7 +2222,7 @@ def test_run_experiment_ignores_disabled_output_collisions_but_blocks_enabled_ar
     for artifact, content in disabled_sentinels.items():
         assert (success_dir / artifact).read_text() == content
     manifest = yaml.safe_load((success_dir / "manifest.yaml").read_text())
-    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
 
     blocked_dir.mkdir()
     for artifact, content in disabled_sentinels.items():
@@ -2296,9 +2264,10 @@ def test_run_experiment_config_only_outputs_succeed_and_are_byte_stable(
     first_result = run_experiment(CONFIG_ONLY, seed=17, out_dir=first)
     second_result = run_experiment(CONFIG_ONLY, seed=17, out_dir=second)
 
-    _assert_artifacts_match_output_directory(first, ["config.yaml"])
-    _assert_artifacts_match_output_directory(second, ["config.yaml"])
-    _assert_artifacts_are_byte_identical(first, second, ["config.yaml"])
+    artifacts = _expected_artifacts(CONFIG_ONLY)
+    _assert_artifacts_match_output_directory(first, artifacts)
+    _assert_artifacts_match_output_directory(second, artifacts)
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
     normalized_config = yaml.safe_load((first / "config.yaml").read_text())
     assert normalized_config["outputs"] == {
         "write_manifest": False,
@@ -2319,12 +2288,12 @@ def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(
     out_dir = tmp_path / "config_only_rerun"
 
     run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
-    before = _artifact_bytes_snapshot(out_dir, ["config.yaml"])
+    before = _artifact_bytes_snapshot(out_dir, _expected_artifacts(CONFIG_ONLY))
 
     with pytest.raises(FileExistsError, match="already contains run artifacts: config.yaml"):
         run_experiment(CONFIG_ONLY, seed=17, out_dir=out_dir)
 
-    _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
+    _assert_artifacts_match_output_directory(out_dir, _expected_artifacts(CONFIG_ONLY))
     _assert_output_directory_preserved(out_dir, before)
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
@@ -2361,7 +2330,10 @@ def test_run_experiment_config_only_rerun_preserves_disabled_artifact_sentinels(
     assert "metrics.csv" not in message
     assert "events.csv" not in message
     assert "summary.md" not in message
-    _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *disabled_sentinels])
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        [*_expected_artifacts(CONFIG_ONLY), *disabled_sentinels],
+    )
     _assert_output_directory_preserved(out_dir, before)
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
@@ -2519,7 +2491,7 @@ def test_cli_ignores_disabled_output_collisions_but_blocks_enabled_artifacts(
     for artifact, content in disabled_sentinels.items():
         assert (success_dir / artifact).read_text() == content
     manifest = yaml.safe_load((success_dir / "manifest.yaml").read_text())
-    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
 
     blocked_dir.mkdir()
     for artifact, content in disabled_sentinels.items():
@@ -2611,9 +2583,9 @@ def test_cli_config_only_outputs_succeed_and_are_byte_stable(tmp_path: Path) -> 
 
         assert completed.returncode == 0
         assert completed.stderr == ""
-        _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
+        _assert_artifacts_match_output_directory(out_dir, _expected_artifacts(CONFIG_ONLY))
 
-    _assert_artifacts_are_byte_identical(first, second, ["config.yaml"])
+    _assert_artifacts_are_byte_identical(first, second, _expected_artifacts(CONFIG_ONLY))
     normalized_config = yaml.safe_load((first / "config.yaml").read_text())
     assert normalized_config["outputs"] == {
         "write_manifest": False,
@@ -2639,7 +2611,7 @@ def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Pa
     ]
 
     first = subprocess.run(command, capture_output=True, text=True, check=False)
-    before = _artifact_bytes_snapshot(out_dir, ["config.yaml"])
+    before = _artifact_bytes_snapshot(out_dir, _expected_artifacts(CONFIG_ONLY))
 
     second = subprocess.run(command, capture_output=True, text=True, check=False)
 
@@ -2655,7 +2627,7 @@ def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Pa
     assert "events.csv" not in second.stderr
     assert "summary.md" not in second.stderr
     assert "Traceback" not in second.stderr
-    _assert_artifacts_match_output_directory(out_dir, ["config.yaml"])
+    _assert_artifacts_match_output_directory(out_dir, _expected_artifacts(CONFIG_ONLY))
     _assert_output_directory_preserved(out_dir, before)
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
@@ -2705,7 +2677,10 @@ def test_cli_config_only_rerun_preserves_disabled_artifact_sentinels(tmp_path: P
     assert "events.csv" not in second.stderr
     assert "summary.md" not in second.stderr
     assert "Traceback" not in second.stderr
-    _assert_artifacts_match_output_directory(out_dir, ["config.yaml", *disabled_sentinels])
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        [*_expected_artifacts(CONFIG_ONLY), *disabled_sentinels],
+    )
     _assert_output_directory_preserved(out_dir, before)
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
@@ -3033,7 +3008,7 @@ def _assert_manifest_only_preserves_full_schema_provenance(out_dir: Path) -> Non
         "write_events": False,
         "write_summary": False,
     }
-    assert manifest["artifacts"] == ["config.yaml", "manifest.yaml"]
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
     assert not (out_dir / "metrics.csv").exists()
     assert not (out_dir / "events.csv").exists()
     assert not (out_dir / "summary.md").exists()
@@ -3083,7 +3058,7 @@ def _assert_manifest_only_preserves_stale_disabled_artifacts(
     _assert_stale_artifacts_preserved(
         out_dir,
         stale_disabled_artifacts,
-        expected_artifacts=["config.yaml", "manifest.yaml", *stale_disabled_artifacts],
+        expected_artifacts=[*_expected_artifacts(MANIFEST_ONLY), *stale_disabled_artifacts],
     )
 
 
@@ -3158,7 +3133,7 @@ def _assert_config_only_preserves_stale_disabled_artifacts(
     _assert_stale_artifacts_preserved(
         out_dir,
         stale_disabled_artifacts,
-        expected_artifacts=["config.yaml", *stale_disabled_artifacts],
+        expected_artifacts=[*_expected_artifacts(CONFIG_ONLY), *stale_disabled_artifacts],
     )
 
 
@@ -3180,7 +3155,7 @@ def _assert_config_only_collision_preserves_stale_disabled_artifacts(
     _assert_stale_artifacts_preserved(
         out_dir,
         {**stale_disabled_artifacts, "config.yaml": collision_content},
-        expected_artifacts=["config.yaml", *stale_disabled_artifacts],
+        expected_artifacts=[*_expected_artifacts(CONFIG_ONLY), *stale_disabled_artifacts],
     )
 
 
@@ -3189,7 +3164,7 @@ def _assert_no_manifest_writes_enabled_artifacts(
     *,
     stale_manifest: bytes | None = None,
 ) -> None:
-    expected_artifacts = ["config.yaml", "metrics.csv", "events.csv", "summary.md"]
+    expected_artifacts = _expected_artifacts(NO_MANIFEST)
     expected_outputs = {
         "write_manifest": False,
         "write_metrics": True,

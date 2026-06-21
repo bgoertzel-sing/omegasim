@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-21 A0/A1 artifact index regression across output fixtures
-- Changed: added `test_artifact_indexes_match_directory_contents_across_output_flag_fixtures()` plus `_assert_artifact_indexes_match_directory_contents()` to verify that actual directory contents, manifest artifact lists when present, and summary written-artifact lines when present stay aligned for default-output, config-only, manifest-only, and no-manifest checked-in fixtures without simulator behavior changes.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "artifact_indexes_match_directory_contents" -q` passed with 4 tests and 115 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "artifact or output or manifest_only or no_manifest or config_only" -q` passed with 83 tests and 36 deselected; `.venv-conda/bin/python -m pytest -q` passed with 119 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-21 A0/A1 output fixture artifact expectation consolidation
+- Changed: added shared expected artifact lists plus `_expected_artifacts()` in `tests/test_run_harness.py`, then replaced repeated config-only, manifest-only, no-manifest, default-output, and smoke expected artifact literals in output-flag tests/helpers. Simulator behavior and output schemas were unchanged.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "artifact_indexes_match_directory_contents or omitted_outputs or manifest_only or no_manifest or config_only or required_a0_artifacts" -q` passed with 46 tests and 73 deselected; `.venv-conda/bin/python -m pytest -q` passed with 119 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: consolidate repeated expected artifact lists in output-flag tests into one local fixture/helper so future output artifact additions update one source in the test suite.
+- Next step: add a compact regression that the lobe transition field list in `manifest.yaml` exactly matches the lobe transition columns emitted in `metrics.csv` for every output fixture that writes both artifacts.
