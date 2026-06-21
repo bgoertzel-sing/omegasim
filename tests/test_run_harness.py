@@ -704,6 +704,21 @@ def test_summary_records_artifact_schema_provenance(tmp_path: Path) -> None:
     assert manifest["model"]["events"]["fields"] == events_header
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_summary_schema_provenance_counts_match_manifest_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / config_path.stem
+
+    run_experiment(config_path, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+
+    _assert_summary_schema_provenance_counts_match_manifest(summary, manifest)
+
+
 def test_summary_records_written_artifacts_and_output_flags(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -3436,6 +3451,40 @@ def _assert_summary_records_artifact_schema_provenance(
     assert "- metrics schema source: ohdyn.sim.metrics_fieldnames" in summary
     assert "- events schema source: ohdyn.sim.EVENT_FIELDS" in summary
     assert "- manifest mirrors emitted artifact schemas: yes" in summary
+
+
+def _assert_summary_schema_provenance_counts_match_manifest(
+    summary: str,
+    manifest: dict[str, object],
+) -> None:
+    model = manifest["model"]
+    assert isinstance(model, dict)
+
+    metrics = model["metrics"]
+    events = model["events"]
+    baseline_lobes = model["baseline_lobes"]
+    queue_dynamics = model["queue_dynamics_metrics"]
+    role_action_metrics = model["role_action_metrics"]
+    assert isinstance(metrics, dict)
+    assert isinstance(events, dict)
+    assert isinstance(baseline_lobes, dict)
+    assert isinstance(queue_dynamics, dict)
+    assert isinstance(role_action_metrics, dict)
+
+    assert f"- metrics fields: {len(metrics['fields'])}" in summary
+    assert f"- event fields: {len(events['fields'])}" in summary
+    assert f"- event types: {len(events['types'])}" in summary
+    assert f"- baseline lobe labels: {len(baseline_lobes['labels'])}" in summary
+    assert (
+        f"- baseline lobe transition fields: "
+        f"{len(baseline_lobes['transition_fields'])}"
+    ) in summary
+    assert f"- queue pressure fields: {len(queue_dynamics['pressure_fields'])}" in summary
+    assert (
+        f"- queued task age fields: "
+        f"{len(queue_dynamics['queued_task_age_fields'])}"
+    ) in summary
+    assert f"- role/action fields: {len(role_action_metrics['fields'])}" in summary
 
 
 def test_fixed_seed_role_action_totals_are_stable(tmp_path: Path) -> None:
