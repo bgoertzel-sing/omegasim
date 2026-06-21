@@ -621,6 +621,33 @@ def test_manifest_records_queue_dynamics_metric_provenance(tmp_path: Path) -> No
         assert field in metrics_header
 
 
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_manifest_queue_dynamics_fields_exactly_match_metrics_columns_across_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / config_path.stem
+
+    run_experiment(config_path, seed=1, out_dir=out_dir)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    queue_dynamics_metrics = manifest["model"]["queue_dynamics_metrics"]
+    emitted_pressure_fields = [
+        field for field in metrics_header if field in QUEUE_PRESSURE_METRIC_FIELDS
+    ]
+    emitted_queued_task_age_fields = [
+        field for field in metrics_header if field in QUEUED_TASK_AGE_METRIC_FIELDS
+    ]
+
+    assert queue_dynamics_metrics["pressure_fields"] == emitted_pressure_fields
+    assert queue_dynamics_metrics["queued_task_age_fields"] == emitted_queued_task_age_fields
+    assert emitted_pressure_fields == list(QUEUE_PRESSURE_METRIC_FIELDS)
+    assert emitted_queued_task_age_fields == list(QUEUED_TASK_AGE_METRIC_FIELDS)
+
+
 def test_manifest_records_full_metrics_schema_provenance(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
