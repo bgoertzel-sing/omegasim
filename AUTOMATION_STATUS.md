@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 README-documented first-milestone different-seed dynamics regression
-- Changed: added a compact README-linked CLI regression for `configs/a0_smoke.yaml` that runs the first-milestone command with seeds 1 and 2, verifies the full five-artifact A0 output set, checks stable normalized config, manifest model/artifact/output provenance, metrics/events schemas, and row counts, then confirms metrics rows, event rows, and summary aggregate dynamics change across seeds.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_a0_smoke_different_seed" -q` passed with 1 test and 397 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 398 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 README-documented first-milestone event replay regression
+- Changed: added a compact README-linked CLI regression for `configs/a0_smoke.yaml` that runs the first-milestone command and reconstructs top-level queue/task metrics, queue pressure, queued-task age, role/action metric sequences, lobe labels/transitions/run state, and the integrated summary aggregate bundle from `events.csv`; it compares those replayed values against `metrics.csv` and `summary.md` while preserving manifest/config artifact provenance.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_a0_smoke_event_replay" -q` passed with 1 test and 398 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 399 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a compact README-linked event-replay regression for `configs/a0_smoke.yaml` that reconstructs lobe, queue-pressure, queued-task-age, and role/action summaries from `events.csv` for the first-milestone output.
+- Next step: factor the repeated event-replay/summary assertion bundle into one shared helper so future A1 regressions can cover new fixtures without growing `tests/test_run_harness.py` ad hoc.
