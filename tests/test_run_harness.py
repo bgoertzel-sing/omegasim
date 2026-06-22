@@ -4142,6 +4142,29 @@ def test_run_experiment_config_only_reordered_actions_outputs_are_byte_stable(
     assert len(first_result.events) == len(second_result.events) == 45
 
 
+def test_run_experiment_config_only_reordered_actions_preserves_stale_disabled_artifact_sentinels(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "config_only_reordered_actions_api_stale_disabled"
+    stale_disabled_artifacts = _write_config_only_disabled_artifact_sentinels(out_dir)
+
+    result = run_experiment(CONFIG_ONLY_REORDERED_ACTIONS, seed=17, out_dir=out_dir)
+
+    _assert_config_only_preserves_stale_disabled_artifacts(
+        out_dir,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+    )
+    _assert_config_only_writes_normalized_config(
+        out_dir,
+        experiment_id="a0_config_only_reordered_actions",
+        actions=["work_task", "create_task", "message", "idle"],
+    )
+    assert result.config.model.actions == ("work_task", "create_task", "message", "idle")
+    assert result.seed == 17
+    assert len(result.metrics) == 3
+    assert len(result.events) == 45
+
+
 def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(
     tmp_path: Path,
 ) -> None:
