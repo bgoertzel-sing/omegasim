@@ -2409,6 +2409,60 @@ def test_run_api_no_manifest_reordered_actions_integrated_summary_aggregate_bund
     assert first_bundle == second_bundle
 
 
+def test_run_api_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_changes_across_different_seeds(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_reordered_actions_api_summary_bundle_seed1"
+    second = tmp_path / "a0_no_manifest_reordered_actions_api_summary_bundle_seed2"
+
+    first_result = run_experiment(NO_MANIFEST_REORDERED_ACTIONS, seed=1, out_dir=first)
+    second_result = run_experiment(NO_MANIFEST_REORDERED_ACTIONS, seed=2, out_dir=second)
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_actions = tuple(first_config["model"]["actions"])
+    second_actions = tuple(second_config["model"]["actions"])
+    first_bundle = _summary_integrated_aggregate_bundle(
+        first_summary,
+        actions=first_actions,
+    )
+    second_bundle = _summary_integrated_aggregate_bundle(
+        second_summary,
+        actions=second_actions,
+    )
+
+    assert first_result.config.to_dict() == second_result.config.to_dict()
+    assert first_result.seed == 1
+    assert second_result.seed == 2
+    assert first_actions == second_actions == ("work_task", "create_task", "message", "idle")
+    assert first_config["outputs"]["write_manifest"] is False
+    assert second_config["outputs"]["write_manifest"] is False
+    assert not (first / "manifest.yaml").exists()
+    assert not (second / "manifest.yaml").exists()
+    assert first_bundle == _integrated_aggregate_bundle_from_metrics(
+        first_metric_rows,
+        actions=first_actions,
+    )
+    assert second_bundle == _integrated_aggregate_bundle_from_metrics(
+        second_metric_rows,
+        actions=second_actions,
+    )
+    assert first_bundle["task_queue_pressure_and_age"]
+    assert second_bundle["task_queue_pressure_and_age"]
+    assert first_bundle["lobe_aggregates"]
+    assert second_bundle["lobe_aggregates"]
+    assert first_bundle["role_action_totals"]
+    assert second_bundle["role_action_totals"]
+    assert first_bundle != second_bundle
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
