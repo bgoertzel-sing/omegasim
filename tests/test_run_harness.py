@@ -4414,6 +4414,59 @@ def test_cli_config_only_outputs_succeed_and_are_byte_stable(tmp_path: Path) -> 
     assert normalized_config["run"]["experiment_id"] == "a0_config_only"
 
 
+def test_cli_config_only_reordered_actions_outputs_succeed_and_are_byte_stable(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "config_only_reordered_actions_cli_first"
+    second = tmp_path / "config_only_reordered_actions_cli_second"
+
+    for out_dir in [first, second]:
+        _run_documented_cli(CONFIG_ONLY_REORDERED_ACTIONS, out_dir, seed=17)
+        _assert_artifacts_match_output_directory(
+            out_dir,
+            _expected_artifacts(CONFIG_ONLY_REORDERED_ACTIONS),
+        )
+
+    _assert_artifacts_are_byte_identical(
+        first,
+        second,
+        _expected_artifacts(CONFIG_ONLY_REORDERED_ACTIONS),
+    )
+    normalized_config = yaml.safe_load((first / "config.yaml").read_text())
+    assert normalized_config["run"]["experiment_id"] == "a0_config_only_reordered_actions"
+    assert _actions_from_normalized_config(normalized_config) == [
+        "work_task",
+        "create_task",
+        "message",
+        "idle",
+    ]
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+
+
+def test_cli_config_only_reordered_actions_preserves_stale_disabled_artifact_sentinels(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "config_only_reordered_actions_cli_stale_disabled"
+    stale_disabled_artifacts = _write_config_only_disabled_artifact_sentinels(out_dir)
+
+    _run_documented_cli(CONFIG_ONLY_REORDERED_ACTIONS, out_dir, seed=17)
+
+    _assert_config_only_preserves_stale_disabled_artifacts(
+        out_dir,
+        stale_disabled_artifacts=stale_disabled_artifacts,
+    )
+    _assert_config_only_writes_normalized_config(
+        out_dir,
+        experiment_id="a0_config_only_reordered_actions",
+        actions=["work_task", "create_task", "message", "idle"],
+    )
+
+
 def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Path) -> None:
     out_dir = tmp_path / "config_only_cli_rerun"
     command = [
@@ -4910,17 +4963,23 @@ def _assert_manifest_only_collision_preserves_stale_disabled_artifacts(
     )
 
 
-def _assert_config_only_writes_normalized_config(out_dir: Path) -> None:
+def _assert_config_only_writes_normalized_config(
+    out_dir: Path,
+    *,
+    experiment_id: str = "a0_config_only",
+    actions: list[str] | None = None,
+) -> None:
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    expected_actions = actions or ["idle", "message", "create_task", "work_task"]
 
     assert normalized_config == {
         "run": {
-            "experiment_id": "a0_config_only",
+            "experiment_id": experiment_id,
             "ticks": 3,
         },
         "model": {
             "agent_count": 15,
-            "actions": ["idle", "message", "create_task", "work_task"],
+            "actions": expected_actions,
         },
         "outputs": {
             "write_manifest": False,
