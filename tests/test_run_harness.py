@@ -5032,7 +5032,8 @@ def _assert_no_manifest_collision_preserves_stale_manifest(
 def _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(
     out_dir: Path,
 ) -> None:
-    actions = ("idle", "message", "create_task", "work_task")
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    actions = tuple(normalized_config["model"]["actions"])
 
     assert not (out_dir / "manifest.yaml").exists()
     with (out_dir / "metrics.csv").open() as handle:

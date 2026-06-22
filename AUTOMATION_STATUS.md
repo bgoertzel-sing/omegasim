@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 no-manifest documented-CLI integrated summary aggregate regression
-- Changed: added one documented-CLI regression for `configs/a0_no_manifest.yaml` that verifies the integrated summary task/queue, queue-pressure, queued-task-age, lobe, and role/action aggregate bundle matches `metrics.csv` while deriving actions from normalized `config.yaml` and confirming `manifest.yaml` is absent.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "integrated_summary_aggregate_bundle" -q` passed with 5 tests and 267 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 272 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 no-manifest schema provenance config-action derivation
+- Changed: updated the no-manifest emitted-artifact schema provenance regression helper to derive baseline actions from normalized `config.yaml` instead of a hard-coded tuple, preserving manifest-free provenance checks for `metrics.csv`, `events.csv`, and `summary.md`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "no_manifest_emitted_artifacts_preserve_schema_provenance" -q` passed with 2 tests and 270 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 272 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: update the no-manifest schema provenance regression helper to derive actions from normalized `config.yaml` instead of a hard-coded baseline tuple.
+- Next step: update the manifest-only schema provenance helper to derive actions from normalized `config.yaml` instead of a hard-coded baseline tuple.
