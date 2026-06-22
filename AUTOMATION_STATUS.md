@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 README-aligned no-manifest reordered-action lobe replay smoke regression
-- Changed: documented `configs/a0_no_manifest_reordered_actions.yaml` as the current no-manifest lobe replay smoke path in README, and added a README-linked CLI smoke test that verifies the documented command remains present, emits no `manifest.yaml`, preserves reordered action/schema provenance, reconstructs lobe labels/transitions/run state from `events.csv`, and matches summary aggregate replay using normalized `config.yaml` roles/actions.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_no_manifest_reordered_actions_lobe_replay_smoke_command or no_manifest_reordered_actions_lobe_sequences_reconstruct_from_events or no_manifest_reordered_actions_per_tick_sequences_reconstruct_from_events or no_manifest_reordered_actions_integrated_summary_aggregate_bundle_reconstructs_from_events" -q` passed with 5 tests and 383 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 388 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 README-documented no-manifest reordered-action same-seed artifact reproducibility regression
+- Changed: added a compact README-linked CLI regression for `configs/a0_no_manifest_reordered_actions.yaml` that verifies the documented seed-1 smoke command remains present, the enabled artifact set excludes disabled `manifest.yaml` provenance, two same-seed runs emit the same enabled artifact set, and `config.yaml`, `metrics.csv`, `events.csv`, and `summary.md` are byte-identical.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_no_manifest_reordered_actions" -q` passed with 2 tests and 387 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 389 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a compact A0/A1 reproducibility regression for the README-documented no-manifest reordered-action smoke path that asserts same-seed byte-identical emitted artifacts while excluding disabled manifest provenance.
+- Next step: add a compact A0/A1 README-linked smoke regression for the manifest-only reordered-action fixture that verifies schema/order provenance remains available when metrics, events, and summary outputs are disabled.

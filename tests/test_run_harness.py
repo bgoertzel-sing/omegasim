@@ -2930,6 +2930,29 @@ def test_readme_no_manifest_reordered_actions_lobe_replay_smoke_command(
     )
 
 
+def test_readme_no_manifest_reordered_actions_same_seed_reproduces_enabled_artifacts(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_reordered_actions_readme_seed1_first"
+    second = tmp_path / "a0_no_manifest_reordered_actions_readme_seed1_second"
+    artifacts = _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS)
+    readme = Path("README.md").read_text()
+    expected_command = (
+        "python -m ohdyn.run --config configs/a0_no_manifest_reordered_actions.yaml "
+        "--seed 1 --out runs/a0_no_manifest_reordered_actions_seed1"
+    )
+
+    assert expected_command in readme
+    assert "manifest.yaml" not in artifacts
+
+    for out_dir in [first, second]:
+        _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, out_dir, seed=1)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "manifest.yaml").exists()
+
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
