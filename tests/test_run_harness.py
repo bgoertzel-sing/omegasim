@@ -29,9 +29,11 @@ DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
 MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
+MANIFEST_ONLY_REORDERED_ACTIONS = Path("configs/a0_manifest_only_reordered_actions.yaml")
 NO_MANIFEST = Path("configs/a0_no_manifest.yaml")
 NO_MANIFEST_REORDERED_ACTIONS = Path("configs/a0_no_manifest_reordered_actions.yaml")
 FULL_OUTPUT_FIXTURES = (CONFIG, DEFAULT_OUTPUTS, REORDERED_ACTIONS)
+MANIFEST_ONLY_FIXTURES = (MANIFEST_ONLY, MANIFEST_ONLY_REORDERED_ACTIONS)
 NO_MANIFEST_FIXTURES = (NO_MANIFEST, NO_MANIFEST_REORDERED_ACTIONS)
 
 A0_FULL_ARTIFACTS = [
@@ -50,6 +52,7 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
     MANIFEST_ONLY: MANIFEST_ONLY_ARTIFACTS,
+    MANIFEST_ONLY_REORDERED_ACTIONS: MANIFEST_ONLY_ARTIFACTS,
     NO_MANIFEST: NO_MANIFEST_ARTIFACTS,
     NO_MANIFEST_REORDERED_ACTIONS: NO_MANIFEST_ARTIFACTS,
 }
@@ -150,6 +153,19 @@ def test_loads_a0_manifest_only_fixture() -> None:
     assert config.run.ticks == 3
     assert config.model.agent_count == 15
     assert config.model.actions == ("idle", "message", "create_task", "work_task")
+    assert config.outputs.write_manifest is True
+    assert config.outputs.write_metrics is False
+    assert config.outputs.write_events is False
+    assert config.outputs.write_summary is False
+
+
+def test_loads_a0_manifest_only_reordered_actions_fixture() -> None:
+    config = load_config(MANIFEST_ONLY_REORDERED_ACTIONS)
+
+    assert config.run.experiment_id == "a0_manifest_only_reordered_actions"
+    assert config.run.ticks == 3
+    assert config.model.agent_count == 15
+    assert config.model.actions == ("work_task", "create_task", "message", "idle")
     assert config.outputs.write_manifest is True
     assert config.outputs.write_metrics is False
     assert config.outputs.write_events is False
@@ -2720,6 +2736,10 @@ def test_summary_written_artifacts_match_output_directory_contents_without_manif
         (DEFAULT_OUTPUTS, _expected_artifacts(DEFAULT_OUTPUTS)),
         (CONFIG_ONLY, _expected_artifacts(CONFIG_ONLY)),
         (MANIFEST_ONLY, _expected_artifacts(MANIFEST_ONLY)),
+        (
+            MANIFEST_ONLY_REORDERED_ACTIONS,
+            _expected_artifacts(MANIFEST_ONLY_REORDERED_ACTIONS),
+        ),
         (NO_MANIFEST, _expected_artifacts(NO_MANIFEST)),
         (
             NO_MANIFEST_REORDERED_ACTIONS,
@@ -2778,14 +2798,42 @@ def test_manifest_artifacts_match_output_directory_contents_when_manifest_only(
     assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
 
 
+@pytest.mark.parametrize("config_path", MANIFEST_ONLY_FIXTURES)
 def test_manifest_only_records_full_schema_provenance_without_disabled_artifacts(
     tmp_path: Path,
+    config_path: Path,
 ) -> None:
-    out_dir = tmp_path / "manifest_only_schema"
+    out_dir = tmp_path / f"{config_path.stem}_schema"
 
-    run_experiment(MANIFEST_ONLY, seed=1, out_dir=out_dir)
+    run_experiment(config_path, seed=1, out_dir=out_dir)
 
-    _assert_manifest_only_preserves_full_schema_provenance(out_dir)
+    _assert_manifest_only_preserves_full_schema_provenance(out_dir, config_path)
+
+
+def test_manifest_only_reordered_actions_records_schema_order_without_disabled_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "manifest_only_reordered_actions_schema"
+
+    run_experiment(MANIFEST_ONLY_REORDERED_ACTIONS, seed=1, out_dir=out_dir)
+
+    _assert_manifest_only_preserves_full_schema_provenance(
+        out_dir,
+        MANIFEST_ONLY_REORDERED_ACTIONS,
+    )
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    actions = _actions_from_normalized_config(normalized_config)
+    expected_role_action_fields = list(role_action_metric_fields(tuple(actions)))
+    expected_metrics_fields = list(metrics_fieldnames(tuple(actions)))
+
+    assert actions == ["work_task", "create_task", "message", "idle"]
+    assert manifest["actions"] == actions
+    assert manifest["config"]["model"]["actions"] == actions
+    assert manifest["model"]["metrics"]["fields"] == expected_metrics_fields
+    assert manifest["model"]["role_action_metrics"]["actions"] == actions
+    assert manifest["model"]["role_action_metrics"]["fields"] == expected_role_action_fields
 
 
 def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
@@ -2804,14 +2852,16 @@ def test_documented_cli_manifest_only_artifacts_match_output_directory_contents(
     assert not (out_dir / "summary.md").exists()
 
 
+@pytest.mark.parametrize("config_path", MANIFEST_ONLY_FIXTURES)
 def test_documented_cli_manifest_only_records_full_schema_provenance_without_disabled_artifacts(
     tmp_path: Path,
+    config_path: Path,
 ) -> None:
-    out_dir = tmp_path / "manifest_only_cli_schema"
+    out_dir = tmp_path / f"{config_path.stem}_cli_schema"
 
-    _run_documented_cli(MANIFEST_ONLY, out_dir)
+    _run_documented_cli(config_path, out_dir)
 
-    _assert_manifest_only_preserves_full_schema_provenance(out_dir)
+    _assert_manifest_only_preserves_full_schema_provenance(out_dir, config_path)
 
 
 def test_documented_cli_manifest_only_preserves_stale_disabled_artifact_sentinels(
@@ -4717,7 +4767,10 @@ def _lobe_dwell_runs(metrics: list[dict[str, object]]) -> dict[str, dict[str, in
     }
 
 
-def _assert_manifest_only_preserves_full_schema_provenance(out_dir: Path) -> None:
+def _assert_manifest_only_preserves_full_schema_provenance(
+    out_dir: Path,
+    config_path: Path,
+) -> None:
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     actions = tuple(normalized_config["model"]["actions"])
@@ -4728,7 +4781,7 @@ def _assert_manifest_only_preserves_full_schema_provenance(out_dir: Path) -> Non
         "write_events": False,
         "write_summary": False,
     }
-    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY)
+    assert manifest["artifacts"] == _expected_artifacts(config_path)
     assert not (out_dir / "metrics.csv").exists()
     assert not (out_dir / "events.csv").exists()
     assert not (out_dir / "summary.md").exists()

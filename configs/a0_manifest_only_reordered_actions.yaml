@@ -1,0 +1,17 @@
+run:
+  experiment_id: a0_manifest_only_reordered_actions
+  ticks: 3
+
+model:
+  agent_count: 15
+  actions:
+    - work_task
+    - create_task
+    - message
+    - idle
+
+outputs:
+  write_manifest: true
+  write_metrics: false
+  write_events: false
+  write_summary: false

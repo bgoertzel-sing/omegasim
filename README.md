@@ -74,6 +74,12 @@ The checked-in manifest-only fixture disables metrics, events, and summary outpu
 python -m ohdyn.run --config configs/a0_manifest_only.yaml --seed 1 --out runs/a0_manifest_only_seed1
 ```
 
+The checked-in manifest-only reordered-actions fixture preserves manifest schema/order provenance without writing metrics, events, or summary output:
+
+```bash
+python -m ohdyn.run --config configs/a0_manifest_only_reordered_actions.yaml --seed 1 --out runs/a0_manifest_only_reordered_actions_seed1
+```
+
 The checked-in no-manifest fixture writes metrics, events, and summary output without manifest provenance:
 
 ```bash
