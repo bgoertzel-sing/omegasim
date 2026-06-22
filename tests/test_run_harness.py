@@ -5015,6 +5015,40 @@ def test_documented_cli_and_run_api_no_manifest_seed1_emit_identical_artifacts(
     _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
 
 
+def test_documented_cli_and_run_api_no_manifest_reordered_actions_seed1_emit_identical_artifacts(
+    tmp_path: Path,
+) -> None:
+    cli_out = tmp_path / "a0_no_manifest_reordered_actions_cli_seed1"
+    api_out = tmp_path / "a0_no_manifest_reordered_actions_api_seed1"
+    artifacts = _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS)
+
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, cli_out, seed=1)
+    result = run_experiment(NO_MANIFEST_REORDERED_ACTIONS, seed=1, out_dir=api_out)
+
+    cli_config = yaml.safe_load((cli_out / "config.yaml").read_text())
+    api_config = yaml.safe_load((api_out / "config.yaml").read_text())
+    actions = tuple(api_config["model"]["actions"])
+    expected_outputs = {
+        "write_manifest": False,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+
+    for out_dir in [cli_out, api_out]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "manifest.yaml").exists()
+        _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(out_dir)
+
+    assert artifacts == NO_MANIFEST_ARTIFACTS
+    assert actions == ("work_task", "create_task", "message", "idle")
+    assert cli_config == api_config
+    assert api_config["outputs"] == expected_outputs
+    assert result.seed == 1
+    assert result.config.to_dict() == api_config
+    _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
+
+
 def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifacts(
     tmp_path: Path,
 ) -> None:
