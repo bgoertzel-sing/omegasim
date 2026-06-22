@@ -26,6 +26,7 @@ from ohdyn.run import run_experiment
 
 CONFIG = Path("configs/a0_smoke.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
+REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
 MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
 NO_MANIFEST = Path("configs/a0_no_manifest.yaml")
@@ -43,6 +44,7 @@ NO_MANIFEST_ARTIFACTS = ["config.yaml", "metrics.csv", "events.csv", "summary.md
 OUTPUT_FIXTURE_ARTIFACTS = {
     CONFIG: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
+    REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
     MANIFEST_ONLY: MANIFEST_ONLY_ARTIFACTS,
     NO_MANIFEST: NO_MANIFEST_ARTIFACTS,
@@ -105,6 +107,19 @@ def test_loads_a0_default_outputs_fixture() -> None:
     assert config.run.ticks == 3
     assert config.model.agent_count == 15
     assert config.model.actions == ("idle", "message", "create_task", "work_task")
+    assert config.outputs.write_manifest is True
+    assert config.outputs.write_metrics is True
+    assert config.outputs.write_events is True
+    assert config.outputs.write_summary is True
+
+
+def test_loads_a0_reordered_actions_fixture() -> None:
+    config = load_config(REORDERED_ACTIONS)
+
+    assert config.run.experiment_id == "a0_reordered_actions"
+    assert config.run.ticks == 3
+    assert config.model.agent_count == 15
+    assert config.model.actions == ("work_task", "create_task", "message", "idle")
     assert config.outputs.write_manifest is True
     assert config.outputs.write_metrics is True
     assert config.outputs.write_events is True
@@ -666,6 +681,34 @@ def test_manifest_records_full_metrics_schema_provenance(tmp_path: Path) -> None
     expected_fields = list(metrics_fieldnames(tuple(manifest["actions"])))
     assert manifest["model"]["metrics"] == {"fields": expected_fields}
     assert metrics_header == expected_fields
+
+
+def test_reordered_action_fixture_keeps_config_manifest_and_metrics_schema_aligned(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a0_reordered_actions"
+
+    run_experiment(REORDERED_ACTIONS, seed=1, out_dir=out_dir)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+
+    actions = _actions_from_normalized_config(normalized_config)
+    expected_role_action_fields = list(role_action_metric_fields(tuple(actions)))
+    expected_metrics_fields = list(metrics_fieldnames(tuple(actions)))
+
+    assert actions == ["work_task", "create_task", "message", "idle"]
+    assert manifest["actions"] == actions
+    assert manifest["config"]["model"]["actions"] == actions
+    assert manifest["model"]["metrics"]["fields"] == expected_metrics_fields
+    assert manifest["model"]["role_action_metrics"]["actions"] == actions
+    assert manifest["model"]["role_action_metrics"]["fields"] == expected_role_action_fields
+    assert metrics_header == expected_metrics_fields
+    assert [
+        field for field in metrics_header if field.startswith("role_")
+    ] == expected_role_action_fields
 
 
 def test_manifest_records_event_schema_provenance(tmp_path: Path) -> None:
