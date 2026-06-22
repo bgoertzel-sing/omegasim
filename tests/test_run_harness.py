@@ -3333,6 +3333,83 @@ def test_readme_a0_smoke_same_seed_reproduces_full_first_milestone_artifacts(
     _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
+def test_readme_a0_smoke_different_seed_changes_dynamics_preserving_provenance(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_smoke_readme_seed1"
+    second = tmp_path / "a0_smoke_readme_seed2"
+    artifacts = _expected_artifacts(CONFIG)
+    readme = Path("README.md").read_text()
+    expected_command = (
+        "python -m ohdyn.run --config configs/a0_smoke.yaml "
+        "--seed 1 --out runs/a0_seed1"
+    )
+
+    assert expected_command in readme
+    assert artifacts == [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    _run_documented_cli(CONFIG, first, seed=1)
+    _run_documented_cli(CONFIG, second, seed=2)
+
+    for out_dir in [first, second]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+
+    with (first / "metrics.csv").open() as handle:
+        first_metrics_header = next(csv.reader(handle))
+        first_metric_rows = list(csv.DictReader(handle, fieldnames=first_metrics_header))
+    with (second / "metrics.csv").open() as handle:
+        second_metrics_header = next(csv.reader(handle))
+        second_metric_rows = list(csv.DictReader(handle, fieldnames=second_metrics_header))
+    with (first / "events.csv").open() as handle:
+        first_events_header = next(csv.reader(handle))
+        first_event_rows = list(csv.DictReader(handle, fieldnames=first_events_header))
+    with (second / "events.csv").open() as handle:
+        second_events_header = next(csv.reader(handle))
+        second_event_rows = list(csv.DictReader(handle, fieldnames=second_events_header))
+
+    actions = tuple(_actions_from_normalized_config(first_config))
+
+    assert first_config == second_config
+    assert first_manifest["seed"] == 1
+    assert second_manifest["seed"] == 2
+    assert first_manifest["config"] == second_manifest["config"] == first_config
+    assert first_manifest["actions"] == second_manifest["actions"] == list(actions)
+    assert first_manifest["outputs"] == second_manifest["outputs"] == first_config["outputs"]
+    assert first_manifest["artifacts"] == second_manifest["artifacts"] == artifacts
+    assert first_manifest["model"] == second_manifest["model"]
+    assert first_metrics_header == second_metrics_header == list(metrics_fieldnames(actions))
+    assert first_events_header == second_events_header == list(EVENT_FIELDS)
+    assert len(first_metric_rows) == len(second_metric_rows) == first_config["run"]["ticks"]
+    assert len(first_event_rows) == len(second_event_rows) == (
+        first_config["run"]["ticks"] * first_config["model"]["agent_count"]
+    )
+    _assert_summary_schema_provenance_counts_match_manifest(first_summary, first_manifest)
+    _assert_summary_schema_provenance_counts_match_manifest(second_summary, second_manifest)
+
+    assert first_metric_rows != second_metric_rows
+    assert first_event_rows != second_event_rows
+    assert _summary_integrated_aggregate_bundle(
+        first_summary,
+        actions=actions,
+    ) != _summary_integrated_aggregate_bundle(
+        second_summary,
+        actions=actions,
+    )
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
