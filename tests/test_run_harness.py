@@ -2513,6 +2513,76 @@ def test_documented_cli_no_manifest_reordered_actions_integrated_summary_aggrega
     assert first_bundle == second_bundle
 
 
+def test_documented_cli_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_reconstructs_from_events(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_reordered_actions_cli_event_bundle_first"
+    second = tmp_path / "a0_no_manifest_reordered_actions_cli_event_bundle_second"
+
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, first, seed=17)
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, second, seed=17)
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_actions = tuple(first_config["model"]["actions"])
+    second_actions = tuple(second_config["model"]["actions"])
+    first_roles = _baseline_roles_for_agent_count(first_config["model"]["agent_count"])
+    second_roles = _baseline_roles_for_agent_count(second_config["model"]["agent_count"])
+    first_summary_bundle = _summary_integrated_aggregate_bundle(
+        first_summary,
+        actions=first_actions,
+    )
+    second_summary_bundle = _summary_integrated_aggregate_bundle(
+        second_summary,
+        actions=second_actions,
+    )
+    first_event_bundle = _integrated_aggregate_bundle_from_events(
+        first_event_rows,
+        ticks=first_config["run"]["ticks"],
+        roles=first_roles,
+        actions=first_actions,
+    )
+    second_event_bundle = _integrated_aggregate_bundle_from_events(
+        second_event_rows,
+        ticks=second_config["run"]["ticks"],
+        roles=second_roles,
+        actions=second_actions,
+    )
+
+    assert first_config == second_config
+    assert first_event_rows == second_event_rows
+    assert first_actions == second_actions == ("work_task", "create_task", "message", "idle")
+    assert first_config["outputs"]["write_manifest"] is False
+    assert second_config["outputs"]["write_manifest"] is False
+    assert not (first / "manifest.yaml").exists()
+    assert not (second / "manifest.yaml").exists()
+    assert first_summary_bundle == _integrated_aggregate_bundle_from_metrics(
+        first_metric_rows,
+        actions=first_actions,
+    )
+    assert second_summary_bundle == _integrated_aggregate_bundle_from_metrics(
+        second_metric_rows,
+        actions=second_actions,
+    )
+    assert first_event_bundle == first_summary_bundle
+    assert second_event_bundle == second_summary_bundle
+    assert first_event_bundle["task_queue_pressure_and_age"]
+    assert first_event_bundle["lobe_aggregates"]
+    assert first_event_bundle["role_action_totals"]
+    assert first_event_bundle == second_event_bundle
+
+
 def test_documented_cli_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_changes_across_different_seeds(
     tmp_path: Path,
 ) -> None:
@@ -6005,6 +6075,14 @@ def _assert_manifest_agent_identity_and_roles_match_baseline(
     assert model["role_action_metrics"]["roles"] == list(BASELINE_ROLES)
 
 
+def _baseline_roles_for_agent_count(agent_count: int) -> dict[str, str]:
+    assert agent_count == 15
+    return {
+        f"agent_{index:02d}": BASELINE_ROLES[(index - 1) % len(BASELINE_ROLES)]
+        for index in range(1, agent_count + 1)
+    }
+
+
 def _assert_manifest_bus_counts_match_summary_and_metrics_row(
     manifest: dict[str, object],
     *,
@@ -6906,6 +6984,54 @@ def _summary_queued_task_age_aggregates(summary: str) -> dict[str, float]:
     return aggregates
 
 
+def _task_and_queue_totals_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+) -> dict[str, int]:
+    assert event_rows
+    final = _top_level_metric_sequence_from_events(event_rows, ticks=ticks)[-1]
+    return {
+        "tasks_created_total": final[2],
+        "tasks_completed_total": final[3],
+        "queue_depth": final[0],
+    }
+
+
+def _queue_pressure_totals_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+) -> dict[str, int]:
+    pressure_sequence = _queue_pressure_metric_sequence_from_events(
+        event_rows,
+        ticks=ticks,
+    )
+    return {
+        field: sum(row[index] for row in pressure_sequence)
+        for index, field in enumerate(QUEUE_PRESSURE_METRIC_FIELDS)
+        if field != "backlog_pressure_tick"
+    }
+
+
+def _queued_task_age_aggregates_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+) -> dict[str, float]:
+    age_sequence = _queued_task_age_metric_sequence_from_events(event_rows, ticks=ticks)
+    final_max_age, final_mean_age = age_sequence[-1]
+    return {
+        "final_queued_task_max_age": float(final_max_age),
+        "final_queued_task_mean_age": float(final_mean_age),
+        "peak_queued_task_max_age": float(max(row[0] for row in age_sequence)),
+        "mean_queued_task_mean_age": round(
+            sum(float(row[1]) for row in age_sequence) / len(age_sequence),
+            6,
+        ),
+    }
+
+
 def _task_queue_pressure_and_age_aggregate_tuple_from_metrics(
     metric_rows: list[dict[str, str]],
 ) -> dict[str, dict[str, int] | dict[str, float]]:
@@ -6928,6 +7054,27 @@ def _summary_task_queue_pressure_and_age_aggregate_tuple(
     }
 
 
+def _task_queue_pressure_and_age_aggregate_tuple_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+) -> dict[str, dict[str, int] | dict[str, float]]:
+    return {
+        "task_queue_totals": _task_and_queue_totals_from_events(
+            event_rows,
+            ticks=ticks,
+        ),
+        "queue_pressure_totals": _queue_pressure_totals_from_events(
+            event_rows,
+            ticks=ticks,
+        ),
+        "queued_task_age_aggregates": _queued_task_age_aggregates_from_events(
+            event_rows,
+            ticks=ticks,
+        ),
+    }
+
+
 def _integrated_aggregate_bundle_from_metrics(
     metric_rows: list[dict[str, str]],
     *,
@@ -6945,6 +7092,36 @@ def _integrated_aggregate_bundle_from_metrics(
             "dwell_runs": _lobe_dwell_runs(metric_rows),
         },
         "role_action_totals": _role_action_totals_from_metrics(metric_rows, actions),
+    }
+
+
+def _integrated_aggregate_bundle_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+    roles: dict[str, str],
+    actions: tuple[str, ...],
+) -> dict[str, object]:
+    lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
+    return {
+        "task_queue_pressure_and_age": (
+            _task_queue_pressure_and_age_aggregate_tuple_from_events(
+                event_rows,
+                ticks=ticks,
+            )
+        ),
+        "lobe_aggregates": {
+            "totals": dict(
+                sorted(Counter(row["baseline_lobe_label"] for row in lobe_rows).items())
+            ),
+            "transitions": _lobe_transition_totals_from_adjacent_labels(lobe_rows),
+            "dwell_runs": _lobe_dwell_runs(lobe_rows),
+        },
+        "role_action_totals": _role_action_totals_from_events(
+            event_rows,
+            manifest_roles=roles,
+            actions=actions,
+        ),
     }
 
 
@@ -7415,6 +7592,60 @@ def _summary_role_action_totals(summary: str) -> dict[str, dict[str, int]]:
         }
 
     return totals
+
+
+def _lobe_metric_rows_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+) -> list[dict[str, str]]:
+    assert event_rows
+
+    events_by_tick: dict[int, list[dict[str, str]]] = {
+        tick: [] for tick in range(ticks)
+    }
+    for event in event_rows:
+        events_by_tick[int(event["tick"])].append(event)
+
+    assert sorted({int(event["tick"]) for event in event_rows}) == list(range(ticks))
+
+    rows: list[dict[str, str]] = []
+    queue_depth_start = 0
+    for tick in range(ticks):
+        action_counts = Counter(event["action"] for event in events_by_tick[tick])
+        completed_tick = sum(
+            1
+            for event in events_by_tick[tick]
+            if event["event_type"] == "task_worked" and event["completed"] == "True"
+        )
+        queue_depth_end = (
+            queue_depth_start + action_counts["create_task"] - completed_tick
+        )
+        queue_delta = queue_depth_end - queue_depth_start
+
+        if (
+            queue_depth_end > 0
+            and queue_delta > 0
+            and action_counts["create_task"] >= action_counts["work_task"]
+        ):
+            label = "backlog_growth"
+        else:
+            priority = ("work_task", "create_task", "message", "idle")
+            dominant_action = max(
+                priority,
+                key=lambda action: (action_counts[action], -priority.index(action)),
+            )
+            label = {
+                "work_task": "execution",
+                "create_task": "task_generation",
+                "message": "coordination",
+                "idle": "low_activity",
+            }[dominant_action]
+
+        rows.append({"baseline_lobe_label": label})
+        queue_depth_start = queue_depth_end
+
+    return rows
 
 
 def _lobe_transition_totals_from_adjacent_labels(
