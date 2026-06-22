@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 reordered action-order schema alignment regression
-- Changed: added `configs/a0_reordered_actions.yaml` as a full-output fixture with the same baseline actions in YAML-defined non-default order, plus load and run regressions proving normalized `config.yaml`, manifest `actions`, manifest metrics schema, manifest role/action schema, and emitted `metrics.csv` headers stay aligned to that YAML order.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "reordered_action or reordered_actions" -q` passed with 2 tests and 272 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 274 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 reordered action-order fixture documentation
+- Changed: documented `configs/a0_reordered_actions.yaml` in `README.md` with its smoke command and the schema-alignment invariant it protects: normalized `config.yaml`, manifest `actions`, manifest metrics schema, manifest role/action schema, and emitted `metrics.csv` headers must preserve the YAML-defined action order.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "reordered_action or reordered_actions" -q` passed with 2 tests and 272 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 274 tests; `.venv-conda/bin/python -m ruff check .` passed; `.venv-conda/bin/python -m ruff check README.md` reported no Python files and all checks passed.
 - Blockers: none.
-- Next step: document the reordered action-order fixture in `README.md` with its smoke command and the schema-alignment invariant it protects.
+- Next step: include `configs/a0_reordered_actions.yaml` in the full-output fixture parametrizations so documented CLI summary/provenance regressions also cover non-default action order.

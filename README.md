@@ -80,6 +80,14 @@ The checked-in no-manifest fixture writes metrics, events, and summary output wi
 python -m ohdyn.run --config configs/a0_no_manifest.yaml --seed 1 --out runs/a0_no_manifest_seed1
 ```
 
+The checked-in reordered-actions fixture keeps the same baseline action vocabulary but uses YAML-defined non-default action order:
+
+```bash
+python -m ohdyn.run --config configs/a0_reordered_actions.yaml --seed 1 --out runs/a0_reordered_actions_seed1
+```
+
+This fixture protects the schema-alignment invariant that normalized `config.yaml`, manifest `actions`, manifest metrics schema, manifest role/action schema, and emitted `metrics.csv` headers all preserve the action order from the loaded YAML config.
+
 `manifest.yaml` records run provenance and model shape:
 
 - `experiment_id`, `seed`, `ticks`, `agent_count`, and configured `actions`
