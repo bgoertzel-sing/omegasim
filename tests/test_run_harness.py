@@ -28,11 +28,13 @@ CONFIG = Path("configs/a0_smoke.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
+CONFIG_ONLY_REORDERED_ACTIONS = Path("configs/a0_config_only_reordered_actions.yaml")
 MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
 MANIFEST_ONLY_REORDERED_ACTIONS = Path("configs/a0_manifest_only_reordered_actions.yaml")
 NO_MANIFEST = Path("configs/a0_no_manifest.yaml")
 NO_MANIFEST_REORDERED_ACTIONS = Path("configs/a0_no_manifest_reordered_actions.yaml")
 FULL_OUTPUT_FIXTURES = (CONFIG, DEFAULT_OUTPUTS, REORDERED_ACTIONS)
+CONFIG_ONLY_FIXTURES = (CONFIG_ONLY, CONFIG_ONLY_REORDERED_ACTIONS)
 MANIFEST_ONLY_FIXTURES = (MANIFEST_ONLY, MANIFEST_ONLY_REORDERED_ACTIONS)
 NO_MANIFEST_FIXTURES = (NO_MANIFEST, NO_MANIFEST_REORDERED_ACTIONS)
 
@@ -51,6 +53,7 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
+    CONFIG_ONLY_REORDERED_ACTIONS: CONFIG_ONLY_ARTIFACTS,
     MANIFEST_ONLY: MANIFEST_ONLY_ARTIFACTS,
     MANIFEST_ONLY_REORDERED_ACTIONS: MANIFEST_ONLY_ARTIFACTS,
     NO_MANIFEST: NO_MANIFEST_ARTIFACTS,
@@ -140,6 +143,19 @@ def test_loads_a0_config_only_fixture() -> None:
     assert config.run.ticks == 3
     assert config.model.agent_count == 15
     assert config.model.actions == ("idle", "message", "create_task", "work_task")
+    assert config.outputs.write_manifest is False
+    assert config.outputs.write_metrics is False
+    assert config.outputs.write_events is False
+    assert config.outputs.write_summary is False
+
+
+def test_loads_a0_config_only_reordered_actions_fixture() -> None:
+    config = load_config(CONFIG_ONLY_REORDERED_ACTIONS)
+
+    assert config.run.experiment_id == "a0_config_only_reordered_actions"
+    assert config.run.ticks == 3
+    assert config.model.agent_count == 15
+    assert config.model.actions == ("work_task", "create_task", "message", "idle")
     assert config.outputs.write_manifest is False
     assert config.outputs.write_metrics is False
     assert config.outputs.write_events is False
@@ -2735,6 +2751,10 @@ def test_summary_written_artifacts_match_output_directory_contents_without_manif
     [
         (DEFAULT_OUTPUTS, _expected_artifacts(DEFAULT_OUTPUTS)),
         (CONFIG_ONLY, _expected_artifacts(CONFIG_ONLY)),
+        (
+            CONFIG_ONLY_REORDERED_ACTIONS,
+            _expected_artifacts(CONFIG_ONLY_REORDERED_ACTIONS),
+        ),
         (MANIFEST_ONLY, _expected_artifacts(MANIFEST_ONLY)),
         (
             MANIFEST_ONLY_REORDERED_ACTIONS,
@@ -4067,6 +4087,35 @@ def test_run_experiment_config_only_outputs_succeed_and_are_byte_stable(
     assert first_result.seed == second_result.seed == 17
     assert len(first_result.metrics) == len(second_result.metrics) == 3
     assert len(first_result.events) == len(second_result.events) == 45
+
+
+def test_config_only_reordered_actions_writes_only_normalized_config_with_yaml_action_order(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "config_only_reordered_actions"
+
+    result = run_experiment(CONFIG_ONLY_REORDERED_ACTIONS, seed=17, out_dir=out_dir)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    actions = _actions_from_normalized_config(normalized_config)
+
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        _expected_artifacts(CONFIG_ONLY_REORDERED_ACTIONS),
+    )
+    assert actions == ["work_task", "create_task", "message", "idle"]
+    assert result.config.model.actions == tuple(actions)
+    assert normalized_config["run"]["experiment_id"] == "a0_config_only_reordered_actions"
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+    assert not (out_dir / "manifest.yaml").exists()
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "events.csv").exists()
+    assert not (out_dir / "summary.md").exists()
 
 
 def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(

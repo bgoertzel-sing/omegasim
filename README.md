@@ -68,6 +68,12 @@ The checked-in config-only fixture can be exercised with:
 python -m ohdyn.run --config configs/a0_config_only.yaml --seed 1 --out runs/a0_config_only_seed1
 ```
 
+The checked-in config-only reordered-actions fixture writes only normalized config provenance while preserving YAML action order:
+
+```bash
+python -m ohdyn.run --config configs/a0_config_only_reordered_actions.yaml --seed 1 --out runs/a0_config_only_reordered_actions_seed1
+```
+
 The checked-in manifest-only fixture disables metrics, events, and summary output while preserving manifest provenance:
 
 ```bash
