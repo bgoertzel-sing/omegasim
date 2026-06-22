@@ -4118,6 +4118,30 @@ def test_config_only_reordered_actions_writes_only_normalized_config_with_yaml_a
     assert not (out_dir / "summary.md").exists()
 
 
+def test_run_experiment_config_only_reordered_actions_outputs_are_byte_stable(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "config_only_reordered_actions_first"
+    second = tmp_path / "config_only_reordered_actions_second"
+
+    first_result = run_experiment(CONFIG_ONLY_REORDERED_ACTIONS, seed=17, out_dir=first)
+    second_result = run_experiment(CONFIG_ONLY_REORDERED_ACTIONS, seed=17, out_dir=second)
+
+    artifacts = _expected_artifacts(CONFIG_ONLY_REORDERED_ACTIONS)
+    _assert_artifacts_match_output_directory(first, artifacts)
+    _assert_artifacts_match_output_directory(second, artifacts)
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
+    _assert_config_only_writes_normalized_config(
+        first,
+        experiment_id="a0_config_only_reordered_actions",
+        actions=["work_task", "create_task", "message", "idle"],
+    )
+    assert first_result.config.to_dict() == second_result.config.to_dict()
+    assert first_result.seed == second_result.seed == 17
+    assert len(first_result.metrics) == len(second_result.metrics) == 3
+    assert len(first_result.events) == len(second_result.events) == 45
+
+
 def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(
     tmp_path: Path,
 ) -> None:
@@ -4139,6 +4163,38 @@ def test_run_experiment_config_only_rerun_refuses_to_overwrite_existing_config(
         "write_events": False,
         "write_summary": False,
     }
+
+
+def test_run_experiment_config_only_reordered_actions_rerun_refuses_to_overwrite_existing_config(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "config_only_reordered_actions_rerun"
+
+    run_experiment(CONFIG_ONLY_REORDERED_ACTIONS, seed=17, out_dir=out_dir)
+    before = _artifact_bytes_snapshot(
+        out_dir,
+        _expected_artifacts(CONFIG_ONLY_REORDERED_ACTIONS),
+    )
+
+    with pytest.raises(FileExistsError) as exc_info:
+        run_experiment(CONFIG_ONLY_REORDERED_ACTIONS, seed=17, out_dir=out_dir)
+
+    message = str(exc_info.value)
+    assert "already contains run artifacts: config.yaml" in message
+    assert "manifest.yaml" not in message
+    assert "metrics.csv" not in message
+    assert "events.csv" not in message
+    assert "summary.md" not in message
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        _expected_artifacts(CONFIG_ONLY_REORDERED_ACTIONS),
+    )
+    _assert_output_directory_preserved(out_dir, before)
+    _assert_config_only_writes_normalized_config(
+        out_dir,
+        experiment_id="a0_config_only_reordered_actions",
+        actions=["work_task", "create_task", "message", "idle"],
+    )
 
 
 def test_run_experiment_config_only_rerun_preserves_disabled_artifact_sentinels(
