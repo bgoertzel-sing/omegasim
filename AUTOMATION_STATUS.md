@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 no-manifest reordered-action run API rerun collision coverage
-- Changed: added run API rerun coverage proving `configs/a0_no_manifest_reordered_actions.yaml` refuses to overwrite existing enabled `config.yaml`, `metrics.csv`, `events.csv`, and `summary.md` artifacts, omits disabled stale `manifest.yaml` from the collision message, preserves the first run and stale manifest byte-for-byte, and keeps normalized reordered-action provenance plus summary artifact indexing intact.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "run_api_no_manifest_reordered_actions_rerun_refuses_to_overwrite_enabled_artifacts_and_preserves_stale_manifest" -q` passed with 1 test and 373 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 374 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 no-manifest reordered-action seed-difference schema regression
+- Changed: added documented CLI coverage proving `configs/a0_no_manifest_reordered_actions.yaml` emits no `manifest.yaml`, preserves normalized reordered action order in metrics role/action fields, keeps metrics/events headers stable across seeds, records the expected no-manifest artifact index in both summaries, and produces different deterministic metrics or event streams for seeds 1 and 2.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "no_manifest_reordered_actions_seed_difference_preserves_schema_order" -q` passed with 1 test and 374 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 375 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add seed-difference regression coverage for the no-manifest reordered-action fixture to confirm distinct seeds preserve schema/order invariants while producing different deterministic event or metric streams.
+- Next step: add same-seed reproducibility coverage for the no-manifest reordered-action fixture to confirm repeated documented CLI runs preserve schema/order invariants while producing identical deterministic metrics and event streams.
