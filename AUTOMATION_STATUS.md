@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 config-only reordered-action stale-disabled API coverage
-- Changed: added `run_experiment` API coverage proving `configs/a0_config_only_reordered_actions.yaml` ignores and byte-preserves stale disabled optional artifact sentinels while writing only normalized `config.yaml` with YAML action order preserved.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "config_only_reordered_actions and stale_disabled" -q` passed with 2 tests and 366 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 368 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 config-only reordered-action CLI rerun stale-disabled coverage
+- Changed: added documented CLI rerun coverage proving `configs/a0_config_only_reordered_actions.yaml` refuses to overwrite the enabled `config.yaml` artifact while ignoring, byte-preserving, and omitting disabled optional artifact sentinels from the collision error.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "config_only_reordered_actions_rerun_preserves_disabled_artifact_sentinels" -q` passed with 1 test and 368 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 369 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add CLI rerun stale-disabled-artifact preservation coverage for the config-only reordered-action fixture.
+- Next step: add documented CLI rerun collision coverage for the config-only reordered-action fixture without disabled sentinels, matching the existing `run_experiment` API parity test.

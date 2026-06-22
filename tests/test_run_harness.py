@@ -4546,6 +4546,58 @@ def test_cli_config_only_reordered_actions_preserves_stale_disabled_artifact_sen
     )
 
 
+def test_cli_config_only_reordered_actions_rerun_preserves_disabled_artifact_sentinels(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "config_only_reordered_actions_cli_rerun_with_disabled_sentinels"
+    disabled_sentinels = {
+        "manifest.yaml": b"sentinel disabled manifest\n",
+        "metrics.csv": b"sentinel disabled metrics\n",
+        "events.csv": b"sentinel disabled events\n",
+        "summary.md": b"sentinel disabled summary\n",
+    }
+    command = [
+        sys.executable,
+        "-m",
+        "ohdyn.run",
+        "--config",
+        str(CONFIG_ONLY_REORDERED_ACTIONS),
+        "--seed",
+        "17",
+        "--out",
+        str(out_dir),
+    ]
+
+    first = subprocess.run(command, capture_output=True, text=True, check=False)
+    for artifact, content in disabled_sentinels.items():
+        (out_dir / artifact).write_bytes(content)
+    before = _artifact_bytes_snapshot(out_dir)
+
+    second = subprocess.run(command, capture_output=True, text=True, check=False)
+
+    assert first.returncode == 0
+    assert first.stderr == ""
+    assert second.returncode != 0
+    assert "error:" in second.stderr
+    assert str(out_dir) in second.stderr
+    assert "already contains run artifacts: config.yaml" in second.stderr
+    assert "manifest.yaml" not in second.stderr
+    assert "metrics.csv" not in second.stderr
+    assert "events.csv" not in second.stderr
+    assert "summary.md" not in second.stderr
+    assert "Traceback" not in second.stderr
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        [*_expected_artifacts(CONFIG_ONLY_REORDERED_ACTIONS), *disabled_sentinels],
+    )
+    _assert_output_directory_preserved(out_dir, before)
+    _assert_config_only_writes_normalized_config(
+        out_dir,
+        experiment_id="a0_config_only_reordered_actions",
+        actions=["work_task", "create_task", "message", "idle"],
+    )
+
+
 def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Path) -> None:
     out_dir = tmp_path / "config_only_cli_rerun"
     command = [
