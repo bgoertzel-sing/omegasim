@@ -2316,6 +2316,46 @@ def test_documented_cli_no_manifest_integrated_summary_aggregate_bundle_matches_
     assert summary_bundle["role_action_totals"]
 
 
+def test_run_api_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_matches_metrics(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a0_no_manifest_reordered_actions_api_summary_bundle"
+
+    result = run_experiment(NO_MANIFEST_REORDERED_ACTIONS, seed=1, out_dir=out_dir)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    actions = tuple(normalized_config["model"]["actions"])
+    summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
+    expected_metrics_fields = list(metrics_fieldnames(actions))
+    expected_role_action_fields = list(role_action_metric_fields(actions))
+
+    assert result.config.to_dict() == normalized_config
+    assert result.seed == 1
+    assert actions == ("work_task", "create_task", "message", "idle")
+    assert normalized_config["outputs"]["write_manifest"] is False
+    assert not (out_dir / "manifest.yaml").exists()
+    assert _summary_written_artifacts(summary) == _expected_artifacts(
+        NO_MANIFEST_REORDERED_ACTIONS
+    )
+    assert metrics_header == expected_metrics_fields
+    assert [
+        field for field in metrics_header if field.startswith("role_")
+    ] == expected_role_action_fields
+    assert summary_bundle == _integrated_aggregate_bundle_from_metrics(
+        metric_rows,
+        actions=actions,
+    )
+    assert summary_bundle["task_queue_pressure_and_age"]
+    assert summary_bundle["lobe_aggregates"]
+    assert summary_bundle["role_action_totals"]
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
