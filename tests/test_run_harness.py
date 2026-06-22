@@ -3249,6 +3249,58 @@ def test_run_api_no_manifest_default_actions_event_replay_reconstructs_lobes_que
     assert event_bundle == summary_bundle
 
 
+def test_run_api_no_manifest_default_actions_event_replay_bundle_reproducibility(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_default_actions_api_event_bundle_first"
+    second = tmp_path / "a0_no_manifest_default_actions_api_event_bundle_second"
+    different = tmp_path / "a0_no_manifest_default_actions_api_event_bundle_different"
+    artifacts = _expected_artifacts(NO_MANIFEST)
+
+    run_experiment(NO_MANIFEST, seed=17, out_dir=first)
+    run_experiment(NO_MANIFEST, seed=17, out_dir=second)
+    run_experiment(NO_MANIFEST, seed=18, out_dir=different)
+
+    bundles = []
+    for out_dir in [first, second, different]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "manifest.yaml").exists()
+
+        normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+        summary = (out_dir / "summary.md").read_text()
+        with (out_dir / "metrics.csv").open() as handle:
+            metric_rows = list(csv.DictReader(handle))
+        with (out_dir / "events.csv").open() as handle:
+            event_rows = list(csv.DictReader(handle))
+
+        actions = tuple(_actions_from_normalized_config(normalized_config))
+        ticks = normalized_config["run"]["ticks"]
+        roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
+        event_bundle = _integrated_aggregate_bundle_from_events(
+            event_rows,
+            ticks=ticks,
+            roles=roles,
+            actions=actions,
+        )
+
+        assert normalized_config["run"]["experiment_id"] == "a0_no_manifest"
+        assert normalized_config["outputs"]["write_manifest"] is False
+        assert actions == ("idle", "message", "create_task", "work_task")
+        assert event_bundle == _integrated_aggregate_bundle_from_metrics(
+            metric_rows,
+            actions=actions,
+        )
+        assert event_bundle == _summary_integrated_aggregate_bundle(
+            summary,
+            actions=actions,
+        )
+        bundles.append(event_bundle)
+
+    assert bundles[0]
+    assert bundles[0] == bundles[1]
+    assert bundles[0] != bundles[2]
+
+
 def test_readme_default_outputs_same_seed_preserves_full_schema_provenance(
     tmp_path: Path,
 ) -> None:
