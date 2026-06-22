@@ -4620,8 +4620,9 @@ def _lobe_dwell_runs(metrics: list[dict[str, object]]) -> dict[str, dict[str, in
 
 
 def _assert_manifest_only_preserves_full_schema_provenance(out_dir: Path) -> None:
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
-    actions = ("idle", "message", "create_task", "work_task")
+    actions = tuple(normalized_config["model"]["actions"])
 
     assert manifest["outputs"] == {
         "write_manifest": True,
