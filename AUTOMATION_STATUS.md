@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 no-manifest reordered-action documented CLI integrated summary aggregate different-seed regression
-- Changed: added documented CLI different-seed coverage proving two `configs/a0_no_manifest_reordered_actions.yaml` runs with seeds 1 and 2 emit no `manifest.yaml`, preserve reordered action order through normalized config actions, keep each integrated summary aggregate bundle equal to the emitted metrics-derived bundle, and produce different integrated bundles across seeds.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "documented_cli_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_changes_across_different_seeds" -q` passed with 1 test and 381 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 382 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 no-manifest reordered-action documented CLI integrated summary aggregate same-seed regression
+- Changed: added documented CLI same-seed coverage proving two `configs/a0_no_manifest_reordered_actions.yaml` runs with seed 17 emit no `manifest.yaml`, preserve reordered action order through normalized config actions, reproduce emitted metrics rows, keep each integrated summary aggregate bundle equal to the emitted metrics-derived bundle, and reproduce identical integrated bundles across runs.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "documented_cli_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_reproduces_across_same_seed" -q` passed with 1 test and 382 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 383 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add documented CLI same-seed reproducibility coverage for the no-manifest reordered-action integrated summary aggregate bundle.
+- Next step: add documented CLI event-replay coverage proving the no-manifest reordered-action integrated summary aggregate bundle is reconstructible from `events.csv`.
