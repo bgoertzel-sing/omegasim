@@ -5049,6 +5049,42 @@ def test_documented_cli_and_run_api_no_manifest_reordered_actions_seed1_emit_ide
     _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
 
 
+def test_documented_cli_and_run_api_config_only_seed1_emit_identical_artifacts(
+    tmp_path: Path,
+) -> None:
+    cli_out = tmp_path / "a0_config_only_cli_seed1"
+    api_out = tmp_path / "a0_config_only_api_seed1"
+    artifacts = _expected_artifacts(CONFIG_ONLY)
+
+    _run_documented_cli(CONFIG_ONLY, cli_out, seed=1)
+    result = run_experiment(CONFIG_ONLY, seed=1, out_dir=api_out)
+
+    cli_config = yaml.safe_load((cli_out / "config.yaml").read_text())
+    api_config = yaml.safe_load((api_out / "config.yaml").read_text())
+    actions = tuple(api_config["model"]["actions"])
+    expected_outputs = {
+        "write_manifest": False,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+
+    for out_dir in [cli_out, api_out]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "manifest.yaml").exists()
+        assert not (out_dir / "metrics.csv").exists()
+        assert not (out_dir / "events.csv").exists()
+        assert not (out_dir / "summary.md").exists()
+
+    assert artifacts == CONFIG_ONLY_ARTIFACTS
+    assert actions == ("idle", "message", "create_task", "work_task")
+    assert cli_config == api_config
+    assert api_config["outputs"] == expected_outputs
+    assert result.seed == 1
+    assert result.config.to_dict() == api_config
+    _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
+
+
 def test_documented_cli_and_run_api_config_only_reordered_actions_seed1_emit_identical_artifacts(
     tmp_path: Path,
 ) -> None:
