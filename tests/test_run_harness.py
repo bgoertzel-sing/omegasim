@@ -4877,6 +4877,63 @@ def test_documented_cli_default_outputs_different_seed_preserves_full_schema_ord
     assert first_metrics_text != second_metrics_text or first_events_text != second_events_text
 
 
+def test_documented_cli_no_manifest_different_seed_preserves_emitted_schema_order(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_seed1"
+    second = tmp_path / "a0_no_manifest_seed2"
+    artifacts = _expected_artifacts(NO_MANIFEST)
+
+    for seed, out_dir in [(1, first), (2, second)]:
+        _run_documented_cli(NO_MANIFEST, out_dir, seed=seed)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "manifest.yaml").exists()
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    first_metrics_text = (first / "metrics.csv").read_text()
+    second_metrics_text = (second / "metrics.csv").read_text()
+    first_events_text = (first / "events.csv").read_text()
+    second_events_text = (second / "events.csv").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metrics_header = next(csv.reader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metrics_header = next(csv.reader(handle))
+    with (first / "events.csv").open() as handle:
+        first_events_header = next(csv.reader(handle))
+    with (second / "events.csv").open() as handle:
+        second_events_header = next(csv.reader(handle))
+
+    actions = _actions_from_normalized_config(first_config)
+    expected_outputs = {
+        "write_manifest": False,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    expected_metrics_fields = list(metrics_fieldnames(tuple(actions)))
+
+    assert artifacts == NO_MANIFEST_ARTIFACTS
+    assert actions == ["idle", "message", "create_task", "work_task"]
+    assert first_config == second_config
+    assert first_config["outputs"] == expected_outputs
+    assert second_config["outputs"] == expected_outputs
+    assert first_metrics_header == second_metrics_header == expected_metrics_fields
+    assert first_events_header == second_events_header == list(EVENT_FIELDS)
+    assert _summary_written_artifacts(first_summary) == artifacts
+    assert _summary_written_artifacts(second_summary) == artifacts
+    for summary in [first_summary, second_summary]:
+        _assert_summary_records_artifact_schema_provenance(
+            summary,
+            metrics_header=first_metrics_header,
+            events_header=first_events_header,
+            actions=tuple(actions),
+        )
+    assert first_metrics_text != second_metrics_text or first_events_text != second_events_text
+
+
 def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifacts(
     tmp_path: Path,
 ) -> None:
