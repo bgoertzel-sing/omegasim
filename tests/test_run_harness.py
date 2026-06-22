@@ -53,6 +53,14 @@ def _expected_artifacts(config_path: Path) -> list[str]:
     return list(OUTPUT_FIXTURE_ARTIFACTS[config_path])
 
 
+def _actions_from_normalized_config(normalized_config: dict[str, object]) -> list[str]:
+    model = normalized_config["model"]
+    assert isinstance(model, dict)
+    actions = model["actions"]
+    assert isinstance(actions, list)
+    return actions
+
+
 def _run_documented_cli(
     config_path: Path,
     out_dir: Path,
@@ -437,7 +445,7 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
 
-    actions = ["idle", "message", "create_task", "work_task"]
+    actions = _actions_from_normalized_config(normalized_config)
     agent_ids = [f"agent_{index:02d}" for index in range(1, 16)]
     roles = {
         agent_id: BASELINE_ROLES[(index - 1) % len(BASELINE_ROLES)]
