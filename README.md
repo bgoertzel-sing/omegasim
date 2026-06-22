@@ -68,6 +68,12 @@ The checked-in config-only fixture can be exercised with:
 python -m ohdyn.run --config configs/a0_config_only.yaml --seed 1 --out runs/a0_config_only_seed1
 ```
 
+The checked-in default-output fixture omits the optional `outputs` section and therefore normalizes to all artifacts enabled:
+
+```bash
+python -m ohdyn.run --config configs/a0_default_outputs.yaml --seed 1 --out runs/a0_default_outputs_seed1
+```
+
 The checked-in config-only reordered-actions fixture writes only normalized config provenance while preserving YAML action order:
 
 ```bash

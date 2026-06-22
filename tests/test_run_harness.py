@@ -3145,6 +3145,74 @@ def test_readme_no_manifest_same_seed_preserves_emitted_schema_provenance(
     _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
+def test_readme_default_outputs_same_seed_preserves_full_schema_provenance(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_default_outputs_readme_seed1_first"
+    second = tmp_path / "a0_default_outputs_readme_seed1_second"
+    artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
+    readme = Path("README.md").read_text()
+    expected_command = (
+        "python -m ohdyn.run --config configs/a0_default_outputs.yaml "
+        "--seed 1 --out runs/a0_default_outputs_seed1"
+    )
+
+    assert expected_command in readme
+    assert artifacts == [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    for out_dir in [first, second]:
+        _run_documented_cli(DEFAULT_OUTPUTS, out_dir, seed=1)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+
+        normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+        manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+        summary = (out_dir / "summary.md").read_text()
+        with (out_dir / "metrics.csv").open() as handle:
+            metrics_header = next(csv.reader(handle))
+        with (out_dir / "events.csv").open() as handle:
+            events_header = next(csv.reader(handle))
+
+        actions = _actions_from_normalized_config(normalized_config)
+
+        assert normalized_config["run"]["experiment_id"] == "a0_default_outputs"
+        assert normalized_config["outputs"] == {
+            "write_manifest": True,
+            "write_metrics": True,
+            "write_events": True,
+            "write_summary": True,
+        }
+        assert actions == ["idle", "message", "create_task", "work_task"]
+        assert manifest["experiment_id"] == normalized_config["run"]["experiment_id"]
+        assert manifest["seed"] == 1
+        assert manifest["actions"] == actions
+        assert manifest["outputs"] == normalized_config["outputs"]
+        assert manifest["artifacts"] == artifacts
+        assert manifest["config"] == normalized_config
+        assert manifest["model"]["metrics"]["fields"] == list(
+            metrics_fieldnames(tuple(actions))
+        )
+        assert manifest["model"]["role_action_metrics"]["actions"] == actions
+        assert manifest["model"]["role_action_metrics"]["fields"] == list(
+            role_action_metric_fields(tuple(actions))
+        )
+        assert metrics_header == manifest["model"]["metrics"]["fields"]
+        assert [
+            field for field in metrics_header if field.startswith("role_")
+        ] == manifest["model"]["role_action_metrics"]["fields"]
+        assert events_header == manifest["model"]["events"]["fields"]
+        assert _summary_written_artifacts(summary) == artifacts
+        _assert_summary_schema_provenance_counts_match_manifest(summary, manifest)
+        _assert_summary_output_flags_match_config(summary, normalized_config["outputs"])
+
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:

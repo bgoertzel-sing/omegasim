@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 README-documented no-manifest default-action same-seed emitted-schema provenance regression
-- Changed: added a compact README-linked CLI regression for `configs/a0_no_manifest.yaml` that verifies the documented seed-1 command remains present, only normalized config/metrics/events/summary are emitted, manifest provenance stays absent, baseline action order is preserved across metrics and role/action schemas, summary schema provenance remains populated from emitted artifacts, and two same-seed runs are byte-identical for enabled artifacts.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_no_manifest_same_seed" -q` passed with 1 test and 393 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 394 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 README-documented default-output omitted-flags full-schema provenance regression
+- Changed: documented the `configs/a0_default_outputs.yaml` seed-1 CLI smoke command in README and added a compact README-linked CLI regression that verifies omitted output flags normalize to all artifacts enabled, baseline action order is preserved across manifest/metrics/role-action schemas, summary output-flag and schema provenance match the manifest, and two same-seed runs are byte-identical for all emitted artifacts.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_default_outputs" -q` passed with 1 test and 394 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 395 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a compact README-linked CLI regression for the default-output fixture that verifies omitted output flags normalize to all artifacts enabled while preserving baseline action order and schema provenance.
+- Next step: add a compact README-linked CLI regression for `configs/a0_smoke.yaml` that verifies the first-milestone command emits the full A0 artifact set and preserves manifest/summary schema provenance for the 100-tick baseline.
