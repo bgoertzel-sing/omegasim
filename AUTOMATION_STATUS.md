@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 README-documented manifest-only default-action same-seed manifest provenance regression
-- Changed: added a compact README-linked CLI regression for `configs/a0_manifest_only.yaml` that verifies the documented seed-1 command remains present, only `config.yaml` and `manifest.yaml` are emitted, disabled metrics/events/summary artifacts stay absent, normalized config and manifest preserve baseline action order, manifest schema provenance remains populated without CSV/summary outputs, and two same-seed runs are byte-identical for enabled artifacts.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_manifest_only_same_seed" -q` passed with 1 test and 392 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 393 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 README-documented no-manifest default-action same-seed emitted-schema provenance regression
+- Changed: added a compact README-linked CLI regression for `configs/a0_no_manifest.yaml` that verifies the documented seed-1 command remains present, only normalized config/metrics/events/summary are emitted, manifest provenance stays absent, baseline action order is preserved across metrics and role/action schemas, summary schema provenance remains populated from emitted artifacts, and two same-seed runs are byte-identical for enabled artifacts.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_no_manifest_same_seed" -q` passed with 1 test and 393 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 394 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a compact README-linked CLI regression for the no-manifest default-action fixture that verifies the documented seed-1 command writes normalized config, metrics, events, and summary without manifest provenance while preserving baseline action order.
+- Next step: add a compact README-linked CLI regression for the default-output fixture that verifies omitted output flags normalize to all artifacts enabled while preserving baseline action order and schema provenance.
