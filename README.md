@@ -98,6 +98,8 @@ The checked-in no-manifest reordered-actions fixture combines disabled manifest 
 python -m ohdyn.run --config configs/a0_no_manifest_reordered_actions.yaml --seed 1 --out runs/a0_no_manifest_reordered_actions_seed1
 ```
 
+This fixture is the current smoke path for replaying lobe state without manifest provenance: use the normalized `config.yaml` for ticks/actions and `events.csv` for per-tick action/task lifecycle replay, then compare reconstructed lobe labels, transitions, dwell runs, queue aggregates, and role/action totals against `metrics.csv` and `summary.md`.
+
 The checked-in reordered-actions fixture keeps the same baseline action vocabulary but uses YAML-defined non-default action order:
 
 ```bash

@@ -2882,6 +2882,54 @@ def test_documented_cli_no_manifest_reordered_actions_lobe_sequences_reconstruct
     )
 
 
+def test_readme_no_manifest_reordered_actions_lobe_replay_smoke_command(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a0_no_manifest_reordered_actions_readme_smoke"
+    readme = Path("README.md").read_text()
+    expected_command = (
+        "python -m ohdyn.run --config configs/a0_no_manifest_reordered_actions.yaml "
+        "--seed 1 --out runs/a0_no_manifest_reordered_actions_seed1"
+    )
+
+    assert expected_command in readme
+
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, out_dir, seed=1)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    actions = tuple(normalized_config["model"]["actions"])
+    roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
+    event_lobe_rows = _lobe_metric_rows_from_events(
+        event_rows,
+        ticks=normalized_config["run"]["ticks"],
+    )
+    summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
+
+    assert normalized_config["outputs"]["write_manifest"] is False
+    assert actions == ("work_task", "create_task", "message", "idle")
+    assert not (out_dir / "manifest.yaml").exists()
+    assert _summary_written_artifacts(summary) == _expected_artifacts(
+        NO_MANIFEST_REORDERED_ACTIONS
+    )
+    assert _lobe_label_sequence(event_lobe_rows) == _lobe_label_sequence(metric_rows)
+    assert _lobe_transition_field_sequence(event_lobe_rows) == _lobe_transition_field_sequence(
+        metric_rows
+    )
+    assert _lobe_run_state_sequence(event_lobe_rows) == _lobe_run_state_sequence(metric_rows)
+    assert summary_bundle == _integrated_aggregate_bundle_from_events(
+        event_rows,
+        ticks=normalized_config["run"]["ticks"],
+        roles=roles,
+        actions=actions,
+    )
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
