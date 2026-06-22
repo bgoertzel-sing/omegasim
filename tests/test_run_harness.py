@@ -4740,6 +4740,42 @@ def test_documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_arti
     _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
+@pytest.mark.parametrize("config_path", (DEFAULT_OUTPUTS, REORDERED_ACTIONS))
+def test_documented_cli_full_output_fixture_same_seed_reproduces_byte_identical_enabled_artifacts(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_full_output_seed17_first"
+    second = tmp_path / f"{config_path.stem}_full_output_seed17_second"
+    artifacts = _expected_artifacts(config_path)
+
+    assert artifacts == A0_FULL_ARTIFACTS
+
+    for out_dir in [first, second]:
+        _run_documented_cli(config_path, out_dir, seed=17)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    actions = _actions_from_normalized_config(first_config)
+
+    assert first_config == second_config
+    assert first_config["outputs"] == {
+        "write_manifest": True,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    assert first_manifest["experiment_id"] == first_config["run"]["experiment_id"]
+    assert second_manifest["experiment_id"] == second_config["run"]["experiment_id"]
+    assert first_manifest["actions"] == second_manifest["actions"] == actions
+    assert first_manifest["artifacts"] == second_manifest["artifacts"] == artifacts
+
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
+
+
 def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifacts(
     tmp_path: Path,
 ) -> None:
