@@ -4706,6 +4706,51 @@ def test_cli_manifest_only_reordered_actions_rerun_refuses_to_overwrite_enabled_
     assert manifest["outputs"] == normalized_config["outputs"]
 
 
+def test_run_api_manifest_only_reordered_actions_rerun_refuses_to_overwrite_enabled_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "manifest_only_reordered_actions_api_rerun"
+
+    first = run_experiment(MANIFEST_ONLY_REORDERED_ACTIONS, seed=17, out_dir=out_dir)
+    before = _artifact_bytes_snapshot(
+        out_dir,
+        _expected_artifacts(MANIFEST_ONLY_REORDERED_ACTIONS),
+    )
+
+    with pytest.raises(FileExistsError, match="already contains run artifacts") as exc_info:
+        run_experiment(MANIFEST_ONLY_REORDERED_ACTIONS, seed=17, out_dir=out_dir)
+
+    message = str(exc_info.value)
+    assert first.config.run.experiment_id == "a0_manifest_only_reordered_actions"
+    assert first.seed == 17
+    assert str(out_dir) in message
+    assert "config.yaml, manifest.yaml" in message
+    assert "metrics.csv" not in message
+    assert "events.csv" not in message
+    assert "summary.md" not in message
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        _expected_artifacts(MANIFEST_ONLY_REORDERED_ACTIONS),
+    )
+    _assert_output_directory_preserved(out_dir, before)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    actions = _actions_from_normalized_config(normalized_config)
+
+    assert actions == ["work_task", "create_task", "message", "idle"]
+    assert normalized_config["outputs"] == {
+        "write_manifest": True,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+    assert manifest["experiment_id"] == "a0_manifest_only_reordered_actions"
+    assert manifest["actions"] == actions
+    assert manifest["artifacts"] == _expected_artifacts(MANIFEST_ONLY_REORDERED_ACTIONS)
+    assert manifest["outputs"] == normalized_config["outputs"]
+
+
 def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Path) -> None:
     out_dir = tmp_path / "config_only_cli_rerun"
     command = [
