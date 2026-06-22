@@ -3288,6 +3288,51 @@ def test_readme_a0_smoke_first_milestone_command_preserves_full_schema_provenanc
     _assert_summary_output_flags_match_config(summary, normalized_config["outputs"])
 
 
+def test_readme_a0_smoke_same_seed_reproduces_full_first_milestone_artifacts(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_smoke_readme_seed1_first"
+    second = tmp_path / "a0_smoke_readme_seed1_second"
+    artifacts = _expected_artifacts(CONFIG)
+    readme = Path("README.md").read_text()
+    expected_command = (
+        "python -m ohdyn.run --config configs/a0_smoke.yaml "
+        "--seed 1 --out runs/a0_seed1"
+    )
+
+    assert expected_command in readme
+    assert artifacts == [
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "events.csv",
+        "summary.md",
+    ]
+
+    for out_dir in [first, second]:
+        _run_documented_cli(CONFIG, out_dir, seed=1)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+
+        normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+        manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+        with (out_dir / "metrics.csv").open() as handle:
+            metric_rows = list(csv.DictReader(handle))
+        with (out_dir / "events.csv").open() as handle:
+            event_rows = list(csv.DictReader(handle))
+
+        assert normalized_config["run"]["experiment_id"] == "a0_smoke"
+        assert normalized_config["run"]["ticks"] == 100
+        assert normalized_config["model"]["agent_count"] == 15
+        assert manifest["seed"] == 1
+        assert manifest["artifacts"] == artifacts
+        assert len(metric_rows) == normalized_config["run"]["ticks"]
+        assert len(event_rows) == (
+            normalized_config["run"]["ticks"] * normalized_config["model"]["agent_count"]
+        )
+
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:

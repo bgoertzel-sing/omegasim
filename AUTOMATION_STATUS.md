@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 README-documented first-milestone smoke full-schema provenance regression
-- Changed: added a compact README-linked CLI regression for `configs/a0_smoke.yaml` that verifies the first-milestone command emits the full A0 artifact set, runs the 100-tick/15-agent baseline, records 1500 per-agent events, and preserves manifest/metrics/events/summary schema provenance and output flags.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_a0_smoke" -q` passed with 1 test and 395 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 396 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 README-documented first-milestone same-seed byte reproducibility regression
+- Changed: added a compact README-linked CLI regression for `configs/a0_smoke.yaml` that runs the first-milestone command twice with seed 1, verifies the full five-artifact A0 output set, checks the 100-tick/15-agent/1500-event baseline shape, and byte-compares `config.yaml`, `manifest.yaml`, `metrics.csv`, `events.csv`, and `summary.md`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_a0_smoke_same_seed" -q` passed with 1 test and 396 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 397 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a compact README-linked same-seed reproducibility regression for `configs/a0_smoke.yaml` that byte-compares the full first-milestone artifact set for the 100-tick baseline.
+- Next step: add a compact README-linked different-seed regression for `configs/a0_smoke.yaml` that confirms the first-milestone metrics/events/summary dynamics change while schema and artifact provenance remain stable.
