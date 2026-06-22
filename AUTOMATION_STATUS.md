@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 event replay regression helper extraction
-- Changed: factored the README A0 smoke event replay assertion bundle into `_assert_full_output_event_replay_matches_metrics_and_summary`, preserving the first-milestone CLI coverage while making the top-level queue/task, queue pressure, queued-task age, role/action sequence, lobe sequence/run-state, metrics bundle, and summary bundle checks reusable for future full-output fixtures.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_a0_smoke_event_replay" -q` passed with 1 test and 398 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 399 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 full-output event replay fixture regression
+- Changed: reused `_assert_full_output_event_replay_matches_metrics_and_summary` in a parametrized documented-CLI regression for `a0_default_outputs` and `a0_reordered_actions`, so default-output normalization and YAML action-order preservation now share the same event replay checks as the README A0 smoke path.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "full_output_fixture_event_replay or readme_a0_smoke_event_replay" -q` passed with 3 tests and 398 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 401 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: reuse `_assert_full_output_event_replay_matches_metrics_and_summary` in one parametrized full-output fixture regression so the helper protects `a0_default_outputs` and `a0_reordered_actions` without duplicating replay logic.
+- Next step: add one concise full-output CLI reproducibility regression that compares byte-identical enabled artifacts for `a0_default_outputs` and `a0_reordered_actions` across the same seed.

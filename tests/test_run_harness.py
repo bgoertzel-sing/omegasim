@@ -3441,6 +3441,26 @@ def test_readme_a0_smoke_event_replay_reconstructs_first_milestone_summaries(
     )
 
 
+@pytest.mark.parametrize("config_path", (DEFAULT_OUTPUTS, REORDERED_ACTIONS))
+def test_documented_cli_full_output_fixture_event_replay_reconstructs_summaries(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    out_dir = tmp_path / f"{config_path.stem}_event_replay"
+    artifacts = _expected_artifacts(config_path)
+    expected_ticks = load_config(config_path).run.ticks
+
+    _run_documented_cli(config_path, out_dir, seed=1)
+    _assert_artifacts_match_output_directory(out_dir, artifacts)
+
+    _assert_full_output_event_replay_matches_metrics_and_summary(
+        out_dir,
+        expected_experiment_id=config_path.stem,
+        expected_ticks=expected_ticks,
+        expected_artifacts=artifacts,
+    )
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
