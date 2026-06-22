@@ -2084,6 +2084,49 @@ def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_repr
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_integrated_summary_aggregate_bundle_reproduces_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_summary_bundle_first"
+    second = tmp_path / f"{config_path.stem}_cli_summary_bundle_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_bundle = _summary_integrated_aggregate_bundle(
+        first_summary,
+        actions=tuple(first_manifest["actions"]),
+    )
+    second_bundle = _summary_integrated_aggregate_bundle(
+        second_summary,
+        actions=tuple(second_manifest["actions"]),
+    )
+
+    assert first_bundle == _integrated_aggregate_bundle_from_metrics(
+        first_metric_rows,
+        actions=tuple(first_manifest["actions"]),
+    )
+    assert second_bundle == _integrated_aggregate_bundle_from_metrics(
+        second_metric_rows,
+        actions=tuple(second_manifest["actions"]),
+    )
+    assert first_bundle["task_queue_pressure_and_age"]
+    assert first_bundle["lobe_aggregates"]
+    assert first_bundle["role_action_totals"]
+    assert first_bundle == second_bundle
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -5687,6 +5730,52 @@ def _summary_task_queue_pressure_and_age_aggregate_tuple(
         "task_queue_totals": _summary_task_and_queue_totals(summary),
         "queue_pressure_totals": _summary_queue_pressure_totals(summary),
         "queued_task_age_aggregates": _summary_queued_task_age_aggregates(summary),
+    }
+
+
+def _integrated_aggregate_bundle_from_metrics(
+    metric_rows: list[dict[str, str]],
+    *,
+    actions: tuple[str, ...],
+) -> dict[str, object]:
+    return {
+        "task_queue_pressure_and_age": (
+            _task_queue_pressure_and_age_aggregate_tuple_from_metrics(metric_rows)
+        ),
+        "lobe_aggregates": {
+            "totals": dict(
+                sorted(Counter(row["baseline_lobe_label"] for row in metric_rows).items())
+            ),
+            "transitions": _lobe_transition_totals_from_adjacent_labels(metric_rows),
+            "dwell_runs": _lobe_dwell_runs(metric_rows),
+        },
+        "role_action_totals": _role_action_totals_from_metrics(metric_rows, actions),
+    }
+
+
+def _summary_integrated_aggregate_bundle(
+    summary: str,
+    *,
+    actions: tuple[str, ...],
+) -> dict[str, object]:
+    role_action_totals = _summary_role_action_totals(summary)
+
+    return {
+        "task_queue_pressure_and_age": (
+            _summary_task_queue_pressure_and_age_aggregate_tuple(summary)
+        ),
+        "lobe_aggregates": {
+            "totals": _summary_lobe_totals(summary),
+            "transitions": _summary_lobe_transition_totals(summary),
+            "dwell_runs": _summary_lobe_dwell_runs(summary),
+        },
+        "role_action_totals": {
+            role: {
+                action: role_action_totals[role][action]
+                for action in actions
+            }
+            for role in BASELINE_ROLES
+        },
     }
 
 
