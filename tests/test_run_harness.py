@@ -2807,6 +2807,81 @@ def test_documented_cli_no_manifest_reordered_actions_per_tick_sequences_reconst
     )
 
 
+def test_documented_cli_no_manifest_reordered_actions_lobe_sequences_reconstruct_from_events(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_reordered_actions_cli_lobe_sequences_seed1"
+    second = tmp_path / "a0_no_manifest_reordered_actions_cli_lobe_sequences_seed2"
+
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, first, seed=1)
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, second, seed=2)
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_event_lobe_rows = _lobe_metric_rows_from_events(
+        first_event_rows,
+        ticks=first_config["run"]["ticks"],
+    )
+    second_event_lobe_rows = _lobe_metric_rows_from_events(
+        second_event_rows,
+        ticks=second_config["run"]["ticks"],
+    )
+
+    assert first_config == second_config
+    assert tuple(first_config["model"]["actions"]) == (
+        "work_task",
+        "create_task",
+        "message",
+        "idle",
+    )
+    assert first_config["outputs"]["write_manifest"] is False
+    assert second_config["outputs"]["write_manifest"] is False
+    assert not (first / "manifest.yaml").exists()
+    assert not (second / "manifest.yaml").exists()
+    assert set(_lobe_label_sequence(first_event_lobe_rows)) <= set(BASELINE_LOBE_LABELS)
+    assert set(_lobe_label_sequence(second_event_lobe_rows)) <= set(BASELINE_LOBE_LABELS)
+    assert _lobe_label_sequence(first_event_lobe_rows) == _lobe_label_sequence(
+        first_metric_rows
+    )
+    assert _lobe_label_sequence(second_event_lobe_rows) == _lobe_label_sequence(
+        second_metric_rows
+    )
+    assert _lobe_transition_field_sequence(
+        first_event_lobe_rows
+    ) == _lobe_transition_field_sequence(first_metric_rows)
+    assert _lobe_transition_field_sequence(
+        second_event_lobe_rows
+    ) == _lobe_transition_field_sequence(second_metric_rows)
+    assert _lobe_run_state_sequence(first_event_lobe_rows) == _lobe_run_state_sequence(
+        first_metric_rows
+    )
+    assert _lobe_run_state_sequence(second_event_lobe_rows) == _lobe_run_state_sequence(
+        second_metric_rows
+    )
+    _assert_lobe_transitions_match_adjacent_labels(first_event_lobe_rows)
+    _assert_lobe_transitions_match_adjacent_labels(second_event_lobe_rows)
+    _assert_lobe_run_state_matches_recomputed_dwell_runs(first_event_lobe_rows)
+    _assert_lobe_run_state_matches_recomputed_dwell_runs(second_event_lobe_rows)
+    assert (
+        _lobe_label_sequence(first_event_lobe_rows),
+        _lobe_transition_field_sequence(first_event_lobe_rows),
+        _lobe_run_state_sequence(first_event_lobe_rows),
+    ) != (
+        _lobe_label_sequence(second_event_lobe_rows),
+        _lobe_transition_field_sequence(second_event_lobe_rows),
+        _lobe_run_state_sequence(second_event_lobe_rows),
+    )
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
@@ -7783,6 +7858,9 @@ def _lobe_metric_rows_from_events(
 
     rows: list[dict[str, str]] = []
     queue_depth_start = 0
+    previous_label = ""
+    run_id = 0
+    current_run_length = 0
     for tick in range(ticks):
         action_counts = Counter(event["action"] for event in events_by_tick[tick])
         completed_tick = sum(
@@ -7814,8 +7892,32 @@ def _lobe_metric_rows_from_events(
                 "idle": "low_activity",
             }[dominant_action]
 
-        rows.append({"baseline_lobe_label": label})
+        if label == previous_label:
+            current_run_length += 1
+        else:
+            run_id += 1
+            current_run_length = 1
+        if not previous_label:
+            transition = "start"
+        elif previous_label == label:
+            transition = "stable"
+        else:
+            transition = f"{previous_label}->{label}"
+
+        rows.append(
+            {
+                "baseline_lobe_label": label,
+                "baseline_lobe_previous_label": previous_label,
+                "baseline_lobe_transition": transition,
+                "baseline_lobe_transition_tick": str(
+                    int(bool(previous_label) and previous_label != label)
+                ),
+                "baseline_lobe_run_id": str(run_id),
+                "baseline_lobe_current_run_length": str(current_run_length),
+            }
+        )
         queue_depth_start = queue_depth_end
+        previous_label = label
 
     return rows
 
