@@ -5052,6 +5052,75 @@ def test_documented_cli_and_run_api_default_outputs_seed1_emit_identical_artifac
     _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
 
 
+def test_documented_cli_and_run_api_smoke_seed1_emit_identical_artifacts(
+    tmp_path: Path,
+) -> None:
+    cli_out = tmp_path / "a0_smoke_cli_seed1"
+    api_out = tmp_path / "a0_smoke_api_seed1"
+    artifacts = _expected_artifacts(CONFIG)
+
+    _run_documented_cli(CONFIG, cli_out, seed=1)
+    result = run_experiment(CONFIG, seed=1, out_dir=api_out)
+
+    cli_config = yaml.safe_load((cli_out / "config.yaml").read_text())
+    api_config = yaml.safe_load((api_out / "config.yaml").read_text())
+    cli_manifest = yaml.safe_load((cli_out / "manifest.yaml").read_text())
+    api_manifest = yaml.safe_load((api_out / "manifest.yaml").read_text())
+    with (api_out / "metrics.csv").open() as handle:
+        api_metrics_rows = list(csv.reader(handle))
+    with (api_out / "events.csv").open() as handle:
+        api_events_rows = list(csv.reader(handle))
+    api_metrics_header = api_metrics_rows[0]
+    api_events_header = api_events_rows[0]
+    api_summary = (api_out / "summary.md").read_text()
+    actions = tuple(api_config["model"]["actions"])
+    expected_outputs = {
+        "write_manifest": True,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    expected_metrics_fields = list(metrics_fieldnames(actions))
+    expected_role_action_fields = list(role_action_metric_fields(actions))
+
+    for out_dir in [cli_out, api_out]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+
+    assert artifacts == A0_FULL_ARTIFACTS
+    assert actions == ("idle", "message", "create_task", "work_task")
+    assert cli_config == api_config
+    assert cli_manifest == api_manifest
+    assert api_config["run"]["experiment_id"] == "a0_smoke"
+    assert api_config["run"]["ticks"] == 100
+    assert api_config["outputs"] == expected_outputs
+    assert api_manifest["experiment_id"] == "a0_smoke"
+    assert api_manifest["seed"] == 1
+    assert api_manifest["ticks"] == 100
+    assert api_manifest["outputs"] == expected_outputs
+    assert api_manifest["artifacts"] == artifacts
+    assert api_manifest["actions"] == list(actions)
+    assert api_manifest["config"] == api_config
+    assert api_manifest["model"]["metrics"]["fields"] == expected_metrics_fields
+    assert api_manifest["model"]["role_action_metrics"]["actions"] == list(actions)
+    assert api_manifest["model"]["role_action_metrics"]["fields"] == expected_role_action_fields
+    assert len(api_metrics_rows) == 101
+    assert len(api_events_rows) == 1501
+    assert len(result.metrics) == 100
+    assert len(result.events) == 1500
+    assert api_metrics_header == expected_metrics_fields
+    assert api_events_header == list(EVENT_FIELDS)
+    assert _summary_written_artifacts(api_summary) == artifacts
+    _assert_summary_records_artifact_schema_provenance(
+        api_summary,
+        metrics_header=api_metrics_header,
+        events_header=api_events_header,
+        actions=actions,
+    )
+    assert result.seed == 1
+    assert result.config.to_dict() == api_config
+    _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
+
+
 def test_documented_cli_and_run_api_reordered_actions_seed1_emit_identical_artifacts(
     tmp_path: Path,
 ) -> None:
