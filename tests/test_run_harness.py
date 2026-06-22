@@ -2473,6 +2473,67 @@ def test_run_api_no_manifest_reordered_actions_same_seed_reproduces_schema_order
     _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
+def test_run_api_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_reordered_actions_api_seed1"
+    second = tmp_path / "a0_no_manifest_reordered_actions_api_seed2"
+    artifacts = _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS)
+
+    first_result = run_experiment(NO_MANIFEST_REORDERED_ACTIONS, seed=1, out_dir=first)
+    second_result = run_experiment(NO_MANIFEST_REORDERED_ACTIONS, seed=2, out_dir=second)
+
+    for out_dir in [first, second]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "manifest.yaml").exists()
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    first_metrics_text = (first / "metrics.csv").read_text()
+    second_metrics_text = (second / "metrics.csv").read_text()
+    first_events_text = (first / "events.csv").read_text()
+    second_events_text = (second / "events.csv").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metrics_header = next(csv.reader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metrics_header = next(csv.reader(handle))
+    with (first / "events.csv").open() as handle:
+        first_events_header = next(csv.reader(handle))
+    with (second / "events.csv").open() as handle:
+        second_events_header = next(csv.reader(handle))
+
+    actions = tuple(first_config["model"]["actions"])
+    expected_metrics_fields = list(metrics_fieldnames(actions))
+    expected_role_action_fields = list(role_action_metric_fields(actions))
+
+    assert first_result.config.to_dict() == second_result.config.to_dict()
+    assert first_result.seed == 1
+    assert second_result.seed == 2
+    assert actions == ("work_task", "create_task", "message", "idle")
+    assert second_config["model"]["actions"] == list(actions)
+    assert first_config["outputs"]["write_manifest"] is False
+    assert second_config["outputs"]["write_manifest"] is False
+    assert _summary_written_artifacts(first_summary) == artifacts
+    assert _summary_written_artifacts(second_summary) == artifacts
+    assert first_metrics_header == expected_metrics_fields
+    assert second_metrics_header == expected_metrics_fields
+    assert first_events_header == list(EVENT_FIELDS)
+    assert second_events_header == list(EVENT_FIELDS)
+    assert [
+        field for field in first_metrics_header if field.startswith("role_")
+    ] == expected_role_action_fields
+    assert [
+        field for field in second_metrics_header if field.startswith("role_")
+    ] == expected_role_action_fields
+    assert (
+        first_result.metrics != second_result.metrics
+        or first_result.events != second_result.events
+    )
+    assert first_metrics_text != second_metrics_text or first_events_text != second_events_text
+
+
 @pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
