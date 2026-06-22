@@ -3433,65 +3433,11 @@ def test_readme_a0_smoke_event_replay_reconstructs_first_milestone_summaries(
     _run_documented_cli(CONFIG, out_dir, seed=1)
     _assert_artifacts_match_output_directory(out_dir, artifacts)
 
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
-    summary = (out_dir / "summary.md").read_text()
-    with (out_dir / "metrics.csv").open() as handle:
-        metric_rows = list(csv.DictReader(handle))
-    with (out_dir / "events.csv").open() as handle:
-        event_rows = list(csv.DictReader(handle))
-
-    actions = tuple(_actions_from_normalized_config(normalized_config))
-    event_lobe_rows = _lobe_metric_rows_from_events(
-        event_rows,
-        ticks=normalized_config["run"]["ticks"],
-    )
-    event_bundle = _integrated_aggregate_bundle_from_events(
-        event_rows,
-        ticks=normalized_config["run"]["ticks"],
-        roles=manifest["model"]["roles"],
-        actions=actions,
-    )
-
-    assert normalized_config["run"]["experiment_id"] == "a0_smoke"
-    assert normalized_config["run"]["ticks"] == 100
-    assert normalized_config["model"]["agent_count"] == 15
-    assert manifest["config"] == normalized_config
-    assert manifest["actions"] == list(actions)
-    assert manifest["artifacts"] == artifacts
-    assert len(event_rows) == (
-        normalized_config["run"]["ticks"] * normalized_config["model"]["agent_count"]
-    )
-    assert _top_level_metric_sequence_from_events(
-        event_rows,
-        ticks=normalized_config["run"]["ticks"],
-    ) == _top_level_metric_sequence(metric_rows)
-    assert _queue_pressure_metric_sequence_from_events(
-        event_rows,
-        ticks=normalized_config["run"]["ticks"],
-    ) == _queue_pressure_metric_sequence(metric_rows)
-    assert _queued_task_age_metric_sequence_from_events(
-        event_rows,
-        ticks=normalized_config["run"]["ticks"],
-    ) == _queued_task_age_metric_sequence(metric_rows)
-    assert _role_action_metric_sequence_from_events(
-        event_rows,
-        ticks=normalized_config["run"]["ticks"],
-        manifest_roles=manifest["model"]["roles"],
-        actions=actions,
-    ) == _role_action_metric_sequence(metric_rows, actions)
-    assert _lobe_label_sequence(event_lobe_rows) == _lobe_label_sequence(metric_rows)
-    assert _lobe_transition_field_sequence(event_lobe_rows) == _lobe_transition_field_sequence(
-        metric_rows
-    )
-    assert _lobe_run_state_sequence(event_lobe_rows) == _lobe_run_state_sequence(metric_rows)
-    assert event_bundle == _integrated_aggregate_bundle_from_metrics(
-        metric_rows,
-        actions=actions,
-    )
-    assert event_bundle == _summary_integrated_aggregate_bundle(
-        summary,
-        actions=actions,
+    _assert_full_output_event_replay_matches_metrics_and_summary(
+        out_dir,
+        expected_experiment_id="a0_smoke",
+        expected_ticks=100,
+        expected_artifacts=artifacts,
     )
 
 
@@ -6941,6 +6887,74 @@ def _baseline_roles_for_agent_count(agent_count: int) -> dict[str, str]:
         f"agent_{index:02d}": BASELINE_ROLES[(index - 1) % len(BASELINE_ROLES)]
         for index in range(1, agent_count + 1)
     }
+
+
+def _assert_full_output_event_replay_matches_metrics_and_summary(
+    out_dir: Path,
+    *,
+    expected_experiment_id: str,
+    expected_ticks: int,
+    expected_artifacts: list[str],
+) -> None:
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    actions = tuple(_actions_from_normalized_config(normalized_config))
+    ticks = normalized_config["run"]["ticks"]
+    agent_count = normalized_config["model"]["agent_count"]
+    roles = manifest["model"]["roles"]
+    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
+    event_bundle = _integrated_aggregate_bundle_from_events(
+        event_rows,
+        ticks=ticks,
+        roles=roles,
+        actions=actions,
+    )
+
+    assert normalized_config["run"]["experiment_id"] == expected_experiment_id
+    assert ticks == expected_ticks
+    assert agent_count == 15
+    assert manifest["config"] == normalized_config
+    assert manifest["actions"] == list(actions)
+    assert manifest["artifacts"] == expected_artifacts
+    assert len(metric_rows) == ticks
+    assert len(event_rows) == ticks * agent_count
+    assert _top_level_metric_sequence_from_events(
+        event_rows,
+        ticks=ticks,
+    ) == _top_level_metric_sequence(metric_rows)
+    assert _queue_pressure_metric_sequence_from_events(
+        event_rows,
+        ticks=ticks,
+    ) == _queue_pressure_metric_sequence(metric_rows)
+    assert _queued_task_age_metric_sequence_from_events(
+        event_rows,
+        ticks=ticks,
+    ) == _queued_task_age_metric_sequence(metric_rows)
+    assert _role_action_metric_sequence_from_events(
+        event_rows,
+        ticks=ticks,
+        manifest_roles=roles,
+        actions=actions,
+    ) == _role_action_metric_sequence(metric_rows, actions)
+    assert _lobe_label_sequence(event_lobe_rows) == _lobe_label_sequence(metric_rows)
+    assert _lobe_transition_field_sequence(event_lobe_rows) == _lobe_transition_field_sequence(
+        metric_rows
+    )
+    assert _lobe_run_state_sequence(event_lobe_rows) == _lobe_run_state_sequence(metric_rows)
+    assert event_bundle == _integrated_aggregate_bundle_from_metrics(
+        metric_rows,
+        actions=actions,
+    )
+    assert event_bundle == _summary_integrated_aggregate_bundle(
+        summary,
+        actions=actions,
+    )
 
 
 def _assert_manifest_bus_counts_match_summary_and_metrics_row(
