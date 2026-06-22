@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 no-manifest reordered-action run API summary aggregate parity regression
-- Changed: added run API coverage proving `configs/a0_no_manifest_reordered_actions.yaml` emits no `manifest.yaml`, preserves reordered action order in metrics role/action fields, records the expected no-manifest artifact index in `summary.md`, and keeps the integrated summary aggregate bundle equal to the emitted metrics-derived bundle.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "run_api_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_matches_metrics" -q` passed with 1 test and 378 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 379 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 no-manifest reordered-action run API integrated summary aggregate reproducibility regression
+- Changed: added run API same-seed coverage proving two `configs/a0_no_manifest_reordered_actions.yaml` runs with seed 17 emit no `manifest.yaml`, preserve reordered action order, return identical metrics/events, keep each integrated summary aggregate bundle equal to the emitted metrics-derived bundle, and reproduce that bundle exactly across runs.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "run_api_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_reproduces_across_same_seed" -q` passed with 1 test and 379 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 380 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add run API same-seed reproducibility coverage for the no-manifest reordered-action integrated summary aggregate bundle.
+- Next step: add run API different-seed coverage for the no-manifest reordered-action integrated summary aggregate bundle.
