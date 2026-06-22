@@ -30,7 +30,9 @@ REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
 MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
 NO_MANIFEST = Path("configs/a0_no_manifest.yaml")
+NO_MANIFEST_REORDERED_ACTIONS = Path("configs/a0_no_manifest_reordered_actions.yaml")
 FULL_OUTPUT_FIXTURES = (CONFIG, DEFAULT_OUTPUTS, REORDERED_ACTIONS)
+NO_MANIFEST_FIXTURES = (NO_MANIFEST, NO_MANIFEST_REORDERED_ACTIONS)
 
 A0_FULL_ARTIFACTS = [
     "config.yaml",
@@ -49,6 +51,7 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
     MANIFEST_ONLY: MANIFEST_ONLY_ARTIFACTS,
     NO_MANIFEST: NO_MANIFEST_ARTIFACTS,
+    NO_MANIFEST_REORDERED_ACTIONS: NO_MANIFEST_ARTIFACTS,
 }
 
 
@@ -160,6 +163,19 @@ def test_loads_a0_no_manifest_fixture() -> None:
     assert config.run.ticks == 3
     assert config.model.agent_count == 15
     assert config.model.actions == ("idle", "message", "create_task", "work_task")
+    assert config.outputs.write_manifest is False
+    assert config.outputs.write_metrics is True
+    assert config.outputs.write_events is True
+    assert config.outputs.write_summary is True
+
+
+def test_loads_a0_no_manifest_reordered_actions_fixture() -> None:
+    config = load_config(NO_MANIFEST_REORDERED_ACTIONS)
+
+    assert config.run.experiment_id == "a0_no_manifest_reordered_actions"
+    assert config.run.ticks == 3
+    assert config.model.agent_count == 15
+    assert config.model.actions == ("work_task", "create_task", "message", "idle")
     assert config.outputs.write_manifest is False
     assert config.outputs.write_metrics is True
     assert config.outputs.write_events is True
@@ -2231,24 +2247,34 @@ def test_documented_cli_integrated_summary_aggregate_bundle_changes_across_diffe
     assert first_bundle != second_bundle
 
 
+@pytest.mark.parametrize("config_path", NO_MANIFEST_FIXTURES)
 def test_documented_cli_no_manifest_integrated_summary_aggregate_bundle_matches_metrics_with_config_actions(
     tmp_path: Path,
+    config_path: Path,
 ) -> None:
-    out_dir = tmp_path / "a0_no_manifest_cli_summary_bundle"
+    out_dir = tmp_path / f"{config_path.stem}_cli_summary_bundle"
 
-    _run_documented_cli(NO_MANIFEST, out_dir)
+    _run_documented_cli(config_path, out_dir)
 
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
     with (out_dir / "metrics.csv").open() as handle:
         metric_rows = list(csv.DictReader(handle))
 
     actions = tuple(normalized_config["model"]["actions"])
     summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
+    expected_metrics_fields = list(metrics_fieldnames(actions))
+    expected_role_action_fields = list(role_action_metric_fields(actions))
 
     assert not (out_dir / "manifest.yaml").exists()
-    assert _summary_written_artifacts(summary) == _expected_artifacts(NO_MANIFEST)
+    assert _summary_written_artifacts(summary) == _expected_artifacts(config_path)
     assert normalized_config["outputs"]["write_manifest"] is False
+    assert metrics_header == expected_metrics_fields
+    assert [
+        field for field in metrics_header if field.startswith("role_")
+    ] == expected_role_action_fields
     assert summary_bundle == _integrated_aggregate_bundle_from_metrics(
         metric_rows,
         actions=actions,
@@ -2695,6 +2721,10 @@ def test_summary_written_artifacts_match_output_directory_contents_without_manif
         (CONFIG_ONLY, _expected_artifacts(CONFIG_ONLY)),
         (MANIFEST_ONLY, _expected_artifacts(MANIFEST_ONLY)),
         (NO_MANIFEST, _expected_artifacts(NO_MANIFEST)),
+        (
+            NO_MANIFEST_REORDERED_ACTIONS,
+            _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS),
+        ),
     ],
 )
 def test_artifact_indexes_match_directory_contents_across_output_flag_fixtures(
@@ -2954,12 +2984,14 @@ def test_documented_cli_no_manifest_summary_artifacts_match_output_directory_con
     _assert_no_manifest_writes_enabled_artifacts(out_dir)
 
 
+@pytest.mark.parametrize("config_path", NO_MANIFEST_FIXTURES)
 def test_documented_cli_no_manifest_emitted_artifacts_preserve_schema_provenance(
     tmp_path: Path,
+    config_path: Path,
 ) -> None:
-    out_dir = tmp_path / "no_manifest_cli_schema"
+    out_dir = tmp_path / f"{config_path.stem}_cli_schema"
 
-    _run_documented_cli(NO_MANIFEST, out_dir)
+    _run_documented_cli(config_path, out_dir)
 
     _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(out_dir)
 
@@ -3044,14 +3076,16 @@ def test_run_api_no_manifest_preserves_stale_disabled_manifest_sentinel(
         assert len(list(csv.DictReader(handle))) == 45
 
 
+@pytest.mark.parametrize("config_path", NO_MANIFEST_FIXTURES)
 def test_run_api_no_manifest_emitted_artifacts_preserve_schema_provenance(
     tmp_path: Path,
+    config_path: Path,
 ) -> None:
-    out_dir = tmp_path / "no_manifest_api_schema"
+    out_dir = tmp_path / f"{config_path.stem}_api_schema"
 
-    result = run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
+    result = run_experiment(config_path, seed=1, out_dir=out_dir)
 
-    assert result.config.run.experiment_id == "a0_no_manifest"
+    assert result.config.run.experiment_id == load_config(config_path).run.experiment_id
     assert result.seed == 1
     assert result.config.outputs.write_manifest is False
 

@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 reordered action-order full-output fixture coverage
-- Changed: added a shared `FULL_OUTPUT_FIXTURES` test tuple containing `configs/a0_smoke.yaml`, `configs/a0_default_outputs.yaml`, and `configs/a0_reordered_actions.yaml`; updated full-output manifest, summary, CLI, reproducibility, event replay, lobe, queue, and role/action parametrizations to cover non-default action order; adjusted role/action assertions to derive action order from manifests and made the different-seed lobe run-state assertion label-aware for short fixtures.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "full_output_fixtures or reordered_action or reordered_actions" -q` passed with 230 tests and 120 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 350 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 no-manifest reordered action-order fixture coverage
+- Changed: added `configs/a0_no_manifest_reordered_actions.yaml`; added `NO_MANIFEST_REORDERED_ACTIONS` and `NO_MANIFEST_FIXTURES` test coverage; extended no-manifest schema-provenance and integrated-summary bundle checks to derive action order from normalized `config.yaml` and assert emitted `metrics.csv` role/action field order without relying on `manifest.yaml`; documented the new fixture in `README.md`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "no_manifest or reordered_actions" -q` passed with 21 tests and 334 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 355 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add a no-manifest reordered-action fixture so metrics and summary schema/order checks also cover non-default action order when `manifest.yaml` is disabled.
+- Next step: add a manifest-only reordered-action fixture so manifest schema/order provenance is covered for non-default action order when metrics, events, and summary are disabled.

@@ -80,6 +80,12 @@ The checked-in no-manifest fixture writes metrics, events, and summary output wi
 python -m ohdyn.run --config configs/a0_no_manifest.yaml --seed 1 --out runs/a0_no_manifest_seed1
 ```
 
+The checked-in no-manifest reordered-actions fixture combines disabled manifest output with non-default action order:
+
+```bash
+python -m ohdyn.run --config configs/a0_no_manifest_reordered_actions.yaml --seed 1 --out runs/a0_no_manifest_reordered_actions_seed1
+```
+
 The checked-in reordered-actions fixture keeps the same baseline action vocabulary but uses YAML-defined non-default action order:
 
 ```bash
