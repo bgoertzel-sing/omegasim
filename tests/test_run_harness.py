@@ -2127,6 +2127,52 @@ def test_documented_cli_integrated_summary_aggregate_bundle_reproduces_across_sa
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_integrated_summary_aggregate_bundle_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_summary_bundle_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_summary_bundle_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_bundle = _summary_integrated_aggregate_bundle(
+        first_summary,
+        actions=tuple(first_manifest["actions"]),
+    )
+    second_bundle = _summary_integrated_aggregate_bundle(
+        second_summary,
+        actions=tuple(second_manifest["actions"]),
+    )
+
+    assert first_bundle == _integrated_aggregate_bundle_from_metrics(
+        first_metric_rows,
+        actions=tuple(first_manifest["actions"]),
+    )
+    assert second_bundle == _integrated_aggregate_bundle_from_metrics(
+        second_metric_rows,
+        actions=tuple(second_manifest["actions"]),
+    )
+    assert first_bundle["task_queue_pressure_and_age"]
+    assert second_bundle["task_queue_pressure_and_age"]
+    assert first_bundle["lobe_aggregates"]
+    assert second_bundle["lobe_aggregates"]
+    assert first_bundle["role_action_totals"]
+    assert second_bundle["role_action_totals"]
+    assert first_bundle != second_bundle
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
