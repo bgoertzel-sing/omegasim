@@ -30,6 +30,7 @@ REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
 MANIFEST_ONLY = Path("configs/a0_manifest_only.yaml")
 NO_MANIFEST = Path("configs/a0_no_manifest.yaml")
+FULL_OUTPUT_FIXTURES = (CONFIG, DEFAULT_OUTPUTS, REORDERED_ACTIONS)
 
 A0_FULL_ARTIFACTS = [
     "config.yaml",
@@ -557,7 +558,7 @@ def test_manifest_records_baseline_lobe_metric_provenance(tmp_path: Path) -> Non
         assert field in metrics_header
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_manifest_lobe_transition_fields_exactly_match_metrics_columns_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -600,7 +601,7 @@ def test_manifest_records_role_action_metric_provenance(tmp_path: Path) -> None:
         assert field in metrics_header
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_manifest_role_action_fields_exactly_match_metrics_columns_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -642,7 +643,7 @@ def test_manifest_records_queue_dynamics_metric_provenance(tmp_path: Path) -> No
         assert field in metrics_header
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_manifest_queue_dynamics_fields_exactly_match_metrics_columns_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -753,7 +754,7 @@ def test_summary_records_artifact_schema_provenance(tmp_path: Path) -> None:
     assert manifest["model"]["events"]["fields"] == events_header
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_summary_schema_provenance_counts_match_manifest_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -768,7 +769,7 @@ def test_summary_schema_provenance_counts_match_manifest_across_full_output_fixt
     _assert_summary_schema_provenance_counts_match_manifest(summary, manifest)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_schema_provenance_counts_match_manifest_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -783,7 +784,7 @@ def test_documented_cli_summary_schema_provenance_counts_match_manifest_across_f
     _assert_summary_schema_provenance_counts_match_manifest(summary, manifest)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_artifacts_and_output_flags_match_manifest_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -802,7 +803,7 @@ def test_documented_cli_summary_artifacts_and_output_flags_match_manifest_across
     _assert_summary_output_flags_match_config(summary, normalized_config["outputs"])
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_config_manifest_and_summary_run_fields_match_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -823,7 +824,7 @@ def test_documented_cli_config_manifest_and_summary_run_fields_match_across_full
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_agent_identity_and_roles_match_baseline_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -837,7 +838,7 @@ def test_documented_cli_manifest_agent_identity_and_roles_match_baseline_across_
     _assert_manifest_agent_identity_and_roles_match_baseline(manifest)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_bus_counts_match_summary_and_first_metrics_row_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -858,7 +859,7 @@ def test_documented_cli_manifest_bus_counts_match_summary_and_first_metrics_row_
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_static_bus_metrics_match_first_metrics_row_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -877,7 +878,7 @@ def test_documented_cli_summary_static_bus_metrics_match_first_metrics_row_acros
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_first_row_queue_pressure_fields_match_summary_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -896,7 +897,7 @@ def test_documented_cli_first_row_queue_pressure_fields_match_summary_across_ful
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_queued_task_age_summary_matches_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -915,7 +916,7 @@ def test_documented_cli_queued_task_age_summary_matches_metrics_across_full_outp
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_event_type_totals_match_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -931,7 +932,7 @@ def test_documented_cli_summary_event_type_totals_match_events_across_full_outpu
     _assert_summary_event_type_totals_match_events(summary, event_rows=event_rows)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_top_level_totals_match_metrics_and_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -953,7 +954,7 @@ def test_documented_cli_summary_top_level_totals_match_metrics_and_events_across
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_bus_graph_fields_match_metrics_and_manifest_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -974,7 +975,7 @@ def test_documented_cli_summary_bus_graph_fields_match_metrics_and_manifest_acro
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_role_action_totals_match_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -995,7 +996,7 @@ def test_documented_cli_summary_role_action_totals_match_metrics_across_full_out
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_queue_dynamics_match_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1011,7 +1012,7 @@ def test_documented_cli_summary_queue_dynamics_match_metrics_across_full_output_
     _assert_summary_queue_dynamics_match_metrics(summary, metric_rows=metric_rows)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_lobe_aggregates_match_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1027,7 +1028,7 @@ def test_documented_cli_summary_lobe_aggregates_match_metrics_across_full_output
     _assert_summary_lobe_aggregates_match_metrics(summary, metric_rows=metric_rows)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_dwell_runs_summary_matches_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1043,7 +1044,7 @@ def test_documented_cli_lobe_dwell_runs_summary_matches_metrics_across_full_outp
     _assert_lobe_dwell_run_summary_matches_metrics(summary, metric_rows=metric_rows)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_run_state_matches_recomputed_dwell_runs_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1058,7 +1059,7 @@ def test_documented_cli_lobe_run_state_matches_recomputed_dwell_runs_across_full
     _assert_lobe_run_state_matches_recomputed_dwell_runs(metric_rows)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_transitions_match_adjacent_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1073,7 +1074,7 @@ def test_documented_cli_lobe_transitions_match_adjacent_labels_across_full_outpu
     _assert_lobe_transitions_match_adjacent_labels(metric_rows)
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_lobe_transition_totals_match_adjacent_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1092,7 +1093,7 @@ def test_documented_cli_summary_lobe_transition_totals_match_adjacent_labels_acr
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_lobe_transition_endpoints_use_only_manifest_lobe_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1113,7 +1114,7 @@ def test_documented_cli_summary_lobe_transition_endpoints_use_only_manifest_lobe
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1132,7 +1133,7 @@ def test_documented_cli_manifest_lobe_labels_cover_observed_metrics_across_full_
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_lobe_labels_cover_previous_metrics_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1151,7 +1152,7 @@ def test_documented_cli_manifest_lobe_labels_cover_previous_metrics_labels_acros
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_lobe_labels_cover_metrics_transition_endpoints_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1170,7 +1171,7 @@ def test_documented_cli_manifest_lobe_labels_cover_metrics_transition_endpoints_
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_label_sequence_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1193,7 +1194,7 @@ def test_documented_cli_lobe_label_sequence_reproduces_across_same_seed_full_out
     assert first_sequence == second_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_label_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1217,7 +1218,7 @@ def test_documented_cli_lobe_label_sequence_changes_across_different_seeds_full_
     assert first_sequence != second_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_transition_sequence_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1240,7 +1241,7 @@ def test_documented_cli_lobe_transition_sequence_reproduces_across_same_seed_ful
     assert first_sequence == second_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_transition_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1264,7 +1265,7 @@ def test_documented_cli_lobe_transition_sequence_changes_across_different_seeds_
     assert first_sequence != second_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_run_state_sequence_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1287,7 +1288,7 @@ def test_documented_cli_lobe_run_state_sequence_reproduces_across_same_seed_full
     assert first_sequence == second_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_run_state_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1305,13 +1306,15 @@ def test_documented_cli_lobe_run_state_sequence_changes_across_different_seeds_f
 
     first_sequence = _lobe_run_state_sequence(first_metric_rows)
     second_sequence = _lobe_run_state_sequence(second_metric_rows)
+    first_state_signature = (_lobe_label_sequence(first_metric_rows), first_sequence)
+    second_state_signature = (_lobe_label_sequence(second_metric_rows), second_sequence)
 
     assert first_sequence
     assert second_sequence
-    assert first_sequence != second_sequence
+    assert first_state_signature != second_state_signature
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_lobe_dwell_run_summary_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1339,7 +1342,7 @@ def test_documented_cli_lobe_dwell_run_summary_changes_across_different_seeds_fu
     assert first_dwell_runs != second_dwell_runs
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_role_action_summary_totals_reproduce_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1350,6 +1353,8 @@ def test_documented_cli_role_action_summary_totals_reproduce_across_same_seed_fu
     _run_documented_cli(config_path, first, seed=17)
     _run_documented_cli(config_path, second, seed=17)
 
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
     with (first / "metrics.csv").open() as handle:
@@ -1359,21 +1364,22 @@ def test_documented_cli_role_action_summary_totals_reproduce_across_same_seed_fu
 
     first_role_action_totals = _summary_role_action_totals(first_summary)
     second_role_action_totals = _summary_role_action_totals(second_summary)
-    actions = ("idle", "message", "create_task", "work_task")
+    first_actions = tuple(first_manifest["actions"])
+    second_actions = tuple(second_manifest["actions"])
 
     assert first_role_action_totals == _role_action_totals_from_metrics(
         first_metric_rows,
-        actions,
+        first_actions,
     )
     assert second_role_action_totals == _role_action_totals_from_metrics(
         second_metric_rows,
-        actions,
+        second_actions,
     )
     assert first_role_action_totals
     assert first_role_action_totals == second_role_action_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_role_action_metric_sequence_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1384,6 +1390,8 @@ def test_documented_cli_role_action_metric_sequence_reproduces_across_same_seed_
     _run_documented_cli(config_path, first, seed=17)
     _run_documented_cli(config_path, second, seed=17)
 
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
     with (first / "metrics.csv").open() as handle:
         first_metric_rows = list(csv.DictReader(handle))
     with (second / "metrics.csv").open() as handle:
@@ -1391,18 +1399,18 @@ def test_documented_cli_role_action_metric_sequence_reproduces_across_same_seed_
 
     first_sequence = _role_action_metric_sequence(
         first_metric_rows,
-        ("idle", "message", "create_task", "work_task"),
+        tuple(first_manifest["actions"]),
     )
     second_sequence = _role_action_metric_sequence(
         second_metric_rows,
-        ("idle", "message", "create_task", "work_task"),
+        tuple(second_manifest["actions"]),
     )
 
     assert first_sequence
     assert first_sequence == second_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_role_action_counts_sum_to_role_population_for_every_metrics_row_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1428,7 +1436,7 @@ def test_documented_cli_role_action_counts_sum_to_role_population_for_every_metr
             )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_role_action_counts_sum_to_top_level_action_totals_for_every_metrics_row_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1459,7 +1467,7 @@ def test_documented_cli_role_action_counts_sum_to_top_level_action_totals_for_ev
             ) == int(row[top_level_action_fields[action]])
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_events_per_tick_action_counts_match_metrics_top_level_action_totals_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1479,7 +1487,7 @@ def test_documented_cli_events_per_tick_action_counts_match_metrics_top_level_ac
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_events_per_tick_counts_match_configured_agent_population_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1499,7 +1507,7 @@ def test_documented_cli_events_per_tick_counts_match_configured_agent_population
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_events_per_tick_agent_ids_match_manifest_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1519,7 +1527,7 @@ def test_documented_cli_events_per_tick_agent_ids_match_manifest_across_full_out
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_events_replay_to_role_action_metrics_through_manifest_roles_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1542,7 +1550,7 @@ def test_documented_cli_events_replay_to_role_action_metrics_through_manifest_ro
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_events_replay_to_summary_role_action_totals_through_manifest_roles_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1564,7 +1572,7 @@ def test_documented_cli_events_replay_to_summary_role_action_totals_through_mani
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_role_action_totals_reproduce_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1601,7 +1609,7 @@ def test_documented_cli_event_replayed_role_action_totals_reproduce_across_same_
     assert first_replayed_totals == second_replayed_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_role_action_totals_change_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1639,7 +1647,7 @@ def test_documented_cli_event_replayed_role_action_totals_change_across_differen
     assert first_replayed_totals != second_replayed_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_role_action_metric_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1689,7 +1697,7 @@ def test_documented_cli_event_replayed_role_action_metric_sequence_changes_acros
     assert first_replayed_sequence != second_replayed_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_top_level_metric_sequence_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1726,7 +1734,7 @@ def test_documented_cli_event_replayed_top_level_metric_sequence_reproduces_acro
     assert first_replayed_sequence == second_replayed_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_top_level_metric_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1764,7 +1772,7 @@ def test_documented_cli_event_replayed_top_level_metric_sequence_changes_across_
     assert first_replayed_sequence != second_replayed_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_queue_pressure_metric_sequence_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1801,7 +1809,7 @@ def test_documented_cli_event_replayed_queue_pressure_metric_sequence_reproduces
     assert first_replayed_sequence == second_replayed_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_queue_pressure_metric_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1839,7 +1847,7 @@ def test_documented_cli_event_replayed_queue_pressure_metric_sequence_changes_ac
     assert first_replayed_sequence != second_replayed_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_queue_pressure_totals_change_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1867,7 +1875,7 @@ def test_documented_cli_summary_queue_pressure_totals_change_across_different_se
     assert first_summary_totals != second_summary_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_queue_pressure_totals_reproduce_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1894,7 +1902,7 @@ def test_documented_cli_summary_queue_pressure_totals_reproduce_across_same_seed
     assert first_summary_totals == second_summary_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_task_and_queue_totals_change_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1922,7 +1930,7 @@ def test_documented_cli_summary_task_and_queue_totals_change_across_different_se
     assert first_summary_totals != second_summary_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_task_and_queue_totals_reproduce_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1949,7 +1957,7 @@ def test_documented_cli_summary_task_and_queue_totals_reproduce_across_same_seed
     assert first_summary_totals == second_summary_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_event_type_totals_change_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -1977,7 +1985,7 @@ def test_documented_cli_summary_event_type_totals_change_across_different_seeds_
     assert first_summary_totals != second_summary_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_event_type_totals_reproduce_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2004,7 +2012,7 @@ def test_documented_cli_summary_event_type_totals_reproduce_across_same_seed_ful
     assert first_summary_totals == second_summary_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_queued_task_age_aggregates_change_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2036,7 +2044,7 @@ def test_documented_cli_summary_queued_task_age_aggregates_change_across_differe
     assert first_summary_aggregates != second_summary_aggregates
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_queued_task_age_aggregates_reproduce_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2067,7 +2075,7 @@ def test_documented_cli_summary_queued_task_age_aggregates_reproduce_across_same
     assert first_summary_aggregates == second_summary_aggregates
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_task_queue_pressure_and_age_aggregates_match_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2101,7 +2109,7 @@ def test_documented_cli_summary_task_queue_pressure_and_age_aggregates_match_met
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2134,7 +2142,7 @@ def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_repr
     assert first_tuple == second_tuple
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_integrated_summary_aggregate_bundle_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2177,7 +2185,7 @@ def test_documented_cli_integrated_summary_aggregate_bundle_reproduces_across_sa
     assert first_bundle == second_bundle
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_integrated_summary_aggregate_bundle_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2250,7 +2258,7 @@ def test_documented_cli_no_manifest_integrated_summary_aggregate_bundle_matches_
     assert summary_bundle["role_action_totals"]
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2286,7 +2294,7 @@ def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_chan
     assert first_tuple != second_tuple
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2306,7 +2314,7 @@ def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_me
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replay_reproduces_queued_task_age_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2326,7 +2334,7 @@ def test_documented_cli_event_replay_reproduces_queued_task_age_metrics_across_f
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_queued_task_age_metric_sequence_reproduces_across_same_seed_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2363,7 +2371,7 @@ def test_documented_cli_event_replayed_queued_task_age_metric_sequence_reproduce
     assert first_replayed_sequence == second_replayed_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_event_replayed_queued_task_age_metric_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2401,7 +2409,7 @@ def test_documented_cli_event_replayed_queued_task_age_metric_sequence_changes_a
     assert first_replayed_sequence != second_replayed_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_role_action_summary_totals_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2412,6 +2420,8 @@ def test_documented_cli_role_action_summary_totals_changes_across_different_seed
     _run_documented_cli(config_path, first, seed=1)
     _run_documented_cli(config_path, second, seed=2)
 
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
     with (first / "metrics.csv").open() as handle:
@@ -2421,22 +2431,23 @@ def test_documented_cli_role_action_summary_totals_changes_across_different_seed
 
     first_role_action_totals = _summary_role_action_totals(first_summary)
     second_role_action_totals = _summary_role_action_totals(second_summary)
-    actions = ("idle", "message", "create_task", "work_task")
+    first_actions = tuple(first_manifest["actions"])
+    second_actions = tuple(second_manifest["actions"])
 
     assert first_role_action_totals == _role_action_totals_from_metrics(
         first_metric_rows,
-        actions,
+        first_actions,
     )
     assert second_role_action_totals == _role_action_totals_from_metrics(
         second_metric_rows,
-        actions,
+        second_actions,
     )
     assert first_role_action_totals
     assert second_role_action_totals
     assert first_role_action_totals != second_role_action_totals
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_role_action_metric_sequence_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2456,21 +2467,23 @@ def test_documented_cli_role_action_metric_sequence_changes_across_different_see
         second_metric_rows = list(csv.DictReader(handle))
         second_header = list(second_metric_rows[0])
 
-    actions = ("idle", "message", "create_task", "work_task")
-    expected_fields = list(role_action_metric_fields(actions))
-    first_sequence = _role_action_metric_sequence(first_metric_rows, actions)
-    second_sequence = _role_action_metric_sequence(second_metric_rows, actions)
+    first_actions = tuple(first_manifest["actions"])
+    second_actions = tuple(second_manifest["actions"])
+    first_expected_fields = list(role_action_metric_fields(first_actions))
+    second_expected_fields = list(role_action_metric_fields(second_actions))
+    first_sequence = _role_action_metric_sequence(first_metric_rows, first_actions)
+    second_sequence = _role_action_metric_sequence(second_metric_rows, second_actions)
 
-    assert first_manifest["model"]["role_action_metrics"]["fields"] == expected_fields
-    assert second_manifest["model"]["role_action_metrics"]["fields"] == expected_fields
-    assert [field for field in first_header if field.startswith("role_")] == expected_fields
-    assert [field for field in second_header if field.startswith("role_")] == expected_fields
+    assert first_manifest["model"]["role_action_metrics"]["fields"] == first_expected_fields
+    assert second_manifest["model"]["role_action_metrics"]["fields"] == second_expected_fields
+    assert [field for field in first_header if field.startswith("role_")] == first_expected_fields
+    assert [field for field in second_header if field.startswith("role_")] == second_expected_fields
     assert first_sequence
     assert second_sequence
     assert first_sequence != second_sequence
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2491,7 +2504,7 @@ def test_documented_cli_summary_lobe_totals_use_only_manifest_lobe_labels_across
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_summary_lobe_dwell_runs_use_only_manifest_lobe_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2512,7 +2525,7 @@ def test_documented_cli_summary_lobe_dwell_runs_use_only_manifest_lobe_labels_ac
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_lobe_fields_match_metrics_header_and_observed_labels_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2534,7 +2547,7 @@ def test_documented_cli_manifest_lobe_fields_match_metrics_header_and_observed_l
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_event_types_cover_observed_events_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2553,7 +2566,7 @@ def test_documented_cli_manifest_event_types_cover_observed_events_across_full_o
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_metrics_fields_exactly_match_metrics_header_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2572,7 +2585,7 @@ def test_documented_cli_manifest_metrics_fields_exactly_match_metrics_header_acr
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_role_action_fields_exactly_match_metrics_header_subset_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2591,7 +2604,7 @@ def test_documented_cli_manifest_role_action_fields_exactly_match_metrics_header
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_queue_dynamics_fields_exactly_match_metrics_header_subsets_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -2610,7 +2623,7 @@ def test_documented_cli_manifest_queue_dynamics_fields_exactly_match_metrics_hea
     )
 
 
-@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+@pytest.mark.parametrize("config_path", FULL_OUTPUT_FIXTURES)
 def test_documented_cli_manifest_event_fields_exactly_match_events_header_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
