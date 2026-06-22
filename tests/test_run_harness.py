@@ -4776,6 +4776,52 @@ def test_documented_cli_full_output_fixture_same_seed_reproduces_byte_identical_
     _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
+def test_documented_cli_reordered_actions_different_seed_preserves_full_schema_order(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_reordered_actions_seed1"
+    second = tmp_path / "a0_reordered_actions_seed2"
+    artifacts = _expected_artifacts(REORDERED_ACTIONS)
+
+    for seed, out_dir in [(1, first), (2, second)]:
+        _run_documented_cli(REORDERED_ACTIONS, out_dir, seed=seed)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
+    first_metrics_text = (first / "metrics.csv").read_text()
+    second_metrics_text = (second / "metrics.csv").read_text()
+    first_events_text = (first / "events.csv").read_text()
+    second_events_text = (second / "events.csv").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metrics_header = next(csv.reader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metrics_header = next(csv.reader(handle))
+    with (first / "events.csv").open() as handle:
+        first_events_header = next(csv.reader(handle))
+    with (second / "events.csv").open() as handle:
+        second_events_header = next(csv.reader(handle))
+
+    actions = _actions_from_normalized_config(first_config)
+    expected_metrics_fields = list(metrics_fieldnames(tuple(actions)))
+
+    assert actions == ["work_task", "create_task", "message", "idle"]
+    assert first_config == second_config
+    assert first_manifest["seed"] == 1
+    assert second_manifest["seed"] == 2
+    assert first_manifest["config"] == second_manifest["config"] == first_config
+    assert first_manifest["actions"] == second_manifest["actions"] == actions
+    assert first_manifest["model"]["metrics"]["fields"] == expected_metrics_fields
+    assert second_manifest["model"]["metrics"]["fields"] == expected_metrics_fields
+    assert first_manifest["model"]["events"]["fields"] == list(EVENT_FIELDS)
+    assert second_manifest["model"]["events"]["fields"] == list(EVENT_FIELDS)
+    assert first_metrics_header == second_metrics_header == expected_metrics_fields
+    assert first_events_header == second_events_header == list(EVENT_FIELDS)
+    assert first_metrics_text != second_metrics_text or first_events_text != second_events_text
+
+
 def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifacts(
     tmp_path: Path,
 ) -> None:

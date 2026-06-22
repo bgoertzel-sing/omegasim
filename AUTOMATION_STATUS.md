@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 full-output enabled-artifact reproducibility regression
-- Changed: added a parametrized documented-CLI regression for `a0_default_outputs` and `a0_reordered_actions` that runs each full-output fixture twice with the same seed, verifies enabled artifact presence plus config/manifest action and output provenance, and compares every enabled artifact byte-for-byte.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "full_output_fixture_same_seed_reproduces_byte_identical_enabled_artifacts" -q` passed with 2 tests and 401 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 403 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 reordered-actions different-seed schema-order regression
+- Changed: added a documented-CLI regression for `a0_reordered_actions` that runs seeds 1 and 2, verifies all full-output artifacts are present, proves normalized config plus manifest action/config/schema provenance stay aligned, checks metrics and events header order, and confirms seed-sensitive metrics or events content changes.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "reordered_actions_different_seed_preserves_full_schema_order" -q` passed with 1 test and 403 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 404 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add one concise documented-CLI regression that proves `a0_reordered_actions` different-seed runs preserve the same normalized config, manifest schema fields, metrics header order, and event header order while changing seed-sensitive event or metric content.
+- Next step: add one concise documented-CLI regression that proves `a0_default_outputs` different-seed runs preserve the same normalized config, defaulted manifest output flags, metrics header order, and event header order while changing seed-sensitive event or metric content.
