@@ -5189,14 +5189,54 @@ def test_documented_cli_and_run_api_no_manifest_seed1_emit_identical_artifacts(
     _run_documented_cli(NO_MANIFEST, cli_out, seed=1)
     result = run_experiment(NO_MANIFEST, seed=1, out_dir=api_out)
 
+    cli_config = yaml.safe_load((cli_out / "config.yaml").read_text())
+    api_config = yaml.safe_load((api_out / "config.yaml").read_text())
+    with (api_out / "metrics.csv").open() as handle:
+        api_metrics_rows = list(csv.reader(handle))
+    with (api_out / "events.csv").open() as handle:
+        api_events_rows = list(csv.reader(handle))
+    api_metrics_header = api_metrics_rows[0]
+    api_events_header = api_events_rows[0]
+    api_summary = (api_out / "summary.md").read_text()
+    actions = tuple(api_config["model"]["actions"])
+    expected_outputs = {
+        "write_manifest": False,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    expected_metrics_fields = list(metrics_fieldnames(actions))
+    expected_role_action_fields = list(role_action_metric_fields(actions))
+
     for out_dir in [cli_out, api_out]:
         _assert_artifacts_match_output_directory(out_dir, artifacts)
         assert not (out_dir / "manifest.yaml").exists()
         _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(out_dir)
 
     assert artifacts == NO_MANIFEST_ARTIFACTS
+    assert actions == ("idle", "message", "create_task", "work_task")
+    assert cli_config == api_config
+    assert api_config["run"]["experiment_id"] == "a0_no_manifest"
+    assert api_config["run"]["ticks"] == 3
+    assert api_config["outputs"] == expected_outputs
+    assert api_metrics_header == expected_metrics_fields
+    assert api_events_header == list(EVENT_FIELDS)
+    assert [
+        field for field in api_metrics_header if field.startswith("role_")
+    ] == expected_role_action_fields
+    assert len(api_metrics_rows) == 4
+    assert len(api_events_rows) == 46
+    assert len(result.metrics) == 3
+    assert len(result.events) == 45
+    assert _summary_written_artifacts(api_summary) == artifacts
+    _assert_summary_records_artifact_schema_provenance(
+        api_summary,
+        metrics_header=api_metrics_header,
+        events_header=api_events_header,
+        actions=actions,
+    )
     assert result.seed == 1
-    assert result.config.to_dict() == yaml.safe_load((api_out / "config.yaml").read_text())
+    assert result.config.to_dict() == api_config
     _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
 
 
