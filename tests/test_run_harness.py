@@ -2051,6 +2051,39 @@ def test_documented_cli_summary_task_queue_pressure_and_age_aggregates_match_met
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_reproduces_across_same_seed_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_summary_queue_integrity_first"
+    second = tmp_path / f"{config_path.stem}_cli_summary_queue_integrity_second"
+
+    _run_documented_cli(config_path, first, seed=17)
+    _run_documented_cli(config_path, second, seed=17)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_tuple = _summary_task_queue_pressure_and_age_aggregate_tuple(first_summary)
+    second_tuple = _summary_task_queue_pressure_and_age_aggregate_tuple(second_summary)
+
+    assert first_tuple == _task_queue_pressure_and_age_aggregate_tuple_from_metrics(
+        first_metric_rows
+    )
+    assert second_tuple == _task_queue_pressure_and_age_aggregate_tuple_from_metrics(
+        second_metric_rows
+    )
+    assert first_tuple["task_queue_totals"]
+    assert first_tuple["queue_pressure_totals"]
+    assert first_tuple["queued_task_age_aggregates"]
+    assert first_tuple == second_tuple
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
@@ -5597,6 +5630,28 @@ def _summary_queued_task_age_aggregates(summary: str) -> dict[str, float]:
 
     assert set(aggregates) == set(labels.values())
     return aggregates
+
+
+def _task_queue_pressure_and_age_aggregate_tuple_from_metrics(
+    metric_rows: list[dict[str, str]],
+) -> dict[str, dict[str, int] | dict[str, float]]:
+    return {
+        "task_queue_totals": _task_and_queue_totals_from_metrics(metric_rows),
+        "queue_pressure_totals": _queue_pressure_totals_from_metrics(metric_rows),
+        "queued_task_age_aggregates": _queued_task_age_aggregates_from_metrics(
+            metric_rows
+        ),
+    }
+
+
+def _summary_task_queue_pressure_and_age_aggregate_tuple(
+    summary: str,
+) -> dict[str, dict[str, int] | dict[str, float]]:
+    return {
+        "task_queue_totals": _summary_task_and_queue_totals(summary),
+        "queue_pressure_totals": _summary_queue_pressure_totals(summary),
+        "queued_task_age_aggregates": _summary_queued_task_age_aggregates(summary),
+    }
 
 
 def _assert_summary_lobe_aggregates_match_metrics(
