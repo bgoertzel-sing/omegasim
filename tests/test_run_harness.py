@@ -3195,6 +3195,60 @@ def test_documented_cli_no_manifest_default_actions_event_replay_reconstructs_lo
     assert event_bundle == summary_bundle
 
 
+def test_run_api_no_manifest_default_actions_event_replay_reconstructs_lobes_queue_and_roles(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a0_no_manifest_default_actions_api_event_replay"
+    artifacts = _expected_artifacts(NO_MANIFEST)
+
+    result = run_experiment(NO_MANIFEST, seed=1, out_dir=out_dir)
+    _assert_artifacts_match_output_directory(out_dir, artifacts)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    actions = tuple(_actions_from_normalized_config(normalized_config))
+    ticks = normalized_config["run"]["ticks"]
+    roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
+    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
+    event_bundle = _integrated_aggregate_bundle_from_events(
+        event_rows,
+        ticks=ticks,
+        roles=roles,
+        actions=actions,
+    )
+    metrics_bundle = _integrated_aggregate_bundle_from_metrics(
+        metric_rows,
+        actions=actions,
+    )
+    summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
+
+    assert result.config.to_dict() == normalized_config
+    assert result.seed == 1
+    assert len(result.metrics) == len(metric_rows) == ticks
+    assert len(result.events) == len(event_rows) == ticks * normalized_config["model"]["agent_count"]
+    assert normalized_config["run"]["experiment_id"] == "a0_no_manifest"
+    assert normalized_config["outputs"]["write_manifest"] is False
+    assert actions == ("idle", "message", "create_task", "work_task")
+    assert not (out_dir / "manifest.yaml").exists()
+    assert _summary_written_artifacts(summary) == artifacts
+    assert _lobe_label_sequence(event_lobe_rows) == _lobe_label_sequence(metric_rows)
+    assert _lobe_transition_field_sequence(event_lobe_rows) == _lobe_transition_field_sequence(
+        metric_rows
+    )
+    assert _lobe_dwell_runs(event_lobe_rows) == _lobe_dwell_runs(metric_rows)
+    assert event_bundle["task_queue_pressure_and_age"] == metrics_bundle[
+        "task_queue_pressure_and_age"
+    ]
+    assert event_bundle["lobe_aggregates"] == metrics_bundle["lobe_aggregates"]
+    assert event_bundle["role_action_totals"] == metrics_bundle["role_action_totals"]
+    assert event_bundle == summary_bundle
+
+
 def test_readme_default_outputs_same_seed_preserves_full_schema_provenance(
     tmp_path: Path,
 ) -> None:
