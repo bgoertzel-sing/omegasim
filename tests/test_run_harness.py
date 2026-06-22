@@ -2084,6 +2084,42 @@ def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_repr
 
 
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
+def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_changes_across_different_seeds_full_output_fixtures(
+    tmp_path: Path,
+    config_path: Path,
+) -> None:
+    first = tmp_path / f"{config_path.stem}_cli_summary_queue_integrity_seed1"
+    second = tmp_path / f"{config_path.stem}_cli_summary_queue_integrity_seed2"
+
+    _run_documented_cli(config_path, first, seed=1)
+    _run_documented_cli(config_path, second, seed=2)
+
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+
+    first_tuple = _summary_task_queue_pressure_and_age_aggregate_tuple(first_summary)
+    second_tuple = _summary_task_queue_pressure_and_age_aggregate_tuple(second_summary)
+
+    assert first_tuple == _task_queue_pressure_and_age_aggregate_tuple_from_metrics(
+        first_metric_rows
+    )
+    assert second_tuple == _task_queue_pressure_and_age_aggregate_tuple_from_metrics(
+        second_metric_rows
+    )
+    assert first_tuple["task_queue_totals"]
+    assert second_tuple["task_queue_totals"]
+    assert first_tuple["queue_pressure_totals"]
+    assert second_tuple["queue_pressure_totals"]
+    assert first_tuple["queued_task_age_aggregates"]
+    assert second_tuple["queued_task_age_aggregates"]
+    assert first_tuple != second_tuple
+
+
+@pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_events_per_tick_task_lifecycle_matches_queue_and_task_metrics_across_full_output_fixtures(
     tmp_path: Path,
     config_path: Path,
