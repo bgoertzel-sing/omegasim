@@ -5121,6 +5121,53 @@ def test_documented_cli_and_run_api_config_only_reordered_actions_seed1_emit_ide
     _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
 
 
+def test_documented_cli_and_run_api_manifest_only_seed1_emit_identical_artifacts(
+    tmp_path: Path,
+) -> None:
+    cli_out = tmp_path / "a0_manifest_only_cli_seed1"
+    api_out = tmp_path / "a0_manifest_only_api_seed1"
+    artifacts = _expected_artifacts(MANIFEST_ONLY)
+
+    _run_documented_cli(MANIFEST_ONLY, cli_out, seed=1)
+    result = run_experiment(MANIFEST_ONLY, seed=1, out_dir=api_out)
+
+    cli_config = yaml.safe_load((cli_out / "config.yaml").read_text())
+    api_config = yaml.safe_load((api_out / "config.yaml").read_text())
+    cli_manifest = yaml.safe_load((cli_out / "manifest.yaml").read_text())
+    api_manifest = yaml.safe_load((api_out / "manifest.yaml").read_text())
+    actions = tuple(api_config["model"]["actions"])
+    expected_outputs = {
+        "write_manifest": True,
+        "write_metrics": False,
+        "write_events": False,
+        "write_summary": False,
+    }
+    expected_metrics_fields = list(metrics_fieldnames(actions))
+    expected_role_action_fields = list(role_action_metric_fields(actions))
+
+    for out_dir in [cli_out, api_out]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "metrics.csv").exists()
+        assert not (out_dir / "events.csv").exists()
+        assert not (out_dir / "summary.md").exists()
+
+    assert artifacts == MANIFEST_ONLY_ARTIFACTS
+    assert actions == ("idle", "message", "create_task", "work_task")
+    assert cli_config == api_config
+    assert cli_manifest == api_manifest
+    assert api_config["outputs"] == expected_outputs
+    assert api_manifest["outputs"] == expected_outputs
+    assert api_manifest["artifacts"] == artifacts
+    assert api_manifest["actions"] == list(actions)
+    assert api_manifest["config"] == api_config
+    assert api_manifest["model"]["metrics"]["fields"] == expected_metrics_fields
+    assert api_manifest["model"]["role_action_metrics"]["actions"] == list(actions)
+    assert api_manifest["model"]["role_action_metrics"]["fields"] == expected_role_action_fields
+    assert result.seed == 1
+    assert result.config.to_dict() == api_config
+    _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
+
+
 def test_documented_cli_and_run_api_manifest_only_reordered_actions_seed1_emit_identical_artifacts(
     tmp_path: Path,
 ) -> None:
