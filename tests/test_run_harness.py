@@ -2708,6 +2708,105 @@ def test_documented_cli_no_manifest_reordered_actions_integrated_summary_aggrega
     assert first_event_bundle != second_event_bundle
 
 
+def test_documented_cli_no_manifest_reordered_actions_per_tick_sequences_reconstruct_from_events(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_reordered_actions_cli_event_sequences_seed1"
+    second = tmp_path / "a0_no_manifest_reordered_actions_cli_event_sequences_seed2"
+
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, first, seed=1)
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, second, seed=2)
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_actions = tuple(first_config["model"]["actions"])
+    second_actions = tuple(second_config["model"]["actions"])
+    first_roles = _baseline_roles_for_agent_count(first_config["model"]["agent_count"])
+    second_roles = _baseline_roles_for_agent_count(second_config["model"]["agent_count"])
+
+    first_top_level_sequence = _top_level_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_config["run"]["ticks"],
+    )
+    second_top_level_sequence = _top_level_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_config["run"]["ticks"],
+    )
+    first_queue_pressure_sequence = _queue_pressure_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_config["run"]["ticks"],
+    )
+    second_queue_pressure_sequence = _queue_pressure_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_config["run"]["ticks"],
+    )
+    first_queue_age_sequence = _queued_task_age_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_config["run"]["ticks"],
+    )
+    second_queue_age_sequence = _queued_task_age_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_config["run"]["ticks"],
+    )
+    first_role_action_sequence = _role_action_metric_sequence_from_events(
+        first_event_rows,
+        ticks=first_config["run"]["ticks"],
+        manifest_roles=first_roles,
+        actions=first_actions,
+    )
+    second_role_action_sequence = _role_action_metric_sequence_from_events(
+        second_event_rows,
+        ticks=second_config["run"]["ticks"],
+        manifest_roles=second_roles,
+        actions=second_actions,
+    )
+
+    assert first_config == second_config
+    assert first_actions == second_actions == ("work_task", "create_task", "message", "idle")
+    assert first_config["outputs"]["write_manifest"] is False
+    assert second_config["outputs"]["write_manifest"] is False
+    assert not (first / "manifest.yaml").exists()
+    assert not (second / "manifest.yaml").exists()
+    assert first_top_level_sequence == _top_level_metric_sequence(first_metric_rows)
+    assert second_top_level_sequence == _top_level_metric_sequence(second_metric_rows)
+    assert first_queue_pressure_sequence == _queue_pressure_metric_sequence(first_metric_rows)
+    assert second_queue_pressure_sequence == _queue_pressure_metric_sequence(second_metric_rows)
+    assert first_queue_age_sequence == _queued_task_age_metric_sequence(first_metric_rows)
+    assert second_queue_age_sequence == _queued_task_age_metric_sequence(second_metric_rows)
+    assert first_role_action_sequence == _role_action_metric_sequence(
+        first_metric_rows,
+        first_actions,
+    )
+    assert second_role_action_sequence == _role_action_metric_sequence(
+        second_metric_rows,
+        second_actions,
+    )
+    assert first_top_level_sequence
+    assert first_queue_pressure_sequence
+    assert first_queue_age_sequence
+    assert first_role_action_sequence
+    assert (
+        first_top_level_sequence,
+        first_queue_pressure_sequence,
+        first_queue_age_sequence,
+        first_role_action_sequence,
+    ) != (
+        second_top_level_sequence,
+        second_queue_pressure_sequence,
+        second_queue_age_sequence,
+        second_role_action_sequence,
+    )
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
