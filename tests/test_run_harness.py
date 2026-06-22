@@ -3011,6 +3011,49 @@ def test_readme_config_only_reordered_actions_same_seed_preserves_normalized_con
     _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
+def test_readme_manifest_only_same_seed_preserves_manifest_provenance(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_manifest_only_readme_seed1_first"
+    second = tmp_path / "a0_manifest_only_readme_seed1_second"
+    artifacts = _expected_artifacts(MANIFEST_ONLY)
+    readme = Path("README.md").read_text()
+    expected_command = (
+        "python -m ohdyn.run --config configs/a0_manifest_only.yaml "
+        "--seed 1 --out runs/a0_manifest_only_seed1"
+    )
+
+    assert expected_command in readme
+    assert artifacts == ["config.yaml", "manifest.yaml"]
+
+    for out_dir in [first, second]:
+        _run_documented_cli(MANIFEST_ONLY, out_dir, seed=1)
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        _assert_manifest_only_preserves_full_schema_provenance(out_dir, MANIFEST_ONLY)
+
+        normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+        manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+        actions = _actions_from_normalized_config(normalized_config)
+
+        assert normalized_config["run"]["experiment_id"] == "a0_manifest_only"
+        assert actions == ["idle", "message", "create_task", "work_task"]
+        assert manifest["experiment_id"] == normalized_config["run"]["experiment_id"]
+        assert manifest["seed"] == 1
+        assert manifest["actions"] == actions
+        assert manifest["config"] == normalized_config
+        assert manifest["model"]["metrics"]["fields"] == list(
+            metrics_fieldnames(tuple(actions))
+        )
+        assert manifest["model"]["role_action_metrics"]["fields"] == list(
+            role_action_metric_fields(tuple(actions))
+        )
+        assert not (out_dir / "metrics.csv").exists()
+        assert not (out_dir / "events.csv").exists()
+        assert not (out_dir / "summary.md").exists()
+
+    _assert_artifacts_are_byte_identical(first, second, artifacts)
+
+
 def test_readme_manifest_only_reordered_actions_same_seed_preserves_manifest_provenance(
     tmp_path: Path,
 ) -> None:
