@@ -2172,6 +2172,33 @@ def test_documented_cli_integrated_summary_aggregate_bundle_changes_across_diffe
     assert first_bundle != second_bundle
 
 
+def test_documented_cli_no_manifest_integrated_summary_aggregate_bundle_matches_metrics_with_config_actions(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a0_no_manifest_cli_summary_bundle"
+
+    _run_documented_cli(NO_MANIFEST, out_dir)
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+
+    actions = tuple(normalized_config["model"]["actions"])
+    summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
+
+    assert not (out_dir / "manifest.yaml").exists()
+    assert _summary_written_artifacts(summary) == _expected_artifacts(NO_MANIFEST)
+    assert normalized_config["outputs"]["write_manifest"] is False
+    assert summary_bundle == _integrated_aggregate_bundle_from_metrics(
+        metric_rows,
+        actions=actions,
+    )
+    assert summary_bundle["task_queue_pressure_and_age"]
+    assert summary_bundle["lobe_aggregates"]
+    assert summary_bundle["role_action_totals"]
+
+
 @pytest.mark.parametrize("config_path", [CONFIG, DEFAULT_OUTPUTS])
 def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_changes_across_different_seeds_full_output_fixtures(
     tmp_path: Path,
