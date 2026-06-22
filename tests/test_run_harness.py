@@ -4814,6 +4814,53 @@ def test_cli_no_manifest_reordered_actions_rerun_refuses_to_overwrite_enabled_ar
     assert f"role_{BASELINE_ROLES[0]}_work_task_tick" in (out_dir / "metrics.csv").read_text()
 
 
+def test_run_api_no_manifest_reordered_actions_rerun_refuses_to_overwrite_enabled_artifacts_and_preserves_stale_manifest(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "no_manifest_reordered_actions_api_rerun"
+    stale_manifest = _write_no_manifest_disabled_manifest_sentinel(out_dir)
+
+    first = run_experiment(NO_MANIFEST_REORDERED_ACTIONS, seed=17, out_dir=out_dir)
+    before = _artifact_bytes_snapshot(
+        out_dir,
+        [*_expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS), "manifest.yaml"],
+    )
+
+    with pytest.raises(FileExistsError) as exc_info:
+        run_experiment(NO_MANIFEST_REORDERED_ACTIONS, seed=17, out_dir=out_dir)
+
+    message = str(exc_info.value)
+    assert first.config.run.experiment_id == "a0_no_manifest_reordered_actions"
+    assert first.seed == 17
+    assert str(out_dir) in message
+    assert "already contains run artifacts: config.yaml, metrics.csv, events.csv, summary.md" in message
+    assert "manifest.yaml" not in message
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        [*_expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS), "manifest.yaml"],
+    )
+    _assert_output_directory_preserved(out_dir, before)
+    _assert_no_manifest_preserves_stale_disabled_manifest(
+        out_dir,
+        stale_manifest=stale_manifest,
+    )
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    actions = _actions_from_normalized_config(normalized_config)
+
+    assert actions == ["work_task", "create_task", "message", "idle"]
+    assert normalized_config["outputs"] == {
+        "write_manifest": False,
+        "write_metrics": True,
+        "write_events": True,
+        "write_summary": True,
+    }
+    assert _summary_written_artifacts(summary) == _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS)
+    assert "manifest.yaml" not in _summary_written_artifacts(summary)
+    assert f"role_{BASELINE_ROLES[0]}_work_task_tick" in (out_dir / "metrics.csv").read_text()
+
+
 def test_cli_config_only_rerun_refuses_to_overwrite_existing_config(tmp_path: Path) -> None:
     out_dir = tmp_path / "config_only_cli_rerun"
     command = [
