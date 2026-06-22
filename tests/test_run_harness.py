@@ -2635,6 +2635,79 @@ def test_documented_cli_no_manifest_reordered_actions_integrated_summary_aggrega
     assert first_bundle != second_bundle
 
 
+def test_documented_cli_no_manifest_reordered_actions_integrated_summary_aggregate_bundle_reconstructs_from_events_across_different_seeds(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_reordered_actions_cli_event_bundle_seed1"
+    second = tmp_path / "a0_no_manifest_reordered_actions_cli_event_bundle_seed2"
+
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, first, seed=1)
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, second, seed=2)
+
+    first_config = yaml.safe_load((first / "config.yaml").read_text())
+    second_config = yaml.safe_load((second / "config.yaml").read_text())
+    first_summary = (first / "summary.md").read_text()
+    second_summary = (second / "summary.md").read_text()
+    with (first / "metrics.csv").open() as handle:
+        first_metric_rows = list(csv.DictReader(handle))
+    with (second / "metrics.csv").open() as handle:
+        second_metric_rows = list(csv.DictReader(handle))
+    with (first / "events.csv").open() as handle:
+        first_event_rows = list(csv.DictReader(handle))
+    with (second / "events.csv").open() as handle:
+        second_event_rows = list(csv.DictReader(handle))
+
+    first_actions = tuple(first_config["model"]["actions"])
+    second_actions = tuple(second_config["model"]["actions"])
+    first_roles = _baseline_roles_for_agent_count(first_config["model"]["agent_count"])
+    second_roles = _baseline_roles_for_agent_count(second_config["model"]["agent_count"])
+    first_summary_bundle = _summary_integrated_aggregate_bundle(
+        first_summary,
+        actions=first_actions,
+    )
+    second_summary_bundle = _summary_integrated_aggregate_bundle(
+        second_summary,
+        actions=second_actions,
+    )
+    first_event_bundle = _integrated_aggregate_bundle_from_events(
+        first_event_rows,
+        ticks=first_config["run"]["ticks"],
+        roles=first_roles,
+        actions=first_actions,
+    )
+    second_event_bundle = _integrated_aggregate_bundle_from_events(
+        second_event_rows,
+        ticks=second_config["run"]["ticks"],
+        roles=second_roles,
+        actions=second_actions,
+    )
+
+    assert first_config == second_config
+    assert first_event_rows != second_event_rows
+    assert first_actions == second_actions == ("work_task", "create_task", "message", "idle")
+    assert first_config["outputs"]["write_manifest"] is False
+    assert second_config["outputs"]["write_manifest"] is False
+    assert not (first / "manifest.yaml").exists()
+    assert not (second / "manifest.yaml").exists()
+    assert first_summary_bundle == _integrated_aggregate_bundle_from_metrics(
+        first_metric_rows,
+        actions=first_actions,
+    )
+    assert second_summary_bundle == _integrated_aggregate_bundle_from_metrics(
+        second_metric_rows,
+        actions=second_actions,
+    )
+    assert first_event_bundle == first_summary_bundle
+    assert second_event_bundle == second_summary_bundle
+    assert first_event_bundle["task_queue_pressure_and_age"]
+    assert second_event_bundle["task_queue_pressure_and_age"]
+    assert first_event_bundle["lobe_aggregates"]
+    assert second_event_bundle["lobe_aggregates"]
+    assert first_event_bundle["role_action_totals"]
+    assert second_event_bundle["role_action_totals"]
+    assert first_event_bundle != second_event_bundle
+
+
 def test_documented_cli_no_manifest_reordered_actions_seed_difference_preserves_schema_order(
     tmp_path: Path,
 ) -> None:
