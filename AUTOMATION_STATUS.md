@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 no-manifest reordered-action seed-difference schema regression
-- Changed: added documented CLI coverage proving `configs/a0_no_manifest_reordered_actions.yaml` emits no `manifest.yaml`, preserves normalized reordered action order in metrics role/action fields, keeps metrics/events headers stable across seeds, records the expected no-manifest artifact index in both summaries, and produces different deterministic metrics or event streams for seeds 1 and 2.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "no_manifest_reordered_actions_seed_difference_preserves_schema_order" -q` passed with 1 test and 374 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 375 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 no-manifest reordered-action same-seed schema reproducibility regression
+- Changed: added documented CLI coverage proving repeated `configs/a0_no_manifest_reordered_actions.yaml` runs with seed 17 emit no `manifest.yaml`, preserve normalized reordered action order in metrics role/action fields, keep metrics/events headers stable, record the expected no-manifest artifact index in both summaries, and produce byte-identical enabled artifacts.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "no_manifest_reordered_actions_same_seed_reproduces_schema_order" -q` passed with 1 test and 375 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 376 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add same-seed reproducibility coverage for the no-manifest reordered-action fixture to confirm repeated documented CLI runs preserve schema/order invariants while producing identical deterministic metrics and event streams.
+- Next step: add run API same-seed reproducibility coverage for the no-manifest reordered-action fixture to mirror the documented CLI schema/order and byte-identical artifact guarantees.
