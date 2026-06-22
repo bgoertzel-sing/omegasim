@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-22 A0/A1 no-manifest run-API different-seed emitted-schema regression
-- Changed: added the run-API companion regression for `a0_no_manifest` that runs seeds 1 and 2, verifies only enabled artifacts are present, confirms `manifest.yaml` is not written, preserves normalized config/output flags plus metrics and event header order, checks summary schema provenance, and confirms seed-sensitive metrics or events content changes.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "run_api_no_manifest_different_seed_preserves_emitted_schema_order" -q` passed with 1 test and 406 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 407 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-22 A0/A1 no-manifest CLI/API seed-1 artifact parity regression
+- Changed: added one regression comparing documented CLI output with `run_experiment` output for `a0_no_manifest` seed 1, verifying the enabled artifact set, disabled-manifest behavior, schema provenance, normalized API config, and byte-identical `config.yaml`, `metrics.csv`, `events.csv`, and `summary.md`.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "documented_cli_and_run_api_no_manifest_seed1_emit_identical_artifacts" -q` passed with 1 test and 407 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 408 tests; `.venv-conda/bin/python -m ruff check .` passed.
 - Blockers: none.
-- Next step: add one concise CLI/API parity regression that compares `a0_no_manifest` seed-1 output content between documented CLI and `run_experiment` while preserving disabled-manifest behavior.
+- Next step: add one concise CLI/API parity regression for `a0_no_manifest_reordered_actions` seed 1 to compare enabled artifact bytes while preserving YAML action-order schema alignment without manifest provenance.

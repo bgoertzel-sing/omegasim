@@ -4994,6 +4994,27 @@ def test_run_api_no_manifest_different_seed_preserves_emitted_schema_order(
     assert first_metrics_text != second_metrics_text or first_events_text != second_events_text
 
 
+def test_documented_cli_and_run_api_no_manifest_seed1_emit_identical_artifacts(
+    tmp_path: Path,
+) -> None:
+    cli_out = tmp_path / "a0_no_manifest_cli_seed1"
+    api_out = tmp_path / "a0_no_manifest_api_seed1"
+    artifacts = _expected_artifacts(NO_MANIFEST)
+
+    _run_documented_cli(NO_MANIFEST, cli_out, seed=1)
+    result = run_experiment(NO_MANIFEST, seed=1, out_dir=api_out)
+
+    for out_dir in [cli_out, api_out]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "manifest.yaml").exists()
+        _assert_no_manifest_emitted_artifacts_preserve_schema_provenance(out_dir)
+
+    assert artifacts == NO_MANIFEST_ARTIFACTS
+    assert result.seed == 1
+    assert result.config.to_dict() == yaml.safe_load((api_out / "config.yaml").read_text())
+    _assert_artifacts_are_byte_identical(cli_out, api_out, artifacts)
+
+
 def test_documented_cli_omitted_outputs_refuses_collision_without_partial_artifacts(
     tmp_path: Path,
 ) -> None:
