@@ -542,6 +542,12 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert csv_rows[0]["queued_task_age_mean_step_deltas"].count("|") == 10
     assert csv_rows[0]["value_weighted_completed_total_step_deltas"].count("|") == 10
     assert csv_rows[0]["attention_capture_pressure_max_step_deltas"].count("|") == 10
+    assert csv_rows[0]["phase_space_regime_dwell_runs"]
+    assert csv_rows[0]["phase_space_longest_dwell_label"] in csv_rows[0][
+        "phase_space_regime_dwell_runs"
+    ]
+    assert int(csv_rows[0]["phase_space_longest_dwell_steps"]) >= 1
+    assert int(csv_rows[0]["phase_space_turning_point_count"]) >= 0
     assert _step_deltas(csv_rows[0]["queue_depth_trajectory"]) == csv_rows[0][
         "queue_depth_step_deltas"
     ]
@@ -572,6 +578,7 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert "## Phase-space regimes" in summary
     assert "## Phase-space regime counts" in summary
     assert "## Phase-space regime distribution deltas vs baseline" in summary
+    assert "## Phase-space dwell and turning points" in summary
     assert "## Policy deltas vs baseline" in summary
     assert "trajectory_final_queue_depth_mean=" in summary
     assert "trajectory_final_value_weighted_completed_mean=" in summary
@@ -604,6 +611,8 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
         "- internal_improvement: total_steps=22, baseline_total_steps=22, "
         "regime_rate_deltas="
     ) in summary
+    assert "- baseline: runs=2, turning_points_mean=" in summary
+    assert "longest_dwell_labels=" in summary
     assert "- research_heavy queue-depth step delta mean: " in summary
     assert "- research_heavy queued-age step delta mean: " in summary
     assert "- research_heavy value-throughput step delta mean: " in summary

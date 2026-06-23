@@ -4,13 +4,13 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 pressure-response reproducibility hardening on top of the stable A0/A1 local simulator harness.
+Phase A2 trajectory-structure summaries on top of the stable A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 added the downstream-friendly smoke assertion that `pressure_response_selection.csv` source-metric condition fields stay byte-reproducible across two documented pressure CLI runs.
-- Changed: no simulator, scheduling, baseline run harness, A0/A1 schema, comparison code, or artifact layout changes; `tests/test_run_harness.py` now runs `python -m ohdyn.compare_pressure --seeds 1 2 3` twice through the documented CLI helper, compares `pressure_response_selection.csv` bytes, and explicitly asserts the selected `source_field` plus normal/medium/high source-metric means for the full selection row.
-- Smoke run: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_response_selection or source_metric_selection_fields or documented_pressure_cli_reproduces_top_level_artifacts'` passed with 3 tests.
-- Verified: `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py` passed with 463 tests.
+- Status: ok, 2026-06-23 added compact A2 phase-space dwell and turning-point summaries to attention comparison outputs.
+- Changed: no simulator, scheduling, baseline run harness, A0/A1 schema, or per-run artifact contract changes; `ohdyn.compare_attention` now records per-run phase-space regime dwell runs, longest dwell label/length, turning-point encodings, and turning-point counts in `comparison_metrics.csv`, and reports per-policy dwell/turning summaries in aggregate `summary.md`; README and regression coverage were updated.
+- Smoke run: `.venv-conda/bin/python -m ohdyn.compare_attention --seeds 1 2 --out "$tmpdir"` produced the new `## Phase-space dwell and turning points` summary section.
+- Verified: `.venv-conda/bin/python -m ruff check ohdyn/compare_attention.py tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'attention_comparison_runner_writes_aggregate_summary or attention_comparison_runner_is_reproducible or high_pressure_comparison_runner_is_reproducible'` passed with 3 tests; `.venv-conda/bin/python -m pytest tests/test_run_harness.py` passed with 463 tests.
 - Blockers: none.
-- Next step: add a compact A2 phase-space dwell/turning-point summary to the attention comparison outputs so pressure-response interpretation includes trajectory structure, not only final-condition deltas.
+- Next step: thread the new attention-comparison dwell/turning fields into the top-level pressure comparison interpretation so pressure-response summaries include trajectory structure across pressure conditions.

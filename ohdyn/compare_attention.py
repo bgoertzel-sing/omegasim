@@ -58,6 +58,11 @@ COMPARISON_FIELDS = (
     "queued_task_age_mean_step_deltas",
     "value_weighted_completed_total_step_deltas",
     "attention_capture_pressure_max_step_deltas",
+    "phase_space_regime_dwell_runs",
+    "phase_space_longest_dwell_label",
+    "phase_space_longest_dwell_steps",
+    "phase_space_turning_points",
+    "phase_space_turning_point_count",
     "near_term_external_completed_total_trajectory",
     "long_term_research_completed_total_trajectory",
     "internal_improvement_completed_total_trajectory",
@@ -180,7 +185,7 @@ def _comparison_row(
     result: SimulationResult,
 ) -> dict[str, Any]:
     last = result.metrics[-1]
-    return {
+    row = {
         "policy": policy,
         "config": str(config_path),
         "seed": seed,
@@ -285,6 +290,18 @@ def _comparison_row(
             for class_name in ATTENTION_CLASSES
         },
     }
+    regime_labels = _run_phase_space_regime_labels(row)
+    longest_dwell_label, longest_dwell_steps = _longest_regime_dwell(regime_labels)
+    row.update(
+        {
+            "phase_space_regime_dwell_runs": _format_regime_dwell_runs(regime_labels),
+            "phase_space_longest_dwell_label": longest_dwell_label,
+            "phase_space_longest_dwell_steps": longest_dwell_steps,
+            "phase_space_turning_points": _format_regime_turning_points(regime_labels),
+            "phase_space_turning_point_count": _regime_turning_point_count(regime_labels),
+        }
+    )
+    return row
 
 
 def _mean_metric(result: SimulationResult, field: str) -> float:
@@ -508,6 +525,17 @@ def _comparison_summary(
             )
         ],
         "",
+        "## Phase-space dwell and turning points",
+        "",
+        *[
+            line
+            for policy in aggregates
+            for line in _phase_space_dwell_turning_lines(
+                policy,
+                [row for row in rows if row["policy"] == policy],
+            )
+        ],
+        "",
         "## Policy deltas vs baseline",
         "",
         *[
@@ -576,6 +604,28 @@ def _phase_space_regime_counts(
     return counts, total_steps
 
 
+def _phase_space_dwell_turning_lines(
+    policy: str,
+    rows: list[dict[str, Any]],
+) -> list[str]:
+    if not rows:
+        return [f"- {policy}: runs=0"]
+
+    turning_counts = [int(row["phase_space_turning_point_count"]) for row in rows]
+    longest_dwell_steps = [int(row["phase_space_longest_dwell_steps"]) for row in rows]
+    longest_labels = Counter(str(row["phase_space_longest_dwell_label"]) for row in rows)
+
+    return [
+        f"- {policy}: runs={len(rows)}, "
+        f"turning_points_mean={_format_number(sum(turning_counts) / len(turning_counts))}, "
+        f"turning_points_min={min(turning_counts)}, "
+        f"turning_points_max={max(turning_counts)}, "
+        f"longest_dwell_steps_mean={_format_number(sum(longest_dwell_steps) / len(longest_dwell_steps))}, "
+        f"longest_dwell_steps_max={max(longest_dwell_steps)}, "
+        f"longest_dwell_labels={_format_regime_counts(longest_labels)}",
+    ]
+
+
 def _phase_space_regime_distribution_delta_lines(
     policy: str,
     rows: list[dict[str, Any]],
@@ -608,6 +658,53 @@ def _run_phase_space_regime_labels(row: dict[str, Any]) -> list[str]:
             value_deltas,
         )
     ]
+
+
+def _format_regime_dwell_runs(labels: list[str]) -> str:
+    return "|".join(
+        f"{label}:{run_length}"
+        for label, run_length in _regime_dwell_runs(labels)
+    )
+
+
+def _longest_regime_dwell(labels: list[str]) -> tuple[str, int]:
+    runs = _regime_dwell_runs(labels)
+    if not runs:
+        return "", 0
+    return max(runs, key=lambda run: (run[1], -runs.index(run)))
+
+
+def _regime_dwell_runs(labels: list[str]) -> list[tuple[str, int]]:
+    runs: list[tuple[str, int]] = []
+    current_label = ""
+    current_length = 0
+    for label in labels:
+        if label == current_label:
+            current_length += 1
+            continue
+        if current_label:
+            runs.append((current_label, current_length))
+        current_label = label
+        current_length = 1
+    if current_label:
+        runs.append((current_label, current_length))
+    return runs
+
+
+def _format_regime_turning_points(labels: list[str]) -> str:
+    return "|".join(
+        f"{index}:{labels[index - 1]}->{labels[index]}"
+        for index in range(1, len(labels))
+        if labels[index] != labels[index - 1]
+    )
+
+
+def _regime_turning_point_count(labels: list[str]) -> int:
+    return sum(
+        1
+        for index in range(1, len(labels))
+        if labels[index] != labels[index - 1]
+    )
 
 
 def _parse_delta_series(value: Any) -> list[float]:
