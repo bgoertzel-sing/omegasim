@@ -834,6 +834,16 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Pressure-response stability agreement",
+        "",
+        *_pressure_response_stability_agreement_lines(
+            seeds=seeds,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Seed-set sensitivity",
         "",
         *_seed_set_sensitivity_lines(
@@ -911,6 +921,87 @@ def _per_class_capture_pressure_prefix_comparison_lines(
             for comparison in prefix_comparisons
         ],
     ]
+
+
+def _pressure_response_stability_agreement_lines(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    if len(seeds) < 2:
+        return ["- unavailable: at least two seeds are required for stability agreement."]
+    if not _pressure_curve_response_candidates(rows):
+        return ["- no pressure-curve responses available for stability agreement."]
+    if not _per_class_capture_pressure_candidates(rows):
+        return [
+            "- no per-class capture-pressure responses available for stability agreement."
+        ]
+
+    global_comparisons = _prefix_pressure_response_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+    class_comparisons = _prefix_per_class_capture_pressure_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+    comparison_pairs = list(zip(global_comparisons, class_comparisons, strict=True))
+    last_global, last_class = comparison_pairs[-1]
+
+    return [
+        (
+            f"- comparison: full_seeds={_format_seed_set(seeds)}, "
+            f"prefix_seeds={_format_seed_set(last_global['prefix_seeds'])}"
+        ),
+        (
+            "- last prefix stable together: "
+            f"{str(_stable_together(last_global, last_class)).lower()}"
+        ),
+        (
+            "- all prefixes stable together: "
+            f"{str(all(_stable_together(global_row, class_row) for global_row, class_row in comparison_pairs)).lower()}"
+        ),
+        (
+            "- last prefix details: global_stable="
+            f"{str(last_global['stable_with_full']).lower()}, "
+            f"class_stable={str(last_class['stable_with_full']).lower()}"
+        ),
+        "",
+        (
+            "| prefix_seeds | global_stable_with_full | class_stable_with_full | "
+            "stable_together | global_instability_causes | class_instability_causes |"
+        ),
+        "| --- | --- | --- | --- | --- | --- |",
+        *[
+            (
+                f"| {_format_seed_set(global_row['prefix_seeds'])} | "
+                f"{str(global_row['stable_with_full']).lower()} | "
+                f"{str(class_row['stable_with_full']).lower()} | "
+                f"{str(_stable_together(global_row, class_row)).lower()} | "
+                f"{global_row['instability_causes']} | "
+                f"{class_row['instability_causes']} |"
+            )
+            for global_row, class_row in comparison_pairs
+        ],
+    ]
+
+
+def _stable_together(
+    global_comparison: dict[str, Any],
+    class_comparison: dict[str, Any],
+) -> bool:
+    return bool(global_comparison["stable_with_full"]) == bool(
+        class_comparison["stable_with_full"]
+    )
 
 
 def _prefix_per_class_capture_pressure_comparisons(

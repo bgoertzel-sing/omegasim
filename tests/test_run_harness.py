@@ -1245,6 +1245,32 @@ def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
     ) in summary
 
 
+def test_a2_attention_pressure_summary_compares_global_and_class_stability(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+    readme = Path("README.md").read_text()
+
+    run_pressure_comparison(seeds=(1, 2, 3), out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+
+    assert "`Pressure-response stability agreement`" in readme
+    assert "global top-response prefix stability" in readme
+    assert "class-specific capture-pressure prefix stability" in readme
+    assert "## Pressure-response stability agreement" in summary
+    assert "- comparison: full_seeds=1,2,3, prefix_seeds=1,2" in summary
+    assert "- last prefix stable together: " in summary
+    assert "- all prefixes stable together: " in summary
+    assert "- last prefix details: global_stable=" in summary
+    assert (
+        "| prefix_seeds | global_stable_with_full | class_stable_with_full | "
+        "stable_together | global_instability_causes | class_instability_causes |"
+    ) in summary
+    assert "| 1 | false | " in summary
+    assert "| 1,2 | false | " in summary
+
+
 def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields(
     tmp_path: Path,
 ) -> None:
