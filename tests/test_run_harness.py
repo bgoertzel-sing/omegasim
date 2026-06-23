@@ -17,6 +17,7 @@ from ohdyn.sim import (
     EVENT_FIELDS,
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
+    SimulationResult,
     metrics_fieldnames,
     role_action_metric_fields,
 )
@@ -7061,25 +7062,31 @@ model:
 
 
 def test_same_seed_reproduces_byte_stable_outputs(tmp_path: Path) -> None:
-    first = tmp_path / "first"
-    second = tmp_path / "second"
-
-    run_experiment(CONFIG, seed=17, out_dir=first)
-    run_experiment(CONFIG, seed=17, out_dir=second)
+    first, second, _, _ = _run_api_pair(
+        CONFIG,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name="first",
+        second_name="second",
+    )
 
     _assert_artifacts_are_byte_identical(
         first,
         second,
-        ["manifest.yaml", "config.yaml", "metrics.csv", "events.csv", "summary.md"],
+        _expected_artifacts(CONFIG),
     )
 
 
 def test_different_seed_changes_events(tmp_path: Path) -> None:
-    first = tmp_path / "seed1"
-    second = tmp_path / "seed2"
-
-    run_experiment(CONFIG, seed=1, out_dir=first)
-    run_experiment(CONFIG, seed=2, out_dir=second)
+    first, second, _, _ = _run_api_pair(
+        CONFIG,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name="seed1",
+        second_name="seed2",
+    )
 
     assert (first / "events.csv").read_text() != (second / "events.csv").read_text()
 
@@ -7872,6 +7879,27 @@ def _assert_output_directory_preserved(
     before: dict[str, bytes],
 ) -> None:
     assert _artifact_bytes_snapshot(out_dir) == before
+
+
+def _run_api_pair(
+    config_path: Path,
+    tmp_path: Path,
+    *,
+    first_seed: int,
+    second_seed: int,
+    first_name: str,
+    second_name: str,
+) -> tuple[Path, Path, SimulationResult, SimulationResult]:
+    first = tmp_path / first_name
+    second = tmp_path / second_name
+    artifacts = _expected_artifacts(config_path)
+
+    first_result = run_experiment(config_path, seed=first_seed, out_dir=first)
+    second_result = run_experiment(config_path, seed=second_seed, out_dir=second)
+
+    _assert_artifacts_match_output_directory(first, artifacts)
+    _assert_artifacts_match_output_directory(second, artifacts)
+    return first, second, first_result, second_result
 
 
 def _assert_artifacts_are_byte_identical(
