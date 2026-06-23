@@ -834,6 +834,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "## Fixed-policy pressure deltas" in summary
     assert "## Most pressure-sensitive curve metric" in summary
     assert "## Pressure-curve response ranking" in summary
+    assert "## Pressure-condition trajectory structure" in summary
     assert "## Per-class capture-pressure interpretation" in summary
     assert "## Fixed-policy pressure curves" in summary
     assert (
@@ -856,9 +857,42 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "- baseline near term external final capture pressure curve: " in summary
     assert "- baseline near term external mean capture pressure curve: " in summary
     assert "- baseline near term external peak capture pressure curve: " in summary
+    assert "- baseline: turning_points_mean normal=" in summary
+    assert "- baseline: longest_dwell_steps_mean normal=" in summary
+    assert "- baseline: longest_dwell_labels normal=" in summary
     assert "normal_to_medium_slope=" in summary
     assert "medium_to_high_slope=" in summary
     assert "curvature=" in summary
+
+
+def test_a2_attention_pressure_summary_includes_trajectory_structure(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "normal_pressure" / "comparison_metrics.csv").open() as handle:
+        normal_rows = list(csv.DictReader(handle))
+
+    baseline_rows = [row for row in normal_rows if row["policy"] == "baseline"]
+    expected_turning_mean = round(
+        sum(float(row["phase_space_turning_point_count"]) for row in baseline_rows)
+        / len(baseline_rows),
+        6,
+    )
+    expected_dwell_mean = round(
+        sum(float(row["phase_space_longest_dwell_steps"]) for row in baseline_rows)
+        / len(baseline_rows),
+        6,
+    )
+
+    assert "## Pressure-condition trajectory structure" in summary
+    assert f"- baseline: turning_points_mean normal={expected_turning_mean}" in summary
+    assert f"- baseline: longest_dwell_steps_mean normal={expected_dwell_mean}" in summary
+    for policy in ("baseline", "research_heavy", "internal_improvement"):
+        assert f"- {policy}: longest_dwell_labels normal=" in summary
 
 
 def test_a2_attention_pressure_summary_interprets_per_class_capture_pressure(

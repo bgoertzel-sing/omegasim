@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -1068,6 +1069,14 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Pressure-condition trajectory structure",
+        "",
+        *_pressure_condition_trajectory_structure_lines(
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Per-class capture-pressure interpretation",
         "",
         *_per_class_capture_pressure_interpretation_lines(
@@ -1121,6 +1130,90 @@ def _pressure_summary(
         "",
     ]
     return "\n".join(lines)
+
+
+def _pressure_condition_trajectory_structure_lines(
+    *,
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    policies = tuple(dict.fromkeys(str(row["policy"]) for row in normal_rows))
+    if not policies:
+        return ["- no trajectory-structure rows available."]
+
+    lines: list[str] = []
+    for policy in policies:
+        normal_summary = _trajectory_structure_summary(normal_rows, policy)
+        medium_summary = _trajectory_structure_summary(medium_pressure_rows, policy)
+        high_summary = _trajectory_structure_summary(high_pressure_rows, policy)
+        lines.extend(
+            [
+                (
+                    f"- {policy}: turning_points_mean normal="
+                    f"{normal_summary['turning_points_mean']}, medium="
+                    f"{medium_summary['turning_points_mean']}, high="
+                    f"{high_summary['turning_points_mean']}, high_minus_normal="
+                    f"{_format_float_delta(high_summary['turning_points_mean'], normal_summary['turning_points_mean'])}"
+                ),
+                (
+                    f"- {policy}: longest_dwell_steps_mean normal="
+                    f"{normal_summary['longest_dwell_steps_mean']}, medium="
+                    f"{medium_summary['longest_dwell_steps_mean']}, high="
+                    f"{high_summary['longest_dwell_steps_mean']}, high_minus_normal="
+                    f"{_format_float_delta(high_summary['longest_dwell_steps_mean'], normal_summary['longest_dwell_steps_mean'])}"
+                ),
+                (
+                    f"- {policy}: longest_dwell_labels normal="
+                    f"{normal_summary['longest_dwell_labels']}, medium="
+                    f"{medium_summary['longest_dwell_labels']}, high="
+                    f"{high_summary['longest_dwell_labels']}"
+                ),
+            ]
+        )
+    return lines
+
+
+def _trajectory_structure_summary(
+    rows: list[dict[str, Any]],
+    policy: str,
+) -> dict[str, Any]:
+    policy_rows = [row for row in rows if row["policy"] == policy]
+    if not policy_rows:
+        return {
+            "turning_points_mean": 0.0,
+            "longest_dwell_steps_mean": 0.0,
+            "longest_dwell_labels": "",
+        }
+
+    turning_points = [
+        float(row["phase_space_turning_point_count"])
+        for row in policy_rows
+    ]
+    dwell_steps = [
+        float(row["phase_space_longest_dwell_steps"])
+        for row in policy_rows
+    ]
+    labels = Counter(
+        str(row["phase_space_longest_dwell_label"])
+        for row in policy_rows
+    )
+    return {
+        "turning_points_mean": round(sum(turning_points) / len(turning_points), 6),
+        "longest_dwell_steps_mean": round(sum(dwell_steps) / len(dwell_steps), 6),
+        "longest_dwell_labels": _format_label_counts(labels),
+    }
+
+
+def _format_float_delta(end_value: Any, start_value: Any) -> float:
+    return round(float(end_value) - float(start_value), 6)
+
+
+def _format_label_counts(counts: Counter[str]) -> str:
+    return "|".join(
+        f"{label}:{counts[label]}"
+        for label in sorted(counts)
+    )
 
 
 def _pressure_stability_convergence_lines(
