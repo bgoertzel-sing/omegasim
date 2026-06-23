@@ -11,6 +11,7 @@ from typing import Any
 
 import yaml
 
+from ohdyn.config import ATTENTION_CLASSES
 from ohdyn.run import run_experiment
 from ohdyn.sim import SimulationResult
 
@@ -37,13 +38,22 @@ COMPARISON_FIELDS = (
     "queue_depth_trajectory",
     "queued_task_age_mean_trajectory",
     "value_weighted_completed_total_trajectory",
+    "attention_capture_pressure_max_final",
+    "attention_capture_pressure_mean_over_ticks",
+    "attention_capture_pressure_peak",
+    "attention_capture_pressure_max_trajectory",
     "queue_depth_step_deltas",
     "queued_task_age_mean_step_deltas",
     "value_weighted_completed_total_step_deltas",
+    "attention_capture_pressure_max_step_deltas",
     "near_term_external_completed_total_trajectory",
     "long_term_research_completed_total_trajectory",
     "internal_improvement_completed_total_trajectory",
     "housekeeping_completed_total_trajectory",
+    "near_term_external_capture_pressure_trajectory",
+    "long_term_research_capture_pressure_trajectory",
+    "internal_improvement_capture_pressure_trajectory",
+    "housekeeping_capture_pressure_trajectory",
 )
 
 
@@ -64,6 +74,9 @@ class PolicyAggregate:
     queue_depth_final_trajectory_mean: float
     queued_task_age_mean_trajectory_final_mean: float
     value_weighted_trajectory_final_mean: float
+    attention_capture_pressure_max_final_mean: float
+    attention_capture_pressure_mean_over_ticks_mean: float
+    attention_capture_pressure_peak_mean: float
     queue_depth_step_delta_mean: float
     queue_depth_step_delta_min: float
     queue_depth_step_delta_max: float
@@ -73,6 +86,9 @@ class PolicyAggregate:
     value_weighted_step_delta_mean: float
     value_weighted_step_delta_min: float
     value_weighted_step_delta_max: float
+    attention_capture_pressure_max_step_delta_mean: float
+    attention_capture_pressure_max_step_delta_min: float
+    attention_capture_pressure_max_step_delta_max: float
 
 
 def run_comparison(
@@ -187,6 +203,19 @@ def _comparison_row(
             result,
             "attention_value_weighted_completed_total",
         ),
+        "attention_capture_pressure_max_final": last["attention_capture_pressure_max_tick"],
+        "attention_capture_pressure_mean_over_ticks": _mean_metric(
+            result,
+            "attention_capture_pressure_max_tick",
+        ),
+        "attention_capture_pressure_peak": max(
+            float(row["attention_capture_pressure_max_tick"])
+            for row in result.metrics
+        ),
+        "attention_capture_pressure_max_trajectory": _trajectory(
+            result,
+            "attention_capture_pressure_max_tick",
+        ),
         "queue_depth_step_deltas": _trajectory_step_deltas(result, "queue_depth"),
         "queued_task_age_mean_step_deltas": _trajectory_step_deltas(
             result,
@@ -195,6 +224,10 @@ def _comparison_row(
         "value_weighted_completed_total_step_deltas": _trajectory_step_deltas(
             result,
             "attention_value_weighted_completed_total",
+        ),
+        "attention_capture_pressure_max_step_deltas": _trajectory_step_deltas(
+            result,
+            "attention_capture_pressure_max_tick",
         ),
         "near_term_external_completed_total_trajectory": _trajectory(
             result,
@@ -212,6 +245,13 @@ def _comparison_row(
             result,
             "attention_housekeeping_completed_total",
         ),
+        **{
+            f"{class_name}_capture_pressure_trajectory": _trajectory(
+                result,
+                f"attention_{class_name}_capture_pressure_tick",
+            )
+            for class_name in ATTENTION_CLASSES
+        },
     }
 
 
@@ -276,6 +316,18 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
                 policy_rows,
                 "value_weighted_completed_total_trajectory",
             ),
+            attention_capture_pressure_max_final_mean=_mean(
+                policy_rows,
+                "attention_capture_pressure_max_final",
+            ),
+            attention_capture_pressure_mean_over_ticks_mean=_mean(
+                policy_rows,
+                "attention_capture_pressure_mean_over_ticks",
+            ),
+            attention_capture_pressure_peak_mean=_mean(
+                policy_rows,
+                "attention_capture_pressure_peak",
+            ),
             queue_depth_step_delta_mean=_mean_step_delta(
                 policy_rows,
                 "queue_depth_step_deltas",
@@ -311,6 +363,18 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
             value_weighted_step_delta_max=_max_step_delta(
                 policy_rows,
                 "value_weighted_completed_total_step_deltas",
+            ),
+            attention_capture_pressure_max_step_delta_mean=_mean_step_delta(
+                policy_rows,
+                "attention_capture_pressure_max_step_deltas",
+            ),
+            attention_capture_pressure_max_step_delta_min=_min_step_delta(
+                policy_rows,
+                "attention_capture_pressure_max_step_deltas",
+            ),
+            attention_capture_pressure_max_step_delta_max=_max_step_delta(
+                policy_rows,
+                "attention_capture_pressure_max_step_deltas",
             ),
         )
         for policy in tuple(dict.fromkeys(row["policy"] for row in rows))
@@ -615,6 +679,9 @@ def _aggregate_lines(aggregate: PolicyAggregate) -> list[str]:
         f"trajectory_final_queue_depth_mean={aggregate.queue_depth_final_trajectory_mean}, "
         f"trajectory_final_queued_task_age_mean={aggregate.queued_task_age_mean_trajectory_final_mean}, "
         f"trajectory_final_value_weighted_completed_mean={aggregate.value_weighted_trajectory_final_mean}, "
+        f"capture_pressure_max_final_mean={aggregate.attention_capture_pressure_max_final_mean}, "
+        f"capture_pressure_mean_over_ticks_mean={aggregate.attention_capture_pressure_mean_over_ticks_mean}, "
+        f"capture_pressure_peak_mean={aggregate.attention_capture_pressure_peak_mean}, "
         f"queue_depth_step_delta_mean={aggregate.queue_depth_step_delta_mean}, "
         f"queue_depth_step_delta_min={aggregate.queue_depth_step_delta_min}, "
         f"queue_depth_step_delta_max={aggregate.queue_depth_step_delta_max}, "
@@ -623,7 +690,10 @@ def _aggregate_lines(aggregate: PolicyAggregate) -> list[str]:
         f"queued_task_age_mean_step_delta_max={aggregate.queued_task_age_mean_step_delta_max}, "
         f"value_weighted_step_delta_mean={aggregate.value_weighted_step_delta_mean}, "
         f"value_weighted_step_delta_min={aggregate.value_weighted_step_delta_min}, "
-        f"value_weighted_step_delta_max={aggregate.value_weighted_step_delta_max}",
+        f"value_weighted_step_delta_max={aggregate.value_weighted_step_delta_max}, "
+        f"capture_pressure_max_step_delta_mean={aggregate.attention_capture_pressure_max_step_delta_mean}, "
+        f"capture_pressure_max_step_delta_min={aggregate.attention_capture_pressure_max_step_delta_min}, "
+        f"capture_pressure_max_step_delta_max={aggregate.attention_capture_pressure_max_step_delta_max}",
     ]
 
 
@@ -642,6 +712,10 @@ def _delta_lines(variant: PolicyAggregate, baseline: PolicyAggregate) -> list[st
         f"- {variant.policy} queue-depth step delta mean: {_delta(variant.queue_depth_step_delta_mean, baseline.queue_depth_step_delta_mean)}",
         f"- {variant.policy} queued-age step delta mean: {_delta(variant.queued_task_age_mean_step_delta_mean, baseline.queued_task_age_mean_step_delta_mean)}",
         f"- {variant.policy} value-throughput step delta mean: {_delta(variant.value_weighted_step_delta_mean, baseline.value_weighted_step_delta_mean)}",
+        f"- {variant.policy} final capture pressure mean: {_delta(variant.attention_capture_pressure_max_final_mean, baseline.attention_capture_pressure_max_final_mean)}",
+        f"- {variant.policy} mean capture pressure: {_delta(variant.attention_capture_pressure_mean_over_ticks_mean, baseline.attention_capture_pressure_mean_over_ticks_mean)}",
+        f"- {variant.policy} peak capture pressure mean: {_delta(variant.attention_capture_pressure_peak_mean, baseline.attention_capture_pressure_peak_mean)}",
+        f"- {variant.policy} capture-pressure step delta mean: {_delta(variant.attention_capture_pressure_max_step_delta_mean, baseline.attention_capture_pressure_max_step_delta_mean)}",
     ]
 
 

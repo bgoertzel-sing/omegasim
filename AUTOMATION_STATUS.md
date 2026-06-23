@@ -4,12 +4,12 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 attention-share capture-pressure telemetry on top of the stable A0/A1 local simulator harness.
+Phase A2 attention-share capture-pressure comparison summaries on top of the stable A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 added deterministic A2 capture-pressure metrics and events.
-- Changed: no scheduling behavior changes; attention-policy runs now emit per-class `attention_<class>_capture_pressure_tick` metrics, `attention_capture_pressure_max_tick`, and `attention_capture_pressure` events when quota balancing works one class while another available queued class is above its target share. A0/A1 manifests keep the baseline event vocabulary; attention manifests append the attention event vocabulary. README and tests document and verify the new telemetry.
-- Verified: `.venv-conda/bin/python -m ruff check ohdyn/sim.py ohdyn/io.py tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_manifest_records_event_schema_provenance tests/test_run_harness.py::test_documented_cli_events_per_tick_action_counts_match_metrics_top_level_action_totals_across_full_output_fixtures tests/test_run_harness.py::test_a2_attention_run_records_policy_metrics_and_summary` passed with 5 selected tests; `.venv-conda/bin/python -m pytest` passed with 454 tests.
+- Status: ok, 2026-06-23 added deterministic A2 capture-pressure trajectories and aggregates to the attention comparison output.
+- Changed: no simulator or scheduling behavior changes; `ohdyn.compare_attention` now writes final, mean-over-ticks, peak, max-trajectory, first-difference, and per-class capture-pressure trajectory fields to `comparison_metrics.csv`, and `summary.md` reports capture-pressure final/mean/peak means, step-delta aggregates, and variant deltas versus baseline. README and the aggregate comparison test cover the new output.
+- Verified: `.venv-conda/bin/python -m ruff check ohdyn/compare_attention.py tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_a2_attention_comparison_runner_writes_aggregate_summary` passed; `.venv-conda/bin/python -m pytest` passed with 454 tests.
 - Blockers: none.
-- Next step: add capture-pressure trajectories and summary aggregates to the deterministic A2 attention comparison output.
+- Next step: extend the pressure comparison helper to include capture-pressure pressure-response deltas and curve metrics.

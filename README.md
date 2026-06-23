@@ -82,6 +82,8 @@ The comparison directory contains `comparison_metrics.csv`, an aggregate `summar
 
 The aggregate comparison `summary.md` derives deterministic phase-space regime labels from the signs of each policy's mean queue-depth, queued-age, and value-throughput step deltas, for example `queue_growth+stale_age_rising+value_throughput_rising`. It also counts each per-run step-level regime label from the same delta sign sequence, reports per-policy regime counts and rates, and reports each variant policy's regime count/rate distribution deltas versus the baseline policy.
 
+Attention comparison rows also carry capture-pressure trajectories from the A2 run metrics. `comparison_metrics.csv` records final, mean-over-ticks, peak, full max-capture-pressure trajectory, first differences, and per-class capture-pressure trajectories. The aggregate comparison `summary.md` reports per-policy capture-pressure final/mean/peak means, capture-pressure step-delta aggregates, and variant deltas versus the baseline policy.
+
 A2 configs may also set `model.task_creation_pressure`, a deterministic scalar applied to the baseline `create_task` action weight. The default is `1.0`, preserving A0/A1 behavior. The checked-in high-pressure fixtures use `1.8` to compare the same policy shares under stronger backlog creation pressure:
 
 The checked-in medium-pressure fixtures use `1.4` to provide a reproducible midpoint between the normal and high-pressure conditions:

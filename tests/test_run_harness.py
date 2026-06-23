@@ -535,9 +535,11 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert csv_rows[0]["queue_depth_trajectory"].count("|") == 11
     assert csv_rows[0]["queued_task_age_mean_trajectory"].count("|") == 11
     assert csv_rows[0]["value_weighted_completed_total_trajectory"].count("|") == 11
+    assert csv_rows[0]["attention_capture_pressure_max_trajectory"].count("|") == 11
     assert csv_rows[0]["queue_depth_step_deltas"].count("|") == 10
     assert csv_rows[0]["queued_task_age_mean_step_deltas"].count("|") == 10
     assert csv_rows[0]["value_weighted_completed_total_step_deltas"].count("|") == 10
+    assert csv_rows[0]["attention_capture_pressure_max_step_deltas"].count("|") == 10
     assert _step_deltas(csv_rows[0]["queue_depth_trajectory"]) == csv_rows[0][
         "queue_depth_step_deltas"
     ]
@@ -547,12 +549,23 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert _step_deltas(csv_rows[0]["value_weighted_completed_total_trajectory"]) == csv_rows[0][
         "value_weighted_completed_total_step_deltas"
     ]
+    assert _step_deltas(csv_rows[0]["attention_capture_pressure_max_trajectory"]) == csv_rows[0][
+        "attention_capture_pressure_max_step_deltas"
+    ]
+    assert csv_rows[0]["attention_capture_pressure_max_trajectory"].split("|")[-1] == csv_rows[0][
+        "attention_capture_pressure_max_final"
+    ]
+    assert csv_rows[0]["attention_capture_pressure_peak"] == str(
+        max(float(value) for value in csv_rows[0]["attention_capture_pressure_max_trajectory"].split("|"))
+    )
     for class_name in ATTENTION_CLASSES:
         trajectory_field = f"{class_name}_completed_total_trajectory"
         assert csv_rows[0][trajectory_field].count("|") == 11
         assert csv_rows[0][trajectory_field].split("|")[-1] == csv_rows[0][
             f"{class_name}_completed_total"
         ]
+        capture_trajectory_field = f"{class_name}_capture_pressure_trajectory"
+        assert csv_rows[0][capture_trajectory_field].count("|") == 11
     assert "## Policy means" in summary
     assert "## Phase-space regimes" in summary
     assert "## Phase-space regime counts" in summary
@@ -560,9 +573,13 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert "## Policy deltas vs baseline" in summary
     assert "trajectory_final_queue_depth_mean=" in summary
     assert "trajectory_final_value_weighted_completed_mean=" in summary
+    assert "capture_pressure_max_final_mean=" in summary
+    assert "capture_pressure_mean_over_ticks_mean=" in summary
+    assert "capture_pressure_peak_mean=" in summary
     assert "queue_depth_step_delta_mean=" in summary
     assert "queued_task_age_mean_step_delta_mean=" in summary
     assert "value_weighted_step_delta_mean=" in summary
+    assert "capture_pressure_max_step_delta_mean=" in summary
     assert (
         "- baseline: label=queue_growth+stale_age_rising+value_throughput_rising, "
         "queue_depth_step_delta_sign=positive, queued_age_step_delta_sign=positive, "
@@ -588,8 +605,11 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert "- research_heavy queue-depth step delta mean: " in summary
     assert "- research_heavy queued-age step delta mean: " in summary
     assert "- research_heavy value-throughput step delta mean: " in summary
+    assert "- research_heavy mean capture pressure: " in summary
+    assert "- research_heavy peak capture pressure mean: " in summary
     assert "- research_heavy long-term research completions mean: " in summary
     assert "- internal_improvement internal-improvement completions mean: " in summary
+    assert "- internal_improvement capture-pressure step delta mean: " in summary
 
 
 def test_a2_attention_comparison_runner_is_reproducible(tmp_path: Path) -> None:
