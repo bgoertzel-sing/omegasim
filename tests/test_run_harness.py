@@ -1643,6 +1643,44 @@ def test_documented_pressure_cli_reproduces_top_level_artifacts(
     )
 
 
+def test_documented_pressure_cli_reproduces_source_metric_selection_fields(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    source_metric_fields = [
+        field
+        for field in PRESSURE_RESPONSE_SELECTION_FIELDS
+        if field == "source_field" or field.startswith("source_metric_")
+    ]
+
+    _run_documented_pressure_cli(first, seeds=(1, 2, 3))
+    _run_documented_pressure_cli(second, seeds=(1, 2, 3))
+
+    with (first / "pressure_response_selection.csv").open() as first_handle:
+        first_rows = list(csv.DictReader(first_handle))
+    with (second / "pressure_response_selection.csv").open() as second_handle:
+        second_rows = list(csv.DictReader(second_handle))
+
+    assert first_rows
+    assert len(first_rows) == len(second_rows)
+    assert (first / "pressure_response_selection.csv").read_bytes() == (
+        second / "pressure_response_selection.csv"
+    ).read_bytes()
+    assert [
+        {field: row[field] for field in source_metric_fields}
+        for row in first_rows
+    ] == [
+        {field: row[field] for field in source_metric_fields}
+        for row in second_rows
+    ]
+    assert first_rows[0]["selection_scope"] == "full"
+    assert first_rows[0]["source_field"] == "queue_depth"
+    assert first_rows[0]["source_metric_normal_mean"] == "20.666667"
+    assert first_rows[0]["source_metric_medium_mean"] == "39.333333"
+    assert first_rows[0]["source_metric_high_mean"] == "45.666667"
+
+
 def test_documented_pressure_cli_refuses_existing_top_level_artifacts_without_modifying_them(
     tmp_path: Path,
 ) -> None:
