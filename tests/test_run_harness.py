@@ -441,6 +441,7 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert "## Policy means" in summary
     assert "## Phase-space regimes" in summary
     assert "## Phase-space regime counts" in summary
+    assert "## Phase-space regime distribution deltas vs baseline" in summary
     assert "## Policy deltas vs baseline" in summary
     assert "trajectory_final_queue_depth_mean=" in summary
     assert "trajectory_final_value_weighted_completed_mean=" in summary
@@ -456,6 +457,18 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert "regime_rates=" in summary
     assert (
         "queue_growth+stale_age_rising+value_throughput_rising:"
+    ) in summary
+    assert (
+        "- research_heavy: total_steps=22, baseline_total_steps=22, "
+        "regime_rate_deltas="
+    ) in summary
+    assert (
+        "queue_growth+stale_age_rising+value_throughput_rising:0.045455"
+    ) in summary
+    assert "regime_count_deltas=" in summary
+    assert (
+        "- internal_improvement: total_steps=22, baseline_total_steps=22, "
+        "regime_rate_deltas="
     ) in summary
     assert "- research_heavy queue-depth step delta mean: " in summary
     assert "- research_heavy queued-age step delta mean: " in summary

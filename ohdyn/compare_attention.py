@@ -399,6 +399,19 @@ def _comparison_summary(
             )
         ],
         "",
+        "## Phase-space regime distribution deltas vs baseline",
+        "",
+        *[
+            line
+            for policy in aggregates
+            if policy != "baseline"
+            for line in _phase_space_regime_distribution_delta_lines(
+                policy,
+                [row for row in rows if row["policy"] == policy],
+                [row for row in rows if row["policy"] == "baseline"],
+            )
+        ],
+        "",
         "## Policy deltas vs baseline",
         "",
         *[
@@ -443,12 +456,7 @@ def _phase_space_regime_count_lines(
     policy: str,
     rows: list[dict[str, Any]],
 ) -> list[str]:
-    counts: Counter[str] = Counter()
-    total_steps = 0
-    for row in rows:
-        run_labels = _run_phase_space_regime_labels(row)
-        counts.update(run_labels)
-        total_steps += len(run_labels)
+    counts, total_steps = _phase_space_regime_counts(rows)
 
     if total_steps == 0:
         return [f"- {policy}: total_steps=0"]
@@ -457,6 +465,36 @@ def _phase_space_regime_count_lines(
         f"- {policy}: total_steps={total_steps}, "
         f"regime_counts={_format_regime_counts(counts)}, "
         f"regime_rates={_format_regime_rates(counts, total_steps)}",
+    ]
+
+
+def _phase_space_regime_counts(
+    rows: list[dict[str, Any]],
+) -> tuple[Counter[str], int]:
+    counts: Counter[str] = Counter()
+    total_steps = 0
+    for row in rows:
+        run_labels = _run_phase_space_regime_labels(row)
+        counts.update(run_labels)
+        total_steps += len(run_labels)
+    return counts, total_steps
+
+
+def _phase_space_regime_distribution_delta_lines(
+    policy: str,
+    rows: list[dict[str, Any]],
+    baseline_rows: list[dict[str, Any]],
+) -> list[str]:
+    counts, total_steps = _phase_space_regime_counts(rows)
+    baseline_counts, baseline_total_steps = _phase_space_regime_counts(baseline_rows)
+    if total_steps == 0 or baseline_total_steps == 0:
+        return [f"- {policy}: total_steps={total_steps}, baseline_total_steps={baseline_total_steps}"]
+
+    labels = sorted(set(counts) | set(baseline_counts))
+    return [
+        f"- {policy}: total_steps={total_steps}, baseline_total_steps={baseline_total_steps}, "
+        f"regime_rate_deltas={_format_regime_rate_deltas(counts, total_steps, baseline_counts, baseline_total_steps, labels)}, "
+        f"regime_count_deltas={_format_regime_count_deltas(counts, baseline_counts, labels)}",
     ]
 
 
@@ -517,6 +555,33 @@ def _format_regime_rates(counts: Counter[str], total_steps: int) -> str:
     return "|".join(
         f"{label}:{round(counts[label] / total_steps, 6)}"
         for label in sorted(counts)
+    )
+
+
+def _format_regime_rate_deltas(
+    counts: Counter[str],
+    total_steps: int,
+    baseline_counts: Counter[str],
+    baseline_total_steps: int,
+    labels: list[str],
+) -> str:
+    return "|".join(
+        (
+            f"{label}:"
+            f"{round((counts[label] / total_steps) - (baseline_counts[label] / baseline_total_steps), 6)}"
+        )
+        for label in labels
+    )
+
+
+def _format_regime_count_deltas(
+    counts: Counter[str],
+    baseline_counts: Counter[str],
+    labels: list[str],
+) -> str:
+    return "|".join(
+        f"{label}:{counts[label] - baseline_counts[label]}"
+        for label in labels
     )
 
 
