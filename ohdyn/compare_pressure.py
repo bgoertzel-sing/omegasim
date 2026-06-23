@@ -9,6 +9,7 @@ from typing import Any
 
 import yaml
 
+from ohdyn.config import ATTENTION_CLASSES
 from ohdyn.compare_attention import (
     DEFAULT_BASELINE_CONFIG,
     DEFAULT_INTERNAL_IMPROVEMENT_CONFIG,
@@ -55,6 +56,15 @@ PRESSURE_COMPARISON_FIELDS = (
     "attention_capture_pressure_max_final_delta",
     "attention_capture_pressure_mean_over_ticks_delta",
     "attention_capture_pressure_peak_delta",
+    *(
+        field
+        for class_name in ATTENTION_CLASSES
+        for field in (
+            f"{class_name}_capture_pressure_final_delta",
+            f"{class_name}_capture_pressure_mean_over_ticks_delta",
+            f"{class_name}_capture_pressure_peak_delta",
+        )
+    ),
     "value_weighted_completed_normal_to_medium_slope",
     "value_weighted_completed_medium_to_high_slope",
     "value_weighted_completed_pressure_curvature",
@@ -79,6 +89,21 @@ PRESSURE_COMPARISON_FIELDS = (
     "attention_capture_pressure_peak_normal_to_medium_slope",
     "attention_capture_pressure_peak_medium_to_high_slope",
     "attention_capture_pressure_peak_pressure_curvature",
+    *(
+        field
+        for class_name in ATTENTION_CLASSES
+        for field in (
+            f"{class_name}_capture_pressure_final_normal_to_medium_slope",
+            f"{class_name}_capture_pressure_final_medium_to_high_slope",
+            f"{class_name}_capture_pressure_final_pressure_curvature",
+            f"{class_name}_capture_pressure_mean_over_ticks_normal_to_medium_slope",
+            f"{class_name}_capture_pressure_mean_over_ticks_medium_to_high_slope",
+            f"{class_name}_capture_pressure_mean_over_ticks_pressure_curvature",
+            f"{class_name}_capture_pressure_peak_normal_to_medium_slope",
+            f"{class_name}_capture_pressure_peak_medium_to_high_slope",
+            f"{class_name}_capture_pressure_peak_pressure_curvature",
+        )
+    ),
 )
 PRESSURE_RESPONSE_SELECTION_FIELDS = (
     "selection_scope",
@@ -123,6 +148,27 @@ PRESSURE_CURVE_OBSERVABLES = (
         "attention_capture_pressure_peak",
         "peak attention capture pressure",
         "attention_capture_pressure_peak",
+    ),
+    *(
+        observable
+        for class_name in ATTENTION_CLASSES
+        for observable in (
+            (
+                f"{class_name}_capture_pressure_final",
+                f"final {class_name.replace('_', ' ')} capture pressure",
+                f"{class_name}_capture_pressure_final",
+            ),
+            (
+                f"{class_name}_capture_pressure_mean_over_ticks",
+                f"mean {class_name.replace('_', ' ')} capture pressure",
+                f"{class_name}_capture_pressure_mean_over_ticks",
+            ),
+            (
+                f"{class_name}_capture_pressure_peak",
+                f"peak {class_name.replace('_', ' ')} capture pressure",
+                f"{class_name}_capture_pressure_peak",
+            ),
+        )
     ),
 )
 PRESSURE_CURVE_METRICS = (
@@ -352,6 +398,28 @@ def _pressure_row(
             "attention_capture_pressure_peak",
         ),
     }
+    for class_name in ATTENTION_CLASSES:
+        row.update(
+            {
+                f"{class_name}_capture_pressure_final_delta": _metric_mean_delta(
+                    high_pressure_rows,
+                    normal_rows,
+                    f"{class_name}_capture_pressure_final",
+                ),
+                f"{class_name}_capture_pressure_mean_over_ticks_delta": (
+                    _metric_mean_delta(
+                        high_pressure_rows,
+                        normal_rows,
+                        f"{class_name}_capture_pressure_mean_over_ticks",
+                    )
+                ),
+                f"{class_name}_capture_pressure_peak_delta": _metric_mean_delta(
+                    high_pressure_rows,
+                    normal_rows,
+                    f"{class_name}_capture_pressure_peak",
+                ),
+            }
+        )
     row.update(
         _pressure_curve_metrics(
             normal_rows,
@@ -424,6 +492,17 @@ def _pressure_row(
             output_prefix="attention_capture_pressure_peak",
         )
     )
+    for class_name in ATTENTION_CLASSES:
+        for statistic in ("final", "mean_over_ticks", "peak"):
+            row.update(
+                _pressure_curve_metrics(
+                    normal_rows,
+                    medium_pressure_rows,
+                    high_pressure_rows,
+                    source_field=f"{class_name}_capture_pressure_{statistic}",
+                    output_prefix=f"{class_name}_capture_pressure_{statistic}",
+                )
+            )
     return row
 
 
@@ -1090,6 +1169,15 @@ def _pressure_delta_field(observable_prefix: str) -> str:
         ),
         "attention_capture_pressure_peak": "attention_capture_pressure_peak_delta",
     }
+    delta_fields.update(
+        {
+            f"{class_name}_capture_pressure_{statistic}": (
+                f"{class_name}_capture_pressure_{statistic}_delta"
+            )
+            for class_name in ATTENTION_CLASSES
+            for statistic in ("final", "mean_over_ticks", "peak")
+        }
+    )
     return delta_fields[observable_prefix]
 
 
@@ -1118,6 +1206,16 @@ def _pressure_delta_lines(row: dict[str, Any]) -> list[str]:
         f"{row['attention_capture_pressure_mean_over_ticks_delta']}",
         f"- {row['policy']} peak attention capture pressure delta: "
         f"{row['attention_capture_pressure_peak_delta']}",
+        *[
+            f"- {row['policy']} {class_name.replace('_', ' ')} {label} capture pressure delta: "
+            f"{row[f'{class_name}_capture_pressure_{statistic}_delta']}"
+            for class_name in ATTENTION_CLASSES
+            for statistic, label in (
+                ("final", "final"),
+                ("mean_over_ticks", "mean"),
+                ("peak", "peak"),
+            )
+        ],
     ]
 
 
@@ -1155,6 +1253,18 @@ def _pressure_curve_lines(row: dict[str, Any]) -> list[str]:
         f"normal_to_medium_slope={row['attention_capture_pressure_peak_normal_to_medium_slope']}, "
         f"medium_to_high_slope={row['attention_capture_pressure_peak_medium_to_high_slope']}, "
         f"curvature={row['attention_capture_pressure_peak_pressure_curvature']}",
+        *[
+            f"- {row['policy']} {class_name.replace('_', ' ')} {label} capture pressure curve: "
+            f"normal_to_medium_slope={row[f'{class_name}_capture_pressure_{statistic}_normal_to_medium_slope']}, "
+            f"medium_to_high_slope={row[f'{class_name}_capture_pressure_{statistic}_medium_to_high_slope']}, "
+            f"curvature={row[f'{class_name}_capture_pressure_{statistic}_pressure_curvature']}"
+            for class_name in ATTENTION_CLASSES
+            for statistic, label in (
+                ("final", "final"),
+                ("mean_over_ticks", "mean"),
+                ("peak", "peak"),
+            )
+        ],
     ]
 
 

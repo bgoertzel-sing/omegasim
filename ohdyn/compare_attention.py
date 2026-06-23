@@ -41,6 +41,18 @@ COMPARISON_FIELDS = (
     "attention_capture_pressure_max_final",
     "attention_capture_pressure_mean_over_ticks",
     "attention_capture_pressure_peak",
+    "near_term_external_capture_pressure_final",
+    "near_term_external_capture_pressure_mean_over_ticks",
+    "near_term_external_capture_pressure_peak",
+    "long_term_research_capture_pressure_final",
+    "long_term_research_capture_pressure_mean_over_ticks",
+    "long_term_research_capture_pressure_peak",
+    "internal_improvement_capture_pressure_final",
+    "internal_improvement_capture_pressure_mean_over_ticks",
+    "internal_improvement_capture_pressure_peak",
+    "housekeeping_capture_pressure_final",
+    "housekeeping_capture_pressure_mean_over_ticks",
+    "housekeeping_capture_pressure_peak",
     "attention_capture_pressure_max_trajectory",
     "queue_depth_step_deltas",
     "queued_task_age_mean_step_deltas",
@@ -212,6 +224,26 @@ def _comparison_row(
             float(row["attention_capture_pressure_max_tick"])
             for row in result.metrics
         ),
+        **{
+            f"{class_name}_capture_pressure_final": last[
+                f"attention_{class_name}_capture_pressure_tick"
+            ]
+            for class_name in ATTENTION_CLASSES
+        },
+        **{
+            f"{class_name}_capture_pressure_mean_over_ticks": _mean_metric(
+                result,
+                f"attention_{class_name}_capture_pressure_tick",
+            )
+            for class_name in ATTENTION_CLASSES
+        },
+        **{
+            f"{class_name}_capture_pressure_peak": max(
+                float(row[f"attention_{class_name}_capture_pressure_tick"])
+                for row in result.metrics
+            )
+            for class_name in ATTENTION_CLASSES
+        },
         "attention_capture_pressure_max_trajectory": _trajectory(
             result,
             "attention_capture_pressure_max_tick",

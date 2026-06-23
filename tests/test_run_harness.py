@@ -812,6 +812,12 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert csv_rows[0]["attention_capture_pressure_max_final_normal_to_medium_slope"]
     assert csv_rows[0]["attention_capture_pressure_max_final_medium_to_high_slope"]
     assert csv_rows[0]["attention_capture_pressure_max_final_pressure_curvature"]
+    assert csv_rows[0]["near_term_external_capture_pressure_final_delta"]
+    assert csv_rows[0]["near_term_external_capture_pressure_mean_over_ticks_delta"]
+    assert csv_rows[0]["near_term_external_capture_pressure_peak_delta"]
+    assert csv_rows[0]["near_term_external_capture_pressure_final_normal_to_medium_slope"]
+    assert csv_rows[0]["near_term_external_capture_pressure_final_medium_to_high_slope"]
+    assert csv_rows[0]["near_term_external_capture_pressure_final_pressure_curvature"]
     assert "## Fixed-policy pressure deltas" in summary
     assert "## Most pressure-sensitive curve metric" in summary
     assert "## Pressure-curve response ranking" in summary
@@ -826,10 +832,16 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "- baseline final attention capture pressure delta: " in summary
     assert "- baseline mean attention capture pressure delta: " in summary
     assert "- baseline peak attention capture pressure delta: " in summary
+    assert "- baseline near term external final capture pressure delta: " in summary
+    assert "- baseline near term external mean capture pressure delta: " in summary
+    assert "- baseline near term external peak capture pressure delta: " in summary
     assert "- baseline final queue depth pressure curve: " in summary
     assert "- baseline final attention capture pressure curve: " in summary
     assert "- baseline mean attention capture pressure curve: " in summary
     assert "- baseline peak attention capture pressure curve: " in summary
+    assert "- baseline near term external final capture pressure curve: " in summary
+    assert "- baseline near term external mean capture pressure curve: " in summary
+    assert "- baseline near term external peak capture pressure curve: " in summary
     assert "normal_to_medium_slope=" in summary
     assert "medium_to_high_slope=" in summary
     assert "curvature=" in summary
@@ -1166,6 +1178,7 @@ def test_a2_attention_pressure_comparison_curve_metrics_match_condition_means(
     rows = run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
     baseline_row = next(row for row in rows if row["policy"] == "baseline")
     means = {}
+    class_means = {}
     for condition in ("normal_pressure", "medium_pressure", "high_pressure"):
         with (out_dir / condition / "comparison_metrics.csv").open() as handle:
             condition_rows = [
@@ -1176,6 +1189,14 @@ def test_a2_attention_pressure_comparison_curve_metrics_match_condition_means(
             condition_rows,
             policy="baseline",
             field="queue_depth",
+        )
+        class_means[condition] = round(
+            _mean_csv_metric(
+                condition_rows,
+                policy="baseline",
+                field="near_term_external_capture_pressure_final",
+            ),
+            6,
         )
 
     normal_to_medium = round(
@@ -1192,6 +1213,33 @@ def test_a2_attention_pressure_comparison_curve_metrics_match_condition_means(
     assert baseline_row["queue_depth_pressure_curvature"] == round(
         medium_to_high - normal_to_medium,
         6,
+    )
+
+    class_normal_to_medium = round(
+        (class_means["medium_pressure"] - class_means["normal_pressure"]) / 0.4,
+        6,
+    )
+    class_medium_to_high = round(
+        (class_means["high_pressure"] - class_means["medium_pressure"]) / 0.4,
+        6,
+    )
+
+    assert (
+        baseline_row["near_term_external_capture_pressure_final_normal_to_medium_slope"]
+        == pytest.approx(class_normal_to_medium, abs=2e-6)
+    )
+    assert (
+        baseline_row["near_term_external_capture_pressure_final_medium_to_high_slope"]
+        == pytest.approx(class_medium_to_high, abs=2e-6)
+    )
+    assert baseline_row[
+        "near_term_external_capture_pressure_final_pressure_curvature"
+    ] == pytest.approx(
+        round(
+            class_medium_to_high - class_normal_to_medium,
+            6,
+        ),
+        abs=2e-6,
     )
 
 
