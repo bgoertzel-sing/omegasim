@@ -420,6 +420,18 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert csv_rows[0]["queue_depth_trajectory"].count("|") == 11
     assert csv_rows[0]["queued_task_age_mean_trajectory"].count("|") == 11
     assert csv_rows[0]["value_weighted_completed_total_trajectory"].count("|") == 11
+    assert csv_rows[0]["queue_depth_step_deltas"].count("|") == 10
+    assert csv_rows[0]["queued_task_age_mean_step_deltas"].count("|") == 10
+    assert csv_rows[0]["value_weighted_completed_total_step_deltas"].count("|") == 10
+    assert _step_deltas(csv_rows[0]["queue_depth_trajectory"]) == csv_rows[0][
+        "queue_depth_step_deltas"
+    ]
+    assert _step_deltas(csv_rows[0]["queued_task_age_mean_trajectory"]) == csv_rows[0][
+        "queued_task_age_mean_step_deltas"
+    ]
+    assert _step_deltas(csv_rows[0]["value_weighted_completed_total_trajectory"]) == csv_rows[0][
+        "value_weighted_completed_total_step_deltas"
+    ]
     for class_name in ATTENTION_CLASSES:
         trajectory_field = f"{class_name}_completed_total_trajectory"
         assert csv_rows[0][trajectory_field].count("|") == 11
@@ -430,6 +442,12 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert "## Policy deltas vs baseline" in summary
     assert "trajectory_final_queue_depth_mean=" in summary
     assert "trajectory_final_value_weighted_completed_mean=" in summary
+    assert "queue_depth_step_delta_mean=" in summary
+    assert "queued_task_age_mean_step_delta_mean=" in summary
+    assert "value_weighted_step_delta_mean=" in summary
+    assert "- research_heavy queue-depth step delta mean: " in summary
+    assert "- research_heavy queued-age step delta mean: " in summary
+    assert "- research_heavy value-throughput step delta mean: " in summary
     assert "- research_heavy long-term research completions mean: " in summary
     assert "- internal_improvement internal-improvement completions mean: " in summary
 
@@ -541,6 +559,22 @@ def _mean_csv_metric(
 ) -> float:
     policy_rows = [row for row in rows if row["policy"] == policy]
     return sum(float(row[field]) for row in policy_rows) / len(policy_rows)
+
+
+def _step_deltas(trajectory: str) -> str:
+    values = [float(value) for value in trajectory.split("|")]
+    deltas = [
+        _format_number(values[index] - values[index - 1])
+        for index in range(1, len(values))
+    ]
+    return "|".join(deltas)
+
+
+def _format_number(value: float) -> str:
+    rounded = round(value, 6)
+    if rounded.is_integer():
+        return str(int(rounded))
+    return str(rounded)
 
 
 def test_metrics_csv_records_role_action_counts(tmp_path: Path) -> None:
