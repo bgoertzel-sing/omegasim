@@ -3167,38 +3167,14 @@ def test_readme_no_manifest_default_actions_event_replay_bundle_reproducibility(
 
     bundles = []
     for out_dir in [first, second, different]:
-        _assert_artifacts_match_output_directory(out_dir, artifacts)
-        assert not (out_dir / "manifest.yaml").exists()
-
-        normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-        summary = (out_dir / "summary.md").read_text()
-        with (out_dir / "metrics.csv").open() as handle:
-            metric_rows = list(csv.DictReader(handle))
-        with (out_dir / "events.csv").open() as handle:
-            event_rows = list(csv.DictReader(handle))
-
-        actions = tuple(_actions_from_normalized_config(normalized_config))
-        ticks = normalized_config["run"]["ticks"]
-        roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
-        event_bundle = _integrated_aggregate_bundle_from_events(
-            event_rows,
-            ticks=ticks,
-            roles=roles,
-            actions=actions,
+        bundles.append(
+            _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+                out_dir,
+                expected_artifacts=artifacts,
+                expected_experiment_id="a0_no_manifest",
+                expected_actions=("idle", "message", "create_task", "work_task"),
+            )
         )
-
-        assert normalized_config["run"]["experiment_id"] == "a0_no_manifest"
-        assert normalized_config["outputs"]["write_manifest"] is False
-        assert actions == ("idle", "message", "create_task", "work_task")
-        assert event_bundle == _integrated_aggregate_bundle_from_metrics(
-            metric_rows,
-            actions=actions,
-        )
-        assert event_bundle == _summary_integrated_aggregate_bundle(
-            summary,
-            actions=actions,
-        )
-        bundles.append(event_bundle)
 
     assert bundles[0]
     assert bundles[0] == bundles[1]
@@ -3215,44 +3191,19 @@ def test_documented_cli_no_manifest_default_actions_event_replay_reconstructs_lo
     _assert_artifacts_match_output_directory(out_dir, artifacts)
 
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    summary = (out_dir / "summary.md").read_text()
-    with (out_dir / "metrics.csv").open() as handle:
-        metric_rows = list(csv.DictReader(handle))
-    with (out_dir / "events.csv").open() as handle:
-        event_rows = list(csv.DictReader(handle))
-
-    actions = tuple(_actions_from_normalized_config(normalized_config))
-    ticks = normalized_config["run"]["ticks"]
-    roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
-    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
-    event_bundle = _integrated_aggregate_bundle_from_events(
-        event_rows,
-        ticks=ticks,
-        roles=roles,
-        actions=actions,
+    event_bundle = _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+        out_dir,
+        expected_artifacts=artifacts,
+        expected_experiment_id="a0_no_manifest",
+        expected_actions=("idle", "message", "create_task", "work_task"),
     )
-    metrics_bundle = _integrated_aggregate_bundle_from_metrics(
-        metric_rows,
-        actions=actions,
-    )
-    summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
 
     assert normalized_config["run"]["experiment_id"] == "a0_no_manifest"
     assert normalized_config["outputs"]["write_manifest"] is False
-    assert actions == ("idle", "message", "create_task", "work_task")
     assert not (out_dir / "manifest.yaml").exists()
-    assert _summary_written_artifacts(summary) == artifacts
-    assert _lobe_label_sequence(event_lobe_rows) == _lobe_label_sequence(metric_rows)
-    assert _lobe_transition_field_sequence(event_lobe_rows) == _lobe_transition_field_sequence(
-        metric_rows
-    )
-    assert _lobe_dwell_runs(event_lobe_rows) == _lobe_dwell_runs(metric_rows)
-    assert event_bundle["task_queue_pressure_and_age"] == metrics_bundle[
-        "task_queue_pressure_and_age"
-    ]
-    assert event_bundle["lobe_aggregates"] == metrics_bundle["lobe_aggregates"]
-    assert event_bundle["role_action_totals"] == metrics_bundle["role_action_totals"]
-    assert event_bundle == summary_bundle
+    assert event_bundle["task_queue_pressure_and_age"]
+    assert event_bundle["lobe_aggregates"]
+    assert event_bundle["role_action_totals"]
 
 
 def test_run_api_no_manifest_default_actions_event_replay_reconstructs_lobes_queue_and_roles(
@@ -3265,48 +3216,25 @@ def test_run_api_no_manifest_default_actions_event_replay_reconstructs_lobes_que
     _assert_artifacts_match_output_directory(out_dir, artifacts)
 
     normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    summary = (out_dir / "summary.md").read_text()
-    with (out_dir / "metrics.csv").open() as handle:
-        metric_rows = list(csv.DictReader(handle))
-    with (out_dir / "events.csv").open() as handle:
-        event_rows = list(csv.DictReader(handle))
-
-    actions = tuple(_actions_from_normalized_config(normalized_config))
-    ticks = normalized_config["run"]["ticks"]
-    roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
-    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
-    event_bundle = _integrated_aggregate_bundle_from_events(
-        event_rows,
-        ticks=ticks,
-        roles=roles,
-        actions=actions,
+    event_bundle = _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+        out_dir,
+        expected_artifacts=artifacts,
+        expected_experiment_id="a0_no_manifest",
+        expected_actions=("idle", "message", "create_task", "work_task"),
     )
-    metrics_bundle = _integrated_aggregate_bundle_from_metrics(
-        metric_rows,
-        actions=actions,
-    )
-    summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
 
     assert result.config.to_dict() == normalized_config
     assert result.seed == 1
-    assert len(result.metrics) == len(metric_rows) == ticks
-    assert len(result.events) == len(event_rows) == ticks * normalized_config["model"]["agent_count"]
     assert normalized_config["run"]["experiment_id"] == "a0_no_manifest"
     assert normalized_config["outputs"]["write_manifest"] is False
-    assert actions == ("idle", "message", "create_task", "work_task")
     assert not (out_dir / "manifest.yaml").exists()
-    assert _summary_written_artifacts(summary) == artifacts
-    assert _lobe_label_sequence(event_lobe_rows) == _lobe_label_sequence(metric_rows)
-    assert _lobe_transition_field_sequence(event_lobe_rows) == _lobe_transition_field_sequence(
-        metric_rows
+    assert len(result.metrics) == normalized_config["run"]["ticks"]
+    assert len(result.events) == (
+        normalized_config["run"]["ticks"] * normalized_config["model"]["agent_count"]
     )
-    assert _lobe_dwell_runs(event_lobe_rows) == _lobe_dwell_runs(metric_rows)
-    assert event_bundle["task_queue_pressure_and_age"] == metrics_bundle[
-        "task_queue_pressure_and_age"
-    ]
-    assert event_bundle["lobe_aggregates"] == metrics_bundle["lobe_aggregates"]
-    assert event_bundle["role_action_totals"] == metrics_bundle["role_action_totals"]
-    assert event_bundle == summary_bundle
+    assert event_bundle["task_queue_pressure_and_age"]
+    assert event_bundle["lobe_aggregates"]
+    assert event_bundle["role_action_totals"]
 
 
 def test_run_api_no_manifest_default_actions_event_replay_bundle_reproducibility(
@@ -3323,38 +3251,14 @@ def test_run_api_no_manifest_default_actions_event_replay_bundle_reproducibility
 
     bundles = []
     for out_dir in [first, second, different]:
-        _assert_artifacts_match_output_directory(out_dir, artifacts)
-        assert not (out_dir / "manifest.yaml").exists()
-
-        normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-        summary = (out_dir / "summary.md").read_text()
-        with (out_dir / "metrics.csv").open() as handle:
-            metric_rows = list(csv.DictReader(handle))
-        with (out_dir / "events.csv").open() as handle:
-            event_rows = list(csv.DictReader(handle))
-
-        actions = tuple(_actions_from_normalized_config(normalized_config))
-        ticks = normalized_config["run"]["ticks"]
-        roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
-        event_bundle = _integrated_aggregate_bundle_from_events(
-            event_rows,
-            ticks=ticks,
-            roles=roles,
-            actions=actions,
+        bundles.append(
+            _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+                out_dir,
+                expected_artifacts=artifacts,
+                expected_experiment_id="a0_no_manifest",
+                expected_actions=("idle", "message", "create_task", "work_task"),
+            )
         )
-
-        assert normalized_config["run"]["experiment_id"] == "a0_no_manifest"
-        assert normalized_config["outputs"]["write_manifest"] is False
-        assert actions == ("idle", "message", "create_task", "work_task")
-        assert event_bundle == _integrated_aggregate_bundle_from_metrics(
-            metric_rows,
-            actions=actions,
-        )
-        assert event_bundle == _summary_integrated_aggregate_bundle(
-            summary,
-            actions=actions,
-        )
-        bundles.append(event_bundle)
 
     assert bundles[0]
     assert bundles[0] == bundles[1]
@@ -3375,38 +3279,14 @@ def test_documented_cli_no_manifest_default_actions_event_replay_bundle_reproduc
 
     bundles = []
     for out_dir in [first, second, different]:
-        _assert_artifacts_match_output_directory(out_dir, artifacts)
-        assert not (out_dir / "manifest.yaml").exists()
-
-        normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-        summary = (out_dir / "summary.md").read_text()
-        with (out_dir / "metrics.csv").open() as handle:
-            metric_rows = list(csv.DictReader(handle))
-        with (out_dir / "events.csv").open() as handle:
-            event_rows = list(csv.DictReader(handle))
-
-        actions = tuple(_actions_from_normalized_config(normalized_config))
-        ticks = normalized_config["run"]["ticks"]
-        roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
-        event_bundle = _integrated_aggregate_bundle_from_events(
-            event_rows,
-            ticks=ticks,
-            roles=roles,
-            actions=actions,
+        bundles.append(
+            _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+                out_dir,
+                expected_artifacts=artifacts,
+                expected_experiment_id="a0_no_manifest",
+                expected_actions=("idle", "message", "create_task", "work_task"),
+            )
         )
-
-        assert normalized_config["run"]["experiment_id"] == "a0_no_manifest"
-        assert normalized_config["outputs"]["write_manifest"] is False
-        assert actions == ("idle", "message", "create_task", "work_task")
-        assert event_bundle == _integrated_aggregate_bundle_from_metrics(
-            metric_rows,
-            actions=actions,
-        )
-        assert event_bundle == _summary_integrated_aggregate_bundle(
-            summary,
-            actions=actions,
-        )
-        bundles.append(event_bundle)
 
     assert bundles[0]
     assert bundles[0] == bundles[1]
@@ -7943,6 +7823,55 @@ def _assert_full_output_event_replay_matches_metrics_and_summary(
         summary,
         actions=actions,
     )
+
+
+def _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+    out_dir: Path,
+    *,
+    expected_artifacts: list[str],
+    expected_experiment_id: str,
+    expected_actions: tuple[str, ...],
+) -> dict[str, object]:
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    actions = tuple(_actions_from_normalized_config(normalized_config))
+    ticks = normalized_config["run"]["ticks"]
+    agent_count = normalized_config["model"]["agent_count"]
+    roles = _baseline_roles_for_agent_count(agent_count)
+    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
+    event_bundle = _integrated_aggregate_bundle_from_events(
+        event_rows,
+        ticks=ticks,
+        roles=roles,
+        actions=actions,
+    )
+    metrics_bundle = _integrated_aggregate_bundle_from_metrics(
+        metric_rows,
+        actions=actions,
+    )
+    summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
+
+    assert normalized_config["run"]["experiment_id"] == expected_experiment_id
+    assert normalized_config["outputs"]["write_manifest"] is False
+    assert actions == expected_actions
+    assert len(metric_rows) == ticks
+    assert len(event_rows) == ticks * agent_count
+    _assert_artifacts_match_output_directory(out_dir, expected_artifacts)
+    assert not (out_dir / "manifest.yaml").exists()
+    assert _summary_written_artifacts(summary) == expected_artifacts
+    assert _lobe_label_sequence(event_lobe_rows) == _lobe_label_sequence(metric_rows)
+    assert _lobe_transition_field_sequence(event_lobe_rows) == _lobe_transition_field_sequence(
+        metric_rows
+    )
+    assert _lobe_dwell_runs(event_lobe_rows) == _lobe_dwell_runs(metric_rows)
+    assert event_bundle == metrics_bundle
+    assert event_bundle == summary_bundle
+    return event_bundle
 
 
 def _assert_manifest_bus_counts_match_summary_and_metrics_row(

@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 A0/A1 README-anchored default-action no-manifest event replay reproducibility regression added
-- Changed: added one concise README-anchored `a0_no_manifest` default-action regression that verifies the documented command text, runs same-seed and different-seed no-manifest outputs through `python -m ohdyn.run`, reconstructs integrated lobe/task-queue/role-action bundles from `events.csv` using roles derived from normalized `config.yaml`, compares those bundles against `metrics.csv` and `summary.md`, verifies no `manifest.yaml` dependency, and asserts same-seed equality plus different-seed divergence.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "readme_no_manifest_default_actions_event_replay_bundle_reproducibility" -q` passed with 1 test and 420 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 421 tests; `.venv-conda/bin/python -m ruff check .` passed.
+- Status: ok, 2026-06-23 A0/A1 no-manifest event replay bundle assertion helper extracted
+- Changed: added shared `_assert_no_manifest_event_replay_bundle_matches_metrics_and_summary` coverage in `tests/test_run_harness.py` and rewired the default-action no-manifest CLI/API/readme replay regressions to use it. The helper verifies emitted artifact contents, absence of `manifest.yaml`, config-derived roles/actions, event replay against `metrics.csv`, summary aggregate parity, and lobe label/transition/dwell reconstruction.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "no_manifest_default_actions_event_replay or readme_no_manifest_default_actions_event_replay_bundle_reproducibility" -q` passed with 5 tests and 416 deselected; `.venv-conda/bin/python -m ruff check .` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 421 tests.
 - Blockers: none.
-- Next step: extract a shared no-manifest event-replay bundle assertion helper to reduce duplication before adding more A0/A1 replay regressions.
+- Next step: apply the shared no-manifest event-replay bundle helper to the reordered-actions no-manifest replay regressions.
