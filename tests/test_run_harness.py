@@ -913,6 +913,62 @@ def test_a2_attention_pressure_summary_interprets_per_class_capture_pressure(
         assert f"- {policy} class response: policy={policy}, " in summary
 
 
+def test_a2_attention_pressure_summary_compares_per_class_prefix_responses(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+    readme = Path("README.md").read_text()
+
+    run_pressure_comparison(seeds=(1, 2, 3), out_dir=out_dir)
+
+    with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+    class_fields = [
+        field
+        for field in PRESSURE_COMPARISON_FIELDS
+        if "_capture_pressure_" in field
+        and any(field.startswith(f"{class_name}_") for class_name in ATTENTION_CLASSES)
+        and field.endswith(
+            (
+                "_normal_to_medium_slope",
+                "_medium_to_high_slope",
+                "_pressure_curvature",
+            )
+        )
+    ]
+    candidates = [
+        (
+            -abs(float(row[field])),
+            row["policy"],
+            field,
+            float(row[field]),
+        )
+        for row in rows
+        for field in class_fields
+    ]
+    _, expected_policy, expected_field, expected_value = sorted(candidates)[0]
+
+    assert "`Per-class capture-pressure prefix comparison`" in readme
+    assert "class-specific pressure-response ranking" in readme
+    assert "## Per-class capture-pressure prefix comparison" in summary
+    assert "- comparison: full_seeds=1,2,3, prefix_seeds=1,2" in summary
+    assert (
+        f"- full class top response: policy={expected_policy}, "
+    ) in summary
+    assert f"field={expected_field}" in summary
+    assert f"value={round(expected_value, 6)}" in summary
+    assert "- class top response stable across prefix: " in summary
+    assert "- class top response stable across all prefixes: " in summary
+    assert "- class prefix instability causes: " in summary
+    assert (
+        "| prefix_seeds | class_top_response | stable_with_full | "
+        "instability_causes |"
+    ) in summary
+    assert "| 1 | policy=" in summary
+    assert "| 1,2 | policy=" in summary
+
+
 def test_a2_attention_pressure_summary_identifies_most_sensitive_curve_metric(
     tmp_path: Path,
 ) -> None:

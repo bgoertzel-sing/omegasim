@@ -758,6 +758,16 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Per-class capture-pressure prefix comparison",
+        "",
+        *_per_class_capture_pressure_prefix_comparison_lines(
+            seeds=seeds,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Seed-set sensitivity",
         "",
         *_seed_set_sensitivity_lines(
@@ -778,6 +788,96 @@ def _pressure_summary(
         "",
     ]
     return "\n".join(lines)
+
+
+def _per_class_capture_pressure_prefix_comparison_lines(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    if len(seeds) < 2:
+        return ["- unavailable: at least two seeds are required for prefix comparison."]
+
+    full_candidates = _per_class_capture_pressure_candidates(rows)
+    if not full_candidates:
+        return ["- no per-class capture-pressure responses available for prefix comparison."]
+
+    prefix_comparisons = _prefix_per_class_capture_pressure_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+    last_prefix = prefix_comparisons[-1]
+    full_top = full_candidates[0]
+    prefix_top = last_prefix["top_response"]
+
+    return [
+        (
+            f"- comparison: full_seeds={_format_seed_set(seeds)}, "
+            f"prefix_seeds={_format_seed_set(last_prefix['prefix_seeds'])}"
+        ),
+        f"- full class top response: {_format_pressure_response_candidate(full_top)}",
+        f"- prefix class top response: {_format_pressure_response_candidate(prefix_top)}",
+        (
+            "- class top response stable across prefix: "
+            f"{str(last_prefix['stable_with_full']).lower()}"
+        ),
+        (
+            "- class top response stable across all prefixes: "
+            f"{str(all(comparison['stable_with_full'] for comparison in prefix_comparisons)).lower()}"
+        ),
+        f"- class prefix instability causes: {last_prefix['instability_causes']}",
+        "",
+        "| prefix_seeds | class_top_response | stable_with_full | instability_causes |",
+        "| --- | --- | --- | --- |",
+        *[
+            (
+                f"| {_format_seed_set(comparison['prefix_seeds'])} | "
+                f"{_format_pressure_response_candidate(comparison['top_response'])} | "
+                f"{str(comparison['stable_with_full']).lower()} | "
+                f"{comparison['instability_causes']} |"
+            )
+            for comparison in prefix_comparisons
+        ],
+    ]
+
+
+def _prefix_per_class_capture_pressure_comparisons(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    full_top = _per_class_capture_pressure_candidates(rows)[0]
+    comparisons: list[dict[str, Any]] = []
+    for prefix_length in range(1, len(seeds)):
+        prefix_seeds = seeds[:prefix_length]
+        prefix_seed_set = set(prefix_seeds)
+        prefix_rows = _pressure_rows(
+            _rows_for_seeds(normal_rows, prefix_seed_set),
+            _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
+            _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+        )
+        prefix_top = _per_class_capture_pressure_candidates(prefix_rows)[0]
+        comparisons.append(
+            {
+                "prefix_seeds": prefix_seeds,
+                "top_response": prefix_top,
+                "stable_with_full": _same_pressure_response(full_top, prefix_top),
+                "instability_causes": _pressure_response_instability_causes(
+                    full_top,
+                    prefix_top,
+                ),
+            }
+        )
+    return comparisons
 
 
 def _per_class_capture_pressure_interpretation_lines(
