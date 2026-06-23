@@ -8,8 +8,8 @@ Phase A2 pressure-curve comparison interpretation on top of the stable A0/A1 loc
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 added deterministic pressure prefix instability-cause reporting.
-- Changed: no simulator behavior changes; pressure `summary.md` now reports `prefix instability causes` for the last prefix comparison and adds an `instability_causes` column to the per-prefix seed-set sensitivity table. Cause labels identify whether an unstable top pressure response changed by `policy`, `observable`, `metric`, or a comma-separated combination. README documents the new interpretation contract, and pressure-summary tests assert the emitted cause labels.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_summary_reports_seed_set_sensitivity or pressure_summary'` passed with 4 selected tests; `.venv-conda/bin/python -m pytest` passed with 451 tests.
+- Status: ok, 2026-06-23 added deterministic pressure-response interpretation text.
+- Changed: no simulator behavior changes; pressure `summary.md` now includes a `Pressure-response interpretation` section after the top-response explanation. The section connects the full-seed winning response to its condition means, slopes, curvature, and high-minus-normal delta, and for unstable prefixes explains the changed `policy`/`observable`/`metric` dimensions using the prefix winner's same curve values. Added a regression test for the known unstable `1,2,3` seed-set case.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_summary'` passed with 5 selected tests; `.venv-conda/bin/python -m pytest` passed with 452 tests.
 - Blockers: none.
-- Next step: add a compact pressure-summary interpretation paragraph that connects the top unstable cause labels to the condition means and high-minus-normal deltas already reported for the winning responses.
+- Next step: document the new `Pressure-response interpretation` summary section in README so the pressure comparison output contract matches the emitted artifact.

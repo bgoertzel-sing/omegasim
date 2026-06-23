@@ -451,6 +451,16 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Pressure-response interpretation",
+        "",
+        *_pressure_response_interpretation_lines(
+            seeds=seeds,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Seed-set sensitivity",
         "",
         *_seed_set_sensitivity_lines(
@@ -471,6 +481,137 @@ def _pressure_summary(
         "",
     ]
     return "\n".join(lines)
+
+
+def _pressure_response_interpretation_lines(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    candidates = _pressure_curve_response_candidates(rows)
+    if not candidates:
+        return ["- no pressure-curve responses available for interpretation."]
+
+    full_top = candidates[0]
+    full_details = _pressure_response_condition_details(
+        full_top,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+
+    lines = [
+        (
+            "- full-seed interpretation: "
+            f"{_format_pressure_response_subject(full_top)} is the largest absolute "
+            f"pressure response; condition means move "
+            f"{full_details['normal_mean']} -> {full_details['medium_mean']} -> "
+            f"{full_details['high_mean']} with normal_to_medium_slope="
+            f"{full_details['normal_to_medium_slope']}, medium_to_high_slope="
+            f"{full_details['medium_to_high_slope']}, curvature="
+            f"{full_details['curvature']}, and high_minus_normal_delta="
+            f"{full_details['high_minus_normal_delta']}."
+        )
+    ]
+
+    if len(seeds) < 2:
+        lines.append(
+            "- prefix interpretation: unavailable because at least two seeds are required."
+        )
+        return lines
+
+    prefix_comparisons = _prefix_pressure_response_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+    last_prefix = prefix_comparisons[-1]
+    if last_prefix["stable_with_full"]:
+        lines.append(
+            (
+                "- prefix interpretation: the last prefix selects the same policy, "
+                "observable, and metric, so the leading pressure-response explanation "
+                "is stable for the checked prefix."
+            )
+        )
+        return lines
+
+    prefix_top = last_prefix["top_response"]
+    prefix_seed_set = set(last_prefix["prefix_seeds"])
+    prefix_rows = _pressure_rows(
+        _rows_for_seeds(normal_rows, prefix_seed_set),
+        _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
+        _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+    )
+    prefix_details = _pressure_response_condition_details(
+        prefix_top,
+        rows=prefix_rows,
+        normal_rows=_rows_for_seeds(normal_rows, prefix_seed_set),
+        medium_pressure_rows=_rows_for_seeds(medium_pressure_rows, prefix_seed_set),
+        high_pressure_rows=_rows_for_seeds(high_pressure_rows, prefix_seed_set),
+    )
+    lines.append(
+        (
+            "- prefix interpretation: instability causes="
+            f"{last_prefix['instability_causes']} because prefix_seeds="
+            f"{_format_seed_set(last_prefix['prefix_seeds'])} select "
+            f"{_format_pressure_response_subject(prefix_top)} with condition means "
+            f"{prefix_details['normal_mean']} -> {prefix_details['medium_mean']} -> "
+            f"{prefix_details['high_mean']}, normal_to_medium_slope="
+            f"{prefix_details['normal_to_medium_slope']}, medium_to_high_slope="
+            f"{prefix_details['medium_to_high_slope']}, curvature="
+            f"{prefix_details['curvature']}, and high_minus_normal_delta="
+            f"{prefix_details['high_minus_normal_delta']}; the full seed set selects "
+            f"{_format_pressure_response_subject(full_top)}."
+        )
+    )
+    return lines
+
+
+def _pressure_response_condition_details(
+    candidate: dict[str, Any],
+    *,
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> dict[str, float]:
+    policy = str(candidate["policy"])
+    source_field = str(candidate["source_field"])
+    observable_prefix = str(candidate["observable_prefix"])
+    pressure_row = next(row for row in rows if row["policy"] == policy)
+    return {
+        "normal_mean": _policy_condition_mean(normal_rows, policy, source_field),
+        "medium_mean": _policy_condition_mean(
+            medium_pressure_rows,
+            policy,
+            source_field,
+        ),
+        "high_mean": _policy_condition_mean(high_pressure_rows, policy, source_field),
+        "normal_to_medium_slope": float(
+            pressure_row[f"{observable_prefix}_normal_to_medium_slope"]
+        ),
+        "medium_to_high_slope": float(
+            pressure_row[f"{observable_prefix}_medium_to_high_slope"]
+        ),
+        "curvature": float(pressure_row[f"{observable_prefix}_pressure_curvature"]),
+        "high_minus_normal_delta": float(
+            pressure_row[_pressure_delta_field(observable_prefix)]
+        ),
+    }
+
+
+def _format_pressure_response_subject(candidate: dict[str, Any]) -> str:
+    return (
+        f"policy={candidate['policy']} observable={candidate['observable']} "
+        f"metric={candidate['metric']}"
+    )
 
 
 def _seed_set_sensitivity_lines(

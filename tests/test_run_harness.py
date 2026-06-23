@@ -942,6 +942,37 @@ def test_a2_attention_pressure_summary_explains_top_curve_response(
     ) in summary
 
 
+def test_a2_attention_pressure_summary_interprets_unstable_prefix_response(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2, 3), out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+
+    assert "## Pressure-response interpretation" in summary
+    assert (
+        "- full-seed interpretation: policy=internal_improvement "
+        "observable=final queue depth metric=normal_to_medium_slope "
+        "is the largest absolute pressure response; condition means move"
+    ) in summary
+    assert "normal_to_medium_slope=46.666665" in summary
+    assert "medium_to_high_slope=15.833335" in summary
+    assert "curvature=-30.83333" in summary
+    assert "high_minus_normal_delta=25.0" in summary
+    assert (
+        "- prefix interpretation: instability causes=policy,observable,metric "
+        "because prefix_seeds=1,2 select policy=baseline "
+        "observable=value-weighted completed work metric=curvature "
+        "with condition means"
+    ) in summary
+    assert (
+        "the full seed set selects policy=internal_improvement "
+        "observable=final queue depth metric=normal_to_medium_slope."
+    ) in summary
+
+
 def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
     tmp_path: Path,
 ) -> None:
