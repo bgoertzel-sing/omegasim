@@ -7673,22 +7673,19 @@ def _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
     expected_experiment_id: str,
     expected_actions: tuple[str, ...],
 ) -> dict[str, object]:
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    summary = (out_dir / "summary.md").read_text()
-    with (out_dir / "metrics.csv").open() as handle:
-        metric_rows = list(csv.DictReader(handle))
-    with (out_dir / "events.csv").open() as handle:
-        event_rows = list(csv.DictReader(handle))
-
-    actions = tuple(_actions_from_normalized_config(normalized_config))
-    ticks = normalized_config["run"]["ticks"]
-    agent_count = normalized_config["model"]["agent_count"]
-    roles = _baseline_roles_for_agent_count(agent_count)
-    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
+    replay = _no_manifest_event_replay_context(out_dir)
+    normalized_config = replay["config"]
+    summary = replay["summary"]
+    metric_rows = replay["metric_rows"]
+    event_rows = replay["event_rows"]
+    actions = replay["actions"]
+    ticks = replay["ticks"]
+    agent_count = replay["agent_count"]
+    event_lobe_rows = replay["event_lobe_rows"]
     event_bundle = _integrated_aggregate_bundle_from_events(
         event_rows,
         ticks=ticks,
-        roles=roles,
+        roles=replay["roles"],
         actions=actions,
     )
     metrics_bundle = _integrated_aggregate_bundle_from_metrics(
@@ -7718,23 +7715,16 @@ def _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
 def _no_manifest_reordered_actions_event_replay_sequences(
     out_dir: Path,
 ) -> dict[str, object]:
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    with (out_dir / "metrics.csv").open() as handle:
-        metric_rows = list(csv.DictReader(handle))
-    with (out_dir / "events.csv").open() as handle:
-        event_rows = list(csv.DictReader(handle))
-
-    actions = tuple(_actions_from_normalized_config(normalized_config))
-    ticks = normalized_config["run"]["ticks"]
-    agent_count = normalized_config["model"]["agent_count"]
-    roles = _baseline_roles_for_agent_count(agent_count)
-    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
+    replay = _no_manifest_event_replay_context(out_dir)
+    normalized_config = replay["config"]
+    metric_rows = replay["metric_rows"]
+    event_rows = replay["event_rows"]
+    actions = replay["actions"]
+    ticks = replay["ticks"]
+    roles = replay["roles"]
+    event_lobe_rows = replay["event_lobe_rows"]
 
     assert actions == ("work_task", "create_task", "message", "idle")
-    assert normalized_config["outputs"]["write_manifest"] is False
-    assert len(metric_rows) == ticks
-    assert len(event_rows) == ticks * agent_count
-    assert not (out_dir / "manifest.yaml").exists()
 
     return {
         "config": normalized_config,
@@ -7762,6 +7752,38 @@ def _no_manifest_reordered_actions_event_replay_sequences(
         "lobe_labels": _lobe_label_sequence(event_lobe_rows),
         "lobe_transitions": _lobe_transition_field_sequence(event_lobe_rows),
         "lobe_run_state": _lobe_run_state_sequence(event_lobe_rows),
+    }
+
+
+def _no_manifest_event_replay_context(out_dir: Path) -> dict[str, object]:
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    actions = tuple(_actions_from_normalized_config(normalized_config))
+    ticks = normalized_config["run"]["ticks"]
+    agent_count = normalized_config["model"]["agent_count"]
+    roles = _baseline_roles_for_agent_count(agent_count)
+    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
+
+    assert normalized_config["outputs"]["write_manifest"] is False
+    assert len(metric_rows) == ticks
+    assert len(event_rows) == ticks * agent_count
+    assert not (out_dir / "manifest.yaml").exists()
+
+    return {
+        "config": normalized_config,
+        "summary": summary,
+        "metric_rows": metric_rows,
+        "event_rows": event_rows,
+        "event_lobe_rows": event_lobe_rows,
+        "actions": actions,
+        "ticks": ticks,
+        "agent_count": agent_count,
+        "roles": roles,
     }
 
 
