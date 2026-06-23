@@ -5509,15 +5509,16 @@ def test_run_api_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: Path) -
 def test_run_api_omitted_outputs_same_seed_reproduces_byte_identical_artifacts(
     tmp_path: Path,
 ) -> None:
-    first = tmp_path / "default_outputs_api_seed17_first"
-    second = tmp_path / "default_outputs_api_seed17_second"
+    first, second, first_result, second_result = _run_api_pair(
+        DEFAULT_OUTPUTS,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name="default_outputs_api_seed17_first",
+        second_name="default_outputs_api_seed17_second",
+    )
     artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
 
-    first_result = run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=first)
-    second_result = run_experiment(DEFAULT_OUTPUTS, seed=17, out_dir=second)
-
-    _assert_artifacts_match_output_directory(first, artifacts)
-    _assert_artifacts_match_output_directory(second, artifacts)
     assert first_result.config.to_dict() == second_result.config.to_dict()
     assert first_result.seed == second_result.seed == 17
     assert first_result.metrics == second_result.metrics
