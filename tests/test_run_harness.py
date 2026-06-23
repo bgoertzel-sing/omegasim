@@ -23,6 +23,7 @@ from ohdyn.sim import (
     role_action_metric_fields,
 )
 from ohdyn.config import ATTENTION_CLASSES, load_config
+from ohdyn.compare_attention import run_comparison
 from ohdyn.run import run_experiment
 
 
@@ -376,6 +377,78 @@ def test_a2_attention_comparison_shifts_work_toward_research(tmp_path: Path) -> 
     )
 
 
+def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a2_attention_compare"
+
+    rows = run_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    assert len(rows) == 4
+    assert {row["policy"] for row in rows} == {"baseline", "variant"}
+    assert (out_dir / "comparison_metrics.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+    for policy in ("baseline", "variant"):
+        for seed in (1, 2):
+            assert (out_dir / f"{policy}_seed{seed}" / "metrics.csv").is_file()
+
+    with (out_dir / "comparison_metrics.csv").open() as handle:
+        csv_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(csv_rows) == 4
+    assert csv_rows[0]["value_weighted_completed_total"]
+    assert "## Policy means" in summary
+    assert "## Variant minus baseline" in summary
+    assert "- long-term research completions mean: " in summary
+
+
+def test_a2_attention_comparison_runner_is_reproducible(tmp_path: Path) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_comparison(seeds=(1, 2), out_dir=first)
+    run_comparison(seeds=(1, 2), out_dir=second)
+
+    assert (first / "comparison_metrics.csv").read_text() == (
+        second / "comparison_metrics.csv"
+    ).read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_a2_attention_comparison_runner_aggregates_research_heavy_shift(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_compare"
+
+    run_comparison(seeds=(1, 2, 3), out_dir=out_dir)
+
+    with (out_dir / "comparison_metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    baseline_research = _mean_csv_metric(
+        rows,
+        policy="baseline",
+        field="long_term_research_completed_total",
+    )
+    variant_research = _mean_csv_metric(
+        rows,
+        policy="variant",
+        field="long_term_research_completed_total",
+    )
+    baseline_value = _mean_csv_metric(
+        rows,
+        policy="baseline",
+        field="value_weighted_completed_total",
+    )
+    variant_value = _mean_csv_metric(
+        rows,
+        policy="variant",
+        field="value_weighted_completed_total",
+    )
+
+    assert variant_research > baseline_research
+    assert variant_value < baseline_value
+
+
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -390,6 +463,16 @@ def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
     assert row["bus_degree_centralization"] == "1.0"
     assert "- bus density: 0.125" in (out_dir / "summary.md").read_text()
     assert "- bus mean degree: 1.875" in (out_dir / "summary.md").read_text()
+
+
+def _mean_csv_metric(
+    rows: list[dict[str, str]],
+    *,
+    policy: str,
+    field: str,
+) -> float:
+    policy_rows = [row for row in rows if row["policy"] == policy]
+    return sum(float(row[field]) for row in policy_rows) / len(policy_rows)
 
 
 def test_metrics_csv_records_role_action_counts(tmp_path: Path) -> None:

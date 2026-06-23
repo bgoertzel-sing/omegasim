@@ -64,6 +64,14 @@ python -m ohdyn.run --config configs/a2_attention_research_heavy.yaml --seed 1 -
 
 The focused comparison test runs `configs/a2_attention_smoke.yaml` and `configs/a2_attention_research_heavy.yaml` with the same seed and verifies that the research-heavy policy shifts completed work toward `long_term_research` while changing value-weighted throughput and stale-task age.
 
+A small deterministic comparison runner executes both A2 fixtures across a short seed set and writes per-run artifacts plus aggregate comparison outputs:
+
+```bash
+python -m ohdyn.compare_attention --seeds 1 2 3 --out runs/a2_attention_compare
+```
+
+The comparison directory contains `comparison_metrics.csv`, an aggregate `summary.md`, and one normal run artifact directory per policy/seed. The aggregate CSV uses stable run subdirectory names so same-seed comparisons are byte-reproducible across output parent directories.
+
 ## Output Schema
 
 Every run writes `config.yaml`, a normalized copy of the loaded config. Optional artifact flags in the config control the remaining outputs.
