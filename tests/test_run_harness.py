@@ -1429,11 +1429,14 @@ def test_documented_cli_role_action_summary_totals_reproduce_across_same_seed_fu
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_role_action_summary_first"
-    second = tmp_path / f"{config_path.stem}_cli_role_action_summary_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_role_action_summary_first",
+        second_name=f"{config_path.stem}_cli_role_action_summary_second",
+    )
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
@@ -1977,11 +1980,14 @@ def test_documented_cli_summary_queue_pressure_totals_reproduce_across_same_seed
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_summary_queue_pressure_first"
-    second = tmp_path / f"{config_path.stem}_cli_summary_queue_pressure_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_summary_queue_pressure_first",
+        second_name=f"{config_path.stem}_cli_summary_queue_pressure_second",
+    )
 
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
@@ -2035,11 +2041,14 @@ def test_documented_cli_summary_task_and_queue_totals_reproduce_across_same_seed
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_summary_task_queue_totals_first"
-    second = tmp_path / f"{config_path.stem}_cli_summary_task_queue_totals_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_summary_task_queue_totals_first",
+        second_name=f"{config_path.stem}_cli_summary_task_queue_totals_second",
+    )
 
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
@@ -2093,11 +2102,14 @@ def test_documented_cli_summary_event_type_totals_reproduce_across_same_seed_ful
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_summary_event_type_totals_first"
-    second = tmp_path / f"{config_path.stem}_cli_summary_event_type_totals_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_summary_event_type_totals_first",
+        second_name=f"{config_path.stem}_cli_summary_event_type_totals_second",
+    )
 
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
@@ -2155,11 +2167,14 @@ def test_documented_cli_summary_queued_task_age_aggregates_reproduce_across_same
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_summary_queued_task_age_first"
-    second = tmp_path / f"{config_path.stem}_cli_summary_queued_task_age_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_summary_queued_task_age_first",
+        second_name=f"{config_path.stem}_cli_summary_queued_task_age_second",
+    )
 
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
@@ -2220,11 +2235,14 @@ def test_documented_cli_summary_task_queue_pressure_and_age_aggregate_tuple_repr
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_summary_queue_integrity_first"
-    second = tmp_path / f"{config_path.stem}_cli_summary_queue_integrity_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_summary_queue_integrity_first",
+        second_name=f"{config_path.stem}_cli_summary_queue_integrity_second",
+    )
 
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
@@ -2253,11 +2271,14 @@ def test_documented_cli_integrated_summary_aggregate_bundle_reproduces_across_sa
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_summary_bundle_first"
-    second = tmp_path / f"{config_path.stem}_cli_summary_bundle_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_summary_bundle_first",
+        second_name=f"{config_path.stem}_cli_summary_bundle_second",
+    )
 
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
