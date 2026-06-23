@@ -2518,65 +2518,30 @@ def test_documented_cli_no_manifest_reordered_actions_integrated_summary_aggrega
 ) -> None:
     first = tmp_path / "a0_no_manifest_reordered_actions_cli_event_bundle_first"
     second = tmp_path / "a0_no_manifest_reordered_actions_cli_event_bundle_second"
+    artifacts = _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS)
 
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, first, seed=17)
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, second, seed=17)
 
-    first_config = yaml.safe_load((first / "config.yaml").read_text())
-    second_config = yaml.safe_load((second / "config.yaml").read_text())
-    first_summary = (first / "summary.md").read_text()
-    second_summary = (second / "summary.md").read_text()
-    with (first / "metrics.csv").open() as handle:
-        first_metric_rows = list(csv.DictReader(handle))
-    with (second / "metrics.csv").open() as handle:
-        second_metric_rows = list(csv.DictReader(handle))
     with (first / "events.csv").open() as handle:
         first_event_rows = list(csv.DictReader(handle))
     with (second / "events.csv").open() as handle:
         second_event_rows = list(csv.DictReader(handle))
 
-    first_actions = tuple(first_config["model"]["actions"])
-    second_actions = tuple(second_config["model"]["actions"])
-    first_roles = _baseline_roles_for_agent_count(first_config["model"]["agent_count"])
-    second_roles = _baseline_roles_for_agent_count(second_config["model"]["agent_count"])
-    first_summary_bundle = _summary_integrated_aggregate_bundle(
-        first_summary,
-        actions=first_actions,
+    first_event_bundle = _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+        first,
+        expected_artifacts=artifacts,
+        expected_experiment_id="a0_no_manifest_reordered_actions",
+        expected_actions=("work_task", "create_task", "message", "idle"),
     )
-    second_summary_bundle = _summary_integrated_aggregate_bundle(
-        second_summary,
-        actions=second_actions,
-    )
-    first_event_bundle = _integrated_aggregate_bundle_from_events(
-        first_event_rows,
-        ticks=first_config["run"]["ticks"],
-        roles=first_roles,
-        actions=first_actions,
-    )
-    second_event_bundle = _integrated_aggregate_bundle_from_events(
-        second_event_rows,
-        ticks=second_config["run"]["ticks"],
-        roles=second_roles,
-        actions=second_actions,
+    second_event_bundle = _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+        second,
+        expected_artifacts=artifacts,
+        expected_experiment_id="a0_no_manifest_reordered_actions",
+        expected_actions=("work_task", "create_task", "message", "idle"),
     )
 
-    assert first_config == second_config
     assert first_event_rows == second_event_rows
-    assert first_actions == second_actions == ("work_task", "create_task", "message", "idle")
-    assert first_config["outputs"]["write_manifest"] is False
-    assert second_config["outputs"]["write_manifest"] is False
-    assert not (first / "manifest.yaml").exists()
-    assert not (second / "manifest.yaml").exists()
-    assert first_summary_bundle == _integrated_aggregate_bundle_from_metrics(
-        first_metric_rows,
-        actions=first_actions,
-    )
-    assert second_summary_bundle == _integrated_aggregate_bundle_from_metrics(
-        second_metric_rows,
-        actions=second_actions,
-    )
-    assert first_event_bundle == first_summary_bundle
-    assert second_event_bundle == second_summary_bundle
     assert first_event_bundle["task_queue_pressure_and_age"]
     assert first_event_bundle["lobe_aggregates"]
     assert first_event_bundle["role_action_totals"]
@@ -2640,65 +2605,30 @@ def test_documented_cli_no_manifest_reordered_actions_integrated_summary_aggrega
 ) -> None:
     first = tmp_path / "a0_no_manifest_reordered_actions_cli_event_bundle_seed1"
     second = tmp_path / "a0_no_manifest_reordered_actions_cli_event_bundle_seed2"
+    artifacts = _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS)
 
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, first, seed=1)
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, second, seed=2)
 
-    first_config = yaml.safe_load((first / "config.yaml").read_text())
-    second_config = yaml.safe_load((second / "config.yaml").read_text())
-    first_summary = (first / "summary.md").read_text()
-    second_summary = (second / "summary.md").read_text()
-    with (first / "metrics.csv").open() as handle:
-        first_metric_rows = list(csv.DictReader(handle))
-    with (second / "metrics.csv").open() as handle:
-        second_metric_rows = list(csv.DictReader(handle))
     with (first / "events.csv").open() as handle:
         first_event_rows = list(csv.DictReader(handle))
     with (second / "events.csv").open() as handle:
         second_event_rows = list(csv.DictReader(handle))
 
-    first_actions = tuple(first_config["model"]["actions"])
-    second_actions = tuple(second_config["model"]["actions"])
-    first_roles = _baseline_roles_for_agent_count(first_config["model"]["agent_count"])
-    second_roles = _baseline_roles_for_agent_count(second_config["model"]["agent_count"])
-    first_summary_bundle = _summary_integrated_aggregate_bundle(
-        first_summary,
-        actions=first_actions,
+    first_event_bundle = _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+        first,
+        expected_artifacts=artifacts,
+        expected_experiment_id="a0_no_manifest_reordered_actions",
+        expected_actions=("work_task", "create_task", "message", "idle"),
     )
-    second_summary_bundle = _summary_integrated_aggregate_bundle(
-        second_summary,
-        actions=second_actions,
-    )
-    first_event_bundle = _integrated_aggregate_bundle_from_events(
-        first_event_rows,
-        ticks=first_config["run"]["ticks"],
-        roles=first_roles,
-        actions=first_actions,
-    )
-    second_event_bundle = _integrated_aggregate_bundle_from_events(
-        second_event_rows,
-        ticks=second_config["run"]["ticks"],
-        roles=second_roles,
-        actions=second_actions,
+    second_event_bundle = _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+        second,
+        expected_artifacts=artifacts,
+        expected_experiment_id="a0_no_manifest_reordered_actions",
+        expected_actions=("work_task", "create_task", "message", "idle"),
     )
 
-    assert first_config == second_config
     assert first_event_rows != second_event_rows
-    assert first_actions == second_actions == ("work_task", "create_task", "message", "idle")
-    assert first_config["outputs"]["write_manifest"] is False
-    assert second_config["outputs"]["write_manifest"] is False
-    assert not (first / "manifest.yaml").exists()
-    assert not (second / "manifest.yaml").exists()
-    assert first_summary_bundle == _integrated_aggregate_bundle_from_metrics(
-        first_metric_rows,
-        actions=first_actions,
-    )
-    assert second_summary_bundle == _integrated_aggregate_bundle_from_metrics(
-        second_metric_rows,
-        actions=second_actions,
-    )
-    assert first_event_bundle == first_summary_bundle
-    assert second_event_bundle == second_summary_bundle
     assert first_event_bundle["task_queue_pressure_and_age"]
     assert second_event_bundle["task_queue_pressure_and_age"]
     assert first_event_bundle["lobe_aggregates"]
@@ -2886,6 +2816,7 @@ def test_readme_no_manifest_reordered_actions_lobe_replay_smoke_command(
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "a0_no_manifest_reordered_actions_readme_smoke"
+    artifacts = _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS)
     readme = Path("README.md").read_text()
     expected_command = (
         "python -m ohdyn.run --config configs/a0_no_manifest_reordered_actions.yaml "
@@ -2896,38 +2827,16 @@ def test_readme_no_manifest_reordered_actions_lobe_replay_smoke_command(
 
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, out_dir, seed=1)
 
-    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
-    summary = (out_dir / "summary.md").read_text()
-    with (out_dir / "metrics.csv").open() as handle:
-        metric_rows = list(csv.DictReader(handle))
-    with (out_dir / "events.csv").open() as handle:
-        event_rows = list(csv.DictReader(handle))
+    event_bundle = _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
+        out_dir,
+        expected_artifacts=artifacts,
+        expected_experiment_id="a0_no_manifest_reordered_actions",
+        expected_actions=("work_task", "create_task", "message", "idle"),
+    )
 
-    actions = tuple(normalized_config["model"]["actions"])
-    roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
-    event_lobe_rows = _lobe_metric_rows_from_events(
-        event_rows,
-        ticks=normalized_config["run"]["ticks"],
-    )
-    summary_bundle = _summary_integrated_aggregate_bundle(summary, actions=actions)
-
-    assert normalized_config["outputs"]["write_manifest"] is False
-    assert actions == ("work_task", "create_task", "message", "idle")
-    assert not (out_dir / "manifest.yaml").exists()
-    assert _summary_written_artifacts(summary) == _expected_artifacts(
-        NO_MANIFEST_REORDERED_ACTIONS
-    )
-    assert _lobe_label_sequence(event_lobe_rows) == _lobe_label_sequence(metric_rows)
-    assert _lobe_transition_field_sequence(event_lobe_rows) == _lobe_transition_field_sequence(
-        metric_rows
-    )
-    assert _lobe_run_state_sequence(event_lobe_rows) == _lobe_run_state_sequence(metric_rows)
-    assert summary_bundle == _integrated_aggregate_bundle_from_events(
-        event_rows,
-        ticks=normalized_config["run"]["ticks"],
-        roles=roles,
-        actions=actions,
-    )
+    assert event_bundle["task_queue_pressure_and_age"]
+    assert event_bundle["lobe_aggregates"]
+    assert event_bundle["role_action_totals"]
 
 
 def test_readme_no_manifest_reordered_actions_same_seed_reproduces_enabled_artifacts(

@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 A0/A1 no-manifest event replay bundle assertion helper extracted
-- Changed: added shared `_assert_no_manifest_event_replay_bundle_matches_metrics_and_summary` coverage in `tests/test_run_harness.py` and rewired the default-action no-manifest CLI/API/readme replay regressions to use it. The helper verifies emitted artifact contents, absence of `manifest.yaml`, config-derived roles/actions, event replay against `metrics.csv`, summary aggregate parity, and lobe label/transition/dwell reconstruction.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "no_manifest_default_actions_event_replay or readme_no_manifest_default_actions_event_replay_bundle_reproducibility" -q` passed with 5 tests and 416 deselected; `.venv-conda/bin/python -m ruff check .` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 421 tests.
+- Status: ok, 2026-06-23 A0/A1 reordered-actions no-manifest event replay helper reuse
+- Changed: applied `_assert_no_manifest_event_replay_bundle_matches_metrics_and_summary` to the reordered-actions no-manifest CLI same-seed replay regression, CLI different-seed replay regression, and README lobe replay smoke test in `tests/test_run_harness.py`. The refactor keeps explicit same/different seed event-row and aggregate-bundle checks while centralizing emitted artifact, no-manifest, config action order, event replay, metrics parity, summary parity, and lobe label/transition/dwell assertions.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "no_manifest_reordered_actions_integrated_summary_aggregate_bundle_reconstructs_from_events or readme_no_manifest_reordered_actions_lobe_replay_smoke_command" -q` passed with 3 tests and 418 deselected; `.venv-conda/bin/python -m ruff check .` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 421 tests.
 - Blockers: none.
-- Next step: apply the shared no-manifest event-replay bundle helper to the reordered-actions no-manifest replay regressions.
+- Next step: add a small shared event-replay sequence helper for the remaining reordered-actions no-manifest per-tick and lobe sequence regressions without removing their sequence-specific assertions.
