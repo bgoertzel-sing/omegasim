@@ -69,11 +69,15 @@ PRESSURE_COMPARISON_FIELDS = (
     "queued_task_age_max_peak_pressure_curvature",
 )
 PRESSURE_CURVE_OBSERVABLES = (
-    ("value_weighted_completed", "value-weighted completed work"),
-    ("tasks_completed", "tasks completed"),
-    ("queue_depth", "final queue depth"),
-    ("queued_task_age_mean_final", "final queued task mean age"),
-    ("queued_task_age_max_peak", "peak queued task max age"),
+    (
+        "value_weighted_completed",
+        "value-weighted completed work",
+        "value_weighted_completed_total",
+    ),
+    ("tasks_completed", "tasks completed", "tasks_completed_total"),
+    ("queue_depth", "final queue depth", "queue_depth"),
+    ("queued_task_age_mean_final", "final queued task mean age", "queued_task_age_mean_final"),
+    ("queued_task_age_max_peak", "peak queued task max age", "queued_task_age_max_peak"),
 )
 PRESSURE_CURVE_METRICS = (
     ("normal_to_medium_slope", "normal_to_medium_slope"),
@@ -153,6 +157,9 @@ def run_pressure_comparison(
             ),
             seeds=seeds,
             rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
         )
     )
     return rows
@@ -388,6 +395,9 @@ def _pressure_summary(
     high_pressure_internal_improvement_config: Path | None,
     seeds: tuple[int, ...],
     rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
 ) -> str:
     lines = [
         "# A2 attention pressure comparison",
@@ -432,6 +442,15 @@ def _pressure_summary(
         "",
         *_pressure_curve_response_ranking_lines(rows),
         "",
+        "## Top pressure-response explanation",
+        "",
+        *_top_pressure_response_explanation_lines(
+            rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Fixed-policy pressure curves",
         "",
         *[
@@ -447,7 +466,7 @@ def _pressure_summary(
 def _most_pressure_sensitive_curve_metric_line(rows: list[dict[str, Any]]) -> str:
     candidates = _pressure_curve_response_candidates(rows)
     if not candidates:
-        return "- none: no pressure curve rows available"
+        return []
 
     top = candidates[0]
     return (
@@ -480,7 +499,7 @@ def _pressure_curve_response_ranking_lines(rows: list[dict[str, Any]]) -> list[s
 def _pressure_curve_response_candidates(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     candidates: list[dict[str, Any]] = []
     for row in rows:
-        for observable_prefix, observable_label in PRESSURE_CURVE_OBSERVABLES:
+        for observable_prefix, observable_label, source_field in PRESSURE_CURVE_OBSERVABLES:
             for metric_suffix, metric_label in PRESSURE_CURVE_METRICS:
                 field = f"{observable_prefix}_{metric_suffix}"
                 value = float(row[field])
@@ -488,7 +507,10 @@ def _pressure_curve_response_candidates(rows: list[dict[str, Any]]) -> list[dict
                     {
                         "policy": row["policy"],
                         "observable": observable_label,
+                        "observable_prefix": observable_prefix,
+                        "source_field": source_field,
                         "metric": metric_label,
+                        "metric_suffix": metric_suffix,
                         "field": field,
                         "value": value,
                         "abs_value": abs(value),
@@ -507,6 +529,72 @@ def _pressure_curve_response_candidates(rows: list[dict[str, Any]]) -> list[dict
         )
     )
     return candidates
+
+
+def _top_pressure_response_explanation_lines(
+    rows: list[dict[str, Any]],
+    *,
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    candidates = _pressure_curve_response_candidates(rows)
+    if not candidates:
+        return ["- none: no pressure curve rows available"]
+
+    top = candidates[0]
+    policy = str(top["policy"])
+    source_field = str(top["source_field"])
+    pressure_row = next(row for row in rows if row["policy"] == policy)
+    normal_mean = _policy_condition_mean(normal_rows, policy, source_field)
+    medium_mean = _policy_condition_mean(medium_pressure_rows, policy, source_field)
+    high_mean = _policy_condition_mean(high_pressure_rows, policy, source_field)
+    observable_prefix = str(top["observable_prefix"])
+    delta_field = _pressure_delta_field(str(top["observable_prefix"]))
+    normal_to_medium_field = f"{observable_prefix}_normal_to_medium_slope"
+    medium_to_high_field = f"{observable_prefix}_medium_to_high_slope"
+    curvature_field = f"{observable_prefix}_pressure_curvature"
+
+    return [
+        (
+            f"- selected response: policy={policy}, observable={top['observable']}, "
+            f"metric={top['metric']}, field={top['field']}"
+        ),
+        (
+            f"- condition means: normal={normal_mean}, "
+            f"medium_pressure={medium_mean}, high_pressure={high_mean}"
+        ),
+        (
+            f"- pressure curve: normal_to_medium_slope="
+            f"{pressure_row[normal_to_medium_field]}, "
+            f"medium_to_high_slope={pressure_row[medium_to_high_field]}, "
+            f"curvature={pressure_row[curvature_field]}"
+        ),
+        (
+            f"- high-minus-normal delta: {pressure_row[delta_field]} "
+            f"({delta_field})"
+        ),
+    ]
+
+
+def _policy_condition_mean(
+    rows: list[dict[str, Any]],
+    policy: str,
+    source_field: str,
+) -> float:
+    policy_rows = [row for row in rows if row["policy"] == policy]
+    return _mean(policy_rows, source_field)
+
+
+def _pressure_delta_field(observable_prefix: str) -> str:
+    delta_fields = {
+        "value_weighted_completed": "value_weighted_completed_mean_delta",
+        "tasks_completed": "tasks_completed_mean_delta",
+        "queue_depth": "queue_depth_mean_delta",
+        "queued_task_age_mean_final": "queued_task_age_mean_final_delta",
+        "queued_task_age_max_peak": "queued_task_age_max_peak_delta",
+    }
+    return delta_fields[observable_prefix]
 
 
 def _pressure_delta_lines(row: dict[str, Any]) -> list[str]:

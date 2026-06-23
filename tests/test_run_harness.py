@@ -870,6 +870,76 @@ def test_a2_attention_pressure_summary_ranks_all_curve_responses(
     assert f" | {round(abs(expected_value), 6)} |" in table_lines[1]
 
 
+def test_a2_attention_pressure_summary_explains_top_curve_response(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+    curve_fields = [
+        field
+        for field in PRESSURE_COMPARISON_FIELDS
+        if field.endswith(
+            (
+                "_normal_to_medium_slope",
+                "_medium_to_high_slope",
+                "_pressure_curvature",
+            )
+        )
+    ]
+    candidates = [
+        (
+            -abs(float(row[field])),
+            row["policy"],
+            field,
+            float(row[field]),
+        )
+        for row in rows
+        for field in curve_fields
+    ]
+    _, expected_policy, expected_field, _ = sorted(candidates)[0]
+    observable_source_fields = {
+        "value_weighted_completed": "value_weighted_completed_total",
+        "tasks_completed": "tasks_completed_total",
+        "queue_depth": "queue_depth",
+        "queued_task_age_mean_final": "queued_task_age_mean_final",
+        "queued_task_age_max_peak": "queued_task_age_max_peak",
+    }
+    expected_prefix = next(
+        prefix
+        for prefix in observable_source_fields
+        if expected_field.startswith(f"{prefix}_")
+    )
+    source_field = observable_source_fields[expected_prefix]
+    condition_means = {}
+    for condition in ("normal_pressure", "medium_pressure", "high_pressure"):
+        with (out_dir / condition / "comparison_metrics.csv").open() as handle:
+            condition_rows = [
+                row for row in csv.DictReader(handle)
+                if row["policy"] == expected_policy
+            ]
+        condition_means[condition] = _mean_csv_metric(
+            condition_rows,
+            policy=expected_policy,
+            field=source_field,
+        )
+
+    assert "## Top pressure-response explanation" in summary
+    assert (
+        f"- selected response: policy={expected_policy}, "
+    ) in summary
+    assert f"field={expected_field}" in summary
+    assert (
+        f"- condition means: normal={round(condition_means['normal_pressure'], 6)}, "
+        f"medium_pressure={round(condition_means['medium_pressure'], 6)}, "
+        f"high_pressure={round(condition_means['high_pressure'], 6)}"
+    ) in summary
+
+
 def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields(
     tmp_path: Path,
 ) -> None:
