@@ -24,7 +24,7 @@ from ohdyn.sim import (
 )
 from ohdyn.config import ATTENTION_CLASSES, load_config
 from ohdyn.compare_attention import run_comparison
-from ohdyn.compare_pressure import run_pressure_comparison
+from ohdyn.compare_pressure import PRESSURE_COMPARISON_FIELDS, run_pressure_comparison
 from ohdyn.run import run_experiment
 
 
@@ -681,6 +681,19 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "regime_rate_deltas=" in summary
     assert "- research_heavy final queue depth mean pressure delta: " in summary
     assert "- internal_improvement peak queued task max age pressure delta: " in summary
+
+
+def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
+        header = next(csv.reader(handle))
+
+    assert header == list(PRESSURE_COMPARISON_FIELDS)
 
 
 def test_a2_attention_pressure_comparison_runner_is_reproducible(

@@ -4,12 +4,12 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 pressure-comparison artifact documentation on top of the stable A0/A1 local simulator harness.
+Phase A2 pressure-comparison schema regression coverage on top of the stable A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 A2 pressure comparison README schema documentation
-- Changed: documented `pressure_comparison_metrics.csv` field semantics, pressure-condition subdirectory contents, and the top-level pressure comparison `summary.md` sections in `README.md`; no simulator behavior changed.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "pressure_comparison or high_pressure_comparison_runner_is_reproducible" -q` passed with 3 tests and 435 deselected; `tmpdir=$(mktemp -d); .venv-conda/bin/python -m ohdyn.compare_pressure --seeds 1 2 --out "$tmpdir/a2_attention_pressure_compare" && sed -n '1,90p' "$tmpdir/a2_attention_pressure_compare/summary.md"` passed and showed the documented fixed-policy pressure delta section.
+- Status: ok, 2026-06-23 A2 pressure comparison CSV header regression coverage
+- Changed: added a deterministic test that runs the pressure comparison helper, reads `pressure_comparison_metrics.csv`, and validates its header exactly against `PRESSURE_COMPARISON_FIELDS`; no simulator behavior changed.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "pressure_comparison" -q` passed with 4 tests and 435 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 439 tests.
 - Blockers: none.
-- Next step: add a deterministic A2 pressure comparison test that validates the documented `pressure_comparison_metrics.csv` header exactly against `PRESSURE_COMPARISON_FIELDS`.
+- Next step: add one executable A2 pressure-sensitivity experiment fixture or comparison metric that makes the pressure-condition dynamics more informative than the current normal-versus-high binary.
