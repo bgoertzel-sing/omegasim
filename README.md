@@ -97,7 +97,22 @@ The pressure comparison helper runs the normal-pressure and high-pressure policy
 python -m ohdyn.compare_pressure --seeds 1 2 3 --out runs/a2_attention_pressure_compare
 ```
 
-The output directory contains `normal_pressure/`, `high_pressure/`, `pressure_comparison_metrics.csv`, and a top-level `summary.md`.
+The output directory contains `normal_pressure/`, `high_pressure/`, `pressure_comparison_metrics.csv`, and a top-level `summary.md`. The two pressure-condition subdirectories are ordinary `ohdyn.compare_attention` outputs with their own `comparison_metrics.csv`, aggregate `summary.md`, and per-policy/per-seed run artifact directories.
+
+`pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
+
+- `policy`, the fixed policy being compared across pressure conditions.
+- `normal_total_steps` and `high_pressure_total_steps`, the number of phase-space first-difference steps available for the policy in each condition.
+- `regime_rate_deltas`, pipe-delimited `regime:delta` entries for high-minus-normal step-regime rates.
+- `regime_count_deltas`, pipe-delimited `regime:delta` entries for high-minus-normal step-regime counts.
+- `value_weighted_completed_mean_delta`, mean final value-weighted completed-work delta across seeds.
+- `tasks_completed_mean_delta`, mean final completed-task delta across seeds.
+- `queue_depth_mean_delta`, mean final queue-depth delta across seeds.
+- `queued_task_age_mean_final_delta`, mean final queued-task mean-age delta across seeds.
+- `queued_task_age_mean_over_ticks_delta`, mean over-ticks queued-task mean-age delta across seeds.
+- `queued_task_age_max_peak_delta`, mean peak queued-task max-age delta across seeds.
+
+The pressure comparison `summary.md` reports the normal and high-pressure config paths, seed set, policy-row count, and a `Fixed-policy pressure deltas` section. Each policy in that section includes the phase-space regime rate/count deltas plus the same queue, age, throughput, and completion deltas emitted in `pressure_comparison_metrics.csv`.
 
 ## Output Schema
 
