@@ -141,6 +141,23 @@ PRESSURE_STABILITY_AGREEMENT_FIELDS = (
     "class_metric",
     "class_field",
 )
+PRESSURE_STABILITY_CONVERGENCE_FIELDS = (
+    "full_seeds",
+    "prefix_count",
+    "global_stable_prefixes",
+    "class_stable_prefixes",
+    "stable_together_prefixes",
+    "both_stable_prefixes",
+    "first_global_stable_prefix",
+    "first_class_stable_prefix",
+    "first_stable_together_prefix",
+    "first_both_stable_prefix",
+    "last_prefix",
+    "last_global_stable",
+    "last_class_stable",
+    "last_stable_together",
+    "last_both_stable",
+)
 PRESSURE_CURVE_OBSERVABLES = (
     (
         "value_weighted_completed",
@@ -240,6 +257,13 @@ def run_pressure_comparison(
     )
 
     rows = _pressure_rows(normal_rows, medium_pressure_rows, high_pressure_rows)
+    stability_agreement_rows = _pressure_stability_agreement_rows(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
     _write_pressure_comparison_csv(output_path / "pressure_comparison_metrics.csv", rows)
     _write_pressure_response_selection_csv(
         output_path / "pressure_response_selection.csv",
@@ -253,13 +277,11 @@ def run_pressure_comparison(
     )
     _write_pressure_stability_agreement_csv(
         output_path / "pressure_stability_agreement.csv",
-        _pressure_stability_agreement_rows(
-            seeds=seeds,
-            rows=rows,
-            normal_rows=normal_rows,
-            medium_pressure_rows=medium_pressure_rows,
-            high_pressure_rows=high_pressure_rows,
-        ),
+        stability_agreement_rows,
+    )
+    _write_pressure_stability_convergence_csv(
+        output_path / "pressure_stability_convergence.csv",
+        _pressure_stability_convergence_rows(stability_agreement_rows),
     )
     (output_path / "summary.md").write_text(
         _pressure_summary(
@@ -289,6 +311,7 @@ def run_pressure_comparison(
             normal_rows=normal_rows,
             medium_pressure_rows=medium_pressure_rows,
             high_pressure_rows=high_pressure_rows,
+            stability_agreement_rows=stability_agreement_rows,
         )
     )
     return rows
@@ -303,6 +326,7 @@ def _ensure_pressure_outputs_available(output_path: Path) -> None:
             "pressure_comparison_metrics.csv",
             "pressure_response_selection.csv",
             "pressure_stability_agreement.csv",
+            "pressure_stability_convergence.csv",
             "summary.md",
         )
         if (output_path / artifact_name).exists()
@@ -611,6 +635,94 @@ def _write_pressure_stability_agreement_csv(
         writer.writerows(rows)
 
 
+def _write_pressure_stability_convergence_csv(
+    path: Path,
+    rows: list[dict[str, Any]],
+) -> None:
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(PRESSURE_STABILITY_CONVERGENCE_FIELDS))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _pressure_stability_convergence_rows(
+    agreement_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not agreement_rows:
+        return []
+
+    last_row = agreement_rows[-1]
+    return [
+        {
+            "full_seeds": last_row["full_seeds"],
+            "prefix_count": len(agreement_rows),
+            "global_stable_prefixes": _count_true(
+                agreement_rows,
+                "global_stable_with_full",
+            ),
+            "class_stable_prefixes": _count_true(
+                agreement_rows,
+                "class_stable_with_full",
+            ),
+            "stable_together_prefixes": _count_true(
+                agreement_rows,
+                "stable_together",
+            ),
+            "both_stable_prefixes": sum(
+                1
+                for row in agreement_rows
+                if _is_true(row["global_stable_with_full"])
+                and _is_true(row["class_stable_with_full"])
+            ),
+            "first_global_stable_prefix": _first_true_prefix(
+                agreement_rows,
+                "global_stable_with_full",
+            ),
+            "first_class_stable_prefix": _first_true_prefix(
+                agreement_rows,
+                "class_stable_with_full",
+            ),
+            "first_stable_together_prefix": _first_true_prefix(
+                agreement_rows,
+                "stable_together",
+            ),
+            "first_both_stable_prefix": _first_both_stable_prefix(agreement_rows),
+            "last_prefix": last_row["prefix_seeds"],
+            "last_global_stable": last_row["global_stable_with_full"],
+            "last_class_stable": last_row["class_stable_with_full"],
+            "last_stable_together": last_row["stable_together"],
+            "last_both_stable": str(
+                _is_true(last_row["global_stable_with_full"])
+                and _is_true(last_row["class_stable_with_full"])
+            ).lower(),
+        }
+    ]
+
+
+def _count_true(rows: list[dict[str, Any]], field: str) -> int:
+    return sum(1 for row in rows if _is_true(row[field]))
+
+
+def _first_true_prefix(rows: list[dict[str, Any]], field: str) -> str:
+    for row in rows:
+        if _is_true(row[field]):
+            return str(row["prefix_seeds"])
+    return "none"
+
+
+def _first_both_stable_prefix(rows: list[dict[str, Any]]) -> str:
+    for row in rows:
+        if _is_true(row["global_stable_with_full"]) and _is_true(
+            row["class_stable_with_full"]
+        ):
+            return str(row["prefix_seeds"])
+    return "none"
+
+
+def _is_true(value: Any) -> bool:
+    return str(value).lower() == "true"
+
+
 def _pressure_response_selection_rows(
     *,
     seeds: tuple[int, ...],
@@ -862,6 +974,7 @@ def _pressure_summary(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    stability_agreement_rows: list[dict[str, Any]],
 ) -> str:
     lines = [
         "# A2 attention pressure comparison",
@@ -954,6 +1067,10 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Pressure-stability convergence inspection",
+        "",
+        *_pressure_stability_convergence_lines(stability_agreement_rows),
+        "",
         "## Seed-set sensitivity",
         "",
         *_seed_set_sensitivity_lines(
@@ -974,6 +1091,40 @@ def _pressure_summary(
         "",
     ]
     return "\n".join(lines)
+
+
+def _pressure_stability_convergence_lines(
+    agreement_rows: list[dict[str, Any]],
+) -> list[str]:
+    convergence_rows = _pressure_stability_convergence_rows(agreement_rows)
+    if not convergence_rows:
+        return ["- unavailable: no pressure stability agreement rows available."]
+
+    row = convergence_rows[0]
+    return [
+        (
+            f"- full_seeds={row['full_seeds']}, prefix_count={row['prefix_count']}, "
+            f"last_prefix={row['last_prefix']}"
+        ),
+        (
+            f"- stable prefix counts: global={row['global_stable_prefixes']}, "
+            f"class={row['class_stable_prefixes']}, "
+            f"stable_together={row['stable_together_prefixes']}, "
+            f"both_stable={row['both_stable_prefixes']}"
+        ),
+        (
+            f"- first convergence prefixes: global={row['first_global_stable_prefix']}, "
+            f"class={row['first_class_stable_prefix']}, "
+            f"stable_together={row['first_stable_together_prefix']}, "
+            f"both_stable={row['first_both_stable_prefix']}"
+        ),
+        (
+            f"- last prefix state: global_stable={row['last_global_stable']}, "
+            f"class_stable={row['last_class_stable']}, "
+            f"stable_together={row['last_stable_together']}, "
+            f"both_stable={row['last_both_stable']}"
+        ),
+    ]
 
 
 def _per_class_capture_pressure_prefix_comparison_lines(
