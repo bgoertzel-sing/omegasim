@@ -764,6 +764,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert csv_rows[0]["queue_depth_pressure_curvature"]
     assert "## Fixed-policy pressure deltas" in summary
     assert "## Most pressure-sensitive curve metric" in summary
+    assert "## Pressure-curve response ranking" in summary
     assert "## Fixed-policy pressure curves" in summary
     assert (
         "- baseline: normal_total_steps=22, medium_pressure_total_steps=22, "
@@ -816,6 +817,57 @@ def test_a2_attention_pressure_summary_identifies_most_sensitive_curve_metric(
     assert f"field={expected_field}" in summary
     assert f"value={round(expected_value, 6)}" in summary
     assert f"abs_value={round(abs(expected_value), 6)}" in summary
+
+
+def test_a2_attention_pressure_summary_ranks_all_curve_responses(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+    curve_fields = [
+        field
+        for field in PRESSURE_COMPARISON_FIELDS
+        if field.endswith(
+            (
+                "_normal_to_medium_slope",
+                "_medium_to_high_slope",
+                "_pressure_curvature",
+            )
+        )
+    ]
+    candidates = [
+        (
+            -abs(float(row[field])),
+            row["policy"],
+            field,
+            float(row[field]),
+        )
+        for row in rows
+        for field in curve_fields
+    ]
+    _, expected_policy, expected_field, expected_value = sorted(candidates)[0]
+    table_lines = [
+        line
+        for line in summary.splitlines()
+        if line.startswith("| ") and not line.startswith("| ---")
+    ]
+
+    assert "## Pressure-curve response ranking" in summary
+    assert table_lines[0] == (
+        "| rank | policy | observable | metric | field | value | abs_value |"
+    )
+    assert len(table_lines) == len(candidates) + 1
+    assert table_lines[1].startswith(
+        f"| 1 | {expected_policy} | "
+    )
+    assert f" | {expected_field} | " in table_lines[1]
+    assert f" | {round(expected_value, 6)} | " in table_lines[1]
+    assert f" | {round(abs(expected_value), 6)} |" in table_lines[1]
 
 
 def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields(
@@ -914,6 +966,7 @@ def test_documented_pressure_cli_writes_pressure_layout_and_curve_summary(
     assert rows[0]["high_pressure_total_steps"] == "22"
     assert "## Fixed-policy pressure deltas" in summary
     assert "## Most pressure-sensitive curve metric" in summary
+    assert "## Pressure-curve response ranking" in summary
     assert "## Fixed-policy pressure curves" in summary
     assert "- medium-pressure baseline config: configs/a2_attention_medium_pressure.yaml" in summary
     assert "- baseline final queue depth pressure curve: " in summary
