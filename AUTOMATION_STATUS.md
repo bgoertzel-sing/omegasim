@@ -4,12 +4,12 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 pressure-sensitivity fixtures on top of the stable A0/A1 local simulator harness.
+Phase A2 pressure-curve comparison on top of the stable A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 A2 medium-pressure fixture set
-- Changed: added deterministic medium-pressure A2 fixtures at `task_creation_pressure: 1.4` for baseline, research-heavy, and internal-improvement policies; documented the medium-pressure comparison command; added regression coverage that loads all pressure fixtures and verifies the medium baseline run sits between normal and high pressure for task creation and queue depth.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "pressure" -q` passed with 37 tests and 406 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 443 tests.
+- Status: ok, 2026-06-23 A2 pressure-curve comparison helper
+- Changed: extended `ohdyn.compare_pressure` to run normal, medium, and high pressure policy sets together; added `medium_pressure/` comparison artifacts; added per-policy normal-to-medium slope, medium-to-high slope, and curvature metrics for value-weighted completed work, completed tasks, final queue depth, final queued-task mean age, and peak queued-task max age; updated README pressure-comparison documentation and regression coverage.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 444 tests; after final cleanup, `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "pressure" -q` passed with 38 tests and 406 deselected.
 - Blockers: none.
-- Next step: extend `ohdyn.compare_pressure` into a pressure-curve comparison helper that runs normal, medium, and high pressure conditions together and reports per-policy slope or curvature metrics.
+- Next step: add a bounded CLI smoke/regression for `python -m ohdyn.compare_pressure --seeds 1 2 --out ...` that verifies the documented normal/medium/high directory layout and curve summary sections through the command-line entrypoint.

@@ -102,18 +102,18 @@ python -m ohdyn.compare_attention \
   --out runs/a2_attention_high_pressure_compare
 ```
 
-The pressure comparison helper runs the normal-pressure and high-pressure policy sets together, preserving the per-condition comparison artifacts while adding fixed-policy high-minus-normal pressure deltas for phase-space regime distributions:
+The pressure comparison helper runs the normal, medium, and high-pressure policy sets together, preserving the per-condition comparison artifacts while adding fixed-policy high-minus-normal pressure deltas and pressure-curve slope/curvature metrics:
 
 ```bash
 python -m ohdyn.compare_pressure --seeds 1 2 3 --out runs/a2_attention_pressure_compare
 ```
 
-The output directory contains `normal_pressure/`, `high_pressure/`, `pressure_comparison_metrics.csv`, and a top-level `summary.md`. The two pressure-condition subdirectories are ordinary `ohdyn.compare_attention` outputs with their own `comparison_metrics.csv`, aggregate `summary.md`, and per-policy/per-seed run artifact directories.
+The output directory contains `normal_pressure/`, `medium_pressure/`, `high_pressure/`, `pressure_comparison_metrics.csv`, and a top-level `summary.md`. The three pressure-condition subdirectories are ordinary `ohdyn.compare_attention` outputs with their own `comparison_metrics.csv`, aggregate `summary.md`, and per-policy/per-seed run artifact directories.
 
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
-- `normal_total_steps` and `high_pressure_total_steps`, the number of phase-space first-difference steps available for the policy in each condition.
+- `normal_total_steps`, `medium_pressure_total_steps`, and `high_pressure_total_steps`, the number of phase-space first-difference steps available for the policy in each condition.
 - `regime_rate_deltas`, pipe-delimited `regime:delta` entries for high-minus-normal step-regime rates.
 - `regime_count_deltas`, pipe-delimited `regime:delta` entries for high-minus-normal step-regime counts.
 - `value_weighted_completed_mean_delta`, mean final value-weighted completed-work delta across seeds.
@@ -122,8 +122,9 @@ The output directory contains `normal_pressure/`, `high_pressure/`, `pressure_co
 - `queued_task_age_mean_final_delta`, mean final queued-task mean-age delta across seeds.
 - `queued_task_age_mean_over_ticks_delta`, mean over-ticks queued-task mean-age delta across seeds.
 - `queued_task_age_max_peak_delta`, mean peak queued-task max-age delta across seeds.
+- Per-policy normal-to-medium slope, medium-to-high slope, and high-interval-minus-low-interval curvature fields for value-weighted completed work, completed tasks, final queue depth, final queued-task mean age, and peak queued-task max age.
 
-The pressure comparison `summary.md` reports the normal and high-pressure config paths, seed set, policy-row count, and a `Fixed-policy pressure deltas` section. Each policy in that section includes the phase-space regime rate/count deltas plus the same queue, age, throughput, and completion deltas emitted in `pressure_comparison_metrics.csv`.
+The pressure comparison `summary.md` reports the normal, medium, and high-pressure config paths, seed set, policy-row count, a `Fixed-policy pressure deltas` section, and a `Fixed-policy pressure curves` section. The curves section reports the same slope and curvature fields emitted in `pressure_comparison_metrics.csv`.
 
 ## Output Schema
 

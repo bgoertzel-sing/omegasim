@@ -1,4 +1,4 @@
-"""Compare normal-pressure and high-pressure A2 attention-policy sets."""
+"""Compare A2 attention-policy sets across task-creation pressure levels."""
 
 from __future__ import annotations
 
@@ -29,9 +29,20 @@ DEFAULT_HIGH_PRESSURE_VARIANT_CONFIG = Path(
 DEFAULT_HIGH_PRESSURE_INTERNAL_IMPROVEMENT_CONFIG = Path(
     "configs/a2_attention_internal_improvement_high_pressure.yaml"
 )
+DEFAULT_MEDIUM_PRESSURE_BASELINE_CONFIG = Path("configs/a2_attention_medium_pressure.yaml")
+DEFAULT_MEDIUM_PRESSURE_VARIANT_CONFIG = Path(
+    "configs/a2_attention_research_heavy_medium_pressure.yaml"
+)
+DEFAULT_MEDIUM_PRESSURE_INTERNAL_IMPROVEMENT_CONFIG = Path(
+    "configs/a2_attention_internal_improvement_medium_pressure.yaml"
+)
+NORMAL_PRESSURE_VALUE = 1.0
+MEDIUM_PRESSURE_VALUE = 1.4
+HIGH_PRESSURE_VALUE = 1.8
 PRESSURE_COMPARISON_FIELDS = (
     "policy",
     "normal_total_steps",
+    "medium_pressure_total_steps",
     "high_pressure_total_steps",
     "regime_rate_deltas",
     "regime_count_deltas",
@@ -41,6 +52,21 @@ PRESSURE_COMPARISON_FIELDS = (
     "queued_task_age_mean_final_delta",
     "queued_task_age_mean_over_ticks_delta",
     "queued_task_age_max_peak_delta",
+    "value_weighted_completed_normal_to_medium_slope",
+    "value_weighted_completed_medium_to_high_slope",
+    "value_weighted_completed_pressure_curvature",
+    "tasks_completed_normal_to_medium_slope",
+    "tasks_completed_medium_to_high_slope",
+    "tasks_completed_pressure_curvature",
+    "queue_depth_normal_to_medium_slope",
+    "queue_depth_medium_to_high_slope",
+    "queue_depth_pressure_curvature",
+    "queued_task_age_mean_final_normal_to_medium_slope",
+    "queued_task_age_mean_final_medium_to_high_slope",
+    "queued_task_age_mean_final_pressure_curvature",
+    "queued_task_age_max_peak_normal_to_medium_slope",
+    "queued_task_age_max_peak_medium_to_high_slope",
+    "queued_task_age_max_peak_pressure_curvature",
 )
 
 
@@ -49,6 +75,11 @@ def run_pressure_comparison(
     normal_baseline_config: str | Path = DEFAULT_BASELINE_CONFIG,
     normal_variant_config: str | Path = DEFAULT_VARIANT_CONFIG,
     normal_internal_improvement_config: str | Path | None = DEFAULT_INTERNAL_IMPROVEMENT_CONFIG,
+    medium_pressure_baseline_config: str | Path = DEFAULT_MEDIUM_PRESSURE_BASELINE_CONFIG,
+    medium_pressure_variant_config: str | Path = DEFAULT_MEDIUM_PRESSURE_VARIANT_CONFIG,
+    medium_pressure_internal_improvement_config: str | Path | None = (
+        DEFAULT_MEDIUM_PRESSURE_INTERNAL_IMPROVEMENT_CONFIG
+    ),
     high_pressure_baseline_config: str | Path = DEFAULT_HIGH_PRESSURE_BASELINE_CONFIG,
     high_pressure_variant_config: str | Path = DEFAULT_HIGH_PRESSURE_VARIANT_CONFIG,
     high_pressure_internal_improvement_config: str | Path | None = (
@@ -68,6 +99,13 @@ def run_pressure_comparison(
         seeds=seeds,
         out_dir=output_path / "normal_pressure",
     )
+    medium_pressure_rows = run_comparison(
+        baseline_config=medium_pressure_baseline_config,
+        variant_config=medium_pressure_variant_config,
+        internal_improvement_config=medium_pressure_internal_improvement_config,
+        seeds=seeds,
+        out_dir=output_path / "medium_pressure",
+    )
     high_pressure_rows = run_comparison(
         baseline_config=high_pressure_baseline_config,
         variant_config=high_pressure_variant_config,
@@ -76,7 +114,7 @@ def run_pressure_comparison(
         out_dir=output_path / "high_pressure",
     )
 
-    rows = _pressure_rows(normal_rows, high_pressure_rows)
+    rows = _pressure_rows(normal_rows, medium_pressure_rows, high_pressure_rows)
     _write_csv(output_path / "pressure_comparison_metrics.csv", rows)
     (output_path / "summary.md").write_text(
         _pressure_summary(
@@ -85,6 +123,13 @@ def run_pressure_comparison(
             normal_internal_improvement_config=(
                 Path(normal_internal_improvement_config)
                 if normal_internal_improvement_config is not None
+                else None
+            ),
+            medium_pressure_baseline_config=Path(medium_pressure_baseline_config),
+            medium_pressure_variant_config=Path(medium_pressure_variant_config),
+            medium_pressure_internal_improvement_config=(
+                Path(medium_pressure_internal_improvement_config)
+                if medium_pressure_internal_improvement_config is not None
                 else None
             ),
             high_pressure_baseline_config=Path(high_pressure_baseline_config),
@@ -116,36 +161,59 @@ def _ensure_pressure_outputs_available(output_path: Path) -> None:
 
 def _pressure_rows(
     normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     policies = tuple(dict.fromkeys(row["policy"] for row in normal_rows))
+    medium_pressure_policies = {row["policy"] for row in medium_pressure_rows}
     high_pressure_policies = {row["policy"] for row in high_pressure_rows}
-    missing = [policy for policy in policies if policy not in high_pressure_policies]
-    if missing:
-        names = ", ".join(missing)
-        raise ValueError(f"High-pressure comparison is missing policies: {names}")
+    _raise_missing_policies(
+        "Medium-pressure comparison",
+        policies,
+        medium_pressure_policies,
+    )
+    _raise_missing_policies(
+        "High-pressure comparison",
+        policies,
+        high_pressure_policies,
+    )
 
     return [
         _pressure_row(
             policy,
             [row for row in normal_rows if row["policy"] == policy],
+            [row for row in medium_pressure_rows if row["policy"] == policy],
             [row for row in high_pressure_rows if row["policy"] == policy],
         )
         for policy in policies
     ]
 
 
+def _raise_missing_policies(
+    label: str,
+    expected_policies: tuple[str, ...],
+    available_policies: set[str],
+) -> None:
+    missing = [policy for policy in expected_policies if policy not in available_policies]
+    if missing:
+        names = ", ".join(missing)
+        raise ValueError(f"{label} is missing policies: {names}")
+
+
 def _pressure_row(
     policy: str,
     normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
     normal_counts, normal_total_steps = _phase_space_regime_counts(normal_rows)
+    _, medium_total_steps = _phase_space_regime_counts(medium_pressure_rows)
     high_counts, high_total_steps = _phase_space_regime_counts(high_pressure_rows)
     labels = sorted(set(normal_counts) | set(high_counts))
-    return {
+    row = {
         "policy": policy,
         "normal_total_steps": normal_total_steps,
+        "medium_pressure_total_steps": medium_total_steps,
         "high_pressure_total_steps": high_total_steps,
         "regime_rate_deltas": _format_regime_rate_deltas(
             high_counts,
@@ -190,6 +258,52 @@ def _pressure_row(
             "queued_task_age_max_peak",
         ),
     }
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="value_weighted_completed_total",
+            output_prefix="value_weighted_completed",
+        )
+    )
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="tasks_completed_total",
+            output_prefix="tasks_completed",
+        )
+    )
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="queue_depth",
+            output_prefix="queue_depth",
+        )
+    )
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="queued_task_age_mean_final",
+            output_prefix="queued_task_age_mean_final",
+        )
+    )
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="queued_task_age_max_peak",
+            output_prefix="queued_task_age_max_peak",
+        )
+    )
+    return row
 
 
 def _metric_mean_delta(
@@ -198,6 +312,48 @@ def _metric_mean_delta(
     field: str,
 ) -> float:
     return round(_mean(high_pressure_rows, field) - _mean(normal_rows, field), 6)
+
+
+def _pressure_curve_metrics(
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+    *,
+    source_field: str,
+    output_prefix: str,
+) -> dict[str, float]:
+    normal_mean = _mean(normal_rows, source_field)
+    medium_mean = _mean(medium_pressure_rows, source_field)
+    high_mean = _mean(high_pressure_rows, source_field)
+    normal_to_medium_slope = _pressure_slope(
+        normal_mean,
+        medium_mean,
+        NORMAL_PRESSURE_VALUE,
+        MEDIUM_PRESSURE_VALUE,
+    )
+    medium_to_high_slope = _pressure_slope(
+        medium_mean,
+        high_mean,
+        MEDIUM_PRESSURE_VALUE,
+        HIGH_PRESSURE_VALUE,
+    )
+    return {
+        f"{output_prefix}_normal_to_medium_slope": normal_to_medium_slope,
+        f"{output_prefix}_medium_to_high_slope": medium_to_high_slope,
+        f"{output_prefix}_pressure_curvature": round(
+            medium_to_high_slope - normal_to_medium_slope,
+            6,
+        ),
+    }
+
+
+def _pressure_slope(
+    start_value: float,
+    end_value: float,
+    start_pressure: float,
+    end_pressure: float,
+) -> float:
+    return round((end_value - start_value) / (end_pressure - start_pressure), 6)
 
 
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -212,6 +368,9 @@ def _pressure_summary(
     normal_baseline_config: Path,
     normal_variant_config: Path,
     normal_internal_improvement_config: Path | None,
+    medium_pressure_baseline_config: Path,
+    medium_pressure_variant_config: Path,
+    medium_pressure_internal_improvement_config: Path | None,
     high_pressure_baseline_config: Path,
     high_pressure_variant_config: Path,
     high_pressure_internal_improvement_config: Path | None,
@@ -226,6 +385,13 @@ def _pressure_summary(
         *(
             [f"- normal internal-improvement config: {normal_internal_improvement_config}"]
             if normal_internal_improvement_config is not None
+            else []
+        ),
+        f"- medium-pressure baseline config: {medium_pressure_baseline_config}",
+        f"- medium-pressure research-heavy config: {medium_pressure_variant_config}",
+        *(
+            [f"- medium-pressure internal-improvement config: {medium_pressure_internal_improvement_config}"]
+            if medium_pressure_internal_improvement_config is not None
             else []
         ),
         f"- high-pressure baseline config: {high_pressure_baseline_config}",
@@ -246,6 +412,14 @@ def _pressure_summary(
             for line in _pressure_delta_lines(row)
         ],
         "",
+        "## Fixed-policy pressure curves",
+        "",
+        *[
+            line
+            for row in rows
+            for line in _pressure_curve_lines(row)
+        ],
+        "",
     ]
     return "\n".join(lines)
 
@@ -253,6 +427,7 @@ def _pressure_summary(
 def _pressure_delta_lines(row: dict[str, Any]) -> list[str]:
     return [
         f"- {row['policy']}: normal_total_steps={row['normal_total_steps']}, "
+        f"medium_pressure_total_steps={row['medium_pressure_total_steps']}, "
         f"high_pressure_total_steps={row['high_pressure_total_steps']}, "
         f"regime_rate_deltas={row['regime_rate_deltas']}, "
         f"regime_count_deltas={row['regime_count_deltas']}",
@@ -271,9 +446,34 @@ def _pressure_delta_lines(row: dict[str, Any]) -> list[str]:
     ]
 
 
+def _pressure_curve_lines(row: dict[str, Any]) -> list[str]:
+    return [
+        f"- {row['policy']} value-weighted completed work pressure curve: "
+        f"normal_to_medium_slope={row['value_weighted_completed_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['value_weighted_completed_medium_to_high_slope']}, "
+        f"curvature={row['value_weighted_completed_pressure_curvature']}",
+        f"- {row['policy']} tasks completed pressure curve: "
+        f"normal_to_medium_slope={row['tasks_completed_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['tasks_completed_medium_to_high_slope']}, "
+        f"curvature={row['tasks_completed_pressure_curvature']}",
+        f"- {row['policy']} final queue depth pressure curve: "
+        f"normal_to_medium_slope={row['queue_depth_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['queue_depth_medium_to_high_slope']}, "
+        f"curvature={row['queue_depth_pressure_curvature']}",
+        f"- {row['policy']} final queued task mean age pressure curve: "
+        f"normal_to_medium_slope={row['queued_task_age_mean_final_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['queued_task_age_mean_final_medium_to_high_slope']}, "
+        f"curvature={row['queued_task_age_mean_final_pressure_curvature']}",
+        f"- {row['policy']} peak queued task max age pressure curve: "
+        f"normal_to_medium_slope={row['queued_task_age_max_peak_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['queued_task_age_max_peak_medium_to_high_slope']}, "
+        f"curvature={row['queued_task_age_max_peak_pressure_curvature']}",
+    ]
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Compare normal-pressure and high-pressure A2 attention-policy fixtures."
+        description="Compare normal, medium, and high-pressure A2 attention-policy fixtures."
     )
     parser.add_argument("--normal-baseline-config", default=str(DEFAULT_BASELINE_CONFIG))
     parser.add_argument("--normal-variant-config", default=str(DEFAULT_VARIANT_CONFIG))
@@ -281,6 +481,19 @@ def build_parser() -> argparse.ArgumentParser:
         "--normal-internal-improvement-config",
         default=str(DEFAULT_INTERNAL_IMPROVEMENT_CONFIG),
         help="Optional normal-pressure third policy config; pass an empty string to skip it.",
+    )
+    parser.add_argument(
+        "--medium-pressure-baseline-config",
+        default=str(DEFAULT_MEDIUM_PRESSURE_BASELINE_CONFIG),
+    )
+    parser.add_argument(
+        "--medium-pressure-variant-config",
+        default=str(DEFAULT_MEDIUM_PRESSURE_VARIANT_CONFIG),
+    )
+    parser.add_argument(
+        "--medium-pressure-internal-improvement-config",
+        default=str(DEFAULT_MEDIUM_PRESSURE_INTERNAL_IMPROVEMENT_CONFIG),
+        help="Optional medium-pressure third policy config; pass an empty string to skip it.",
     )
     parser.add_argument(
         "--high-pressure-baseline-config",
@@ -314,6 +527,11 @@ def main(argv: list[str] | None = None) -> int:
             normal_baseline_config=args.normal_baseline_config,
             normal_variant_config=args.normal_variant_config,
             normal_internal_improvement_config=args.normal_internal_improvement_config or None,
+            medium_pressure_baseline_config=args.medium_pressure_baseline_config,
+            medium_pressure_variant_config=args.medium_pressure_variant_config,
+            medium_pressure_internal_improvement_config=(
+                args.medium_pressure_internal_improvement_config or None
+            ),
             high_pressure_baseline_config=args.high_pressure_baseline_config,
             high_pressure_variant_config=args.high_pressure_variant_config,
             high_pressure_internal_improvement_config=(

@@ -718,6 +718,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
         "internal_improvement",
     }
     assert (out_dir / "normal_pressure" / "comparison_metrics.csv").is_file()
+    assert (out_dir / "medium_pressure" / "comparison_metrics.csv").is_file()
     assert (out_dir / "high_pressure" / "comparison_metrics.csv").is_file()
     assert (out_dir / "pressure_comparison_metrics.csv").is_file()
     assert (out_dir / "summary.md").is_file()
@@ -728,15 +729,27 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
 
     assert len(csv_rows) == 3
     assert csv_rows[0]["normal_total_steps"] == "22"
+    assert csv_rows[0]["medium_pressure_total_steps"] == "22"
     assert csv_rows[0]["high_pressure_total_steps"] == "22"
     assert csv_rows[0]["regime_rate_deltas"]
     assert csv_rows[0]["regime_count_deltas"]
     assert csv_rows[0]["queue_depth_mean_delta"]
+    assert csv_rows[0]["queue_depth_normal_to_medium_slope"]
+    assert csv_rows[0]["queue_depth_medium_to_high_slope"]
+    assert csv_rows[0]["queue_depth_pressure_curvature"]
     assert "## Fixed-policy pressure deltas" in summary
-    assert "- baseline: normal_total_steps=22, high_pressure_total_steps=22, " in summary
+    assert "## Fixed-policy pressure curves" in summary
+    assert (
+        "- baseline: normal_total_steps=22, medium_pressure_total_steps=22, "
+        "high_pressure_total_steps=22, "
+    ) in summary
     assert "regime_rate_deltas=" in summary
     assert "- research_heavy final queue depth mean pressure delta: " in summary
     assert "- internal_improvement peak queued task max age pressure delta: " in summary
+    assert "- baseline final queue depth pressure curve: " in summary
+    assert "normal_to_medium_slope=" in summary
+    assert "medium_to_high_slope=" in summary
+    assert "curvature=" in summary
 
 
 def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields(
@@ -750,6 +763,43 @@ def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields
         header = next(csv.reader(handle))
 
     assert header == list(PRESSURE_COMPARISON_FIELDS)
+
+
+def test_a2_attention_pressure_comparison_curve_metrics_match_condition_means(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    rows = run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+    baseline_row = next(row for row in rows if row["policy"] == "baseline")
+    means = {}
+    for condition in ("normal_pressure", "medium_pressure", "high_pressure"):
+        with (out_dir / condition / "comparison_metrics.csv").open() as handle:
+            condition_rows = [
+                row for row in csv.DictReader(handle)
+                if row["policy"] == "baseline"
+            ]
+        means[condition] = _mean_csv_metric(
+            condition_rows,
+            policy="baseline",
+            field="queue_depth",
+        )
+
+    normal_to_medium = round(
+        (means["medium_pressure"] - means["normal_pressure"]) / 0.4,
+        6,
+    )
+    medium_to_high = round(
+        (means["high_pressure"] - means["medium_pressure"]) / 0.4,
+        6,
+    )
+
+    assert baseline_row["queue_depth_normal_to_medium_slope"] == normal_to_medium
+    assert baseline_row["queue_depth_medium_to_high_slope"] == medium_to_high
+    assert baseline_row["queue_depth_pressure_curvature"] == round(
+        medium_to_high - normal_to_medium,
+        6,
+    )
 
 
 def test_a2_attention_pressure_comparison_runner_is_reproducible(
