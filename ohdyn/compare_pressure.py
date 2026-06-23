@@ -1069,7 +1069,7 @@ def _pressure_summary(
         "",
         "## Pressure-stability convergence inspection",
         "",
-        *_pressure_stability_convergence_lines(stability_agreement_rows),
+        *_pressure_stability_convergence_lines(stability_agreement_rows, rows),
         "",
         "## Seed-set sensitivity",
         "",
@@ -1095,12 +1095,19 @@ def _pressure_summary(
 
 def _pressure_stability_convergence_lines(
     agreement_rows: list[dict[str, Any]],
+    rows: list[dict[str, Any]],
 ) -> list[str]:
     convergence_rows = _pressure_stability_convergence_rows(agreement_rows)
     if not convergence_rows:
         return ["- unavailable: no pressure stability agreement rows available."]
 
     row = convergence_rows[0]
+    top_responses = _pressure_curve_response_candidates(rows)
+    top_response_note = (
+        _format_pressure_response_subject(top_responses[0])
+        if top_responses
+        else "unavailable"
+    )
     return [
         (
             f"- full_seeds={row['full_seeds']}, prefix_count={row['prefix_count']}, "
@@ -1123,6 +1130,12 @@ def _pressure_stability_convergence_lines(
             f"class_stable={row['last_class_stable']}, "
             f"stable_together={row['last_stable_together']}, "
             f"both_stable={row['last_both_stable']}"
+        ),
+        (
+            "- convergence vs interpretation: pressure-response interpretation selects "
+            f"{top_response_note}; first_global_stable_prefix="
+            f"{row['first_global_stable_prefix']}, last_prefix={row['last_prefix']}, "
+            f"last_global_stable={row['last_global_stable']}."
         ),
     ]
 

@@ -1336,6 +1336,16 @@ def test_a2_attention_pressure_stability_convergence_csv_summarizes_prefix_rows(
     assert rows[0]["first_class_stable_prefix"]
     assert rows[0]["first_stable_together_prefix"]
     assert rows[0]["first_both_stable_prefix"]
+    summary = (out_dir / "summary.md").read_text()
+    assert (
+        "- convergence vs interpretation: pressure-response interpretation selects "
+        "policy=internal_improvement observable=final queue depth "
+        "metric=normal_to_medium_slope; first_global_stable_prefix="
+    ) in summary
+    assert (
+        f"last_prefix={rows[0]['last_prefix']}, "
+        f"last_global_stable={rows[0]['last_global_stable']}."
+    ) in summary
 
 
 def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields(
