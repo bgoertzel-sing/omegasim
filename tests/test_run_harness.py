@@ -1246,11 +1246,14 @@ def test_documented_cli_lobe_label_sequence_reproduces_across_same_seed_full_out
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_lobe_label_sequence_first"
-    second = tmp_path / f"{config_path.stem}_cli_lobe_label_sequence_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_lobe_label_sequence_first",
+        second_name=f"{config_path.stem}_cli_lobe_label_sequence_second",
+    )
 
     with (first / "metrics.csv").open() as handle:
         first_metric_rows = list(csv.DictReader(handle))
@@ -1296,11 +1299,14 @@ def test_documented_cli_lobe_transition_sequence_reproduces_across_same_seed_ful
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_transition_sequence_first"
-    second = tmp_path / f"{config_path.stem}_cli_transition_sequence_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_transition_sequence_first",
+        second_name=f"{config_path.stem}_cli_transition_sequence_second",
+    )
 
     with (first / "metrics.csv").open() as handle:
         first_metric_rows = list(csv.DictReader(handle))
@@ -1346,11 +1352,14 @@ def test_documented_cli_lobe_run_state_sequence_reproduces_across_same_seed_full
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_run_state_sequence_first"
-    second = tmp_path / f"{config_path.stem}_cli_run_state_sequence_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_run_state_sequence_first",
+        second_name=f"{config_path.stem}_cli_run_state_sequence_second",
+    )
 
     with (first / "metrics.csv").open() as handle:
         first_metric_rows = list(csv.DictReader(handle))
@@ -1469,11 +1478,14 @@ def test_documented_cli_role_action_metric_sequence_reproduces_across_same_seed_
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_role_action_sequence_first"
-    second = tmp_path / f"{config_path.stem}_cli_role_action_sequence_second"
-
-    _run_documented_cli(config_path, first, seed=17)
-    _run_documented_cli(config_path, second, seed=17)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_cli_role_action_sequence_first",
+        second_name=f"{config_path.stem}_cli_role_action_sequence_second",
+    )
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
