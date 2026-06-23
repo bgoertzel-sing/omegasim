@@ -439,12 +439,18 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
             f"{class_name}_completed_total"
         ]
     assert "## Policy means" in summary
+    assert "## Phase-space regimes" in summary
     assert "## Policy deltas vs baseline" in summary
     assert "trajectory_final_queue_depth_mean=" in summary
     assert "trajectory_final_value_weighted_completed_mean=" in summary
     assert "queue_depth_step_delta_mean=" in summary
     assert "queued_task_age_mean_step_delta_mean=" in summary
     assert "value_weighted_step_delta_mean=" in summary
+    assert (
+        "- baseline: label=queue_growth+stale_age_rising+value_throughput_rising, "
+        "queue_depth_step_delta_sign=positive, queued_age_step_delta_sign=positive, "
+        "value_throughput_step_delta_sign=positive"
+    ) in summary
     assert "- research_heavy queue-depth step delta mean: " in summary
     assert "- research_heavy queued-age step delta mean: " in summary
     assert "- research_heavy value-throughput step delta mean: " in summary

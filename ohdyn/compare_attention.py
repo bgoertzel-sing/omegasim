@@ -377,6 +377,14 @@ def _comparison_summary(
             for line in _aggregate_lines(aggregates[policy])
         ],
         "",
+        "## Phase-space regimes",
+        "",
+        *[
+            line
+            for policy in aggregates
+            for line in _phase_space_regime_lines(aggregates[policy])
+        ],
+        "",
         "## Policy deltas vs baseline",
         "",
         *[
@@ -388,6 +396,47 @@ def _comparison_summary(
         "",
     ]
     return "\n".join(lines)
+
+
+def _phase_space_regime_lines(aggregate: PolicyAggregate) -> list[str]:
+    queue_label, queue_sign = _axis_label(
+        aggregate.queue_depth_step_delta_mean,
+        positive="queue_growth",
+        negative="queue_relief",
+        zero="queue_flat",
+    )
+    age_label, age_sign = _axis_label(
+        aggregate.queued_task_age_mean_step_delta_mean,
+        positive="stale_age_rising",
+        negative="stale_age_falling",
+        zero="stale_age_flat",
+    )
+    value_label, value_sign = _axis_label(
+        aggregate.value_weighted_step_delta_mean,
+        positive="value_throughput_rising",
+        negative="value_throughput_falling",
+        zero="value_throughput_flat",
+    )
+    return [
+        f"- {aggregate.policy}: label={queue_label}+{age_label}+{value_label}, "
+        f"queue_depth_step_delta_sign={queue_sign}, "
+        f"queued_age_step_delta_sign={age_sign}, "
+        f"value_throughput_step_delta_sign={value_sign}",
+    ]
+
+
+def _axis_label(
+    value: float,
+    *,
+    positive: str,
+    negative: str,
+    zero: str,
+) -> tuple[str, str]:
+    if value > 0:
+        return positive, "positive"
+    if value < 0:
+        return negative, "negative"
+    return zero, "zero"
 
 
 def _aggregate_lines(aggregate: PolicyAggregate) -> list[str]:
