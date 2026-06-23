@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -114,6 +115,7 @@ def run_comparison(
             ),
             seeds=seeds,
             aggregates=aggregates,
+            rows=rows,
         )
     )
     return rows
@@ -354,6 +356,7 @@ def _comparison_summary(
     internal_improvement_config: Path | None,
     seeds: tuple[int, ...],
     aggregates: dict[str, PolicyAggregate],
+    rows: list[dict[str, Any]],
 ) -> str:
     baseline = aggregates["baseline"]
     lines = [
@@ -383,6 +386,17 @@ def _comparison_summary(
             line
             for policy in aggregates
             for line in _phase_space_regime_lines(aggregates[policy])
+        ],
+        "",
+        "## Phase-space regime counts",
+        "",
+        *[
+            line
+            for policy in aggregates
+            for line in _phase_space_regime_count_lines(
+                policy,
+                [row for row in rows if row["policy"] == policy],
+            )
         ],
         "",
         "## Policy deltas vs baseline",
@@ -423,6 +437,87 @@ def _phase_space_regime_lines(aggregate: PolicyAggregate) -> list[str]:
         f"queued_age_step_delta_sign={age_sign}, "
         f"value_throughput_step_delta_sign={value_sign}",
     ]
+
+
+def _phase_space_regime_count_lines(
+    policy: str,
+    rows: list[dict[str, Any]],
+) -> list[str]:
+    counts: Counter[str] = Counter()
+    total_steps = 0
+    for row in rows:
+        run_labels = _run_phase_space_regime_labels(row)
+        counts.update(run_labels)
+        total_steps += len(run_labels)
+
+    if total_steps == 0:
+        return [f"- {policy}: total_steps=0"]
+
+    return [
+        f"- {policy}: total_steps={total_steps}, "
+        f"regime_counts={_format_regime_counts(counts)}, "
+        f"regime_rates={_format_regime_rates(counts, total_steps)}",
+    ]
+
+
+def _run_phase_space_regime_labels(row: dict[str, Any]) -> list[str]:
+    queue_deltas = _parse_delta_series(row["queue_depth_step_deltas"])
+    age_deltas = _parse_delta_series(row["queued_task_age_mean_step_deltas"])
+    value_deltas = _parse_delta_series(row["value_weighted_completed_total_step_deltas"])
+    if not (len(queue_deltas) == len(age_deltas) == len(value_deltas)):
+        raise ValueError("Phase-space delta trajectories must have matching lengths.")
+    return [
+        _phase_space_regime_label(queue_delta, age_delta, value_delta)
+        for queue_delta, age_delta, value_delta in zip(
+            queue_deltas,
+            age_deltas,
+            value_deltas,
+        )
+    ]
+
+
+def _parse_delta_series(value: Any) -> list[float]:
+    return [float(item) for item in str(value).split("|") if item]
+
+
+def _phase_space_regime_label(
+    queue_delta: float,
+    age_delta: float,
+    value_delta: float,
+) -> str:
+    queue_label, _ = _axis_label(
+        queue_delta,
+        positive="queue_growth",
+        negative="queue_relief",
+        zero="queue_flat",
+    )
+    age_label, _ = _axis_label(
+        age_delta,
+        positive="stale_age_rising",
+        negative="stale_age_falling",
+        zero="stale_age_flat",
+    )
+    value_label, _ = _axis_label(
+        value_delta,
+        positive="value_throughput_rising",
+        negative="value_throughput_falling",
+        zero="value_throughput_flat",
+    )
+    return f"{queue_label}+{age_label}+{value_label}"
+
+
+def _format_regime_counts(counts: Counter[str]) -> str:
+    return "|".join(
+        f"{label}:{counts[label]}"
+        for label in sorted(counts)
+    )
+
+
+def _format_regime_rates(counts: Counter[str], total_steps: int) -> str:
+    return "|".join(
+        f"{label}:{round(counts[label] / total_steps, 6)}"
+        for label in sorted(counts)
+    )
 
 
 def _axis_label(

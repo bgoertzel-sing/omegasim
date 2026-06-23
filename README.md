@@ -78,7 +78,7 @@ python -m ohdyn.compare_attention --seeds 1 2 3 --out runs/a2_attention_compare
 
 The comparison directory contains `comparison_metrics.csv`, an aggregate `summary.md`, and one normal run artifact directory per policy/seed. The aggregate CSV uses stable run subdirectory names so same-seed comparisons are byte-reproducible across output parent directories. It records value-weighted throughput, queue depth, stale-task age, per-class completed work totals, pipe-delimited per-run trajectory columns for queue depth, queued-task mean age, value-weighted completed work, and each attention class's completed-work totals. It also records pipe-delimited first-difference columns for queue depth, queued-task mean age, and value-weighted completed work so policy summaries can report phase-space step deltas.
 
-The aggregate comparison `summary.md` derives deterministic phase-space regime labels from the signs of each policy's mean queue-depth, queued-age, and value-throughput step deltas, for example `queue_growth+stale_age_rising+value_throughput_rising`.
+The aggregate comparison `summary.md` derives deterministic phase-space regime labels from the signs of each policy's mean queue-depth, queued-age, and value-throughput step deltas, for example `queue_growth+stale_age_rising+value_throughput_rising`. It also counts each per-run step-level regime label from the same delta sign sequence and reports per-policy regime counts and rates.
 
 ## Output Schema
 
