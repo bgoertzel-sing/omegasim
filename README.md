@@ -124,7 +124,7 @@ The output directory contains `normal_pressure/`, `medium_pressure/`, `high_pres
 - `queued_task_age_max_peak_delta`, mean peak queued-task max-age delta across seeds.
 - Per-policy normal-to-medium slope, medium-to-high slope, and high-interval-minus-low-interval curvature fields for value-weighted completed work, completed tasks, final queue depth, final queued-task mean age, and peak queued-task max age.
 
-The pressure comparison `summary.md` reports the normal, medium, and high-pressure config paths, seed set, policy-row count, a `Fixed-policy pressure deltas` section, and a `Fixed-policy pressure curves` section. The curves section reports the same slope and curvature fields emitted in `pressure_comparison_metrics.csv`.
+The pressure comparison `summary.md` reports the normal, medium, and high-pressure config paths, seed set, policy-row count, a `Fixed-policy pressure deltas` section, a `Most pressure-sensitive curve metric` section, and a `Fixed-policy pressure curves` section. The sensitivity section identifies the policy/observable pair with the largest absolute slope or curvature response from the existing pressure-curve fields, and the curves section reports the same slope and curvature fields emitted in `pressure_comparison_metrics.csv`.
 
 ## Output Schema
 

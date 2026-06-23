@@ -68,6 +68,18 @@ PRESSURE_COMPARISON_FIELDS = (
     "queued_task_age_max_peak_medium_to_high_slope",
     "queued_task_age_max_peak_pressure_curvature",
 )
+PRESSURE_CURVE_OBSERVABLES = (
+    ("value_weighted_completed", "value-weighted completed work"),
+    ("tasks_completed", "tasks completed"),
+    ("queue_depth", "final queue depth"),
+    ("queued_task_age_mean_final", "final queued task mean age"),
+    ("queued_task_age_max_peak", "peak queued task max age"),
+)
+PRESSURE_CURVE_METRICS = (
+    ("normal_to_medium_slope", "normal_to_medium_slope"),
+    ("medium_to_high_slope", "medium_to_high_slope"),
+    ("pressure_curvature", "curvature"),
+)
 
 
 def run_pressure_comparison(
@@ -412,6 +424,10 @@ def _pressure_summary(
             for line in _pressure_delta_lines(row)
         ],
         "",
+        "## Most pressure-sensitive curve metric",
+        "",
+        _most_pressure_sensitive_curve_metric_line(rows),
+        "",
         "## Fixed-policy pressure curves",
         "",
         *[
@@ -422,6 +438,44 @@ def _pressure_summary(
         "",
     ]
     return "\n".join(lines)
+
+
+def _most_pressure_sensitive_curve_metric_line(rows: list[dict[str, Any]]) -> str:
+    candidates: list[dict[str, Any]] = []
+    for row in rows:
+        for observable_prefix, observable_label in PRESSURE_CURVE_OBSERVABLES:
+            for metric_suffix, metric_label in PRESSURE_CURVE_METRICS:
+                field = f"{observable_prefix}_{metric_suffix}"
+                value = float(row[field])
+                candidates.append(
+                    {
+                        "policy": row["policy"],
+                        "observable": observable_label,
+                        "metric": metric_label,
+                        "field": field,
+                        "value": value,
+                        "abs_value": abs(value),
+                    }
+                )
+
+    if not candidates:
+        return "- none: no pressure curve rows available"
+
+    candidates.sort(
+        key=lambda candidate: (
+            -float(candidate["abs_value"]),
+            str(candidate["policy"]),
+            str(candidate["observable"]),
+            str(candidate["metric"]),
+        )
+    )
+    top = candidates[0]
+    return (
+        f"- policy={top['policy']}, observable={top['observable']}, "
+        f"metric={top['metric']}, field={top['field']}, "
+        f"value={round(float(top['value']), 6)}, "
+        f"abs_value={round(float(top['abs_value']), 6)}"
+    )
 
 
 def _pressure_delta_lines(row: dict[str, Any]) -> list[str]:
