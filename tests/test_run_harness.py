@@ -1269,11 +1269,14 @@ def test_documented_cli_lobe_label_sequence_changes_across_different_seeds_full_
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_lobe_label_sequence_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_lobe_label_sequence_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_lobe_label_sequence_seed1",
+        second_name=f"{config_path.stem}_cli_lobe_label_sequence_seed2",
+    )
 
     with (first / "metrics.csv").open() as handle:
         first_metric_rows = list(csv.DictReader(handle))
@@ -1316,11 +1319,14 @@ def test_documented_cli_lobe_transition_sequence_changes_across_different_seeds_
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_transition_sequence_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_transition_sequence_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_transition_sequence_seed1",
+        second_name=f"{config_path.stem}_cli_transition_sequence_seed2",
+    )
 
     with (first / "metrics.csv").open() as handle:
         first_metric_rows = list(csv.DictReader(handle))
@@ -1363,11 +1369,14 @@ def test_documented_cli_lobe_run_state_sequence_changes_across_different_seeds_f
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_run_state_sequence_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_run_state_sequence_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_run_state_sequence_seed1",
+        second_name=f"{config_path.stem}_cli_run_state_sequence_seed2",
+    )
 
     with (first / "metrics.csv").open() as handle:
         first_metric_rows = list(csv.DictReader(handle))
@@ -1389,11 +1398,14 @@ def test_documented_cli_lobe_dwell_run_summary_changes_across_different_seeds_fu
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_dwell_run_summary_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_dwell_run_summary_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_dwell_run_summary_seed1",
+        second_name=f"{config_path.stem}_cli_dwell_run_summary_seed2",
+    )
 
     first_summary = (first / "summary.md").read_text()
     second_summary = (second / "summary.md").read_text()
