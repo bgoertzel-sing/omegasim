@@ -4,12 +4,12 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 pressure-curve comparison seed-set sensitivity interpretation on top of the stable A0/A1 local simulator harness.
+Phase A2 pressure-curve comparison multi-prefix seed-set sensitivity interpretation on top of the stable A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 documented the pressure-summary `Seed-set sensitivity` section and its prefix-seed interpretation.
-- Changed: no simulator behavior changes; README now names `Seed-set sensitivity` as a pressure comparison `summary.md` section and explains `full_seeds`, `prefix_seeds`, and `top response stable across prefix`. Added focused README assertions to the existing pressure sensitivity regression test.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_summary_reports_seed_set_sensitivity or documented_pressure_cli_writes_pressure_layout_and_curve_summary or pressure_summary'` passed with 5 selected tests; `.venv-conda/bin/python -m pytest` passed with 451 tests.
+- Status: ok, 2026-06-23 added deterministic multi-prefix pressure sensitivity reporting.
+- Changed: no simulator behavior changes; pressure `summary.md` now preserves the existing full-vs-last-prefix lines and adds `top response stable across all prefixes` plus a table comparing the top pressure response for every proper prefix of the configured seed set. README documents the prefix table contract, and pressure-summary tests assert the new table while scoping the pressure-ranking table test to its own section.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_summary_reports_seed_set_sensitivity or pressure_summary'` passed with 4 selected tests; `.venv-conda/bin/python -m pytest` passed with 451 tests.
 - Blockers: none.
-- Next step: add a deterministic multi-prefix pressure sensitivity summary that compares top pressure responses across every prefix of the configured seed set.
+- Next step: add pressure-summary interpretation text that explains whether unstable prefix rankings are caused by policy changes, observable changes, or slope-vs-curvature metric changes.

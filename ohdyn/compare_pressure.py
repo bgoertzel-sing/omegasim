@@ -484,34 +484,85 @@ def _seed_set_sensitivity_lines(
     if len(seeds) < 2:
         return ["- unavailable: at least two seeds are required for prefix sensitivity."]
 
-    prefix_seeds = seeds[:-1]
-    prefix_seed_set = set(prefix_seeds)
-    prefix_rows = _pressure_rows(
-        _rows_for_seeds(normal_rows, prefix_seed_set),
-        _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
-        _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+    prefix_comparisons = _prefix_pressure_response_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
     )
+    last_prefix = prefix_comparisons[-1]
     full_top = _pressure_curve_response_candidates(rows)[0]
-    prefix_top = _pressure_curve_response_candidates(prefix_rows)[0]
-    stable = (
-        full_top["policy"],
-        full_top["observable_prefix"],
-        full_top["metric_suffix"],
-    ) == (
-        prefix_top["policy"],
-        prefix_top["observable_prefix"],
-        prefix_top["metric_suffix"],
-    )
+    prefix_top = last_prefix["top_response"]
 
     return [
         (
             f"- comparison: full_seeds={_format_seed_set(seeds)}, "
-            f"prefix_seeds={_format_seed_set(prefix_seeds)}"
+            f"prefix_seeds={_format_seed_set(last_prefix['prefix_seeds'])}"
         ),
         f"- full top response: {_format_pressure_response_candidate(full_top)}",
         f"- prefix top response: {_format_pressure_response_candidate(prefix_top)}",
-        f"- top response stable across prefix: {str(stable).lower()}",
+        f"- top response stable across prefix: {str(last_prefix['stable_with_full']).lower()}",
+        (
+            "- top response stable across all prefixes: "
+            f"{str(all(comparison['stable_with_full'] for comparison in prefix_comparisons)).lower()}"
+        ),
+        "",
+        "| prefix_seeds | top_response | stable_with_full |",
+        "| --- | --- | --- |",
+        *[
+            (
+                f"| {_format_seed_set(comparison['prefix_seeds'])} | "
+                f"{_format_pressure_response_candidate(comparison['top_response'])} | "
+                f"{str(comparison['stable_with_full']).lower()} |"
+            )
+            for comparison in prefix_comparisons
+        ],
     ]
+
+
+def _prefix_pressure_response_comparisons(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    full_top = _pressure_curve_response_candidates(rows)[0]
+    comparisons: list[dict[str, Any]] = []
+    for prefix_length in range(1, len(seeds)):
+        prefix_seeds = seeds[:prefix_length]
+        prefix_seed_set = set(prefix_seeds)
+        prefix_rows = _pressure_rows(
+            _rows_for_seeds(normal_rows, prefix_seed_set),
+            _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
+            _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+        )
+        prefix_top = _pressure_curve_response_candidates(prefix_rows)[0]
+        comparisons.append(
+            {
+                "prefix_seeds": prefix_seeds,
+                "top_response": prefix_top,
+                "stable_with_full": _same_pressure_response(full_top, prefix_top),
+            }
+        )
+    return comparisons
+
+
+def _same_pressure_response(
+    first: dict[str, Any],
+    second: dict[str, Any],
+) -> bool:
+    return (
+        first["policy"],
+        first["observable_prefix"],
+        first["metric_suffix"],
+    ) == (
+        second["policy"],
+        second["observable_prefix"],
+        second["metric_suffix"],
+    )
 
 
 def _rows_for_seeds(
@@ -537,7 +588,7 @@ def _format_pressure_response_candidate(candidate: dict[str, Any]) -> str:
 def _most_pressure_sensitive_curve_metric_line(rows: list[dict[str, Any]]) -> str:
     candidates = _pressure_curve_response_candidates(rows)
     if not candidates:
-        return []
+        return "- none: no pressure curve rows available"
 
     top = candidates[0]
     return (
@@ -587,9 +638,6 @@ def _pressure_curve_response_candidates(rows: list[dict[str, Any]]) -> list[dict
                         "abs_value": abs(value),
                     }
                 )
-
-    if not candidates:
-        return "- none: no pressure curve rows available"
 
     candidates.sort(
         key=lambda candidate: (

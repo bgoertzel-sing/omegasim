@@ -851,9 +851,11 @@ def test_a2_attention_pressure_summary_ranks_all_curve_responses(
         for field in curve_fields
     ]
     _, expected_policy, expected_field, expected_value = sorted(candidates)[0]
+    ranking_section = summary.split("## Pressure-curve response ranking", maxsplit=1)[1]
+    ranking_section = ranking_section.split("## Top pressure-response explanation", maxsplit=1)[0]
     table_lines = [
         line
-        for line in summary.splitlines()
+        for line in ranking_section.splitlines()
         if line.startswith("| ") and not line.startswith("| ---")
     ]
 
@@ -952,7 +954,9 @@ def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
 
     assert "`Seed-set sensitivity` is a deterministic prefix check" in readme
     assert "`full_seeds` is `1,2,3` and `prefix_seeds` is `1,2`" in readme
+    assert "a prefix table for every proper prefix of the configured seed set" in readme
     assert "`top response stable across prefix: true`" in readme
+    assert "`top response stable across all prefixes: true`" in readme
     assert "pressure-response ranking should be treated as seed-set-sensitive" in readme
     assert "## Seed-set sensitivity" in summary
     assert "- comparison: full_seeds=1,2,3, prefix_seeds=1,2" in summary
@@ -967,6 +971,16 @@ def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
         "field=value_weighted_completed_pressure_curvature"
     ) in summary
     assert "- top response stable across prefix: false" in summary
+    assert "- top response stable across all prefixes: false" in summary
+    assert "| prefix_seeds | top_response | stable_with_full |" in summary
+    assert (
+        "| 1 | policy=baseline, observable=value-weighted completed work, "
+        "metric=curvature, field=value_weighted_completed_pressure_curvature"
+    ) in summary
+    assert (
+        "| 1,2 | policy=baseline, observable=value-weighted completed work, "
+        "metric=curvature, field=value_weighted_completed_pressure_curvature"
+    ) in summary
 
 
 def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields(
