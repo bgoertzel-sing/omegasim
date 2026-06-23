@@ -627,6 +627,72 @@ def _pressure_response_selection_rows(
                 instability_causes=str(comparison["instability_causes"]),
             )
         )
+    selection_rows.extend(
+        _per_class_capture_pressure_selection_rows(
+            seeds=seeds,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        )
+    )
+    return selection_rows
+
+
+def _per_class_capture_pressure_selection_rows(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    candidates = _per_class_capture_pressure_candidates(rows)
+    if not candidates:
+        return []
+
+    full_top = candidates[0]
+    selection_rows = [
+        _pressure_response_selection_row(
+            selection_scope="class_full",
+            seeds=seeds,
+            candidate=full_top,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+            stable_with_full=True,
+            instability_causes="none",
+        )
+    ]
+    for comparison in _prefix_per_class_capture_pressure_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    ):
+        prefix_seed_set = set(comparison["prefix_seeds"])
+        selection_rows.append(
+            _pressure_response_selection_row(
+                selection_scope="class_prefix",
+                seeds=comparison["prefix_seeds"],
+                candidate=comparison["top_response"],
+                rows=_pressure_rows(
+                    _rows_for_seeds(normal_rows, prefix_seed_set),
+                    _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
+                    _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+                ),
+                normal_rows=_rows_for_seeds(normal_rows, prefix_seed_set),
+                medium_pressure_rows=_rows_for_seeds(
+                    medium_pressure_rows,
+                    prefix_seed_set,
+                ),
+                high_pressure_rows=_rows_for_seeds(high_pressure_rows, prefix_seed_set),
+                stable_with_full=bool(comparison["stable_with_full"]),
+                instability_causes=str(comparison["instability_causes"]),
+            )
+        )
     return selection_rows
 
 

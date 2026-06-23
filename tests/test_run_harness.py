@@ -1270,8 +1270,15 @@ def test_a2_attention_pressure_response_selection_csv_records_full_and_prefix_to
 
     assert rows
     assert list(rows[0]) == list(PRESSURE_RESPONSE_SELECTION_FIELDS)
-    assert [row["selection_scope"] for row in rows] == ["full", "prefix", "prefix"]
-    assert [row["seeds"] for row in rows] == ["1,2,3", "1", "1,2"]
+    assert [row["selection_scope"] for row in rows] == [
+        "full",
+        "prefix",
+        "prefix",
+        "class_full",
+        "class_prefix",
+        "class_prefix",
+    ]
+    assert [row["seeds"] for row in rows] == ["1,2,3", "1", "1,2", "1,2,3", "1", "1,2"]
     assert rows[0]["policy"] == "internal_improvement"
     assert rows[0]["observable"] == "final queue depth"
     assert rows[0]["metric"] == "normal_to_medium_slope"
@@ -1290,6 +1297,19 @@ def test_a2_attention_pressure_response_selection_csv_records_full_and_prefix_to
     assert rows[2]["metric"] == "curvature"
     assert rows[2]["stable_with_full"] == "false"
     assert rows[2]["instability_causes"] == "policy,observable,metric"
+    assert rows[3]["selection_scope"] == "class_full"
+    assert rows[3]["field"].startswith(
+        tuple(f"{class_name}_capture_pressure_" for class_name in ATTENTION_CLASSES)
+    )
+    assert rows[3]["stable_with_full"] == "true"
+    assert rows[3]["instability_causes"] == "none"
+    assert rows[5]["selection_scope"] == "class_prefix"
+    assert rows[5]["field"].startswith(
+        tuple(f"{class_name}_capture_pressure_" for class_name in ATTENTION_CLASSES)
+    )
+    assert rows[5]["stable_with_full"] in {"true", "false"}
+    assert rows[5]["normal_mean"]
+    assert rows[5]["high_minus_normal_delta"]
 
 
 def test_a2_attention_pressure_comparison_curve_metrics_match_condition_means(
