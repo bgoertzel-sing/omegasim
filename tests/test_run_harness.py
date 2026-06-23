@@ -102,6 +102,27 @@ def _run_documented_cli(
     return completed
 
 
+def _run_documented_cli_pair(
+    config_path: Path,
+    tmp_path: Path,
+    *,
+    first_seed: int,
+    second_seed: int,
+    first_name: str,
+    second_name: str,
+) -> tuple[Path, Path, subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
+    first = tmp_path / first_name
+    second = tmp_path / second_name
+    artifacts = _expected_artifacts(config_path)
+
+    first_completed = _run_documented_cli(config_path, first, seed=first_seed)
+    second_completed = _run_documented_cli(config_path, second, seed=second_seed)
+
+    _assert_artifacts_match_output_directory(first, artifacts)
+    _assert_artifacts_match_output_directory(second, artifacts)
+    return first, second, first_completed, second_completed
+
+
 def test_loads_a0_smoke_config() -> None:
     config = load_config(CONFIG)
 
@@ -4709,13 +4730,15 @@ def test_documented_cli_omitted_outputs_defaults_to_full_a0_artifacts(tmp_path: 
 def test_documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_artifacts(
     tmp_path: Path,
 ) -> None:
-    first = tmp_path / "default_outputs_seed17_first"
-    second = tmp_path / "default_outputs_seed17_second"
     artifacts = _expected_artifacts(DEFAULT_OUTPUTS)
-
-    for out_dir in [first, second]:
-        _run_documented_cli(DEFAULT_OUTPUTS, out_dir, seed=17)
-        _assert_artifacts_match_output_directory(out_dir, artifacts)
+    first, second, _, _ = _run_documented_cli_pair(
+        DEFAULT_OUTPUTS,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name="default_outputs_seed17_first",
+        second_name="default_outputs_seed17_second",
+    )
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
@@ -4735,15 +4758,18 @@ def test_documented_cli_full_output_fixture_same_seed_reproduces_byte_identical_
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_full_output_seed17_first"
-    second = tmp_path / f"{config_path.stem}_full_output_seed17_second"
     artifacts = _expected_artifacts(config_path)
 
     assert artifacts == A0_FULL_ARTIFACTS
 
-    for out_dir in [first, second]:
-        _run_documented_cli(config_path, out_dir, seed=17)
-        _assert_artifacts_match_output_directory(out_dir, artifacts)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name=f"{config_path.stem}_full_output_seed17_first",
+        second_name=f"{config_path.stem}_full_output_seed17_second",
+    )
 
     first_config = yaml.safe_load((first / "config.yaml").read_text())
     second_config = yaml.safe_load((second / "config.yaml").read_text())
@@ -5633,13 +5659,15 @@ def test_documented_cli_smoke_writes_core_a0_summary_sections(tmp_path: Path) ->
 
 
 def test_documented_cli_same_seed_reproduces_byte_identical_a0_artifacts(tmp_path: Path) -> None:
-    first = tmp_path / "a0_seed17_first"
-    second = tmp_path / "a0_seed17_second"
     artifacts = _expected_artifacts(CONFIG)
-
-    for out_dir in [first, second]:
-        _run_documented_cli(CONFIG, out_dir, seed=17)
-        _assert_artifacts_match_output_directory(out_dir, artifacts)
+    first, second, _, _ = _run_documented_cli_pair(
+        CONFIG,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name="a0_seed17_first",
+        second_name="a0_seed17_second",
+    )
 
     _assert_artifacts_are_byte_identical(first, second, artifacts)
 
@@ -5754,18 +5782,17 @@ def test_run_api_without_manifest_refuses_enabled_artifact_collisions(tmp_path: 
 def test_documented_cli_same_seed_without_manifest_reproduces_byte_identical_artifacts(
     tmp_path: Path,
 ) -> None:
-    first = tmp_path / "no_manifest_repro_first"
-    second = tmp_path / "no_manifest_repro_second"
-    artifacts = [
-        "config.yaml",
-        "metrics.csv",
-        "events.csv",
-        "summary.md",
-    ]
+    artifacts = _expected_artifacts(NO_MANIFEST)
+    first, second, _, _ = _run_documented_cli_pair(
+        NO_MANIFEST,
+        tmp_path,
+        first_seed=17,
+        second_seed=17,
+        first_name="no_manifest_repro_first",
+        second_name="no_manifest_repro_second",
+    )
 
     for out_dir in [first, second]:
-        _run_documented_cli(NO_MANIFEST, out_dir, seed=17)
-        _assert_artifacts_match_output_directory(out_dir, artifacts)
         assert not (out_dir / "manifest.yaml").exists()
 
     _assert_artifacts_are_byte_identical(first, second, artifacts)

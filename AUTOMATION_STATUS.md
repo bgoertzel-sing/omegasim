@@ -8,8 +8,8 @@ Phase A0/A1: deterministic local simulator harness, static agents, task queue, b
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 A0/A1 omitted-output API reproducibility helper reuse
-- Changed: refactored `test_run_api_omitted_outputs_same_seed_reproduces_byte_identical_artifacts` to use the shared `_run_api_pair` helper while preserving its explicit config, seed, metrics, events, and byte-identical artifact assertions.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "run_api_omitted_outputs_same_seed_reproduces_byte_identical_artifacts or same_seed_reproduces_byte_stable_outputs or different_seed_changes_events" -q` passed with 3 tests and 418 deselected; `.venv-conda/bin/python -m ruff check .` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 421 tests.
+- Status: ok, 2026-06-23 A0/A1 documented-CLI same-seed reproducibility helper reuse
+- Changed: added a CLI-only `_run_documented_cli_pair` helper and refactored the documented CLI same-seed byte-identical artifact tests for default outputs, full-output fixtures, smoke, and no-manifest runs to share setup while preserving their fixture-specific assertions.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "documented_cli_omitted_outputs_same_seed_reproduces_byte_identical_artifacts or documented_cli_full_output_fixture_same_seed_reproduces_byte_identical_enabled_artifacts or documented_cli_same_seed_reproduces_byte_identical_a0_artifacts or documented_cli_same_seed_without_manifest_reproduces_byte_identical_artifacts" -q` passed with 5 tests and 416 deselected; `.venv-conda/bin/python -m ruff check .` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 421 tests.
 - Blockers: none.
-- Next step: review the documented-CLI same-seed byte-stability tests for one narrow helper extraction or reuse that reduces duplication without mixing CLI and API assertions.
+- Next step: review documented-CLI different-seed pair tests for one narrow CLI-only helper reuse that reduces duplicate two-run setup without changing schema or seed-variation assertions.
