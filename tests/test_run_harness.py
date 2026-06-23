@@ -896,6 +896,38 @@ def test_documented_pressure_cli_reproduces_top_level_artifacts(
     )
 
 
+def test_documented_pressure_cli_refuses_existing_top_level_artifacts_without_modifying_them(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare_cli"
+
+    _run_documented_pressure_cli(out_dir, seeds=(1, 2))
+    original_metrics = (out_dir / "pressure_comparison_metrics.csv").read_bytes()
+    original_summary = (out_dir / "summary.md").read_bytes()
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.compare_pressure",
+            "--seeds",
+            "1",
+            "2",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert completed.stdout == ""
+    assert "already contains pressure comparison artifacts" in completed.stderr
+    assert (out_dir / "pressure_comparison_metrics.csv").read_bytes() == original_metrics
+    assert (out_dir / "summary.md").read_bytes() == original_summary
+
+
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
