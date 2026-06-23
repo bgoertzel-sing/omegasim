@@ -13,6 +13,7 @@ from typing import Any
 
 import yaml
 
+from ohdyn.config import ATTENTION_CLASSES
 from ohdyn.sim import (
     BASELINE_EVENT_TYPES,
     BASELINE_LOBE_LABELS,
@@ -22,6 +23,7 @@ from ohdyn.sim import (
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
+    attention_policy_metric_fields,
     metrics_fieldnames,
     role_action_metric_fields,
 )
@@ -43,7 +45,7 @@ def write_outputs(result: SimulationResult, out_dir: str | Path) -> None:
         _write_csv(
             output_path / "metrics.csv",
             result.metrics,
-            fieldnames=metrics_fieldnames(result.config.model.actions),
+            fieldnames=_metrics_fieldnames(result),
         )
     if result.config.outputs.write_events:
         _write_csv(output_path / "events.csv", result.events, fieldnames=EVENT_FIELDS)
@@ -66,7 +68,7 @@ def _ensure_output_paths_available(output_path: Path, artifact_names: list[str])
 
 
 def _manifest(result: SimulationResult) -> dict[str, Any]:
-    return {
+    manifest = {
         "experiment_id": result.config.run.experiment_id,
         "seed": result.seed,
         "ticks": result.config.run.ticks,
@@ -93,7 +95,7 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
                 "fields": list(EVENT_FIELDS),
             },
             "metrics": {
-                "fields": list(metrics_fieldnames(result.config.model.actions)),
+                "fields": list(_metrics_fieldnames(result)),
             },
             "role_action_metrics": {
                 "roles": list(BASELINE_ROLES),
@@ -103,6 +105,12 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
         },
         "config": result.config.to_dict(),
     }
+    if result.config.attention_policy is not None:
+        manifest["model"]["attention_policy"] = {
+            "classes": list(ATTENTION_CLASSES),
+            "fields": list(attention_policy_metric_fields()),
+        }
+    return manifest
 
 
 def _environment_manifest() -> dict[str, Any]:
@@ -172,6 +180,13 @@ def _write_csv(
         writer = csv.DictWriter(handle, fieldnames=list(fieldnames or rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _metrics_fieldnames(result: SimulationResult) -> tuple[str, ...]:
+    return metrics_fieldnames(
+        result.config.model.actions,
+        include_attention_policy=result.config.attention_policy is not None,
+    )
 
 
 def _summary(result: SimulationResult) -> str:
@@ -259,6 +274,15 @@ def _summary(result: SimulationResult) -> str:
             f"- {role}: idle={totals['idle']}, message={totals['message']}, "
             f"create_task={totals['create_task']}, work_task={totals['work_task']}"
         )
+    if result.config.attention_policy is not None:
+        lines.extend(
+            [
+                "",
+                "## Attention policy totals",
+                "",
+                *_attention_policy_summary(result),
+            ]
+        )
     lines.append("")
     return "\n".join(lines)
 
@@ -289,7 +313,7 @@ def _artifact_output_summary(result: SimulationResult) -> list[str]:
 
 
 def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
-    metrics_fields = metrics_fieldnames(result.config.model.actions)
+    metrics_fields = _metrics_fieldnames(result)
     event_fields = EVENT_FIELDS
     role_action_fields = role_action_metric_fields(result.config.model.actions)
     return [
@@ -300,6 +324,11 @@ def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
         f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}",
         f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}",
         f"- queued task age fields: {len(QUEUED_TASK_AGE_METRIC_FIELDS)}",
+        *(
+            [f"- attention policy fields: {len(attention_policy_metric_fields())}"]
+            if result.config.attention_policy is not None
+            else []
+        ),
         f"- role/action fields: {len(role_action_fields)}",
         "- metrics schema source: ohdyn.sim.metrics_fieldnames",
         "- events schema source: ohdyn.sim.EVENT_FIELDS",
@@ -361,6 +390,25 @@ def _role_action_totals(result: SimulationResult) -> dict[str, dict[str, int]]:
         }
         for role in BASELINE_ROLES
     }
+
+
+def _attention_policy_summary(result: SimulationResult) -> list[str]:
+    last = result.metrics[-1] if result.metrics else {}
+    lines = []
+    for class_name in ATTENTION_CLASSES:
+        completed = last.get(f"attention_{class_name}_completed_total", 0)
+        queued = last.get(f"attention_{class_name}_queued_tick", 0)
+        target = last.get(f"attention_{class_name}_target_share", 0)
+        mean_age = last.get(f"attention_{class_name}_queued_age_mean_tick", 0)
+        lines.append(
+            f"- {class_name}: target_share={target}, completed={completed}, "
+            f"queued={queued}, final_mean_age={mean_age}"
+        )
+    lines.append(
+        "- value-weighted completed work: "
+        f"{last.get('attention_value_weighted_completed_total', 0)}"
+    )
+    return lines
 
 
 def _created_completed_balance(result: SimulationResult) -> int:

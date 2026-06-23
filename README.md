@@ -46,6 +46,16 @@ Baseline lobe labels are derived from per-tick queue movement and dominant actio
 - `coordination`
 - `low_activity`
 
+## A2 Attention Allocation Smoke
+
+The first opt-in A2 fixture keeps the A0/A1 agent population, bus graph, actions, and artifact contract, but adds a four-class `attention_policy` section:
+
+```bash
+python -m ohdyn.run --config configs/a2_attention_smoke.yaml --seed 1 --out runs/a2_attention_seed1
+```
+
+Attention-policy runs assign created tasks to `near_term_external`, `long_term_research`, `internal_improvement`, and `housekeeping`; work selection favors queued classes that are under their target share. `metrics.csv`, `manifest.yaml`, and `summary.md` add per-class queue, completion, queued-age, attention-share, share-deviation, and value-weighted completed-work fields only for configs that enable `attention_policy`.
+
 ## Output Schema
 
 Every run writes `config.yaml`, a normalized copy of the loaded config. Optional artifact flags in the config control the remaining outputs.

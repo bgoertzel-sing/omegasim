@@ -18,14 +18,16 @@ from ohdyn.sim import (
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
+    attention_policy_metric_fields,
     metrics_fieldnames,
     role_action_metric_fields,
 )
-from ohdyn.config import load_config
+from ohdyn.config import ATTENTION_CLASSES, load_config
 from ohdyn.run import run_experiment
 
 
 CONFIG = Path("configs/a0_smoke.yaml")
+A2_ATTENTION = Path("configs/a2_attention_smoke.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -51,6 +53,7 @@ MANIFEST_ONLY_ARTIFACTS = ["config.yaml", "manifest.yaml"]
 NO_MANIFEST_ARTIFACTS = ["config.yaml", "metrics.csv", "events.csv", "summary.md"]
 OUTPUT_FIXTURE_ARTIFACTS = {
     CONFIG: A0_FULL_ARTIFACTS,
+    A2_ATTENTION: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -236,6 +239,21 @@ def test_loads_a0_no_manifest_reordered_actions_fixture() -> None:
     assert config.outputs.write_summary is True
 
 
+def test_loads_a2_attention_smoke_config() -> None:
+    config = load_config(A2_ATTENTION)
+
+    assert config.run.experiment_id == "a2_attention_smoke"
+    assert config.run.ticks == 12
+    assert config.model.agent_count == 15
+    assert config.attention_policy is not None
+    assert config.attention_policy.shares() == {
+        "near_term_external": 0.45,
+        "long_term_research": 0.25,
+        "internal_improvement": 0.2,
+        "housekeeping": 0.1,
+    }
+
+
 def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -258,6 +276,54 @@ def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     assert manifest["seed"] == 1
     assert manifest["agent_count"] == 15
     assert manifest["model"]["bus_edges"] == 15
+
+
+def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a2_attention_seed1"
+
+    result = run_experiment(A2_ATTENTION, seed=1, out_dir=out_dir)
+
+    assert result.config.attention_policy is not None
+    assert len(result.metrics) == 12
+    with (out_dir / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    summary = (out_dir / "summary.md").read_text()
+
+    assert rows
+    assert manifest["config"]["attention_policy"] == {
+        "near_term_external": 0.45,
+        "long_term_research": 0.25,
+        "internal_improvement": 0.2,
+        "housekeeping": 0.1,
+    }
+    assert manifest["model"]["attention_policy"] == {
+        "classes": list(ATTENTION_CLASSES),
+        "fields": list(attention_policy_metric_fields()),
+    }
+    assert set(attention_policy_metric_fields()) <= set(rows[0])
+    assert "## Attention policy totals" in summary
+    assert "- attention policy fields: " in summary
+    assert "- value-weighted completed work: " in summary
+    for class_name in ATTENTION_CLASSES:
+        assert f"attention_{class_name}_queued_tick" in rows[0]
+        assert f"attention_{class_name}_spent_share_tick" in rows[0]
+        assert f"- {class_name}: target_share=" in summary
+
+
+def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) -> None:
+    first, second, _, _ = _run_documented_cli_pair(
+        A2_ATTENTION,
+        tmp_path,
+        first_seed=23,
+        second_seed=23,
+        first_name="a2_attention_first",
+        second_name="a2_attention_second",
+    )
+
+    assert (first / "metrics.csv").read_text() == (second / "metrics.csv").read_text()
+    assert (first / "events.csv").read_text() == (second / "events.csv").read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 
 
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:

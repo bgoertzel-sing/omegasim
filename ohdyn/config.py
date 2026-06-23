@@ -9,6 +9,14 @@ from typing import Any
 import yaml
 
 
+ATTENTION_CLASSES = (
+    "near_term_external",
+    "long_term_research",
+    "internal_improvement",
+    "housekeeping",
+)
+
+
 @dataclass(frozen=True)
 class RunConfig:
     experiment_id: str
@@ -30,14 +38,31 @@ class OutputsConfig:
 
 
 @dataclass(frozen=True)
+class AttentionPolicyConfig:
+    near_term_external: float
+    long_term_research: float
+    internal_improvement: float
+    housekeeping: float
+
+    def shares(self) -> dict[str, float]:
+        return {
+            class_name: float(getattr(self, class_name))
+            for class_name in ATTENTION_CLASSES
+        }
+
+
+@dataclass(frozen=True)
 class OmegaConfig:
     run: RunConfig
     model: ModelConfig
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
+    attention_policy: AttentionPolicyConfig | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["model"]["actions"] = list(self.model.actions)
+        if self.attention_policy is None:
+            data.pop("attention_policy")
         return data
 
 
@@ -56,6 +81,7 @@ def load_config(path: str | Path) -> OmegaConfig:
     if outputs is None:
         outputs = {}
     outputs = _expect_mapping(outputs, "outputs")
+    attention_policy = _optional_attention_policy(raw.get("attention_policy"))
 
     actions = tuple(str(action) for action in model.get("actions", ()))
     cfg = OmegaConfig(
@@ -73,6 +99,7 @@ def load_config(path: str | Path) -> OmegaConfig:
             write_events=_bool(outputs.get("write_events", True), "outputs.write_events"),
             write_summary=_bool(outputs.get("write_summary", True), "outputs.write_summary"),
         ),
+        attention_policy=attention_policy,
     )
     _validate_actions(cfg.model.actions)
     return cfg
@@ -107,6 +134,38 @@ def _bool(value: Any, name: str) -> bool:
     if not isinstance(value, bool):
         raise ValueError(f"Config value {name!r} must be a boolean.")
     return value
+
+
+def _optional_attention_policy(value: Any) -> AttentionPolicyConfig | None:
+    if value is None:
+        return None
+    policy = _expect_mapping(value, "attention_policy")
+    unknown = set(policy) - set(ATTENTION_CLASSES)
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"attention_policy contains unsupported classes: {names}")
+    missing = set(ATTENTION_CLASSES) - set(policy)
+    if missing:
+        names = ", ".join(sorted(missing))
+        raise ValueError(f"attention_policy is missing required classes: {names}")
+
+    shares = {
+        class_name: _share(policy[class_name], f"attention_policy.{class_name}")
+        for class_name in ATTENTION_CLASSES
+    }
+    total = sum(shares.values())
+    if abs(total - 1.0) > 1e-9:
+        raise ValueError("attention_policy values must sum to 1.0.")
+    return AttentionPolicyConfig(**shares)
+
+
+def _share(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"Config value {name!r} must be a number.")
+    parsed = float(value)
+    if parsed < 0.0:
+        raise ValueError(f"Config value {name!r} must be non-negative.")
+    return parsed
 
 
 def _validate_actions(actions: tuple[str, ...]) -> None:

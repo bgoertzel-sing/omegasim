@@ -9,7 +9,7 @@ from typing import Any
 import networkx as nx
 import numpy as np
 
-from ohdyn.config import OmegaConfig
+from ohdyn.config import ATTENTION_CLASSES, OmegaConfig
 
 
 BASELINE_ROLES = (
@@ -67,8 +67,19 @@ QUEUED_TASK_AGE_METRIC_FIELDS = (
     "queued_task_age_mean_tick",
 )
 
+TASK_CLASS_VALUE_WEIGHTS = {
+    "near_term_external": 4,
+    "long_term_research": 3,
+    "internal_improvement": 2,
+    "housekeeping": 1,
+}
 
-def metrics_fieldnames(actions: tuple[str, ...]) -> tuple[str, ...]:
+
+def metrics_fieldnames(
+    actions: tuple[str, ...],
+    *,
+    include_attention_policy: bool = False,
+) -> tuple[str, ...]:
     return (
         "tick",
         "agent_count",
@@ -89,6 +100,7 @@ def metrics_fieldnames(actions: tuple[str, ...]) -> tuple[str, ...]:
         "tasks_worked_tick",
         *QUEUE_PRESSURE_METRIC_FIELDS,
         *QUEUED_TASK_AGE_METRIC_FIELDS,
+        *(attention_policy_metric_fields() if include_attention_policy else ()),
         "idle_tick",
         *role_action_metric_fields(actions),
         "mean_agent_bias",
@@ -100,6 +112,26 @@ def role_action_metric_fields(actions: tuple[str, ...]) -> tuple[str, ...]:
         f"role_{role}_{action}_tick"
         for role in BASELINE_ROLES
         for action in actions
+    )
+
+
+def attention_policy_metric_fields() -> tuple[str, ...]:
+    return (
+        *(
+            field
+            for class_name in ATTENTION_CLASSES
+            for field in (
+                f"attention_{class_name}_queued_tick",
+                f"attention_{class_name}_completed_total",
+                f"attention_{class_name}_queued_age_max_tick",
+                f"attention_{class_name}_queued_age_mean_tick",
+                f"attention_{class_name}_spent_share_tick",
+                f"attention_{class_name}_target_share",
+                f"attention_{class_name}_share_deviation_tick",
+            )
+        ),
+        "attention_value_weighted_completed_tick",
+        "attention_value_weighted_completed_total",
     )
 
 
@@ -116,6 +148,7 @@ class Task:
     created_by: str
     created_tick: int
     remaining_work: int
+    task_class: str = ""
 
 
 @dataclass(frozen=True)
@@ -138,6 +171,9 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
     metrics: list[dict[str, Any]] = []
     task_counter = 0
     completed_tasks = 0
+    attention_work_counts: Counter[str] = Counter()
+    attention_completed_counts: Counter[str] = Counter()
+    attention_value_weighted_completed_total = 0
     previous_lobe_label = ""
     baseline_lobe_run_id = 0
     baseline_lobe_current_run_length = 0
@@ -146,7 +182,10 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
         queue_depth_start = len(task_queue)
         action_counts: Counter[str] = Counter()
         role_action_counts: Counter[tuple[str, str]] = Counter()
+        attention_work_counts_tick: Counter[str] = Counter()
+        attention_completed_counts_tick: Counter[str] = Counter()
         completed_this_tick = 0
+        attention_value_weighted_completed_tick = 0
         for agent in agents:
             action = _choose_action(config.model.actions, bool(task_queue), agent, rng)
             action_counts[action] += 1
@@ -171,6 +210,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                     created_by=agent.agent_id,
                     created_tick=tick,
                     remaining_work=work_units,
+                    task_class=_choose_task_class(config, rng),
                 )
                 task_queue.append(task)
                 events.append(
@@ -184,12 +224,24 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                     )
                 )
             elif action == "work_task":
-                task = task_queue.popleft()
+                task = _pop_work_task(task_queue, config, attention_work_counts)
                 task.remaining_work -= 1
+                if config.attention_policy is not None:
+                    attention_work_counts[task.task_class] += 1
+                    attention_work_counts_tick[task.task_class] += 1
                 completed = task.remaining_work <= 0
                 if completed:
                     completed_tasks += 1
                     completed_this_tick += 1
+                    if config.attention_policy is not None:
+                        attention_completed_counts[task.task_class] += 1
+                        attention_completed_counts_tick[task.task_class] += 1
+                        attention_value_weighted_completed_tick += TASK_CLASS_VALUE_WEIGHTS[
+                            task.task_class
+                        ]
+                        attention_value_weighted_completed_total += TASK_CLASS_VALUE_WEIGHTS[
+                            task.task_class
+                        ]
                 else:
                     task_queue.append(task)
                 events.append(
@@ -216,6 +268,15 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
         queue_depth_end = len(task_queue)
         queue_delta = queue_depth_end - queue_depth_start
         queue_age_metrics = _queue_age_metrics(task_queue, tick)
+        attention_metrics = _attention_policy_metrics(
+            config=config,
+            task_queue=task_queue,
+            tick=tick,
+            work_counts_tick=attention_work_counts_tick,
+            completed_counts=attention_completed_counts,
+            value_weighted_completed_tick=attention_value_weighted_completed_tick,
+            value_weighted_completed_total=attention_value_weighted_completed_total,
+        )
         baseline_lobe_label = _baseline_lobe_label(
             action_counts=action_counts,
             queue_depth_start=queue_depth_start,
@@ -258,6 +319,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 "work_completion_gap_tick": action_counts["work_task"] - completed_this_tick,
                 "backlog_pressure_tick": queue_depth_end,
                 **queue_age_metrics,
+                **attention_metrics,
                 "idle_tick": action_counts["idle"],
                 **_role_action_metrics(config.model.actions, role_action_counts),
                 "mean_agent_bias": round(float(np.mean([agent.bias for agent in agents])), 6),
@@ -346,6 +408,91 @@ def _queue_age_metrics(task_queue: deque[Task], tick: int) -> dict[str, float | 
         "queued_task_age_max_tick": max(ages),
         "queued_task_age_mean_tick": round(float(np.mean(ages)), 6),
     }
+
+
+def _choose_task_class(config: OmegaConfig, rng: np.random.Generator) -> str:
+    if config.attention_policy is None:
+        return ""
+    shares = config.attention_policy.shares()
+    probabilities = np.array([shares[class_name] for class_name in ATTENTION_CLASSES], dtype=float)
+    return str(rng.choice(ATTENTION_CLASSES, p=probabilities))
+
+
+def _pop_work_task(
+    task_queue: deque[Task],
+    config: OmegaConfig,
+    attention_work_counts: Counter[str],
+) -> Task:
+    if config.attention_policy is None:
+        return task_queue.popleft()
+
+    desired_class = _desired_attention_class(task_queue, config, attention_work_counts)
+    for index, task in enumerate(task_queue):
+        if task.task_class == desired_class:
+            del task_queue[index]
+            return task
+    return task_queue.popleft()
+
+
+def _desired_attention_class(
+    task_queue: deque[Task],
+    config: OmegaConfig,
+    attention_work_counts: Counter[str],
+) -> str:
+    assert config.attention_policy is not None
+    available_classes = {task.task_class for task in task_queue}
+    shares = config.attention_policy.shares()
+    total_work = sum(attention_work_counts.values())
+
+    def priority(class_name: str) -> tuple[float, int]:
+        actual_share = attention_work_counts[class_name] / total_work if total_work else 0.0
+        return actual_share - shares[class_name], ATTENTION_CLASSES.index(class_name)
+
+    return min(
+        (class_name for class_name in ATTENTION_CLASSES if class_name in available_classes),
+        key=priority,
+    )
+
+
+def _attention_policy_metrics(
+    *,
+    config: OmegaConfig,
+    task_queue: deque[Task],
+    tick: int,
+    work_counts_tick: Counter[str],
+    completed_counts: Counter[str],
+    value_weighted_completed_tick: int,
+    value_weighted_completed_total: int,
+) -> dict[str, int | float]:
+    if config.attention_policy is None:
+        return {}
+
+    shares = config.attention_policy.shares()
+    total_work_tick = sum(work_counts_tick.values())
+    metrics: dict[str, int | float] = {}
+    for class_name in ATTENTION_CLASSES:
+        queued_tasks = [task for task in task_queue if task.task_class == class_name]
+        ages = [tick - task.created_tick for task in queued_tasks]
+        actual_share = work_counts_tick[class_name] / total_work_tick if total_work_tick else 0.0
+        metrics.update(
+            {
+                f"attention_{class_name}_queued_tick": len(queued_tasks),
+                f"attention_{class_name}_completed_total": completed_counts[class_name],
+                f"attention_{class_name}_queued_age_max_tick": max(ages, default=0),
+                f"attention_{class_name}_queued_age_mean_tick": (
+                    round(float(np.mean(ages)), 6) if ages else 0.0
+                ),
+                f"attention_{class_name}_spent_share_tick": round(float(actual_share), 6),
+                f"attention_{class_name}_target_share": shares[class_name],
+                f"attention_{class_name}_share_deviation_tick": round(
+                    float(actual_share - shares[class_name]),
+                    6,
+                ),
+            }
+        )
+    metrics["attention_value_weighted_completed_tick"] = value_weighted_completed_tick
+    metrics["attention_value_weighted_completed_total"] = value_weighted_completed_total
+    return metrics
 
 
 def _baseline_lobe_label(
