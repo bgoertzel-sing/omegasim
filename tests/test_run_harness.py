@@ -880,6 +880,22 @@ def test_documented_pressure_cli_writes_pressure_layout_and_curve_summary(
     assert "curvature=" in summary
 
 
+def test_documented_pressure_cli_reproduces_top_level_artifacts(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    _run_documented_pressure_cli(first, seeds=(1, 2))
+    _run_documented_pressure_cli(second, seeds=(1, 2))
+
+    _assert_artifacts_are_byte_identical(
+        first,
+        second,
+        ["pressure_comparison_metrics.csv", "summary.md"],
+    )
+
+
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
