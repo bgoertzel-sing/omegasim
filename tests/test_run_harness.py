@@ -1696,11 +1696,14 @@ def test_documented_cli_event_replayed_role_action_totals_change_across_differen
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_event_replayed_role_action_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_event_replayed_role_action_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_event_replayed_role_action_seed1",
+        second_name=f"{config_path.stem}_cli_event_replayed_role_action_seed2",
+    )
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
@@ -1734,11 +1737,14 @@ def test_documented_cli_event_replayed_role_action_metric_sequence_changes_acros
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_event_replayed_role_action_sequence_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_event_replayed_role_action_sequence_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_event_replayed_role_action_sequence_seed1",
+        second_name=f"{config_path.stem}_cli_event_replayed_role_action_sequence_seed2",
+    )
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
@@ -1821,11 +1827,14 @@ def test_documented_cli_event_replayed_top_level_metric_sequence_changes_across_
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_event_replayed_top_level_sequence_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_event_replayed_top_level_sequence_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_event_replayed_top_level_sequence_seed1",
+        second_name=f"{config_path.stem}_cli_event_replayed_top_level_sequence_seed2",
+    )
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
@@ -1896,11 +1905,14 @@ def test_documented_cli_event_replayed_queue_pressure_metric_sequence_changes_ac
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_event_replayed_queue_pressure_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_event_replayed_queue_pressure_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_event_replayed_queue_pressure_seed1",
+        second_name=f"{config_path.stem}_cli_event_replayed_queue_pressure_seed2",
+    )
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
@@ -3820,11 +3832,14 @@ def test_documented_cli_event_replayed_queued_task_age_metric_sequence_changes_a
     tmp_path: Path,
     config_path: Path,
 ) -> None:
-    first = tmp_path / f"{config_path.stem}_cli_event_replayed_queue_age_seed1"
-    second = tmp_path / f"{config_path.stem}_cli_event_replayed_queue_age_seed2"
-
-    _run_documented_cli(config_path, first, seed=1)
-    _run_documented_cli(config_path, second, seed=2)
+    first, second, _, _ = _run_documented_cli_pair(
+        config_path,
+        tmp_path,
+        first_seed=1,
+        second_seed=2,
+        first_name=f"{config_path.stem}_cli_event_replayed_queue_age_seed1",
+        second_name=f"{config_path.stem}_cli_event_replayed_queue_age_seed2",
+    )
 
     first_manifest = yaml.safe_load((first / "manifest.yaml").read_text())
     second_manifest = yaml.safe_load((second / "manifest.yaml").read_text())
