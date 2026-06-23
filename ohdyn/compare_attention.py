@@ -16,6 +16,7 @@ from ohdyn.sim import SimulationResult
 
 DEFAULT_BASELINE_CONFIG = Path("configs/a2_attention_smoke.yaml")
 DEFAULT_VARIANT_CONFIG = Path("configs/a2_attention_research_heavy.yaml")
+DEFAULT_INTERNAL_IMPROVEMENT_CONFIG = Path("configs/a2_attention_internal_improvement.yaml")
 DEFAULT_SEEDS = (1, 2, 3)
 COMPARISON_FIELDS = (
     "policy",
@@ -28,8 +29,10 @@ COMPARISON_FIELDS = (
     "queued_task_age_mean_final",
     "queued_task_age_mean_over_ticks",
     "queued_task_age_max_peak",
-    "long_term_research_completed_total",
     "near_term_external_completed_total",
+    "long_term_research_completed_total",
+    "internal_improvement_completed_total",
+    "housekeeping_completed_total",
 )
 
 
@@ -43,14 +46,17 @@ class PolicyAggregate:
     queued_task_age_mean_final_mean: float
     queued_task_age_mean_over_ticks_mean: float
     queued_task_age_max_peak_mean: float
-    long_term_research_completed_mean: float
     near_term_external_completed_mean: float
+    long_term_research_completed_mean: float
+    internal_improvement_completed_mean: float
+    housekeeping_completed_mean: float
 
 
 def run_comparison(
     *,
     baseline_config: str | Path = DEFAULT_BASELINE_CONFIG,
     variant_config: str | Path = DEFAULT_VARIANT_CONFIG,
+    internal_improvement_config: str | Path | None = DEFAULT_INTERNAL_IMPROVEMENT_CONFIG,
     seeds: tuple[int, ...] = DEFAULT_SEEDS,
     out_dir: str | Path,
 ) -> list[dict[str, Any]]:
@@ -60,10 +66,14 @@ def run_comparison(
     output_path.mkdir(parents=True, exist_ok=True)
 
     rows: list[dict[str, Any]] = []
-    for policy, config_path in (
+    policies = [
         ("baseline", Path(baseline_config)),
-        ("variant", Path(variant_config)),
-    ):
+        ("research_heavy", Path(variant_config)),
+    ]
+    if internal_improvement_config is not None:
+        policies.append(("internal_improvement", Path(internal_improvement_config)))
+
+    for policy, config_path in policies:
         for seed in seeds:
             run_dir = output_path / f"{policy}_seed{seed}"
             result = run_experiment(config_path, seed=seed, out_dir=run_dir)
@@ -75,6 +85,11 @@ def run_comparison(
         _comparison_summary(
             baseline_config=Path(baseline_config),
             variant_config=Path(variant_config),
+            internal_improvement_config=(
+                Path(internal_improvement_config)
+                if internal_improvement_config is not None
+                else None
+            ),
             seeds=seeds,
             aggregates=aggregates,
         )
@@ -127,11 +142,17 @@ def _comparison_row(
             int(row["queued_task_age_max_tick"])
             for row in result.metrics
         ),
+        "near_term_external_completed_total": last[
+            "attention_near_term_external_completed_total"
+        ],
         "long_term_research_completed_total": last[
             "attention_long_term_research_completed_total"
         ],
-        "near_term_external_completed_total": last[
-            "attention_near_term_external_completed_total"
+        "internal_improvement_completed_total": last[
+            "attention_internal_improvement_completed_total"
+        ],
+        "housekeeping_completed_total": last[
+            "attention_housekeeping_completed_total"
         ],
     }
 
@@ -161,10 +182,12 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
             queued_task_age_mean_final_mean=_mean(policy_rows, "queued_task_age_mean_final"),
             queued_task_age_mean_over_ticks_mean=_mean(policy_rows, "queued_task_age_mean_over_ticks"),
             queued_task_age_max_peak_mean=_mean(policy_rows, "queued_task_age_max_peak"),
-            long_term_research_completed_mean=_mean(policy_rows, "long_term_research_completed_total"),
             near_term_external_completed_mean=_mean(policy_rows, "near_term_external_completed_total"),
+            long_term_research_completed_mean=_mean(policy_rows, "long_term_research_completed_total"),
+            internal_improvement_completed_mean=_mean(policy_rows, "internal_improvement_completed_total"),
+            housekeeping_completed_mean=_mean(policy_rows, "housekeeping_completed_total"),
         )
-        for policy in ("baseline", "variant")
+        for policy in tuple(dict.fromkeys(row["policy"] for row in rows))
         for policy_rows in ([row for row in rows if row["policy"] == policy],)
     }
 
@@ -177,34 +200,40 @@ def _comparison_summary(
     *,
     baseline_config: Path,
     variant_config: Path,
+    internal_improvement_config: Path | None,
     seeds: tuple[int, ...],
     aggregates: dict[str, PolicyAggregate],
 ) -> str:
     baseline = aggregates["baseline"]
-    variant = aggregates["variant"]
     lines = [
         "# A2 attention policy comparison",
         "",
         f"- baseline config: {baseline_config}",
-        f"- variant config: {variant_config}",
+        f"- research-heavy config: {variant_config}",
+        *(
+            [f"- internal-improvement config: {internal_improvement_config}"]
+            if internal_improvement_config is not None
+            else []
+        ),
         f"- seeds: {', '.join(str(seed) for seed in seeds)}",
         f"- per-seed rows: {sum(aggregate.seeds for aggregate in aggregates.values())}",
         "",
         "## Policy means",
         "",
-        *_aggregate_lines(baseline),
-        *_aggregate_lines(variant),
+        *[
+            line
+            for policy in aggregates
+            for line in _aggregate_lines(aggregates[policy])
+        ],
         "",
-        "## Variant minus baseline",
+        "## Policy deltas vs baseline",
         "",
-        f"- value-weighted completed work mean: {_delta(variant.value_weighted_completed_mean, baseline.value_weighted_completed_mean)}",
-        f"- tasks completed mean: {_delta(variant.tasks_completed_mean, baseline.tasks_completed_mean)}",
-        f"- final queue depth mean: {_delta(variant.queue_depth_mean, baseline.queue_depth_mean)}",
-        f"- final queued task mean age: {_delta(variant.queued_task_age_mean_final_mean, baseline.queued_task_age_mean_final_mean)}",
-        f"- mean queued task mean age: {_delta(variant.queued_task_age_mean_over_ticks_mean, baseline.queued_task_age_mean_over_ticks_mean)}",
-        f"- peak queued task max age mean: {_delta(variant.queued_task_age_max_peak_mean, baseline.queued_task_age_max_peak_mean)}",
-        f"- long-term research completions mean: {_delta(variant.long_term_research_completed_mean, baseline.long_term_research_completed_mean)}",
-        f"- near-term external completions mean: {_delta(variant.near_term_external_completed_mean, baseline.near_term_external_completed_mean)}",
+        *[
+            line
+            for policy, aggregate in aggregates.items()
+            if policy != "baseline"
+            for line in _delta_lines(aggregate, baseline)
+        ],
         "",
     ]
     return "\n".join(lines)
@@ -219,8 +248,25 @@ def _aggregate_lines(aggregate: PolicyAggregate) -> list[str]:
         f"queued_task_age_mean_final_mean={aggregate.queued_task_age_mean_final_mean}, "
         f"queued_task_age_mean_over_ticks_mean={aggregate.queued_task_age_mean_over_ticks_mean}, "
         f"queued_task_age_max_peak_mean={aggregate.queued_task_age_max_peak_mean}, "
+        f"near_term_external_completed_mean={aggregate.near_term_external_completed_mean}, "
         f"long_term_research_completed_mean={aggregate.long_term_research_completed_mean}, "
-        f"near_term_external_completed_mean={aggregate.near_term_external_completed_mean}",
+        f"internal_improvement_completed_mean={aggregate.internal_improvement_completed_mean}, "
+        f"housekeeping_completed_mean={aggregate.housekeeping_completed_mean}",
+    ]
+
+
+def _delta_lines(variant: PolicyAggregate, baseline: PolicyAggregate) -> list[str]:
+    return [
+        f"- {variant.policy} value-weighted completed work mean: {_delta(variant.value_weighted_completed_mean, baseline.value_weighted_completed_mean)}",
+        f"- {variant.policy} tasks completed mean: {_delta(variant.tasks_completed_mean, baseline.tasks_completed_mean)}",
+        f"- {variant.policy} final queue depth mean: {_delta(variant.queue_depth_mean, baseline.queue_depth_mean)}",
+        f"- {variant.policy} final queued task mean age: {_delta(variant.queued_task_age_mean_final_mean, baseline.queued_task_age_mean_final_mean)}",
+        f"- {variant.policy} mean queued task mean age: {_delta(variant.queued_task_age_mean_over_ticks_mean, baseline.queued_task_age_mean_over_ticks_mean)}",
+        f"- {variant.policy} peak queued task max age mean: {_delta(variant.queued_task_age_max_peak_mean, baseline.queued_task_age_max_peak_mean)}",
+        f"- {variant.policy} near-term external completions mean: {_delta(variant.near_term_external_completed_mean, baseline.near_term_external_completed_mean)}",
+        f"- {variant.policy} long-term research completions mean: {_delta(variant.long_term_research_completed_mean, baseline.long_term_research_completed_mean)}",
+        f"- {variant.policy} internal-improvement completions mean: {_delta(variant.internal_improvement_completed_mean, baseline.internal_improvement_completed_mean)}",
+        f"- {variant.policy} housekeeping completions mean: {_delta(variant.housekeeping_completed_mean, baseline.housekeeping_completed_mean)}",
     ]
 
 
@@ -232,6 +278,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Compare deterministic A2 attention-policy fixtures.")
     parser.add_argument("--baseline-config", default=str(DEFAULT_BASELINE_CONFIG))
     parser.add_argument("--variant-config", default=str(DEFAULT_VARIANT_CONFIG))
+    parser.add_argument(
+        "--internal-improvement-config",
+        default=str(DEFAULT_INTERNAL_IMPROVEMENT_CONFIG),
+        help="Optional third policy config; pass an empty string to skip it.",
+    )
     parser.add_argument(
         "--seeds",
         nargs="+",
@@ -250,6 +301,7 @@ def main(argv: list[str] | None = None) -> int:
         run_comparison(
             baseline_config=args.baseline_config,
             variant_config=args.variant_config,
+            internal_improvement_config=args.internal_improvement_config or None,
             seeds=tuple(args.seeds),
             out_dir=args.out,
         )

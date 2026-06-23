@@ -30,6 +30,7 @@ from ohdyn.run import run_experiment
 CONFIG = Path("configs/a0_smoke.yaml")
 A2_ATTENTION = Path("configs/a2_attention_smoke.yaml")
 A2_ATTENTION_RESEARCH_HEAVY = Path("configs/a2_attention_research_heavy.yaml")
+A2_ATTENTION_INTERNAL_IMPROVEMENT = Path("configs/a2_attention_internal_improvement.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -57,6 +58,7 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     CONFIG: A0_FULL_ARTIFACTS,
     A2_ATTENTION: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_INTERNAL_IMPROVEMENT: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -272,6 +274,21 @@ def test_loads_a2_attention_research_heavy_config() -> None:
     }
 
 
+def test_loads_a2_attention_internal_improvement_config() -> None:
+    config = load_config(A2_ATTENTION_INTERNAL_IMPROVEMENT)
+
+    assert config.run.experiment_id == "a2_attention_internal_improvement"
+    assert config.run.ticks == 12
+    assert config.model.agent_count == 15
+    assert config.attention_policy is not None
+    assert config.attention_policy.shares() == {
+        "near_term_external": 0.2,
+        "long_term_research": 0.15,
+        "internal_improvement": 0.55,
+        "housekeeping": 0.1,
+    }
+
+
 def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -382,11 +399,15 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
 
     rows = run_comparison(seeds=(1, 2), out_dir=out_dir)
 
-    assert len(rows) == 4
-    assert {row["policy"] for row in rows} == {"baseline", "variant"}
+    assert len(rows) == 6
+    assert {row["policy"] for row in rows} == {
+        "baseline",
+        "research_heavy",
+        "internal_improvement",
+    }
     assert (out_dir / "comparison_metrics.csv").is_file()
     assert (out_dir / "summary.md").is_file()
-    for policy in ("baseline", "variant"):
+    for policy in ("baseline", "research_heavy", "internal_improvement"):
         for seed in (1, 2):
             assert (out_dir / f"{policy}_seed{seed}" / "metrics.csv").is_file()
 
@@ -394,11 +415,12 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
         csv_rows = list(csv.DictReader(handle))
     summary = (out_dir / "summary.md").read_text()
 
-    assert len(csv_rows) == 4
+    assert len(csv_rows) == 6
     assert csv_rows[0]["value_weighted_completed_total"]
     assert "## Policy means" in summary
-    assert "## Variant minus baseline" in summary
-    assert "- long-term research completions mean: " in summary
+    assert "## Policy deltas vs baseline" in summary
+    assert "- research_heavy long-term research completions mean: " in summary
+    assert "- internal_improvement internal-improvement completions mean: " in summary
 
 
 def test_a2_attention_comparison_runner_is_reproducible(tmp_path: Path) -> None:
@@ -429,9 +451,9 @@ def test_a2_attention_comparison_runner_aggregates_research_heavy_shift(
         policy="baseline",
         field="long_term_research_completed_total",
     )
-    variant_research = _mean_csv_metric(
+    research_heavy_research = _mean_csv_metric(
         rows,
-        policy="variant",
+        policy="research_heavy",
         field="long_term_research_completed_total",
     )
     baseline_value = _mean_csv_metric(
@@ -439,14 +461,49 @@ def test_a2_attention_comparison_runner_aggregates_research_heavy_shift(
         policy="baseline",
         field="value_weighted_completed_total",
     )
-    variant_value = _mean_csv_metric(
+    research_heavy_value = _mean_csv_metric(
         rows,
-        policy="variant",
+        policy="research_heavy",
         field="value_weighted_completed_total",
     )
 
-    assert variant_research > baseline_research
-    assert variant_value < baseline_value
+    assert research_heavy_research > baseline_research
+    assert research_heavy_value < baseline_value
+
+
+def test_a2_attention_comparison_runner_aggregates_internal_improvement_shift(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_compare"
+
+    run_comparison(seeds=(1, 2, 3), out_dir=out_dir)
+
+    with (out_dir / "comparison_metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    baseline_internal = _mean_csv_metric(
+        rows,
+        policy="baseline",
+        field="internal_improvement_completed_total",
+    )
+    internal_heavy = _mean_csv_metric(
+        rows,
+        policy="internal_improvement",
+        field="internal_improvement_completed_total",
+    )
+    baseline_near_term = _mean_csv_metric(
+        rows,
+        policy="baseline",
+        field="near_term_external_completed_total",
+    )
+    internal_heavy_near_term = _mean_csv_metric(
+        rows,
+        policy="internal_improvement",
+        field="near_term_external_completed_total",
+    )
+
+    assert internal_heavy > baseline_internal
+    assert internal_heavy_near_term < baseline_near_term
 
 
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
