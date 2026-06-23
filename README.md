@@ -91,6 +91,14 @@ python -m ohdyn.compare_attention \
   --out runs/a2_attention_high_pressure_compare
 ```
 
+The pressure comparison helper runs the normal-pressure and high-pressure policy sets together, preserving the per-condition comparison artifacts while adding fixed-policy high-minus-normal pressure deltas for phase-space regime distributions:
+
+```bash
+python -m ohdyn.compare_pressure --seeds 1 2 3 --out runs/a2_attention_pressure_compare
+```
+
+The output directory contains `normal_pressure/`, `high_pressure/`, `pressure_comparison_metrics.csv`, and a top-level `summary.md`.
+
 ## Output Schema
 
 Every run writes `config.yaml`, a normalized copy of the loaded config. Optional artifact flags in the config control the remaining outputs.

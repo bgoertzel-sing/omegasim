@@ -24,6 +24,7 @@ from ohdyn.sim import (
 )
 from ohdyn.config import ATTENTION_CLASSES, load_config
 from ohdyn.compare_attention import run_comparison
+from ohdyn.compare_pressure import run_pressure_comparison
 from ohdyn.run import run_experiment
 
 
@@ -645,6 +646,56 @@ def test_a2_attention_high_pressure_comparison_runner_is_reproducible(
     summary = (first / "summary.md").read_text()
     assert "configs/a2_attention_high_pressure.yaml" in summary
     assert "## Phase-space regime distribution deltas vs baseline" in summary
+
+
+def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    rows = run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    assert len(rows) == 3
+    assert {row["policy"] for row in rows} == {
+        "baseline",
+        "research_heavy",
+        "internal_improvement",
+    }
+    assert (out_dir / "normal_pressure" / "comparison_metrics.csv").is_file()
+    assert (out_dir / "high_pressure" / "comparison_metrics.csv").is_file()
+    assert (out_dir / "pressure_comparison_metrics.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+
+    with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
+        csv_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(csv_rows) == 3
+    assert csv_rows[0]["normal_total_steps"] == "22"
+    assert csv_rows[0]["high_pressure_total_steps"] == "22"
+    assert csv_rows[0]["regime_rate_deltas"]
+    assert csv_rows[0]["regime_count_deltas"]
+    assert csv_rows[0]["queue_depth_mean_delta"]
+    assert "## Fixed-policy pressure deltas" in summary
+    assert "- baseline: normal_total_steps=22, high_pressure_total_steps=22, " in summary
+    assert "regime_rate_deltas=" in summary
+    assert "- research_heavy final queue depth mean pressure delta: " in summary
+    assert "- internal_improvement peak queued task max age pressure delta: " in summary
+
+
+def test_a2_attention_pressure_comparison_runner_is_reproducible(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=first)
+    run_pressure_comparison(seeds=(1, 2), out_dir=second)
+
+    assert (first / "pressure_comparison_metrics.csv").read_text() == (
+        second / "pressure_comparison_metrics.csv"
+    ).read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 
 
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
