@@ -76,7 +76,7 @@ A small deterministic comparison runner executes the smoke, research-heavy, and 
 python -m ohdyn.compare_attention --seeds 1 2 3 --out runs/a2_attention_compare
 ```
 
-The comparison directory contains `comparison_metrics.csv`, an aggregate `summary.md`, and one normal run artifact directory per policy/seed. The aggregate CSV uses stable run subdirectory names so same-seed comparisons are byte-reproducible across output parent directories. It records value-weighted throughput, queue depth, stale-task age, and per-class completed work totals for the compared policies.
+The comparison directory contains `comparison_metrics.csv`, an aggregate `summary.md`, and one normal run artifact directory per policy/seed. The aggregate CSV uses stable run subdirectory names so same-seed comparisons are byte-reproducible across output parent directories. It records value-weighted throughput, queue depth, stale-task age, per-class completed work totals, and pipe-delimited per-run trajectory columns for queue depth, queued-task mean age, value-weighted completed work, and each attention class's completed-work totals.
 
 ## Output Schema
 

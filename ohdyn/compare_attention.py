@@ -33,6 +33,13 @@ COMPARISON_FIELDS = (
     "long_term_research_completed_total",
     "internal_improvement_completed_total",
     "housekeeping_completed_total",
+    "queue_depth_trajectory",
+    "queued_task_age_mean_trajectory",
+    "value_weighted_completed_total_trajectory",
+    "near_term_external_completed_total_trajectory",
+    "long_term_research_completed_total_trajectory",
+    "internal_improvement_completed_total_trajectory",
+    "housekeeping_completed_total_trajectory",
 )
 
 
@@ -50,6 +57,9 @@ class PolicyAggregate:
     long_term_research_completed_mean: float
     internal_improvement_completed_mean: float
     housekeeping_completed_mean: float
+    queue_depth_final_trajectory_mean: float
+    queued_task_age_mean_trajectory_final_mean: float
+    value_weighted_trajectory_final_mean: float
 
 
 def run_comparison(
@@ -154,6 +164,31 @@ def _comparison_row(
         "housekeeping_completed_total": last[
             "attention_housekeeping_completed_total"
         ],
+        "queue_depth_trajectory": _trajectory(result, "queue_depth"),
+        "queued_task_age_mean_trajectory": _trajectory(
+            result,
+            "queued_task_age_mean_tick",
+        ),
+        "value_weighted_completed_total_trajectory": _trajectory(
+            result,
+            "attention_value_weighted_completed_total",
+        ),
+        "near_term_external_completed_total_trajectory": _trajectory(
+            result,
+            "attention_near_term_external_completed_total",
+        ),
+        "long_term_research_completed_total_trajectory": _trajectory(
+            result,
+            "attention_long_term_research_completed_total",
+        ),
+        "internal_improvement_completed_total_trajectory": _trajectory(
+            result,
+            "attention_internal_improvement_completed_total",
+        ),
+        "housekeeping_completed_total_trajectory": _trajectory(
+            result,
+            "attention_housekeeping_completed_total",
+        ),
     }
 
 
@@ -162,6 +197,10 @@ def _mean_metric(result: SimulationResult, field: str) -> float:
         sum(float(row[field]) for row in result.metrics) / len(result.metrics),
         6,
     )
+
+
+def _trajectory(result: SimulationResult, field: str) -> str:
+    return "|".join(str(row[field]) for row in result.metrics)
 
 
 def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -186,6 +225,18 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
             long_term_research_completed_mean=_mean(policy_rows, "long_term_research_completed_total"),
             internal_improvement_completed_mean=_mean(policy_rows, "internal_improvement_completed_total"),
             housekeeping_completed_mean=_mean(policy_rows, "housekeeping_completed_total"),
+            queue_depth_final_trajectory_mean=_mean_trajectory_final(
+                policy_rows,
+                "queue_depth_trajectory",
+            ),
+            queued_task_age_mean_trajectory_final_mean=_mean_trajectory_final(
+                policy_rows,
+                "queued_task_age_mean_trajectory",
+            ),
+            value_weighted_trajectory_final_mean=_mean_trajectory_final(
+                policy_rows,
+                "value_weighted_completed_total_trajectory",
+            ),
         )
         for policy in tuple(dict.fromkeys(row["policy"] for row in rows))
         for policy_rows in ([row for row in rows if row["policy"] == policy],)
@@ -194,6 +245,13 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
 
 def _mean(rows: list[dict[str, Any]], field: str) -> float:
     return round(sum(float(row[field]) for row in rows) / len(rows), 6)
+
+
+def _mean_trajectory_final(rows: list[dict[str, Any]], field: str) -> float:
+    return round(
+        sum(float(str(row[field]).split("|")[-1]) for row in rows) / len(rows),
+        6,
+    )
 
 
 def _comparison_summary(
@@ -251,7 +309,10 @@ def _aggregate_lines(aggregate: PolicyAggregate) -> list[str]:
         f"near_term_external_completed_mean={aggregate.near_term_external_completed_mean}, "
         f"long_term_research_completed_mean={aggregate.long_term_research_completed_mean}, "
         f"internal_improvement_completed_mean={aggregate.internal_improvement_completed_mean}, "
-        f"housekeeping_completed_mean={aggregate.housekeeping_completed_mean}",
+        f"housekeeping_completed_mean={aggregate.housekeeping_completed_mean}, "
+        f"trajectory_final_queue_depth_mean={aggregate.queue_depth_final_trajectory_mean}, "
+        f"trajectory_final_queued_task_age_mean={aggregate.queued_task_age_mean_trajectory_final_mean}, "
+        f"trajectory_final_value_weighted_completed_mean={aggregate.value_weighted_trajectory_final_mean}",
     ]
 
 

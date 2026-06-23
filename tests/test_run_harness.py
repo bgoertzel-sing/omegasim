@@ -417,8 +417,19 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
 
     assert len(csv_rows) == 6
     assert csv_rows[0]["value_weighted_completed_total"]
+    assert csv_rows[0]["queue_depth_trajectory"].count("|") == 11
+    assert csv_rows[0]["queued_task_age_mean_trajectory"].count("|") == 11
+    assert csv_rows[0]["value_weighted_completed_total_trajectory"].count("|") == 11
+    for class_name in ATTENTION_CLASSES:
+        trajectory_field = f"{class_name}_completed_total_trajectory"
+        assert csv_rows[0][trajectory_field].count("|") == 11
+        assert csv_rows[0][trajectory_field].split("|")[-1] == csv_rows[0][
+            f"{class_name}_completed_total"
+        ]
     assert "## Policy means" in summary
     assert "## Policy deltas vs baseline" in summary
+    assert "trajectory_final_queue_depth_mean=" in summary
+    assert "trajectory_final_value_weighted_completed_mean=" in summary
     assert "- research_heavy long-term research completions mean: " in summary
     assert "- internal_improvement internal-improvement completions mean: " in summary
 
