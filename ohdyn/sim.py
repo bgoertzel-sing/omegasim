@@ -43,6 +43,10 @@ BASELINE_EVENT_TYPES = (
     "task_worked",
 )
 
+ATTENTION_EVENT_TYPES = (
+    "attention_capture_pressure",
+)
+
 EVENT_FIELDS = (
     "tick",
     "event_type",
@@ -53,6 +57,10 @@ EVENT_FIELDS = (
     "work_units",
     "remaining_work",
     "completed",
+    "task_class",
+    "attention_selected_class",
+    "attention_pressure_class",
+    "attention_capture_pressure",
 )
 
 QUEUE_PRESSURE_METRIC_FIELDS = (
@@ -128,8 +136,10 @@ def attention_policy_metric_fields() -> tuple[str, ...]:
                 f"attention_{class_name}_spent_share_tick",
                 f"attention_{class_name}_target_share",
                 f"attention_{class_name}_share_deviation_tick",
+                f"attention_{class_name}_capture_pressure_tick",
             )
         ),
+        "attention_capture_pressure_max_tick",
         "attention_value_weighted_completed_tick",
         "attention_value_weighted_completed_total",
     )
@@ -230,7 +240,28 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                     )
                 )
             elif action == "work_task":
-                task = _pop_work_task(task_queue, config, attention_work_counts)
+                desired_attention_class = (
+                    _desired_attention_class(task_queue, config, attention_work_counts)
+                    if config.attention_policy is not None
+                    else ""
+                )
+                if config.attention_policy is not None:
+                    capture_pressure_event = _attention_capture_pressure_event(
+                        tick=tick,
+                        agent=agent,
+                        action=action,
+                        task_queue=task_queue,
+                        config=config,
+                        selected_class=desired_attention_class,
+                    )
+                    if capture_pressure_event is not None:
+                        events.append(capture_pressure_event)
+                task = _pop_work_task(
+                    task_queue,
+                    config,
+                    attention_work_counts,
+                    desired_class=desired_attention_class,
+                )
                 task.remaining_work -= 1
                 if config.attention_policy is not None:
                     attention_work_counts[task.task_class] += 1
@@ -259,6 +290,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                         task_id=task.task_id,
                         remaining_work=max(task.remaining_work, 0),
                         completed=completed,
+                        task_class=task.task_class,
                     )
                 )
             else:
@@ -428,11 +460,14 @@ def _pop_work_task(
     task_queue: deque[Task],
     config: OmegaConfig,
     attention_work_counts: Counter[str],
+    *,
+    desired_class: str = "",
 ) -> Task:
     if config.attention_policy is None:
         return task_queue.popleft()
 
-    desired_class = _desired_attention_class(task_queue, config, attention_work_counts)
+    if not desired_class:
+        desired_class = _desired_attention_class(task_queue, config, attention_work_counts)
     for index, task in enumerate(task_queue):
         if task.task_class == desired_class:
             del task_queue[index]
@@ -479,6 +514,8 @@ def _attention_policy_metrics(
     for class_name in ATTENTION_CLASSES:
         queued_tasks = [task for task in task_queue if task.task_class == class_name]
         ages = [tick - task.created_tick for task in queued_tasks]
+        queued_share = len(queued_tasks) / len(task_queue) if task_queue else 0.0
+        capture_pressure = max(queued_share - shares[class_name], 0.0)
         actual_share = work_counts_tick[class_name] / total_work_tick if total_work_tick else 0.0
         metrics.update(
             {
@@ -494,11 +531,68 @@ def _attention_policy_metrics(
                     float(actual_share - shares[class_name]),
                     6,
                 ),
+                f"attention_{class_name}_capture_pressure_tick": round(
+                    float(capture_pressure),
+                    6,
+                ),
             }
         )
+    metrics["attention_capture_pressure_max_tick"] = max(
+        (
+            metrics[f"attention_{class_name}_capture_pressure_tick"]
+            for class_name in ATTENTION_CLASSES
+        ),
+        default=0.0,
+    )
     metrics["attention_value_weighted_completed_tick"] = value_weighted_completed_tick
     metrics["attention_value_weighted_completed_total"] = value_weighted_completed_total
     return metrics
+
+
+def _attention_capture_pressure_event(
+    *,
+    tick: int,
+    agent: AgentState,
+    action: str,
+    task_queue: deque[Task],
+    config: OmegaConfig,
+    selected_class: str,
+) -> dict[str, Any] | None:
+    assert config.attention_policy is not None
+    if not task_queue:
+        return None
+
+    shares = config.attention_policy.shares()
+    queue_counts = Counter(task.task_class for task in task_queue)
+    candidates = []
+    for class_name in ATTENTION_CLASSES:
+        if class_name == selected_class or queue_counts[class_name] == 0:
+            continue
+        queued_share = queue_counts[class_name] / len(task_queue)
+        capture_pressure = queued_share - shares[class_name]
+        if capture_pressure > 0.0:
+            candidates.append(
+                (
+                    -round(float(capture_pressure), 6),
+                    ATTENTION_CLASSES.index(class_name),
+                    class_name,
+                    round(float(capture_pressure), 6),
+                )
+            )
+    if not candidates:
+        return None
+
+    _, _, pressure_class, capture_pressure = sorted(candidates)[0]
+    return _event(
+        tick=tick,
+        event_type="attention_capture_pressure",
+        agent_id=agent.agent_id,
+        action=action,
+        task_class=selected_class,
+        attention_selected_class=selected_class,
+        attention_pressure_class=pressure_class,
+        attention_capture_pressure=capture_pressure,
+    )
 
 
 def _baseline_lobe_label(
@@ -589,6 +683,10 @@ def _event(
     work_units: int | str = "",
     remaining_work: int | str = "",
     completed: bool | str = "",
+    task_class: str = "",
+    attention_selected_class: str = "",
+    attention_pressure_class: str = "",
+    attention_capture_pressure: float | str = "",
 ) -> dict[str, Any]:
     return {
         "tick": tick,
@@ -600,4 +698,8 @@ def _event(
         "work_units": work_units,
         "remaining_work": remaining_work,
         "completed": completed,
+        "task_class": task_class,
+        "attention_selected_class": attention_selected_class,
+        "attention_pressure_class": attention_pressure_class,
+        "attention_capture_pressure": attention_capture_pressure,
     }

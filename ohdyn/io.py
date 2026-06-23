@@ -15,6 +15,7 @@ import yaml
 
 from ohdyn.config import ATTENTION_CLASSES
 from ohdyn.sim import (
+    ATTENTION_EVENT_TYPES,
     BASELINE_EVENT_TYPES,
     BASELINE_LOBE_LABELS,
     BASELINE_LOBE_TRANSITION_FIELDS,
@@ -91,7 +92,7 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
                 "queued_task_age_fields": list(QUEUED_TASK_AGE_METRIC_FIELDS),
             },
             "events": {
-                "types": list(BASELINE_EVENT_TYPES),
+                "types": list(_event_types(result)),
                 "fields": list(EVENT_FIELDS),
             },
             "metrics": {
@@ -187,6 +188,12 @@ def _metrics_fieldnames(result: SimulationResult) -> tuple[str, ...]:
         result.config.model.actions,
         include_attention_policy=result.config.attention_policy is not None,
     )
+
+
+def _event_types(result: SimulationResult) -> tuple[str, ...]:
+    if result.config.attention_policy is None:
+        return BASELINE_EVENT_TYPES
+    return (*BASELINE_EVENT_TYPES, *ATTENTION_EVENT_TYPES)
 
 
 def _summary(result: SimulationResult) -> str:
@@ -316,10 +323,11 @@ def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
     metrics_fields = _metrics_fieldnames(result)
     event_fields = EVENT_FIELDS
     role_action_fields = role_action_metric_fields(result.config.model.actions)
+    event_types = _event_types(result)
     return [
         f"- metrics fields: {len(metrics_fields)}",
         f"- event fields: {len(event_fields)}",
-        f"- event types: {len(BASELINE_EVENT_TYPES)}",
+        f"- event types: {len(event_types)}",
         f"- baseline lobe labels: {len(BASELINE_LOBE_LABELS)}",
         f"- baseline lobe transition fields: {len(BASELINE_LOBE_TRANSITION_FIELDS)}",
         f"- queue pressure fields: {len(QUEUE_PRESSURE_METRIC_FIELDS)}",
@@ -400,10 +408,16 @@ def _attention_policy_summary(result: SimulationResult) -> list[str]:
         queued = last.get(f"attention_{class_name}_queued_tick", 0)
         target = last.get(f"attention_{class_name}_target_share", 0)
         mean_age = last.get(f"attention_{class_name}_queued_age_mean_tick", 0)
+        capture_pressure = last.get(f"attention_{class_name}_capture_pressure_tick", 0)
         lines.append(
             f"- {class_name}: target_share={target}, completed={completed}, "
-            f"queued={queued}, final_mean_age={mean_age}"
+            f"queued={queued}, final_mean_age={mean_age}, "
+            f"capture_pressure={capture_pressure}"
         )
+    lines.append(
+        "- max capture pressure: "
+        f"{last.get('attention_capture_pressure_max_tick', 0)}"
+    )
     lines.append(
         "- value-weighted completed work: "
         f"{last.get('attention_value_weighted_completed_total', 0)}"

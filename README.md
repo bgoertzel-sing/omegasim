@@ -56,6 +56,8 @@ python -m ohdyn.run --config configs/a2_attention_smoke.yaml --seed 1 --out runs
 
 Attention-policy runs assign created tasks to `near_term_external`, `long_term_research`, `internal_improvement`, and `housekeeping`; work selection favors queued classes that are under their target share. `metrics.csv`, `manifest.yaml`, and `summary.md` add per-class queue, completion, queued-age, attention-share, share-deviation, and value-weighted completed-work fields only for configs that enable `attention_policy`.
 
+Attention-policy runs also record deterministic capture-pressure telemetry. Per-class `attention_<class>_capture_pressure_tick` fields report how far each class's queued-task share exceeds its target share at the end of a tick, and `attention_capture_pressure_max_tick` reports the largest per-class pressure. When the quota-balancing scheduler works a different class while another available class is above target share, `events.csv` emits an `attention_capture_pressure` event with the selected class, pressure class, and pressure value. These fields are present only for configs that enable `attention_policy`; A0/A1 configs keep the baseline metrics shape.
+
 A contrasting research-heavy A2 fixture uses the same deterministic baseline with more reserved share for long-term research:
 
 ```bash

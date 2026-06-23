@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 from ohdyn.sim import (
+    ATTENTION_EVENT_TYPES,
     BASELINE_EVENT_TYPES,
     BASELINE_LOBE_LABELS,
     BASELINE_LOBE_TRANSITION_FIELDS,
@@ -418,10 +419,13 @@ def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> 
     assert len(result.metrics) == 12
     with (out_dir / "metrics.csv").open() as handle:
         rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
     manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
     summary = (out_dir / "summary.md").read_text()
 
     assert rows
+    assert event_rows
     assert manifest["config"]["attention_policy"] == {
         "near_term_external": 0.45,
         "long_term_research": 0.25,
@@ -432,6 +436,9 @@ def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> 
         "classes": list(ATTENTION_CLASSES),
         "fields": list(attention_policy_metric_fields()),
     }
+    assert manifest["model"]["events"]["types"] == list(
+        BASELINE_EVENT_TYPES + ATTENTION_EVENT_TYPES
+    )
     assert set(attention_policy_metric_fields()) <= set(rows[0])
     assert "## Attention policy totals" in summary
     assert "- attention policy fields: " in summary
@@ -439,7 +446,19 @@ def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> 
     for class_name in ATTENTION_CLASSES:
         assert f"attention_{class_name}_queued_tick" in rows[0]
         assert f"attention_{class_name}_spent_share_tick" in rows[0]
+        assert f"attention_{class_name}_capture_pressure_tick" in rows[0]
         assert f"- {class_name}: target_share=" in summary
+        assert "capture_pressure=" in summary
+    assert rows[-1]["attention_capture_pressure_max_tick"] == "0.188889"
+    capture_events = [
+        row for row in event_rows
+        if row["event_type"] == "attention_capture_pressure"
+    ]
+    assert len(capture_events) == 41
+    assert capture_events[0]["attention_selected_class"] in ATTENTION_CLASSES
+    assert capture_events[0]["attention_pressure_class"] in ATTENTION_CLASSES
+    assert float(capture_events[0]["attention_capture_pressure"]) > 0.0
+    assert "- max capture pressure: 0.188889" in summary
 
 
 def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) -> None:
