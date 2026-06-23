@@ -131,6 +131,31 @@ def _run_documented_cli(
     return completed
 
 
+def _run_documented_pressure_cli(
+    out_dir: Path,
+    *,
+    seeds: tuple[int, ...] = (1, 2),
+) -> subprocess.CompletedProcess[str]:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.compare_pressure",
+            "--seeds",
+            *(str(seed) for seed in seeds),
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    return completed
+
+
 def _run_documented_cli_pair(
     config_path: Path,
     tmp_path: Path,
@@ -815,6 +840,44 @@ def test_a2_attention_pressure_comparison_runner_is_reproducible(
         second / "pressure_comparison_metrics.csv"
     ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_documented_pressure_cli_writes_pressure_layout_and_curve_summary(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare_cli"
+
+    _run_documented_pressure_cli(out_dir, seeds=(1, 2))
+
+    assert (out_dir / "normal_pressure" / "comparison_metrics.csv").is_file()
+    assert (out_dir / "normal_pressure" / "summary.md").is_file()
+    assert (out_dir / "medium_pressure" / "comparison_metrics.csv").is_file()
+    assert (out_dir / "medium_pressure" / "summary.md").is_file()
+    assert (out_dir / "high_pressure" / "comparison_metrics.csv").is_file()
+    assert (out_dir / "high_pressure" / "summary.md").is_file()
+    assert (out_dir / "pressure_comparison_metrics.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+
+    with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(rows) == 3
+    assert {row["policy"] for row in rows} == {
+        "baseline",
+        "research_heavy",
+        "internal_improvement",
+    }
+    assert rows[0]["normal_total_steps"] == "22"
+    assert rows[0]["medium_pressure_total_steps"] == "22"
+    assert rows[0]["high_pressure_total_steps"] == "22"
+    assert "## Fixed-policy pressure deltas" in summary
+    assert "## Fixed-policy pressure curves" in summary
+    assert "- medium-pressure baseline config: configs/a2_attention_medium_pressure.yaml" in summary
+    assert "- baseline final queue depth pressure curve: " in summary
+    assert "normal_to_medium_slope=" in summary
+    assert "medium_to_high_slope=" in summary
+    assert "curvature=" in summary
 
 
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:

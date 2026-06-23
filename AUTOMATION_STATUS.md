@@ -8,8 +8,8 @@ Phase A2 pressure-curve comparison on top of the stable A0/A1 local simulator ha
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 A2 pressure-curve comparison helper
-- Changed: extended `ohdyn.compare_pressure` to run normal, medium, and high pressure policy sets together; added `medium_pressure/` comparison artifacts; added per-policy normal-to-medium slope, medium-to-high slope, and curvature metrics for value-weighted completed work, completed tasks, final queue depth, final queued-task mean age, and peak queued-task max age; updated README pressure-comparison documentation and regression coverage.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 444 tests; after final cleanup, `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "pressure" -q` passed with 38 tests and 406 deselected.
+- Status: ok, 2026-06-23 documented A2 pressure CLI regression
+- Changed: added a subprocess smoke/regression for `python -m ohdyn.compare_pressure --seeds 1 2 --out ...` that verifies the documented `normal_pressure/`, `medium_pressure/`, and `high_pressure/` comparison directories, top-level pressure artifacts, three policy rows, step totals, and fixed-policy pressure delta/curve summary sections through the command-line entrypoint.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "pressure" -q` passed with 39 tests and 406 deselected; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 445 tests.
 - Blockers: none.
-- Next step: add a bounded CLI smoke/regression for `python -m ohdyn.compare_pressure --seeds 1 2 --out ...` that verifies the documented normal/medium/high directory layout and curve summary sections through the command-line entrypoint.
+- Next step: add a bounded documented CLI reproducibility regression for `python -m ohdyn.compare_pressure --seeds 1 2 --out ...` that compares top-level pressure artifacts across two fresh output directories.
