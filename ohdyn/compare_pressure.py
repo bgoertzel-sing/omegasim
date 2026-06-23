@@ -507,14 +507,16 @@ def _seed_set_sensitivity_lines(
             "- top response stable across all prefixes: "
             f"{str(all(comparison['stable_with_full'] for comparison in prefix_comparisons)).lower()}"
         ),
+        f"- prefix instability causes: {last_prefix['instability_causes']}",
         "",
-        "| prefix_seeds | top_response | stable_with_full |",
-        "| --- | --- | --- |",
+        "| prefix_seeds | top_response | stable_with_full | instability_causes |",
+        "| --- | --- | --- | --- |",
         *[
             (
                 f"| {_format_seed_set(comparison['prefix_seeds'])} | "
                 f"{_format_pressure_response_candidate(comparison['top_response'])} | "
-                f"{str(comparison['stable_with_full']).lower()} |"
+                f"{str(comparison['stable_with_full']).lower()} | "
+                f"{comparison['instability_causes']} |"
             )
             for comparison in prefix_comparisons
         ],
@@ -545,9 +547,29 @@ def _prefix_pressure_response_comparisons(
                 "prefix_seeds": prefix_seeds,
                 "top_response": prefix_top,
                 "stable_with_full": _same_pressure_response(full_top, prefix_top),
+                "instability_causes": _pressure_response_instability_causes(
+                    full_top,
+                    prefix_top,
+                ),
             }
         )
     return comparisons
+
+
+def _pressure_response_instability_causes(
+    full_top: dict[str, Any],
+    prefix_top: dict[str, Any],
+) -> str:
+    changed = []
+    if full_top["policy"] != prefix_top["policy"]:
+        changed.append("policy")
+    if full_top["observable_prefix"] != prefix_top["observable_prefix"]:
+        changed.append("observable")
+    if full_top["metric_suffix"] != prefix_top["metric_suffix"]:
+        changed.append("metric")
+    if not changed:
+        return "none"
+    return ",".join(changed)
 
 
 def _same_pressure_response(

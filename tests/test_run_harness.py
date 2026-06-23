@@ -957,6 +957,7 @@ def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
     assert "a prefix table for every proper prefix of the configured seed set" in readme
     assert "`top response stable across prefix: true`" in readme
     assert "`top response stable across all prefixes: true`" in readme
+    assert "`prefix instability causes` reports which top-response dimensions changed" in readme
     assert "pressure-response ranking should be treated as seed-set-sensitive" in readme
     assert "## Seed-set sensitivity" in summary
     assert "- comparison: full_seeds=1,2,3, prefix_seeds=1,2" in summary
@@ -972,11 +973,18 @@ def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
     ) in summary
     assert "- top response stable across prefix: false" in summary
     assert "- top response stable across all prefixes: false" in summary
-    assert "| prefix_seeds | top_response | stable_with_full |" in summary
+    assert "- prefix instability causes: policy,observable,metric" in summary
+    assert "| prefix_seeds | top_response | stable_with_full | instability_causes |" in summary
     assert (
         "| 1 | policy=baseline, observable=value-weighted completed work, "
         "metric=curvature, field=value_weighted_completed_pressure_curvature"
     ) in summary
+    assert (
+        "| 1 | policy=baseline, observable=value-weighted completed work, "
+        "metric=curvature, field=value_weighted_completed_pressure_curvature, "
+        "value="
+    ) in summary
+    assert "false | policy,observable,metric |" in summary
     assert (
         "| 1,2 | policy=baseline, observable=value-weighted completed work, "
         "metric=curvature, field=value_weighted_completed_pressure_curvature"

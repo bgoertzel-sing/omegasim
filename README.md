@@ -128,6 +128,8 @@ The pressure comparison `summary.md` reports the normal, medium, and high-pressu
 
 `Seed-set sensitivity` is a deterministic prefix check over the already-generated per-seed comparison rows. For a run with `--seeds 1 2 3`, `full_seeds` is `1,2,3` and `prefix_seeds` is `1,2`; the summary recomputes pressure rows for the prefix subset and compares its top-ranked pressure response with the full seed set's top response. The section also reports a prefix table for every proper prefix of the configured seed set, such as `1` and `1,2`, so the top pressure-response ordering can be inspected as seeds accumulate. `top response stable across prefix: true` means the same policy, observable, and slope-or-curvature metric won under both seed sets. `top response stable across all prefixes: true` means every proper prefix selected the same top response as the full seed set. `false` means the current top response depends on the seed set, so the pressure-response ranking should be treated as seed-set-sensitive rather than as a stable ordering.
 
+When a prefix ranking is unstable, `prefix instability causes` reports which top-response dimensions changed relative to the full seed set: `policy`, `observable`, `metric`, or a comma-separated combination. `metric` means the winning pressure-curve measure changed between a slope and curvature field, or between the normal-to-medium and medium-to-high slope fields. Stable prefix rows report `none`.
+
 ## Output Schema
 
 Every run writes `config.yaml`, a normalized copy of the loaded config. Optional artifact flags in the config control the remaining outputs.
