@@ -1038,6 +1038,15 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Pressure-condition source metric comparison",
+        "",
+        *_pressure_condition_source_metric_comparison_lines(
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Per-class capture-pressure interpretation",
         "",
         *_per_class_capture_pressure_interpretation_lines(
@@ -1490,6 +1499,73 @@ def _pressure_response_interpretation_lines(
         )
     )
     return lines
+
+
+def _pressure_condition_source_metric_comparison_lines(
+    *,
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    candidates = _pressure_curve_response_candidates(rows)
+    if not candidates:
+        return ["- no pressure-curve responses available for condition comparison."]
+
+    top = candidates[0]
+    policy = str(top["policy"])
+    source_field = str(top["source_field"])
+    return [
+        (
+            f"- selected source metric: {_format_pressure_response_subject(top)} "
+            f"source_field={source_field}"
+        ),
+        (
+            "| pressure_condition | source_metric_mean | source_metric_min | "
+            "source_metric_max | per_seed_values |"
+        ),
+        "| --- | ---: | ---: | ---: | --- |",
+        _pressure_condition_source_metric_row(
+            "normal",
+            normal_rows,
+            policy=policy,
+            source_field=source_field,
+        ),
+        _pressure_condition_source_metric_row(
+            "medium",
+            medium_pressure_rows,
+            policy=policy,
+            source_field=source_field,
+        ),
+        _pressure_condition_source_metric_row(
+            "high",
+            high_pressure_rows,
+            policy=policy,
+            source_field=source_field,
+        ),
+    ]
+
+
+def _pressure_condition_source_metric_row(
+    pressure_condition: str,
+    rows: list[dict[str, Any]],
+    *,
+    policy: str,
+    source_field: str,
+) -> str:
+    policy_rows = sorted(
+        [row for row in rows if row["policy"] == policy],
+        key=lambda row: int(row["seed"]),
+    )
+    values = [float(row[source_field]) for row in policy_rows]
+    per_seed_values = ", ".join(
+        f"{row['seed']}:{round(float(row[source_field]), 6)}"
+        for row in policy_rows
+    )
+    return (
+        f"| {pressure_condition} | {round(sum(values) / len(values), 6)} | "
+        f"{round(min(values), 6)} | {round(max(values), 6)} | {per_seed_values} |"
+    )
 
 
 def _pressure_response_condition_details(

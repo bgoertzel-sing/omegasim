@@ -1172,6 +1172,36 @@ def test_a2_attention_pressure_summary_interprets_unstable_prefix_response(
     ) in summary
 
 
+def test_a2_attention_pressure_summary_compares_selected_source_metric_by_condition(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+    readme = Path("README.md").read_text()
+
+    run_pressure_comparison(seeds=(1, 2, 3), out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+
+    assert "`Pressure-condition source metric comparison`" in readme
+    assert "source metric behind the selected top pressure response" in readme
+    assert "## Pressure-condition source metric comparison" in summary
+    assert (
+        "- selected source metric: policy=internal_improvement "
+        "observable=final queue depth metric=normal_to_medium_slope "
+        "source_field=queue_depth"
+    ) in summary
+    assert (
+        "| pressure_condition | source_metric_mean | source_metric_min | "
+        "source_metric_max | per_seed_values |"
+    ) in summary
+    assert "| normal | 20.666667 | " in summary
+    assert "| medium | 39.333333 | " in summary
+    assert "| high | 45.666667 | " in summary
+    assert "1:" in summary
+    assert "2:" in summary
+    assert "3:" in summary
+
+
 def test_a2_attention_pressure_summary_interprets_stable_prefix_response(
     tmp_path: Path,
 ) -> None:
