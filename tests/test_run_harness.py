@@ -973,6 +973,34 @@ def test_a2_attention_pressure_summary_interprets_unstable_prefix_response(
     ) in summary
 
 
+def test_a2_attention_pressure_summary_interprets_stable_prefix_response(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+    readme = Path("README.md").read_text()
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+
+    assert "`Pressure-response interpretation` restates the full seed set" in readme
+    assert "Stable prefixes report that the leading explanation is stable" in readme
+    assert "## Pressure-response interpretation" in summary
+    assert (
+        "- full-seed interpretation: policy=baseline "
+        "observable=value-weighted completed work metric=curvature "
+        "is the largest absolute pressure response; condition means move "
+        "56.5 -> 45.0 -> 57.5 with normal_to_medium_slope=-28.75, "
+        "medium_to_high_slope=31.25, curvature=60.0, and "
+        "high_minus_normal_delta=1.0."
+    ) in summary
+    assert (
+        "- prefix interpretation: the last prefix selects the same policy, "
+        "observable, and metric, so the leading pressure-response explanation "
+        "is stable for the checked prefix."
+    ) in summary
+
+
 def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
     tmp_path: Path,
 ) -> None:
