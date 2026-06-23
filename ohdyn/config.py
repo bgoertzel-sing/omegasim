@@ -27,6 +27,7 @@ class RunConfig:
 class ModelConfig:
     agent_count: int
     actions: tuple[str, ...] = ("idle", "message", "create_task", "work_task")
+    task_creation_pressure: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -92,6 +93,10 @@ def load_config(path: str | Path) -> OmegaConfig:
         model=ModelConfig(
             agent_count=_exact_int(model.get("agent_count"), "model.agent_count", expected=15),
             actions=actions,
+            task_creation_pressure=_nonnegative_float(
+                model.get("task_creation_pressure", 1.0),
+                "model.task_creation_pressure",
+            ),
         ),
         outputs=OutputsConfig(
             write_manifest=_bool(outputs.get("write_manifest", True), "outputs.write_manifest"),
@@ -160,6 +165,15 @@ def _optional_attention_policy(value: Any) -> AttentionPolicyConfig | None:
 
 
 def _share(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"Config value {name!r} must be a number.")
+    parsed = float(value)
+    if parsed < 0.0:
+        raise ValueError(f"Config value {name!r} must be non-negative.")
+    return parsed
+
+
+def _nonnegative_float(value: Any, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"Config value {name!r} must be a number.")
     parsed = float(value)

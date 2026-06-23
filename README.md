@@ -80,6 +80,17 @@ The comparison directory contains `comparison_metrics.csv`, an aggregate `summar
 
 The aggregate comparison `summary.md` derives deterministic phase-space regime labels from the signs of each policy's mean queue-depth, queued-age, and value-throughput step deltas, for example `queue_growth+stale_age_rising+value_throughput_rising`. It also counts each per-run step-level regime label from the same delta sign sequence, reports per-policy regime counts and rates, and reports each variant policy's regime count/rate distribution deltas versus the baseline policy.
 
+A2 configs may also set `model.task_creation_pressure`, a deterministic scalar applied to the baseline `create_task` action weight. The default is `1.0`, preserving A0/A1 behavior. The checked-in high-pressure fixtures use `1.8` to compare the same policy shares under stronger backlog creation pressure:
+
+```bash
+python -m ohdyn.compare_attention \
+  --baseline-config configs/a2_attention_high_pressure.yaml \
+  --variant-config configs/a2_attention_research_heavy_high_pressure.yaml \
+  --internal-improvement-config configs/a2_attention_internal_improvement_high_pressure.yaml \
+  --seeds 1 2 3 \
+  --out runs/a2_attention_high_pressure_compare
+```
+
 ## Output Schema
 
 Every run writes `config.yaml`, a normalized copy of the loaded config. Optional artifact flags in the config control the remaining outputs.

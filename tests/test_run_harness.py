@@ -31,6 +31,13 @@ CONFIG = Path("configs/a0_smoke.yaml")
 A2_ATTENTION = Path("configs/a2_attention_smoke.yaml")
 A2_ATTENTION_RESEARCH_HEAVY = Path("configs/a2_attention_research_heavy.yaml")
 A2_ATTENTION_INTERNAL_IMPROVEMENT = Path("configs/a2_attention_internal_improvement.yaml")
+A2_ATTENTION_HIGH_PRESSURE = Path("configs/a2_attention_high_pressure.yaml")
+A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE = Path(
+    "configs/a2_attention_research_heavy_high_pressure.yaml"
+)
+A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE = Path(
+    "configs/a2_attention_internal_improvement_high_pressure.yaml"
+)
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -59,6 +66,9 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     A2_ATTENTION: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -137,6 +147,7 @@ def test_loads_a0_smoke_config() -> None:
     assert config.run.experiment_id == "a0_smoke"
     assert config.run.ticks == 100
     assert config.model.agent_count == 15
+    assert config.model.task_creation_pressure == 1.0
     assert set(config.model.actions) == {"idle", "message", "create_task", "work_task"}
 
 
@@ -287,6 +298,33 @@ def test_loads_a2_attention_internal_improvement_config() -> None:
         "internal_improvement": 0.55,
         "housekeeping": 0.1,
     }
+
+
+@pytest.mark.parametrize(
+    ("config_path", "experiment_id"),
+    [
+        (A2_ATTENTION_HIGH_PRESSURE, "a2_attention_high_pressure"),
+        (
+            A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE,
+            "a2_attention_research_heavy_high_pressure",
+        ),
+        (
+            A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE,
+            "a2_attention_internal_improvement_high_pressure",
+        ),
+    ],
+)
+def test_loads_a2_attention_high_pressure_fixtures(
+    config_path: Path,
+    experiment_id: str,
+) -> None:
+    config = load_config(config_path)
+
+    assert config.run.experiment_id == experiment_id
+    assert config.run.ticks == 12
+    assert config.model.agent_count == 15
+    assert config.model.task_creation_pressure == 1.8
+    assert config.attention_policy is not None
 
 
 def test_run_writes_required_artifacts(tmp_path: Path) -> None:
@@ -558,6 +596,55 @@ def test_a2_attention_comparison_runner_aggregates_internal_improvement_shift(
 
     assert internal_heavy > baseline_internal
     assert internal_heavy_near_term < baseline_near_term
+
+
+def test_a2_attention_high_pressure_increases_creation_pressure(tmp_path: Path) -> None:
+    baseline = run_experiment(A2_ATTENTION, seed=23, out_dir=tmp_path / "baseline")
+    high_pressure = run_experiment(
+        A2_ATTENTION_HIGH_PRESSURE,
+        seed=23,
+        out_dir=tmp_path / "high_pressure",
+    )
+
+    baseline_last = baseline.metrics[-1]
+    high_pressure_last = high_pressure.metrics[-1]
+
+    assert high_pressure.config.model.task_creation_pressure == 1.8
+    assert (
+        high_pressure_last["tasks_created_total"]
+        > baseline_last["tasks_created_total"]
+    )
+    assert high_pressure_last["queue_depth"] > baseline_last["queue_depth"]
+
+
+def test_a2_attention_high_pressure_comparison_runner_is_reproducible(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_comparison(
+        baseline_config=A2_ATTENTION_HIGH_PRESSURE,
+        variant_config=A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE,
+        internal_improvement_config=A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE,
+        seeds=(1, 2),
+        out_dir=first,
+    )
+    run_comparison(
+        baseline_config=A2_ATTENTION_HIGH_PRESSURE,
+        variant_config=A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE,
+        internal_improvement_config=A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE,
+        seeds=(1, 2),
+        out_dir=second,
+    )
+
+    assert (first / "comparison_metrics.csv").read_text() == (
+        second / "comparison_metrics.csv"
+    ).read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+    summary = (first / "summary.md").read_text()
+    assert "configs/a2_attention_high_pressure.yaml" in summary
+    assert "## Phase-space regime distribution deltas vs baseline" in summary
 
 
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
@@ -870,6 +957,7 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
         },
         "model": {
             "agent_count": 15,
+            "task_creation_pressure": 1.0,
             "actions": actions,
         },
         "outputs": {
@@ -7879,6 +7967,7 @@ def _assert_config_only_writes_normalized_config(
         },
         "model": {
             "agent_count": 15,
+            "task_creation_pressure": 1.0,
             "actions": expected_actions,
         },
         "outputs": {

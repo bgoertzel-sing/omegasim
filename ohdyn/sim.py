@@ -187,7 +187,13 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
         completed_this_tick = 0
         attention_value_weighted_completed_tick = 0
         for agent in agents:
-            action = _choose_action(config.model.actions, bool(task_queue), agent, rng)
+            action = _choose_action(
+                config.model.actions,
+                bool(task_queue),
+                agent,
+                rng,
+                task_creation_pressure=config.model.task_creation_pressure,
+            )
             action_counts[action] += 1
             role_action_counts[(agent.role, action)] += 1
 
@@ -537,6 +543,8 @@ def _choose_action(
     has_queued_tasks: bool,
     agent: AgentState,
     rng: np.random.Generator,
+    *,
+    task_creation_pressure: float = 1.0,
 ) -> str:
     allowed_actions = list(actions)
     weights = {
@@ -547,6 +555,7 @@ def _choose_action(
     }
     if agent.role in {"implementer", "reviewer"} and has_queued_tasks:
         weights["work_task"] *= agent.bias
+    weights["create_task"] *= task_creation_pressure
     if agent.role == "researcher":
         weights["create_task"] *= agent.bias
     if agent.role == "coordinator":
