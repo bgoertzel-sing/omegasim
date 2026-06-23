@@ -806,6 +806,12 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert csv_rows[0]["queue_depth_normal_to_medium_slope"]
     assert csv_rows[0]["queue_depth_medium_to_high_slope"]
     assert csv_rows[0]["queue_depth_pressure_curvature"]
+    assert csv_rows[0]["attention_capture_pressure_max_final_delta"]
+    assert csv_rows[0]["attention_capture_pressure_mean_over_ticks_delta"]
+    assert csv_rows[0]["attention_capture_pressure_peak_delta"]
+    assert csv_rows[0]["attention_capture_pressure_max_final_normal_to_medium_slope"]
+    assert csv_rows[0]["attention_capture_pressure_max_final_medium_to_high_slope"]
+    assert csv_rows[0]["attention_capture_pressure_max_final_pressure_curvature"]
     assert "## Fixed-policy pressure deltas" in summary
     assert "## Most pressure-sensitive curve metric" in summary
     assert "## Pressure-curve response ranking" in summary
@@ -817,7 +823,13 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "regime_rate_deltas=" in summary
     assert "- research_heavy final queue depth mean pressure delta: " in summary
     assert "- internal_improvement peak queued task max age pressure delta: " in summary
+    assert "- baseline final attention capture pressure delta: " in summary
+    assert "- baseline mean attention capture pressure delta: " in summary
+    assert "- baseline peak attention capture pressure delta: " in summary
     assert "- baseline final queue depth pressure curve: " in summary
+    assert "- baseline final attention capture pressure curve: " in summary
+    assert "- baseline mean attention capture pressure curve: " in summary
+    assert "- baseline peak attention capture pressure curve: " in summary
     assert "normal_to_medium_slope=" in summary
     assert "medium_to_high_slope=" in summary
     assert "curvature=" in summary
@@ -954,6 +966,11 @@ def test_a2_attention_pressure_summary_explains_top_curve_response(
         "queue_depth": "queue_depth",
         "queued_task_age_mean_final": "queued_task_age_mean_final",
         "queued_task_age_max_peak": "queued_task_age_max_peak",
+        "attention_capture_pressure_max_final": "attention_capture_pressure_max_final",
+        "attention_capture_pressure_mean_over_ticks": (
+            "attention_capture_pressure_mean_over_ticks"
+        ),
+        "attention_capture_pressure_peak": "attention_capture_pressure_peak",
     }
     expected_prefix = next(
         prefix
@@ -1232,6 +1249,7 @@ def test_documented_pressure_cli_writes_pressure_layout_and_curve_summary(
     assert "## Fixed-policy pressure curves" in summary
     assert "- medium-pressure baseline config: configs/a2_attention_medium_pressure.yaml" in summary
     assert "- baseline final queue depth pressure curve: " in summary
+    assert "- baseline final attention capture pressure curve: " in summary
     assert "normal_to_medium_slope=" in summary
     assert "medium_to_high_slope=" in summary
     assert "curvature=" in summary

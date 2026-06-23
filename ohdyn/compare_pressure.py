@@ -52,6 +52,9 @@ PRESSURE_COMPARISON_FIELDS = (
     "queued_task_age_mean_final_delta",
     "queued_task_age_mean_over_ticks_delta",
     "queued_task_age_max_peak_delta",
+    "attention_capture_pressure_max_final_delta",
+    "attention_capture_pressure_mean_over_ticks_delta",
+    "attention_capture_pressure_peak_delta",
     "value_weighted_completed_normal_to_medium_slope",
     "value_weighted_completed_medium_to_high_slope",
     "value_weighted_completed_pressure_curvature",
@@ -67,6 +70,15 @@ PRESSURE_COMPARISON_FIELDS = (
     "queued_task_age_max_peak_normal_to_medium_slope",
     "queued_task_age_max_peak_medium_to_high_slope",
     "queued_task_age_max_peak_pressure_curvature",
+    "attention_capture_pressure_max_final_normal_to_medium_slope",
+    "attention_capture_pressure_max_final_medium_to_high_slope",
+    "attention_capture_pressure_max_final_pressure_curvature",
+    "attention_capture_pressure_mean_over_ticks_normal_to_medium_slope",
+    "attention_capture_pressure_mean_over_ticks_medium_to_high_slope",
+    "attention_capture_pressure_mean_over_ticks_pressure_curvature",
+    "attention_capture_pressure_peak_normal_to_medium_slope",
+    "attention_capture_pressure_peak_medium_to_high_slope",
+    "attention_capture_pressure_peak_pressure_curvature",
 )
 PRESSURE_RESPONSE_SELECTION_FIELDS = (
     "selection_scope",
@@ -97,6 +109,21 @@ PRESSURE_CURVE_OBSERVABLES = (
     ("queue_depth", "final queue depth", "queue_depth"),
     ("queued_task_age_mean_final", "final queued task mean age", "queued_task_age_mean_final"),
     ("queued_task_age_max_peak", "peak queued task max age", "queued_task_age_max_peak"),
+    (
+        "attention_capture_pressure_max_final",
+        "final attention capture pressure",
+        "attention_capture_pressure_max_final",
+    ),
+    (
+        "attention_capture_pressure_mean_over_ticks",
+        "mean attention capture pressure",
+        "attention_capture_pressure_mean_over_ticks",
+    ),
+    (
+        "attention_capture_pressure_peak",
+        "peak attention capture pressure",
+        "attention_capture_pressure_peak",
+    ),
 )
 PRESSURE_CURVE_METRICS = (
     ("normal_to_medium_slope", "normal_to_medium_slope"),
@@ -309,6 +336,21 @@ def _pressure_row(
             normal_rows,
             "queued_task_age_max_peak",
         ),
+        "attention_capture_pressure_max_final_delta": _metric_mean_delta(
+            high_pressure_rows,
+            normal_rows,
+            "attention_capture_pressure_max_final",
+        ),
+        "attention_capture_pressure_mean_over_ticks_delta": _metric_mean_delta(
+            high_pressure_rows,
+            normal_rows,
+            "attention_capture_pressure_mean_over_ticks",
+        ),
+        "attention_capture_pressure_peak_delta": _metric_mean_delta(
+            high_pressure_rows,
+            normal_rows,
+            "attention_capture_pressure_peak",
+        ),
     }
     row.update(
         _pressure_curve_metrics(
@@ -353,6 +395,33 @@ def _pressure_row(
             high_pressure_rows,
             source_field="queued_task_age_max_peak",
             output_prefix="queued_task_age_max_peak",
+        )
+    )
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="attention_capture_pressure_max_final",
+            output_prefix="attention_capture_pressure_max_final",
+        )
+    )
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="attention_capture_pressure_mean_over_ticks",
+            output_prefix="attention_capture_pressure_mean_over_ticks",
+        )
+    )
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="attention_capture_pressure_peak",
+            output_prefix="attention_capture_pressure_peak",
         )
     )
     return row
@@ -1015,6 +1084,11 @@ def _pressure_delta_field(observable_prefix: str) -> str:
         "queue_depth": "queue_depth_mean_delta",
         "queued_task_age_mean_final": "queued_task_age_mean_final_delta",
         "queued_task_age_max_peak": "queued_task_age_max_peak_delta",
+        "attention_capture_pressure_max_final": "attention_capture_pressure_max_final_delta",
+        "attention_capture_pressure_mean_over_ticks": (
+            "attention_capture_pressure_mean_over_ticks_delta"
+        ),
+        "attention_capture_pressure_peak": "attention_capture_pressure_peak_delta",
     }
     return delta_fields[observable_prefix]
 
@@ -1038,6 +1112,12 @@ def _pressure_delta_lines(row: dict[str, Any]) -> list[str]:
         f"{row['queued_task_age_mean_over_ticks_delta']}",
         f"- {row['policy']} peak queued task max age pressure delta: "
         f"{row['queued_task_age_max_peak_delta']}",
+        f"- {row['policy']} final attention capture pressure delta: "
+        f"{row['attention_capture_pressure_max_final_delta']}",
+        f"- {row['policy']} mean attention capture pressure delta: "
+        f"{row['attention_capture_pressure_mean_over_ticks_delta']}",
+        f"- {row['policy']} peak attention capture pressure delta: "
+        f"{row['attention_capture_pressure_peak_delta']}",
     ]
 
 
@@ -1063,6 +1143,18 @@ def _pressure_curve_lines(row: dict[str, Any]) -> list[str]:
         f"normal_to_medium_slope={row['queued_task_age_max_peak_normal_to_medium_slope']}, "
         f"medium_to_high_slope={row['queued_task_age_max_peak_medium_to_high_slope']}, "
         f"curvature={row['queued_task_age_max_peak_pressure_curvature']}",
+        f"- {row['policy']} final attention capture pressure curve: "
+        f"normal_to_medium_slope={row['attention_capture_pressure_max_final_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['attention_capture_pressure_max_final_medium_to_high_slope']}, "
+        f"curvature={row['attention_capture_pressure_max_final_pressure_curvature']}",
+        f"- {row['policy']} mean attention capture pressure curve: "
+        f"normal_to_medium_slope={row['attention_capture_pressure_mean_over_ticks_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['attention_capture_pressure_mean_over_ticks_medium_to_high_slope']}, "
+        f"curvature={row['attention_capture_pressure_mean_over_ticks_pressure_curvature']}",
+        f"- {row['policy']} peak attention capture pressure curve: "
+        f"normal_to_medium_slope={row['attention_capture_pressure_peak_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['attention_capture_pressure_peak_medium_to_high_slope']}, "
+        f"curvature={row['attention_capture_pressure_peak_pressure_curvature']}",
     ]
 
 
