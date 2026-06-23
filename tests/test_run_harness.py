@@ -1416,6 +1416,7 @@ def test_a2_attention_pressure_response_selection_csv_records_full_and_prefix_to
     assert rows[0]["observable"] == "final queue depth"
     assert rows[0]["metric"] == "normal_to_medium_slope"
     assert rows[0]["field"] == "queue_depth_normal_to_medium_slope"
+    assert rows[0]["source_field"] == "queue_depth"
     assert rows[0]["stable_with_full"] == "true"
     assert rows[0]["instability_causes"] == "none"
     assert rows[0]["normal_mean"] == "20.666667"
@@ -1425,6 +1426,14 @@ def test_a2_attention_pressure_response_selection_csv_records_full_and_prefix_to
     assert rows[0]["medium_to_high_slope"] == "15.833335"
     assert rows[0]["curvature"] == "-30.83333"
     assert rows[0]["high_minus_normal_delta"] == "25.0"
+    assert rows[0]["source_metric_normal_mean"] == "20.666667"
+    assert rows[0]["source_metric_medium_mean"] == "39.333333"
+    assert rows[0]["source_metric_high_mean"] == "45.666667"
+    assert rows[0]["source_metric_normal_per_seed_values"].startswith("1:")
+    assert "|2:" in rows[0]["source_metric_normal_per_seed_values"]
+    assert "|3:" in rows[0]["source_metric_normal_per_seed_values"]
+    assert rows[0]["source_metric_medium_min"]
+    assert rows[0]["source_metric_high_max"]
     assert rows[2]["policy"] == "baseline"
     assert rows[2]["observable"] == "value-weighted completed work"
     assert rows[2]["metric"] == "curvature"

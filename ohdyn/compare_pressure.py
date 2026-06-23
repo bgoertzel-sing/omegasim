@@ -114,6 +114,7 @@ PRESSURE_RESPONSE_SELECTION_FIELDS = (
     "observable",
     "metric",
     "field",
+    "source_field",
     "value",
     "abs_value",
     "normal_mean",
@@ -123,6 +124,18 @@ PRESSURE_RESPONSE_SELECTION_FIELDS = (
     "medium_to_high_slope",
     "curvature",
     "high_minus_normal_delta",
+    "source_metric_normal_mean",
+    "source_metric_normal_min",
+    "source_metric_normal_max",
+    "source_metric_normal_per_seed_values",
+    "source_metric_medium_mean",
+    "source_metric_medium_min",
+    "source_metric_medium_max",
+    "source_metric_medium_per_seed_values",
+    "source_metric_high_mean",
+    "source_metric_high_min",
+    "source_metric_high_max",
+    "source_metric_high_per_seed_values",
 )
 PRESSURE_STABILITY_AGREEMENT_FIELDS = (
     "full_seeds",
@@ -937,6 +950,12 @@ def _pressure_response_selection_row(
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
     )
+    source_metric_details = _pressure_response_source_metric_details(
+        candidate,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
     return {
         "selection_scope": selection_scope,
         "seeds": _format_seed_set(seeds),
@@ -946,6 +965,7 @@ def _pressure_response_selection_row(
         "observable": candidate["observable"],
         "metric": candidate["metric"],
         "field": candidate["field"],
+        "source_field": candidate["source_field"],
         "value": round(float(candidate["value"]), 6),
         "abs_value": round(float(candidate["abs_value"]), 6),
         "normal_mean": details["normal_mean"],
@@ -955,6 +975,7 @@ def _pressure_response_selection_row(
         "medium_to_high_slope": details["medium_to_high_slope"],
         "curvature": details["curvature"],
         "high_minus_normal_delta": details["high_minus_normal_delta"],
+        **source_metric_details,
     }
 
 
@@ -1566,6 +1587,60 @@ def _pressure_condition_source_metric_row(
         f"| {pressure_condition} | {round(sum(values) / len(values), 6)} | "
         f"{round(min(values), 6)} | {round(max(values), 6)} | {per_seed_values} |"
     )
+
+
+def _pressure_response_source_metric_details(
+    candidate: dict[str, Any],
+    *,
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    policy = str(candidate["policy"])
+    source_field = str(candidate["source_field"])
+    return {
+        **_source_metric_condition_details(
+            "normal",
+            normal_rows,
+            policy=policy,
+            source_field=source_field,
+        ),
+        **_source_metric_condition_details(
+            "medium",
+            medium_pressure_rows,
+            policy=policy,
+            source_field=source_field,
+        ),
+        **_source_metric_condition_details(
+            "high",
+            high_pressure_rows,
+            policy=policy,
+            source_field=source_field,
+        ),
+    }
+
+
+def _source_metric_condition_details(
+    pressure_condition: str,
+    rows: list[dict[str, Any]],
+    *,
+    policy: str,
+    source_field: str,
+) -> dict[str, Any]:
+    policy_rows = sorted(
+        [row for row in rows if row["policy"] == policy],
+        key=lambda row: int(row["seed"]),
+    )
+    values = [float(row[source_field]) for row in policy_rows]
+    return {
+        f"source_metric_{pressure_condition}_mean": round(sum(values) / len(values), 6),
+        f"source_metric_{pressure_condition}_min": round(min(values), 6),
+        f"source_metric_{pressure_condition}_max": round(max(values), 6),
+        f"source_metric_{pressure_condition}_per_seed_values": "|".join(
+            f"{row['seed']}:{round(float(row[source_field]), 6)}"
+            for row in policy_rows
+        ),
+    }
 
 
 def _pressure_response_condition_details(
