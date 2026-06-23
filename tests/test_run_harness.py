@@ -28,6 +28,7 @@ from ohdyn.run import run_experiment
 
 CONFIG = Path("configs/a0_smoke.yaml")
 A2_ATTENTION = Path("configs/a2_attention_smoke.yaml")
+A2_ATTENTION_RESEARCH_HEAVY = Path("configs/a2_attention_research_heavy.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -54,6 +55,7 @@ NO_MANIFEST_ARTIFACTS = ["config.yaml", "metrics.csv", "events.csv", "summary.md
 OUTPUT_FIXTURE_ARTIFACTS = {
     CONFIG: A0_FULL_ARTIFACTS,
     A2_ATTENTION: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_RESEARCH_HEAVY: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -254,6 +256,21 @@ def test_loads_a2_attention_smoke_config() -> None:
     }
 
 
+def test_loads_a2_attention_research_heavy_config() -> None:
+    config = load_config(A2_ATTENTION_RESEARCH_HEAVY)
+
+    assert config.run.experiment_id == "a2_attention_research_heavy"
+    assert config.run.ticks == 12
+    assert config.model.agent_count == 15
+    assert config.attention_policy is not None
+    assert config.attention_policy.shares() == {
+        "near_term_external": 0.2,
+        "long_term_research": 0.55,
+        "internal_improvement": 0.15,
+        "housekeeping": 0.1,
+    }
+
+
 def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -324,6 +341,39 @@ def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) ->
     assert (first / "metrics.csv").read_text() == (second / "metrics.csv").read_text()
     assert (first / "events.csv").read_text() == (second / "events.csv").read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_a2_attention_comparison_shifts_work_toward_research(tmp_path: Path) -> None:
+    smoke = run_experiment(A2_ATTENTION, seed=23, out_dir=tmp_path / "a2_attention_smoke")
+    research_heavy = run_experiment(
+        A2_ATTENTION_RESEARCH_HEAVY,
+        seed=23,
+        out_dir=tmp_path / "a2_attention_research_heavy",
+    )
+
+    smoke_last = smoke.metrics[-1]
+    research_last = research_heavy.metrics[-1]
+
+    assert (
+        research_last["attention_long_term_research_completed_total"]
+        > smoke_last["attention_long_term_research_completed_total"]
+    )
+    assert (
+        research_last["attention_near_term_external_completed_total"]
+        < smoke_last["attention_near_term_external_completed_total"]
+    )
+    assert (
+        research_last["attention_value_weighted_completed_total"]
+        < smoke_last["attention_value_weighted_completed_total"]
+    )
+    assert (
+        research_last["queued_task_age_mean_tick"]
+        > smoke_last["queued_task_age_mean_tick"]
+    )
+    assert (
+        "## Attention policy totals"
+        in (tmp_path / "a2_attention_research_heavy" / "summary.md").read_text()
+    )
 
 
 def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:

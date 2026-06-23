@@ -4,12 +4,12 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 attention-allocation smoke experiments on top of the stable deterministic A0/A1 local simulator harness.
+Phase A2 attention-policy comparison experiments on top of the stable deterministic A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 A2 attention-policy smoke fixture and opt-in metrics
-- Changed: added strict `attention_policy` YAML loading for the four documented attention classes, an `a2_attention_smoke` fixture, deterministic task-class assignment and under-served-class work selection, opt-in per-class queue/completion/age/share/deviation/value-weighted metrics, manifest/summary provenance for attention runs, README smoke documentation, and focused reproducibility tests while preserving A0/A1 schemas for configs without `attention_policy`.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "a2_attention" -q` passed with 3 tests and 421 deselected; `.venv-conda/bin/python -m ruff check .` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 424 tests.
+- Status: ok, 2026-06-23 A2 research-heavy attention comparison fixture
+- Changed: added `configs/a2_attention_research_heavy.yaml` with higher reserved share for `long_term_research`, documented the comparison smoke command in `README.md`, and added focused tests that load the new fixture and compare same-seed outcomes against `configs/a2_attention_smoke.yaml` for research completions, near-term completions, value-weighted throughput, stale-task age, and summary output.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k "a2_attention" -q` passed with 5 tests and 421 deselected; `.venv-conda/bin/python -m ruff check .` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q` passed with 426 tests.
 - Blockers: none.
-- Next step: add an A2 comparison fixture with a contrasting attention policy and a focused test or script that compares value-weighted throughput and stale-task age against `configs/a2_attention_smoke.yaml`.
+- Next step: add a small deterministic A2 comparison CLI/script that runs both attention fixtures across a short seed set and writes an aggregate summary of value-weighted throughput and stale-task age.

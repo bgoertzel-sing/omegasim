@@ -56,6 +56,14 @@ python -m ohdyn.run --config configs/a2_attention_smoke.yaml --seed 1 --out runs
 
 Attention-policy runs assign created tasks to `near_term_external`, `long_term_research`, `internal_improvement`, and `housekeeping`; work selection favors queued classes that are under their target share. `metrics.csv`, `manifest.yaml`, and `summary.md` add per-class queue, completion, queued-age, attention-share, share-deviation, and value-weighted completed-work fields only for configs that enable `attention_policy`.
 
+A contrasting research-heavy A2 fixture uses the same deterministic baseline with more reserved share for long-term research:
+
+```bash
+python -m ohdyn.run --config configs/a2_attention_research_heavy.yaml --seed 1 --out runs/a2_attention_research_heavy_seed1
+```
+
+The focused comparison test runs `configs/a2_attention_smoke.yaml` and `configs/a2_attention_research_heavy.yaml` with the same seed and verifies that the research-heavy policy shifts completed work toward `long_term_research` while changing value-weighted throughput and stale-task age.
+
 ## Output Schema
 
 Every run writes `config.yaml`, a normalized copy of the loaded config. Optional artifact flags in the config control the remaining outputs.
