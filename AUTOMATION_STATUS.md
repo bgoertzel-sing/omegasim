@@ -4,12 +4,12 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 pressure-curve comparison interpretation on top of the stable A0/A1 local simulator harness.
+Phase A2 pressure-curve comparison documentation and interpretation on top of the stable A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 added deterministic pressure-response interpretation text.
-- Changed: no simulator behavior changes; pressure `summary.md` now includes a `Pressure-response interpretation` section after the top-response explanation. The section connects the full-seed winning response to its condition means, slopes, curvature, and high-minus-normal delta, and for unstable prefixes explains the changed `policy`/`observable`/`metric` dimensions using the prefix winner's same curve values. Added a regression test for the known unstable `1,2,3` seed-set case.
+- Status: ok, 2026-06-23 documented the pressure-response interpretation output contract.
+- Changed: no simulator behavior changes; README now lists `Pressure-response interpretation` as a pressure comparison `summary.md` section and describes the full-seed and prefix-stability interpretation lines emitted by the existing pressure comparison helper.
 - Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_summary'` passed with 5 selected tests; `.venv-conda/bin/python -m pytest` passed with 452 tests.
 - Blockers: none.
-- Next step: document the new `Pressure-response interpretation` summary section in README so the pressure comparison output contract matches the emitted artifact.
+- Next step: add a deterministic pressure-comparison regression that checks README-documented `Pressure-response interpretation` wording against a generated `summary.md` for the stable-prefix seed case.
