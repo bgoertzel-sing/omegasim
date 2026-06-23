@@ -82,6 +82,17 @@ The aggregate comparison `summary.md` derives deterministic phase-space regime l
 
 A2 configs may also set `model.task_creation_pressure`, a deterministic scalar applied to the baseline `create_task` action weight. The default is `1.0`, preserving A0/A1 behavior. The checked-in high-pressure fixtures use `1.8` to compare the same policy shares under stronger backlog creation pressure:
 
+The checked-in medium-pressure fixtures use `1.4` to provide a reproducible midpoint between the normal and high-pressure conditions:
+
+```bash
+python -m ohdyn.compare_attention \
+  --baseline-config configs/a2_attention_medium_pressure.yaml \
+  --variant-config configs/a2_attention_research_heavy_medium_pressure.yaml \
+  --internal-improvement-config configs/a2_attention_internal_improvement_medium_pressure.yaml \
+  --seeds 1 2 3 \
+  --out runs/a2_attention_medium_pressure_compare
+```
+
 ```bash
 python -m ohdyn.compare_attention \
   --baseline-config configs/a2_attention_high_pressure.yaml \

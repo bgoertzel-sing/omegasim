@@ -32,6 +32,13 @@ CONFIG = Path("configs/a0_smoke.yaml")
 A2_ATTENTION = Path("configs/a2_attention_smoke.yaml")
 A2_ATTENTION_RESEARCH_HEAVY = Path("configs/a2_attention_research_heavy.yaml")
 A2_ATTENTION_INTERNAL_IMPROVEMENT = Path("configs/a2_attention_internal_improvement.yaml")
+A2_ATTENTION_MEDIUM_PRESSURE = Path("configs/a2_attention_medium_pressure.yaml")
+A2_ATTENTION_RESEARCH_HEAVY_MEDIUM_PRESSURE = Path(
+    "configs/a2_attention_research_heavy_medium_pressure.yaml"
+)
+A2_ATTENTION_INTERNAL_IMPROVEMENT_MEDIUM_PRESSURE = Path(
+    "configs/a2_attention_internal_improvement_medium_pressure.yaml"
+)
 A2_ATTENTION_HIGH_PRESSURE = Path("configs/a2_attention_high_pressure.yaml")
 A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE = Path(
     "configs/a2_attention_research_heavy_high_pressure.yaml"
@@ -67,6 +74,9 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     A2_ATTENTION: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_MEDIUM_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_RESEARCH_HEAVY_MEDIUM_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_INTERNAL_IMPROVEMENT_MEDIUM_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
@@ -302,29 +312,47 @@ def test_loads_a2_attention_internal_improvement_config() -> None:
 
 
 @pytest.mark.parametrize(
-    ("config_path", "experiment_id"),
+    ("config_path", "experiment_id", "task_creation_pressure"),
     [
-        (A2_ATTENTION_HIGH_PRESSURE, "a2_attention_high_pressure"),
+        (
+            A2_ATTENTION_MEDIUM_PRESSURE,
+            "a2_attention_medium_pressure",
+            1.4,
+        ),
+        (
+            A2_ATTENTION_RESEARCH_HEAVY_MEDIUM_PRESSURE,
+            "a2_attention_research_heavy_medium_pressure",
+            1.4,
+        ),
+        (
+            A2_ATTENTION_INTERNAL_IMPROVEMENT_MEDIUM_PRESSURE,
+            "a2_attention_internal_improvement_medium_pressure",
+            1.4,
+        ),
+        (A2_ATTENTION_HIGH_PRESSURE, "a2_attention_high_pressure", 1.8),
         (
             A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE,
             "a2_attention_research_heavy_high_pressure",
+            1.8,
         ),
         (
             A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE,
             "a2_attention_internal_improvement_high_pressure",
+            1.8,
         ),
     ],
 )
-def test_loads_a2_attention_high_pressure_fixtures(
+def test_loads_a2_attention_pressure_fixtures(
     config_path: Path,
     experiment_id: str,
+    task_creation_pressure: float,
 ) -> None:
     config = load_config(config_path)
 
     assert config.run.experiment_id == experiment_id
     assert config.run.ticks == 12
     assert config.model.agent_count == 15
-    assert config.model.task_creation_pressure == 1.8
+    assert config.model.task_creation_pressure == task_creation_pressure
     assert config.attention_policy is not None
 
 
@@ -616,6 +644,34 @@ def test_a2_attention_high_pressure_increases_creation_pressure(tmp_path: Path) 
         > baseline_last["tasks_created_total"]
     )
     assert high_pressure_last["queue_depth"] > baseline_last["queue_depth"]
+
+
+def test_a2_attention_medium_pressure_sits_between_normal_and_high_pressure(
+    tmp_path: Path,
+) -> None:
+    normal = run_experiment(A2_ATTENTION, seed=23, out_dir=tmp_path / "normal")
+    medium = run_experiment(
+        A2_ATTENTION_MEDIUM_PRESSURE,
+        seed=23,
+        out_dir=tmp_path / "medium",
+    )
+    high = run_experiment(
+        A2_ATTENTION_HIGH_PRESSURE,
+        seed=23,
+        out_dir=tmp_path / "high",
+    )
+
+    normal_last = normal.metrics[-1]
+    medium_last = medium.metrics[-1]
+    high_last = high.metrics[-1]
+
+    assert medium.config.model.task_creation_pressure == 1.4
+    assert (
+        normal_last["tasks_created_total"]
+        < medium_last["tasks_created_total"]
+        < high_last["tasks_created_total"]
+    )
+    assert normal_last["queue_depth"] < medium_last["queue_depth"] < high_last["queue_depth"]
 
 
 def test_a2_attention_high_pressure_comparison_runner_is_reproducible(
