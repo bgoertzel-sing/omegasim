@@ -124,6 +124,23 @@ PRESSURE_RESPONSE_SELECTION_FIELDS = (
     "curvature",
     "high_minus_normal_delta",
 )
+PRESSURE_STABILITY_AGREEMENT_FIELDS = (
+    "full_seeds",
+    "prefix_seeds",
+    "global_stable_with_full",
+    "class_stable_with_full",
+    "stable_together",
+    "global_instability_causes",
+    "class_instability_causes",
+    "global_policy",
+    "global_observable",
+    "global_metric",
+    "global_field",
+    "class_policy",
+    "class_observable",
+    "class_metric",
+    "class_field",
+)
 PRESSURE_CURVE_OBSERVABLES = (
     (
         "value_weighted_completed",
@@ -234,6 +251,16 @@ def run_pressure_comparison(
             high_pressure_rows=high_pressure_rows,
         ),
     )
+    _write_pressure_stability_agreement_csv(
+        output_path / "pressure_stability_agreement.csv",
+        _pressure_stability_agreement_rows(
+            seeds=seeds,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+    )
     (output_path / "summary.md").write_text(
         _pressure_summary(
             normal_baseline_config=Path(normal_baseline_config),
@@ -275,6 +302,7 @@ def _ensure_pressure_outputs_available(output_path: Path) -> None:
         for artifact_name in (
             "pressure_comparison_metrics.csv",
             "pressure_response_selection.csv",
+            "pressure_stability_agreement.csv",
             "summary.md",
         )
         if (output_path / artifact_name).exists()
@@ -573,6 +601,16 @@ def _write_pressure_response_selection_csv(
         writer.writerows(rows)
 
 
+def _write_pressure_stability_agreement_csv(
+    path: Path,
+    rows: list[dict[str, Any]],
+) -> None:
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(PRESSURE_STABILITY_AGREEMENT_FIELDS))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def _pressure_response_selection_rows(
     *,
     seeds: tuple[int, ...],
@@ -637,6 +675,78 @@ def _pressure_response_selection_rows(
         )
     )
     return selection_rows
+
+
+def _pressure_stability_agreement_rows(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if (
+        len(seeds) < 2
+        or not _pressure_curve_response_candidates(rows)
+        or not _per_class_capture_pressure_candidates(rows)
+    ):
+        return []
+
+    global_comparisons = _prefix_pressure_response_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+    class_comparisons = _prefix_per_class_capture_pressure_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+    return [
+        _pressure_stability_agreement_row(
+            seeds=seeds,
+            global_comparison=global_comparison,
+            class_comparison=class_comparison,
+        )
+        for global_comparison, class_comparison in zip(
+            global_comparisons,
+            class_comparisons,
+            strict=True,
+        )
+    ]
+
+
+def _pressure_stability_agreement_row(
+    *,
+    seeds: tuple[int, ...],
+    global_comparison: dict[str, Any],
+    class_comparison: dict[str, Any],
+) -> dict[str, Any]:
+    global_top = global_comparison["top_response"]
+    class_top = class_comparison["top_response"]
+    return {
+        "full_seeds": _format_seed_set(seeds),
+        "prefix_seeds": _format_seed_set(global_comparison["prefix_seeds"]),
+        "global_stable_with_full": str(global_comparison["stable_with_full"]).lower(),
+        "class_stable_with_full": str(class_comparison["stable_with_full"]).lower(),
+        "stable_together": str(
+            _stable_together(global_comparison, class_comparison)
+        ).lower(),
+        "global_instability_causes": global_comparison["instability_causes"],
+        "class_instability_causes": class_comparison["instability_causes"],
+        "global_policy": global_top["policy"],
+        "global_observable": global_top["observable"],
+        "global_metric": global_top["metric"],
+        "global_field": global_top["field"],
+        "class_policy": class_top["policy"],
+        "class_observable": class_top["observable"],
+        "class_metric": class_top["metric"],
+        "class_field": class_top["field"],
+    }
 
 
 def _per_class_capture_pressure_selection_rows(

@@ -112,7 +112,7 @@ The pressure comparison helper runs the normal, medium, and high-pressure policy
 python -m ohdyn.compare_pressure --seeds 1 2 3 --out runs/a2_attention_pressure_compare
 ```
 
-The output directory contains `normal_pressure/`, `medium_pressure/`, `high_pressure/`, `pressure_comparison_metrics.csv`, `pressure_response_selection.csv`, and a top-level `summary.md`. The three pressure-condition subdirectories are ordinary `ohdyn.compare_attention` outputs with their own `comparison_metrics.csv`, aggregate `summary.md`, and per-policy/per-seed run artifact directories.
+The output directory contains `normal_pressure/`, `medium_pressure/`, `high_pressure/`, `pressure_comparison_metrics.csv`, `pressure_response_selection.csv`, `pressure_stability_agreement.csv`, and a top-level `summary.md`. The three pressure-condition subdirectories are ordinary `ohdyn.compare_attention` outputs with their own `comparison_metrics.csv`, aggregate `summary.md`, and per-policy/per-seed run artifact directories.
 
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
@@ -142,6 +142,8 @@ The pressure comparison summary also includes a `Per-class capture-pressure inte
 `Pressure-response stability agreement` compares global top-response prefix stability with class-specific capture-pressure prefix stability. It reports whether the last prefix and all proper prefixes stabilize together, then emits one row per prefix with the global stability flag, class-specific stability flag, combined agreement flag, and both instability-cause fields.
 
 `pressure_response_selection.csv` is a companion machine-readable artifact for the top response selected by the same deterministic ranking used in `summary.md`. It has one `full` row for the configured full seed set and one `prefix` row for each proper seed prefix. It also has one `class_full` row and one `class_prefix` row for each proper seed prefix, filtered to individual attention-class capture-pressure observables. Each row records the selected policy, observable, metric, source field, signed and absolute response value, condition means, pressure slopes, curvature, high-minus-normal delta, and whether that prefix selected the same top response as the matching full-seed selection.
+
+`pressure_stability_agreement.csv` is the machine-readable companion for the `Pressure-response stability agreement` summary section. It has one row per proper seed prefix and records the full seed set, prefix seed set, global stability flag, class-specific stability flag, combined agreement flag, both instability-cause fields, and the selected global/class policy, observable, metric, and source field for that prefix.
 
 `Pressure-response interpretation` restates the full seed set's largest absolute pressure response as one sentence with the selected policy, observable, slope-or-curvature metric, normal/medium/high condition means, both pressure slopes, curvature, and high-minus-normal delta. When at least two seeds are configured, the section also compares the last proper prefix against the full seed set. Stable prefixes report that the leading explanation is stable for the checked prefix; unstable prefixes report the changed dimensions through `instability causes`, the prefix seed set, the prefix-selected policy/observable/metric, and that prefix response's same curve values.
 
