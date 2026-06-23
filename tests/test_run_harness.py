@@ -821,6 +821,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "## Fixed-policy pressure deltas" in summary
     assert "## Most pressure-sensitive curve metric" in summary
     assert "## Pressure-curve response ranking" in summary
+    assert "## Per-class capture-pressure interpretation" in summary
     assert "## Fixed-policy pressure curves" in summary
     assert (
         "- baseline: normal_total_steps=22, medium_pressure_total_steps=22, "
@@ -845,6 +846,71 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "normal_to_medium_slope=" in summary
     assert "medium_to_high_slope=" in summary
     assert "curvature=" in summary
+
+
+def test_a2_attention_pressure_summary_interprets_per_class_capture_pressure(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+    class_fields = [
+        field
+        for field in PRESSURE_COMPARISON_FIELDS
+        if "_capture_pressure_" in field
+        and any(field.startswith(f"{class_name}_") for class_name in ATTENTION_CLASSES)
+        and field.endswith(
+            (
+                "_normal_to_medium_slope",
+                "_medium_to_high_slope",
+                "_pressure_curvature",
+            )
+        )
+    ]
+    candidates = [
+        (
+            -abs(float(row[field])),
+            row["policy"],
+            field,
+            float(row[field]),
+        )
+        for row in rows
+        for field in class_fields
+    ]
+    _, expected_policy, expected_field, _ = sorted(candidates)[0]
+    expected_class = next(
+        class_name
+        for class_name in ATTENTION_CLASSES
+        if expected_field.startswith(f"{class_name}_capture_pressure_")
+    )
+    statistic_and_metric = expected_field.removeprefix(
+        f"{expected_class}_capture_pressure_"
+    )
+    metric_labels = {
+        "normal_to_medium_slope": "normal_to_medium_slope",
+        "medium_to_high_slope": "medium_to_high_slope",
+        "pressure_curvature": "curvature",
+    }
+    expected_metric_suffix = next(
+        suffix
+        for suffix in metric_labels
+        if statistic_and_metric.endswith(f"_{suffix}")
+    )
+    statistic = statistic_and_metric.removesuffix(f"_{expected_metric_suffix}")
+
+    assert "## Per-class capture-pressure interpretation" in summary
+    assert (
+        f"- overall class response: policy={expected_policy}, "
+        f"class={expected_class.replace('_', ' ')}, "
+        f"statistic={statistic.replace('_', ' ')}, "
+    ) in summary
+    assert f"metric={metric_labels[expected_metric_suffix]}; condition means move " in summary
+    for policy in ("baseline", "research_heavy", "internal_improvement"):
+        assert f"- {policy} class response: policy={policy}, " in summary
 
 
 def test_a2_attention_pressure_summary_identifies_most_sensitive_curve_metric(

@@ -749,6 +749,15 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Per-class capture-pressure interpretation",
+        "",
+        *_per_class_capture_pressure_interpretation_lines(
+            rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Seed-set sensitivity",
         "",
         *_seed_set_sensitivity_lines(
@@ -769,6 +778,96 @@ def _pressure_summary(
         "",
     ]
     return "\n".join(lines)
+
+
+def _per_class_capture_pressure_interpretation_lines(
+    rows: list[dict[str, Any]],
+    *,
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    candidates = _per_class_capture_pressure_candidates(rows)
+    if not candidates:
+        return ["- no per-class capture-pressure responses available for interpretation."]
+
+    policies = tuple(dict.fromkeys(str(row["policy"]) for row in rows))
+    return [
+        _format_per_class_capture_pressure_interpretation_line(
+            "overall class response",
+            candidates[0],
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        *[
+            _format_per_class_capture_pressure_interpretation_line(
+                f"{policy} class response",
+                next(candidate for candidate in candidates if candidate["policy"] == policy),
+                rows=rows,
+                normal_rows=normal_rows,
+                medium_pressure_rows=medium_pressure_rows,
+                high_pressure_rows=high_pressure_rows,
+            )
+            for policy in policies
+            if any(candidate["policy"] == policy for candidate in candidates)
+        ],
+    ]
+
+
+def _per_class_capture_pressure_candidates(
+    rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    class_prefixes = tuple(
+        f"{class_name}_capture_pressure_"
+        for class_name in ATTENTION_CLASSES
+    )
+    return [
+        candidate
+        for candidate in _pressure_curve_response_candidates(rows)
+        if str(candidate["observable_prefix"]).startswith(class_prefixes)
+    ]
+
+
+def _format_per_class_capture_pressure_interpretation_line(
+    label: str,
+    candidate: dict[str, Any],
+    *,
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> str:
+    class_name, statistic = _per_class_capture_pressure_dimensions(candidate)
+    details = _pressure_response_condition_details(
+        candidate,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+    return (
+        f"- {label}: policy={candidate['policy']}, "
+        f"class={class_name.replace('_', ' ')}, statistic={statistic.replace('_', ' ')}, "
+        f"metric={candidate['metric']}; condition means move "
+        f"{details['normal_mean']} -> {details['medium_mean']} -> {details['high_mean']} "
+        f"with normal_to_medium_slope={details['normal_to_medium_slope']}, "
+        f"medium_to_high_slope={details['medium_to_high_slope']}, "
+        f"curvature={details['curvature']}, and high_minus_normal_delta="
+        f"{details['high_minus_normal_delta']}."
+    )
+
+
+def _per_class_capture_pressure_dimensions(
+    candidate: dict[str, Any],
+) -> tuple[str, str]:
+    observable_prefix = str(candidate["observable_prefix"])
+    for class_name in ATTENTION_CLASSES:
+        prefix = f"{class_name}_capture_pressure_"
+        if observable_prefix.startswith(prefix):
+            return class_name, observable_prefix.removeprefix(prefix)
+    raise ValueError(f"Not a per-class capture-pressure response: {observable_prefix}")
 
 
 def _pressure_response_interpretation_lines(
