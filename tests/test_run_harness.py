@@ -944,11 +944,16 @@ def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "a2_attention_pressure_compare"
+    readme = Path("README.md").read_text()
 
     run_pressure_comparison(seeds=(1, 2, 3), out_dir=out_dir)
 
     summary = (out_dir / "summary.md").read_text()
 
+    assert "`Seed-set sensitivity` is a deterministic prefix check" in readme
+    assert "`full_seeds` is `1,2,3` and `prefix_seeds` is `1,2`" in readme
+    assert "`top response stable across prefix: true`" in readme
+    assert "pressure-response ranking should be treated as seed-set-sensitive" in readme
     assert "## Seed-set sensitivity" in summary
     assert "- comparison: full_seeds=1,2,3, prefix_seeds=1,2" in summary
     assert (
