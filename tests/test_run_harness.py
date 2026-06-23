@@ -940,6 +940,30 @@ def test_a2_attention_pressure_summary_explains_top_curve_response(
     ) in summary
 
 
+def test_a2_attention_pressure_summary_reports_seed_set_sensitivity(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2, 3), out_dir=out_dir)
+
+    summary = (out_dir / "summary.md").read_text()
+
+    assert "## Seed-set sensitivity" in summary
+    assert "- comparison: full_seeds=1,2,3, prefix_seeds=1,2" in summary
+    assert (
+        "- full top response: policy=internal_improvement, "
+        "observable=final queue depth, metric=normal_to_medium_slope, "
+        "field=queue_depth_normal_to_medium_slope"
+    ) in summary
+    assert (
+        "- prefix top response: policy=baseline, "
+        "observable=value-weighted completed work, metric=curvature, "
+        "field=value_weighted_completed_pressure_curvature"
+    ) in summary
+    assert "- top response stable across prefix: false" in summary
+
+
 def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields(
     tmp_path: Path,
 ) -> None:

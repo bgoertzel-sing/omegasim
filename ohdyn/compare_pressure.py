@@ -451,6 +451,16 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Seed-set sensitivity",
+        "",
+        *_seed_set_sensitivity_lines(
+            seeds=seeds,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Fixed-policy pressure curves",
         "",
         *[
@@ -461,6 +471,67 @@ def _pressure_summary(
         "",
     ]
     return "\n".join(lines)
+
+
+def _seed_set_sensitivity_lines(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    if len(seeds) < 2:
+        return ["- unavailable: at least two seeds are required for prefix sensitivity."]
+
+    prefix_seeds = seeds[:-1]
+    prefix_seed_set = set(prefix_seeds)
+    prefix_rows = _pressure_rows(
+        _rows_for_seeds(normal_rows, prefix_seed_set),
+        _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
+        _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+    )
+    full_top = _pressure_curve_response_candidates(rows)[0]
+    prefix_top = _pressure_curve_response_candidates(prefix_rows)[0]
+    stable = (
+        full_top["policy"],
+        full_top["observable_prefix"],
+        full_top["metric_suffix"],
+    ) == (
+        prefix_top["policy"],
+        prefix_top["observable_prefix"],
+        prefix_top["metric_suffix"],
+    )
+
+    return [
+        (
+            f"- comparison: full_seeds={_format_seed_set(seeds)}, "
+            f"prefix_seeds={_format_seed_set(prefix_seeds)}"
+        ),
+        f"- full top response: {_format_pressure_response_candidate(full_top)}",
+        f"- prefix top response: {_format_pressure_response_candidate(prefix_top)}",
+        f"- top response stable across prefix: {str(stable).lower()}",
+    ]
+
+
+def _rows_for_seeds(
+    rows: list[dict[str, Any]],
+    seeds: set[int],
+) -> list[dict[str, Any]]:
+    return [row for row in rows if int(row["seed"]) in seeds]
+
+
+def _format_seed_set(seeds: tuple[int, ...]) -> str:
+    return ",".join(str(seed) for seed in seeds)
+
+
+def _format_pressure_response_candidate(candidate: dict[str, Any]) -> str:
+    return (
+        f"policy={candidate['policy']}, observable={candidate['observable']}, "
+        f"metric={candidate['metric']}, field={candidate['field']}, "
+        f"value={round(float(candidate['value']), 6)}, "
+        f"abs_value={round(float(candidate['abs_value']), 6)}"
+    )
 
 
 def _most_pressure_sensitive_curve_metric_line(rows: list[dict[str, Any]]) -> str:
