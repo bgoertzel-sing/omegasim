@@ -3145,6 +3145,66 @@ def test_readme_no_manifest_same_seed_preserves_emitted_schema_provenance(
     _assert_artifacts_are_byte_identical(first, second, artifacts)
 
 
+def test_readme_no_manifest_default_actions_event_replay_bundle_reproducibility(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "a0_no_manifest_readme_event_bundle_first"
+    second = tmp_path / "a0_no_manifest_readme_event_bundle_second"
+    different = tmp_path / "a0_no_manifest_readme_event_bundle_different"
+    artifacts = _expected_artifacts(NO_MANIFEST)
+    readme = Path("README.md").read_text()
+    expected_command = (
+        "python -m ohdyn.run --config configs/a0_no_manifest.yaml "
+        "--seed 1 --out runs/a0_no_manifest_seed1"
+    )
+
+    assert expected_command in readme
+    assert artifacts == ["config.yaml", "metrics.csv", "events.csv", "summary.md"]
+
+    _run_documented_cli(NO_MANIFEST, first, seed=17)
+    _run_documented_cli(NO_MANIFEST, second, seed=17)
+    _run_documented_cli(NO_MANIFEST, different, seed=18)
+
+    bundles = []
+    for out_dir in [first, second, different]:
+        _assert_artifacts_match_output_directory(out_dir, artifacts)
+        assert not (out_dir / "manifest.yaml").exists()
+
+        normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+        summary = (out_dir / "summary.md").read_text()
+        with (out_dir / "metrics.csv").open() as handle:
+            metric_rows = list(csv.DictReader(handle))
+        with (out_dir / "events.csv").open() as handle:
+            event_rows = list(csv.DictReader(handle))
+
+        actions = tuple(_actions_from_normalized_config(normalized_config))
+        ticks = normalized_config["run"]["ticks"]
+        roles = _baseline_roles_for_agent_count(normalized_config["model"]["agent_count"])
+        event_bundle = _integrated_aggregate_bundle_from_events(
+            event_rows,
+            ticks=ticks,
+            roles=roles,
+            actions=actions,
+        )
+
+        assert normalized_config["run"]["experiment_id"] == "a0_no_manifest"
+        assert normalized_config["outputs"]["write_manifest"] is False
+        assert actions == ("idle", "message", "create_task", "work_task")
+        assert event_bundle == _integrated_aggregate_bundle_from_metrics(
+            metric_rows,
+            actions=actions,
+        )
+        assert event_bundle == _summary_integrated_aggregate_bundle(
+            summary,
+            actions=actions,
+        )
+        bundles.append(event_bundle)
+
+    assert bundles[0]
+    assert bundles[0] == bundles[1]
+    assert bundles[0] != bundles[2]
+
+
 def test_documented_cli_no_manifest_default_actions_event_replay_reconstructs_lobes_queue_and_roles(
     tmp_path: Path,
 ) -> None:
