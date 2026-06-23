@@ -2647,93 +2647,50 @@ def test_documented_cli_no_manifest_reordered_actions_per_tick_sequences_reconst
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, first, seed=1)
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, second, seed=2)
 
-    first_config = yaml.safe_load((first / "config.yaml").read_text())
-    second_config = yaml.safe_load((second / "config.yaml").read_text())
-    with (first / "metrics.csv").open() as handle:
-        first_metric_rows = list(csv.DictReader(handle))
-    with (second / "metrics.csv").open() as handle:
-        second_metric_rows = list(csv.DictReader(handle))
-    with (first / "events.csv").open() as handle:
-        first_event_rows = list(csv.DictReader(handle))
-    with (second / "events.csv").open() as handle:
-        second_event_rows = list(csv.DictReader(handle))
+    first_replay = _no_manifest_reordered_actions_event_replay_sequences(first)
+    second_replay = _no_manifest_reordered_actions_event_replay_sequences(second)
 
-    first_actions = tuple(first_config["model"]["actions"])
-    second_actions = tuple(second_config["model"]["actions"])
-    first_roles = _baseline_roles_for_agent_count(first_config["model"]["agent_count"])
-    second_roles = _baseline_roles_for_agent_count(second_config["model"]["agent_count"])
-
-    first_top_level_sequence = _top_level_metric_sequence_from_events(
-        first_event_rows,
-        ticks=first_config["run"]["ticks"],
+    assert first_replay["config"] == second_replay["config"]
+    assert first_replay["top_level"] == _top_level_metric_sequence(
+        first_replay["metric_rows"]
     )
-    second_top_level_sequence = _top_level_metric_sequence_from_events(
-        second_event_rows,
-        ticks=second_config["run"]["ticks"],
+    assert second_replay["top_level"] == _top_level_metric_sequence(
+        second_replay["metric_rows"]
     )
-    first_queue_pressure_sequence = _queue_pressure_metric_sequence_from_events(
-        first_event_rows,
-        ticks=first_config["run"]["ticks"],
+    assert first_replay["queue_pressure"] == _queue_pressure_metric_sequence(
+        first_replay["metric_rows"]
     )
-    second_queue_pressure_sequence = _queue_pressure_metric_sequence_from_events(
-        second_event_rows,
-        ticks=second_config["run"]["ticks"],
+    assert second_replay["queue_pressure"] == _queue_pressure_metric_sequence(
+        second_replay["metric_rows"]
     )
-    first_queue_age_sequence = _queued_task_age_metric_sequence_from_events(
-        first_event_rows,
-        ticks=first_config["run"]["ticks"],
+    assert first_replay["queue_age"] == _queued_task_age_metric_sequence(
+        first_replay["metric_rows"]
     )
-    second_queue_age_sequence = _queued_task_age_metric_sequence_from_events(
-        second_event_rows,
-        ticks=second_config["run"]["ticks"],
+    assert second_replay["queue_age"] == _queued_task_age_metric_sequence(
+        second_replay["metric_rows"]
     )
-    first_role_action_sequence = _role_action_metric_sequence_from_events(
-        first_event_rows,
-        ticks=first_config["run"]["ticks"],
-        manifest_roles=first_roles,
-        actions=first_actions,
+    assert first_replay["role_action"] == _role_action_metric_sequence(
+        first_replay["metric_rows"],
+        first_replay["actions"],
     )
-    second_role_action_sequence = _role_action_metric_sequence_from_events(
-        second_event_rows,
-        ticks=second_config["run"]["ticks"],
-        manifest_roles=second_roles,
-        actions=second_actions,
+    assert second_replay["role_action"] == _role_action_metric_sequence(
+        second_replay["metric_rows"],
+        second_replay["actions"],
     )
-
-    assert first_config == second_config
-    assert first_actions == second_actions == ("work_task", "create_task", "message", "idle")
-    assert first_config["outputs"]["write_manifest"] is False
-    assert second_config["outputs"]["write_manifest"] is False
-    assert not (first / "manifest.yaml").exists()
-    assert not (second / "manifest.yaml").exists()
-    assert first_top_level_sequence == _top_level_metric_sequence(first_metric_rows)
-    assert second_top_level_sequence == _top_level_metric_sequence(second_metric_rows)
-    assert first_queue_pressure_sequence == _queue_pressure_metric_sequence(first_metric_rows)
-    assert second_queue_pressure_sequence == _queue_pressure_metric_sequence(second_metric_rows)
-    assert first_queue_age_sequence == _queued_task_age_metric_sequence(first_metric_rows)
-    assert second_queue_age_sequence == _queued_task_age_metric_sequence(second_metric_rows)
-    assert first_role_action_sequence == _role_action_metric_sequence(
-        first_metric_rows,
-        first_actions,
-    )
-    assert second_role_action_sequence == _role_action_metric_sequence(
-        second_metric_rows,
-        second_actions,
-    )
-    assert first_top_level_sequence
-    assert first_queue_pressure_sequence
-    assert first_queue_age_sequence
-    assert first_role_action_sequence
+    assert first_replay["top_level"]
+    assert first_replay["queue_pressure"]
+    assert first_replay["queue_age"]
+    assert first_replay["role_action"]
     assert (
-        first_top_level_sequence,
-        first_queue_pressure_sequence,
-        first_queue_age_sequence,
-        first_role_action_sequence,
+        first_replay["top_level"],
+        first_replay["queue_pressure"],
+        first_replay["queue_age"],
+        first_replay["role_action"],
     ) != (
-        second_top_level_sequence,
-        second_queue_pressure_sequence,
-        second_queue_age_sequence,
-        second_role_action_sequence,
+        second_replay["top_level"],
+        second_replay["queue_pressure"],
+        second_replay["queue_age"],
+        second_replay["role_action"],
     )
 
 
@@ -2746,69 +2703,44 @@ def test_documented_cli_no_manifest_reordered_actions_lobe_sequences_reconstruct
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, first, seed=1)
     _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, second, seed=2)
 
-    first_config = yaml.safe_load((first / "config.yaml").read_text())
-    second_config = yaml.safe_load((second / "config.yaml").read_text())
-    with (first / "metrics.csv").open() as handle:
-        first_metric_rows = list(csv.DictReader(handle))
-    with (second / "metrics.csv").open() as handle:
-        second_metric_rows = list(csv.DictReader(handle))
-    with (first / "events.csv").open() as handle:
-        first_event_rows = list(csv.DictReader(handle))
-    with (second / "events.csv").open() as handle:
-        second_event_rows = list(csv.DictReader(handle))
+    first_replay = _no_manifest_reordered_actions_event_replay_sequences(first)
+    second_replay = _no_manifest_reordered_actions_event_replay_sequences(second)
+    first_event_lobe_rows = first_replay["event_lobe_rows"]
+    second_event_lobe_rows = second_replay["event_lobe_rows"]
 
-    first_event_lobe_rows = _lobe_metric_rows_from_events(
-        first_event_rows,
-        ticks=first_config["run"]["ticks"],
-    )
-    second_event_lobe_rows = _lobe_metric_rows_from_events(
-        second_event_rows,
-        ticks=second_config["run"]["ticks"],
-    )
-
-    assert first_config == second_config
-    assert tuple(first_config["model"]["actions"]) == (
-        "work_task",
-        "create_task",
-        "message",
-        "idle",
-    )
-    assert first_config["outputs"]["write_manifest"] is False
-    assert second_config["outputs"]["write_manifest"] is False
-    assert not (first / "manifest.yaml").exists()
-    assert not (second / "manifest.yaml").exists()
+    assert first_replay["config"] == second_replay["config"]
     assert set(_lobe_label_sequence(first_event_lobe_rows)) <= set(BASELINE_LOBE_LABELS)
     assert set(_lobe_label_sequence(second_event_lobe_rows)) <= set(BASELINE_LOBE_LABELS)
-    assert _lobe_label_sequence(first_event_lobe_rows) == _lobe_label_sequence(
-        first_metric_rows
+    assert first_replay["lobe_labels"] == _lobe_label_sequence(
+        first_replay["metric_rows"]
     )
-    assert _lobe_label_sequence(second_event_lobe_rows) == _lobe_label_sequence(
-        second_metric_rows
+    assert second_replay["lobe_labels"] == _lobe_label_sequence(
+        second_replay["metric_rows"]
     )
-    assert _lobe_transition_field_sequence(
-        first_event_lobe_rows
-    ) == _lobe_transition_field_sequence(first_metric_rows)
-    assert _lobe_transition_field_sequence(
-        second_event_lobe_rows
-    ) == _lobe_transition_field_sequence(second_metric_rows)
-    assert _lobe_run_state_sequence(first_event_lobe_rows) == _lobe_run_state_sequence(
-        first_metric_rows
+    assert first_replay["lobe_transitions"] == _lobe_transition_field_sequence(
+        first_replay["metric_rows"]
     )
-    assert _lobe_run_state_sequence(second_event_lobe_rows) == _lobe_run_state_sequence(
-        second_metric_rows
+    assert second_replay["lobe_transitions"] == _lobe_transition_field_sequence(
+        second_replay["metric_rows"]
+    )
+    assert first_replay["lobe_run_state"] == _lobe_run_state_sequence(
+        first_replay["metric_rows"]
+    )
+    assert second_replay["lobe_run_state"] == _lobe_run_state_sequence(
+        second_replay["metric_rows"]
     )
     _assert_lobe_transitions_match_adjacent_labels(first_event_lobe_rows)
     _assert_lobe_transitions_match_adjacent_labels(second_event_lobe_rows)
     _assert_lobe_run_state_matches_recomputed_dwell_runs(first_event_lobe_rows)
     _assert_lobe_run_state_matches_recomputed_dwell_runs(second_event_lobe_rows)
     assert (
-        _lobe_label_sequence(first_event_lobe_rows),
-        _lobe_transition_field_sequence(first_event_lobe_rows),
-        _lobe_run_state_sequence(first_event_lobe_rows),
+        first_replay["lobe_labels"],
+        first_replay["lobe_transitions"],
+        first_replay["lobe_run_state"],
     ) != (
-        _lobe_label_sequence(second_event_lobe_rows),
-        _lobe_transition_field_sequence(second_event_lobe_rows),
-        _lobe_run_state_sequence(second_event_lobe_rows),
+        second_replay["lobe_labels"],
+        second_replay["lobe_transitions"],
+        second_replay["lobe_run_state"],
     )
 
 
@@ -7781,6 +7713,56 @@ def _assert_no_manifest_event_replay_bundle_matches_metrics_and_summary(
     assert event_bundle == metrics_bundle
     assert event_bundle == summary_bundle
     return event_bundle
+
+
+def _no_manifest_reordered_actions_event_replay_sequences(
+    out_dir: Path,
+) -> dict[str, object]:
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+
+    actions = tuple(_actions_from_normalized_config(normalized_config))
+    ticks = normalized_config["run"]["ticks"]
+    agent_count = normalized_config["model"]["agent_count"]
+    roles = _baseline_roles_for_agent_count(agent_count)
+    event_lobe_rows = _lobe_metric_rows_from_events(event_rows, ticks=ticks)
+
+    assert actions == ("work_task", "create_task", "message", "idle")
+    assert normalized_config["outputs"]["write_manifest"] is False
+    assert len(metric_rows) == ticks
+    assert len(event_rows) == ticks * agent_count
+    assert not (out_dir / "manifest.yaml").exists()
+
+    return {
+        "config": normalized_config,
+        "metric_rows": metric_rows,
+        "event_lobe_rows": event_lobe_rows,
+        "actions": actions,
+        "top_level": _top_level_metric_sequence_from_events(
+            event_rows,
+            ticks=ticks,
+        ),
+        "queue_pressure": _queue_pressure_metric_sequence_from_events(
+            event_rows,
+            ticks=ticks,
+        ),
+        "queue_age": _queued_task_age_metric_sequence_from_events(
+            event_rows,
+            ticks=ticks,
+        ),
+        "role_action": _role_action_metric_sequence_from_events(
+            event_rows,
+            ticks=ticks,
+            manifest_roles=roles,
+            actions=actions,
+        ),
+        "lobe_labels": _lobe_label_sequence(event_lobe_rows),
+        "lobe_transitions": _lobe_transition_field_sequence(event_lobe_rows),
+        "lobe_run_state": _lobe_run_state_sequence(event_lobe_rows),
+    }
 
 
 def _assert_manifest_bus_counts_match_summary_and_metrics_row(
