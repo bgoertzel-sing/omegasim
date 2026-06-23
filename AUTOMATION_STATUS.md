@@ -4,12 +4,12 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 pressure-curve comparison regression coverage and interpretation on top of the stable A0/A1 local simulator harness.
+Phase A2 pressure-response machine-readable artifacts on top of the stable A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-23 added the stable-prefix pressure-response interpretation regression.
-- Changed: no simulator behavior changes; `tests/test_run_harness.py` now verifies the README-documented stable-prefix `Pressure-response interpretation` wording against a generated pressure comparison `summary.md` for seeds `1,2`.
-- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_summary'` passed with 6 selected tests; `.venv-conda/bin/python -m pytest` passed with 453 tests.
+- Status: ok, 2026-06-23 added a machine-readable selected-pressure-response artifact.
+- Changed: no simulator behavior changes; `ohdyn.compare_pressure` now writes top-level `pressure_response_selection.csv` beside `pressure_comparison_metrics.csv`, including the full seed set's selected top response and each proper prefix's selected response with condition means, slopes, curvature, high-minus-normal delta, stability, and instability-cause fields. README and tests document and verify the new artifact.
+- Verified: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure'` passed with 48 selected tests; `.venv-conda/bin/python -m pytest` passed with 454 tests.
 - Blockers: none.
-- Next step: add a small pressure-response selected-top-response section to `pressure_comparison_metrics.csv` or a companion machine-readable artifact so downstream research scripts do not need to parse `summary.md`.
+- Next step: add the first deterministic A2 override-rule event and metric fields for attention-share capture pressure, keeping them disabled unless `attention_policy` is configured.

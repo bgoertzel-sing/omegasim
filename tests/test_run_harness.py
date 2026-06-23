@@ -24,7 +24,11 @@ from ohdyn.sim import (
 )
 from ohdyn.config import ATTENTION_CLASSES, load_config
 from ohdyn.compare_attention import run_comparison
-from ohdyn.compare_pressure import PRESSURE_COMPARISON_FIELDS, run_pressure_comparison
+from ohdyn.compare_pressure import (
+    PRESSURE_COMPARISON_FIELDS,
+    PRESSURE_RESPONSE_SELECTION_FIELDS,
+    run_pressure_comparison,
+)
 from ohdyn.run import run_experiment
 
 
@@ -746,6 +750,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert (out_dir / "medium_pressure" / "comparison_metrics.csv").is_file()
     assert (out_dir / "high_pressure" / "comparison_metrics.csv").is_file()
     assert (out_dir / "pressure_comparison_metrics.csv").is_file()
+    assert (out_dir / "pressure_response_selection.csv").is_file()
     assert (out_dir / "summary.md").is_file()
 
     with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
@@ -1063,6 +1068,40 @@ def test_a2_attention_pressure_comparison_metrics_header_matches_declared_fields
     assert header == list(PRESSURE_COMPARISON_FIELDS)
 
 
+def test_a2_attention_pressure_response_selection_csv_records_full_and_prefix_top_responses(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2, 3), out_dir=out_dir)
+
+    with (out_dir / "pressure_response_selection.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert rows
+    assert list(rows[0]) == list(PRESSURE_RESPONSE_SELECTION_FIELDS)
+    assert [row["selection_scope"] for row in rows] == ["full", "prefix", "prefix"]
+    assert [row["seeds"] for row in rows] == ["1,2,3", "1", "1,2"]
+    assert rows[0]["policy"] == "internal_improvement"
+    assert rows[0]["observable"] == "final queue depth"
+    assert rows[0]["metric"] == "normal_to_medium_slope"
+    assert rows[0]["field"] == "queue_depth_normal_to_medium_slope"
+    assert rows[0]["stable_with_full"] == "true"
+    assert rows[0]["instability_causes"] == "none"
+    assert rows[0]["normal_mean"] == "20.666667"
+    assert rows[0]["medium_mean"] == "39.333333"
+    assert rows[0]["high_mean"] == "45.666667"
+    assert rows[0]["normal_to_medium_slope"] == "46.666665"
+    assert rows[0]["medium_to_high_slope"] == "15.833335"
+    assert rows[0]["curvature"] == "-30.83333"
+    assert rows[0]["high_minus_normal_delta"] == "25.0"
+    assert rows[2]["policy"] == "baseline"
+    assert rows[2]["observable"] == "value-weighted completed work"
+    assert rows[2]["metric"] == "curvature"
+    assert rows[2]["stable_with_full"] == "false"
+    assert rows[2]["instability_causes"] == "policy,observable,metric"
+
+
 def test_a2_attention_pressure_comparison_curve_metrics_match_condition_means(
     tmp_path: Path,
 ) -> None:
@@ -1112,6 +1151,9 @@ def test_a2_attention_pressure_comparison_runner_is_reproducible(
     assert (first / "pressure_comparison_metrics.csv").read_text() == (
         second / "pressure_comparison_metrics.csv"
     ).read_text()
+    assert (first / "pressure_response_selection.csv").read_text() == (
+        second / "pressure_response_selection.csv"
+    ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 
 
@@ -1129,6 +1171,7 @@ def test_documented_pressure_cli_writes_pressure_layout_and_curve_summary(
     assert (out_dir / "high_pressure" / "comparison_metrics.csv").is_file()
     assert (out_dir / "high_pressure" / "summary.md").is_file()
     assert (out_dir / "pressure_comparison_metrics.csv").is_file()
+    assert (out_dir / "pressure_response_selection.csv").is_file()
     assert (out_dir / "summary.md").is_file()
 
     with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
@@ -1167,7 +1210,11 @@ def test_documented_pressure_cli_reproduces_top_level_artifacts(
     _assert_artifacts_are_byte_identical(
         first,
         second,
-        ["pressure_comparison_metrics.csv", "summary.md"],
+        [
+            "pressure_comparison_metrics.csv",
+            "pressure_response_selection.csv",
+            "summary.md",
+        ],
     )
 
 
@@ -1178,6 +1225,7 @@ def test_documented_pressure_cli_refuses_existing_top_level_artifacts_without_mo
 
     _run_documented_pressure_cli(out_dir, seeds=(1, 2))
     original_metrics = (out_dir / "pressure_comparison_metrics.csv").read_bytes()
+    original_selection = (out_dir / "pressure_response_selection.csv").read_bytes()
     original_summary = (out_dir / "summary.md").read_bytes()
 
     completed = subprocess.run(
@@ -1200,6 +1248,7 @@ def test_documented_pressure_cli_refuses_existing_top_level_artifacts_without_mo
     assert completed.stdout == ""
     assert "already contains pressure comparison artifacts" in completed.stderr
     assert (out_dir / "pressure_comparison_metrics.csv").read_bytes() == original_metrics
+    assert (out_dir / "pressure_response_selection.csv").read_bytes() == original_selection
     assert (out_dir / "summary.md").read_bytes() == original_summary
 
 

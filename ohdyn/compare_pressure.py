@@ -68,6 +68,25 @@ PRESSURE_COMPARISON_FIELDS = (
     "queued_task_age_max_peak_medium_to_high_slope",
     "queued_task_age_max_peak_pressure_curvature",
 )
+PRESSURE_RESPONSE_SELECTION_FIELDS = (
+    "selection_scope",
+    "seeds",
+    "stable_with_full",
+    "instability_causes",
+    "policy",
+    "observable",
+    "metric",
+    "field",
+    "value",
+    "abs_value",
+    "normal_mean",
+    "medium_mean",
+    "high_mean",
+    "normal_to_medium_slope",
+    "medium_to_high_slope",
+    "curvature",
+    "high_minus_normal_delta",
+)
 PRESSURE_CURVE_OBSERVABLES = (
     (
         "value_weighted_completed",
@@ -131,7 +150,17 @@ def run_pressure_comparison(
     )
 
     rows = _pressure_rows(normal_rows, medium_pressure_rows, high_pressure_rows)
-    _write_csv(output_path / "pressure_comparison_metrics.csv", rows)
+    _write_pressure_comparison_csv(output_path / "pressure_comparison_metrics.csv", rows)
+    _write_pressure_response_selection_csv(
+        output_path / "pressure_response_selection.csv",
+        _pressure_response_selection_rows(
+            seeds=seeds,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+    )
     (output_path / "summary.md").write_text(
         _pressure_summary(
             normal_baseline_config=Path(normal_baseline_config),
@@ -170,7 +199,11 @@ def _ensure_pressure_outputs_available(output_path: Path) -> None:
         raise FileExistsError(f"Output path {output_path} exists and is not a directory.")
     collisions = [
         artifact_name
-        for artifact_name in ("pressure_comparison_metrics.csv", "summary.md")
+        for artifact_name in (
+            "pressure_comparison_metrics.csv",
+            "pressure_response_selection.csv",
+            "summary.md",
+        )
         if (output_path / artifact_name).exists()
     ]
     if collisions:
@@ -375,11 +408,118 @@ def _pressure_slope(
     return round((end_value - start_value) / (end_pressure - start_pressure), 6)
 
 
-def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+def _write_pressure_comparison_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(PRESSURE_COMPARISON_FIELDS))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _write_pressure_response_selection_csv(
+    path: Path,
+    rows: list[dict[str, Any]],
+) -> None:
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(PRESSURE_RESPONSE_SELECTION_FIELDS))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _pressure_response_selection_rows(
+    *,
+    seeds: tuple[int, ...],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    candidates = _pressure_curve_response_candidates(rows)
+    if not candidates:
+        return []
+
+    full_top = candidates[0]
+    selection_rows = [
+        _pressure_response_selection_row(
+            selection_scope="full",
+            seeds=seeds,
+            candidate=full_top,
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+            stable_with_full=True,
+            instability_causes="none",
+        )
+    ]
+    for comparison in _prefix_pressure_response_comparisons(
+        seeds=seeds,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    ):
+        prefix_seed_set = set(comparison["prefix_seeds"])
+        selection_rows.append(
+            _pressure_response_selection_row(
+                selection_scope="prefix",
+                seeds=comparison["prefix_seeds"],
+                candidate=comparison["top_response"],
+                rows=_pressure_rows(
+                    _rows_for_seeds(normal_rows, prefix_seed_set),
+                    _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
+                    _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+                ),
+                normal_rows=_rows_for_seeds(normal_rows, prefix_seed_set),
+                medium_pressure_rows=_rows_for_seeds(
+                    medium_pressure_rows,
+                    prefix_seed_set,
+                ),
+                high_pressure_rows=_rows_for_seeds(high_pressure_rows, prefix_seed_set),
+                stable_with_full=bool(comparison["stable_with_full"]),
+                instability_causes=str(comparison["instability_causes"]),
+            )
+        )
+    return selection_rows
+
+
+def _pressure_response_selection_row(
+    *,
+    selection_scope: str,
+    seeds: tuple[int, ...],
+    candidate: dict[str, Any],
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+    stable_with_full: bool,
+    instability_causes: str,
+) -> dict[str, Any]:
+    details = _pressure_response_condition_details(
+        candidate,
+        rows=rows,
+        normal_rows=normal_rows,
+        medium_pressure_rows=medium_pressure_rows,
+        high_pressure_rows=high_pressure_rows,
+    )
+    return {
+        "selection_scope": selection_scope,
+        "seeds": _format_seed_set(seeds),
+        "stable_with_full": str(stable_with_full).lower(),
+        "instability_causes": instability_causes,
+        "policy": candidate["policy"],
+        "observable": candidate["observable"],
+        "metric": candidate["metric"],
+        "field": candidate["field"],
+        "value": round(float(candidate["value"]), 6),
+        "abs_value": round(float(candidate["abs_value"]), 6),
+        "normal_mean": details["normal_mean"],
+        "medium_mean": details["medium_mean"],
+        "high_mean": details["high_mean"],
+        "normal_to_medium_slope": details["normal_to_medium_slope"],
+        "medium_to_high_slope": details["medium_to_high_slope"],
+        "curvature": details["curvature"],
+        "high_minus_normal_delta": details["high_minus_normal_delta"],
+    }
 
 
 def _pressure_summary(
