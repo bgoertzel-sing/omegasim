@@ -1,0 +1,25 @@
+run:
+  experiment_id: a2_attention_high_service_capacity_high_pressure
+  ticks: 12
+
+model:
+  agent_count: 15
+  task_creation_pressure: 1.8
+  work_service_capacity: 1.3
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+attention_policy:
+  near_term_external: 0.45
+  long_term_research: 0.25
+  internal_improvement: 0.20
+  housekeeping: 0.10

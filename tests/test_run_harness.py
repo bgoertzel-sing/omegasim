@@ -68,6 +68,20 @@ A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE = Path(
     "configs/a2_attention_internal_improvement_high_pressure.yaml"
 )
 A2_ATTENTION_EXTREME_PRESSURE = Path("configs/a2_attention_extreme_pressure.yaml")
+A2_ATTENTION_LOW_SERVICE_CAPACITY = Path("configs/a2_attention_low_service_capacity.yaml")
+A2_ATTENTION_HIGH_SERVICE_CAPACITY = Path("configs/a2_attention_high_service_capacity.yaml")
+A2_ATTENTION_LOW_SERVICE_CAPACITY_HIGH_PRESSURE = Path(
+    "configs/a2_attention_low_service_capacity_high_pressure.yaml"
+)
+A2_ATTENTION_HIGH_SERVICE_CAPACITY_HIGH_PRESSURE = Path(
+    "configs/a2_attention_high_service_capacity_high_pressure.yaml"
+)
+A2_ATTENTION_LOW_SERVICE_CAPACITY_EXTREME_PRESSURE = Path(
+    "configs/a2_attention_low_service_capacity_extreme_pressure.yaml"
+)
+A2_ATTENTION_HIGH_SERVICE_CAPACITY_EXTREME_PRESSURE = Path(
+    "configs/a2_attention_high_service_capacity_extreme_pressure.yaml"
+)
 A2_ATTENTION_RANDOM_AVAILABLE_EXTREME_PRESSURE = Path(
     "configs/a2_attention_random_available_extreme_pressure.yaml"
 )
@@ -117,6 +131,12 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     A2_ATTENTION_RANDOM_AVAILABLE_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_LOW_SERVICE_CAPACITY: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_HIGH_SERVICE_CAPACITY: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_LOW_SERVICE_CAPACITY_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_HIGH_SERVICE_CAPACITY_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_LOW_SERVICE_CAPACITY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_HIGH_SERVICE_CAPACITY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -249,6 +269,7 @@ def test_loads_a0_smoke_config() -> None:
     assert config.run.ticks == 100
     assert config.model.agent_count == 15
     assert config.model.task_creation_pressure == 1.0
+    assert config.model.work_service_capacity == 1.0
     assert set(config.model.actions) == {"idle", "message", "create_task", "work_task"}
 
 
@@ -481,7 +502,66 @@ def test_loads_a2_attention_pressure_fixtures(
     assert config.run.ticks == 12
     assert config.model.agent_count == 15
     assert config.model.task_creation_pressure == task_creation_pressure
+    assert config.model.work_service_capacity == 1.0
     assert config.attention_policy is not None
+
+
+@pytest.mark.parametrize(
+    ("config_path", "experiment_id", "task_creation_pressure", "work_service_capacity"),
+    [
+        (
+            A2_ATTENTION_LOW_SERVICE_CAPACITY,
+            "a2_attention_low_service_capacity",
+            1.0,
+            0.7,
+        ),
+        (
+            A2_ATTENTION_HIGH_SERVICE_CAPACITY,
+            "a2_attention_high_service_capacity",
+            1.0,
+            1.3,
+        ),
+        (
+            A2_ATTENTION_LOW_SERVICE_CAPACITY_HIGH_PRESSURE,
+            "a2_attention_low_service_capacity_high_pressure",
+            1.8,
+            0.7,
+        ),
+        (
+            A2_ATTENTION_HIGH_SERVICE_CAPACITY_HIGH_PRESSURE,
+            "a2_attention_high_service_capacity_high_pressure",
+            1.8,
+            1.3,
+        ),
+        (
+            A2_ATTENTION_LOW_SERVICE_CAPACITY_EXTREME_PRESSURE,
+            "a2_attention_low_service_capacity_extreme_pressure",
+            2.2,
+            0.7,
+        ),
+        (
+            A2_ATTENTION_HIGH_SERVICE_CAPACITY_EXTREME_PRESSURE,
+            "a2_attention_high_service_capacity_extreme_pressure",
+            2.2,
+            1.3,
+        ),
+    ],
+)
+def test_loads_a2_attention_service_capacity_fixtures(
+    config_path: Path,
+    experiment_id: str,
+    task_creation_pressure: float,
+    work_service_capacity: float,
+) -> None:
+    config = load_config(config_path)
+
+    assert config.run.experiment_id == experiment_id
+    assert config.run.ticks == 12
+    assert config.model.agent_count == 15
+    assert config.model.task_creation_pressure == task_creation_pressure
+    assert config.model.work_service_capacity == work_service_capacity
+    assert config.attention_policy is not None
+    assert config.attention_policy.selection_strategy == "quota_balance"
 
 
 def test_run_writes_required_artifacts(tmp_path: Path) -> None:
@@ -910,6 +990,36 @@ def test_a2_attention_medium_pressure_sits_between_normal_and_high_pressure(
         < high_last["tasks_created_total"]
     )
     assert normal_last["queue_depth"] < medium_last["queue_depth"] < high_last["queue_depth"]
+
+
+def test_a2_attention_service_capacity_changes_work_absorption(
+    tmp_path: Path,
+) -> None:
+    low = run_experiment(
+        A2_ATTENTION_LOW_SERVICE_CAPACITY_HIGH_PRESSURE,
+        seed=23,
+        out_dir=tmp_path / "low",
+    )
+    baseline = run_experiment(
+        A2_ATTENTION_HIGH_PRESSURE,
+        seed=23,
+        out_dir=tmp_path / "baseline",
+    )
+    high = run_experiment(
+        A2_ATTENTION_HIGH_SERVICE_CAPACITY_HIGH_PRESSURE,
+        seed=23,
+        out_dir=tmp_path / "high",
+    )
+
+    low_work = sum(int(row["tasks_worked_tick"]) for row in low.metrics)
+    baseline_work = sum(int(row["tasks_worked_tick"]) for row in baseline.metrics)
+    high_work = sum(int(row["tasks_worked_tick"]) for row in high.metrics)
+
+    assert low.config.model.work_service_capacity == 0.7
+    assert baseline.config.model.work_service_capacity == 1.0
+    assert high.config.model.work_service_capacity == 1.3
+    assert low_work < baseline_work < high_work
+    assert low.metrics[-1]["queue_depth"] > baseline.metrics[-1]["queue_depth"] > high.metrics[-1]["queue_depth"]
 
 
 def test_a2_attention_high_pressure_comparison_runner_is_reproducible(
@@ -3095,6 +3205,7 @@ def test_manifest_and_config_match_documented_a0_provenance_schema(tmp_path: Pat
         "model": {
             "agent_count": 15,
             "task_creation_pressure": 1.0,
+            "work_service_capacity": 1.0,
             "actions": actions,
         },
         "outputs": {
@@ -10105,6 +10216,7 @@ def _assert_config_only_writes_normalized_config(
         "model": {
             "agent_count": 15,
             "task_creation_pressure": 1.0,
+            "work_service_capacity": 1.0,
             "actions": expected_actions,
         },
         "outputs": {

@@ -152,6 +152,33 @@ remain numerically meaningful as long as the normal, medium, and high condition
 pressures are strictly increasing and each policy config within a condition uses
 the same pressure value.
 
+## Demand vs Service-Capacity Preregistration
+
+A2 configs may also set `model.work_service_capacity`, a deterministic scalar
+applied to the baseline `work_task` action weight. The default is `1.0`,
+preserving earlier A0/A1 and A2 behavior. This knob is intended for the next
+mechanism-discriminating ablation: keep baseline attention shares and
+`quota_balance`, cross creation pressure (`1.0`, `1.8`, `2.2`) with service
+capacity (`0.7`, `1.0`, `1.3`), and treat raw queue depth as load accounting
+rather than the primary emergent-dynamics endpoint.
+
+The checked-in endpoint fixtures are:
+
+```bash
+python -m ohdyn.run --config configs/a2_attention_low_service_capacity.yaml --seed 1 --out runs/a2_attention_low_service_capacity_seed1
+python -m ohdyn.run --config configs/a2_attention_high_service_capacity.yaml --seed 1 --out runs/a2_attention_high_service_capacity_seed1
+python -m ohdyn.run --config configs/a2_attention_low_service_capacity_high_pressure.yaml --seed 1 --out runs/a2_attention_low_service_capacity_high_pressure_seed1
+python -m ohdyn.run --config configs/a2_attention_high_service_capacity_high_pressure.yaml --seed 1 --out runs/a2_attention_high_service_capacity_high_pressure_seed1
+python -m ohdyn.run --config configs/a2_attention_low_service_capacity_extreme_pressure.yaml --seed 1 --out runs/a2_attention_low_service_capacity_extreme_pressure_seed1
+python -m ohdyn.run --config configs/a2_attention_high_service_capacity_extreme_pressure.yaml --seed 1 --out runs/a2_attention_high_service_capacity_extreme_pressure_seed1
+```
+
+Use the existing baseline-share configs as the middle service-capacity row:
+`configs/a2_attention_smoke.yaml`, `configs/a2_attention_high_pressure.yaml`,
+and `configs/a2_attention_extreme_pressure.yaml`. Primary outcomes for this
+ablation are load-normalized backlog, queued age, value per work event, capture
+pressure, and lobe transition/dwell summaries.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.

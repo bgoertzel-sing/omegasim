@@ -1,0 +1,24 @@
+run:
+  experiment_id: a2_attention_low_service_capacity
+  ticks: 12
+
+model:
+  agent_count: 15
+  work_service_capacity: 0.7
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+attention_policy:
+  near_term_external: 0.45
+  long_term_research: 0.25
+  internal_improvement: 0.20
+  housekeeping: 0.10

@@ -33,6 +33,7 @@ class ModelConfig:
     agent_count: int
     actions: tuple[str, ...] = ("idle", "message", "create_task", "work_task")
     task_creation_pressure: float = 1.0
+    work_service_capacity: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -102,6 +103,10 @@ def load_config(path: str | Path) -> OmegaConfig:
             task_creation_pressure=_nonnegative_float(
                 model.get("task_creation_pressure", 1.0),
                 "model.task_creation_pressure",
+            ),
+            work_service_capacity=_nonnegative_float(
+                model.get("work_service_capacity", 1.0),
+                "model.work_service_capacity",
             ),
         ),
         outputs=OutputsConfig(

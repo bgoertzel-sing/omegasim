@@ -208,6 +208,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 agent,
                 rng,
                 task_creation_pressure=config.model.task_creation_pressure,
+                work_service_capacity=config.model.work_service_capacity,
             )
             action_counts[action] += 1
             role_action_counts[(agent.role, action)] += 1
@@ -683,6 +684,7 @@ def _choose_action(
     rng: np.random.Generator,
     *,
     task_creation_pressure: float = 1.0,
+    work_service_capacity: float = 1.0,
 ) -> str:
     allowed_actions = list(actions)
     weights = {
@@ -694,6 +696,7 @@ def _choose_action(
     if agent.role in {"implementer", "reviewer"} and has_queued_tasks:
         weights["work_task"] *= agent.bias
     weights["create_task"] *= task_creation_pressure
+    weights["work_task"] *= work_service_capacity
     if agent.role == "researcher":
         weights["create_task"] *= agent.bias
     if agent.role == "coordinator":
