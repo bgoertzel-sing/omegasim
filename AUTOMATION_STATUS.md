@@ -8,9 +8,9 @@ Phase A2 pressure-response interpretation on top of the stable A0/A1 local simul
 
 ## Latest Run
 
-- Status: ok, 2026-06-24 completed the queued A2 value-throughput interpretation step while preserving the stable A0/A1 simulator baseline.
-- Changed: no real LLM calls, dashboards, Lean, Slack, browser automation, Atomspace integrations, multi-hive coupling, A0/A1 scheduling, output schema, or agent population changes; `ohdyn.compare_pressure` now adds a `Value throughput vs effort interpretation` summary section that contrasts value-weighted throughput, value per completed task, and value per work event for each fixed policy using existing pressure CSV rows; README and tests document/pin the new summary contract.
-- Smoke run: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_comparison_runner_writes_fixed_policy_deltas'` passed with 1 selected test and confirmed the new summary section appears in pressure comparison output.
-- Verified: `.venv-conda/bin/python -m ruff check ohdyn tests` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py` passed with 491 tests in 469.11s.
+- Status: ok, 2026-06-24 completed the queued fresh default-seed pressure comparison plus analysis inspection while preserving the stable A0/A1 simulator baseline.
+- Changed: no code or tracked artifact schema changes; no real LLM calls, dashboards, Lean, Slack, browser automation, Atomspace integrations, multi-hive coupling, A0/A1 scheduling, output schema, or agent population changes.
+- Smoke run: `.venv-conda/bin/python -m ohdyn.compare_pressure --out runs/a2_pressure_default_seed_value_interpretation_20260624` and `.venv-conda/bin/python -m ohdyn.analyze_pressure --pressure-dir runs/a2_pressure_default_seed_value_interpretation_20260624 --out runs/a2_pressure_default_seed_value_interpretation_20260624_analysis --limit 10` both completed successfully.
+- Verified: the fresh pressure summary reports `internal_improvement` final queue depth `normal_to_medium_slope` as the largest absolute pressure response, with means `20.666667 -> 39.333333 -> 45.666667`; the value-throughput interpretation reports pressure decreased raw value throughput for all policies, increased value per completed task for all policies, and increased value per work event only for `baseline`.
 - Blockers: none.
-- Next step: run a fresh default-seed pressure comparison and analysis pair to inspect whether the new value-throughput interpretation changes the written research reading without changing deterministic CSV metrics.
+- Next step: add a deterministic analysis artifact that ranks fixed policies by pressure-driven value-yield divergence between value per completed task and value per work event.
