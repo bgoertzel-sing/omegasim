@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import random
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,8 @@ from ohdyn.compare_pressure import (
     PRESSURE_CURVE_OBSERVABLES,
     PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
     _format_seed_set,
+    _per_class_capture_pressure_candidates,
+    _pressure_curve_response_candidates,
     _pressure_rows,
     _rows_for_seeds,
 )
@@ -62,6 +65,30 @@ VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS = (
     "full_policy",
     "full_metric",
 )
+PRESSURE_BOOTSTRAP_RANK_STABILITY_FIELDS = (
+    "selection_scope",
+    "full_seeds",
+    "resamples",
+    "sample_size",
+    "bootstrap_seed",
+    "policy",
+    "observable",
+    "metric",
+    "field",
+    "source_field",
+    "full_rank",
+    "full_response_value",
+    "full_response_abs_value",
+    "top_selection_count",
+    "top_selection_probability",
+    "positive_count",
+    "negative_count",
+    "zero_count",
+    "positive_probability",
+    "negative_probability",
+    "zero_probability",
+    "sign_stability",
+)
 INTERPRETATION_FIELDS = (
     "top_divergence_policy",
     "top_divergence_metric",
@@ -86,6 +113,7 @@ ANALYSIS_ARTIFACTS = (
     "trajectory_pressure_ranking.csv",
     "value_yield_divergence_ranking.csv",
     "value_yield_divergence_stability.csv",
+    "pressure_bootstrap_rank_stability.csv",
     "interpretation.csv",
     "summary.md",
 )
@@ -96,8 +124,11 @@ def run_analysis(
     pressure_dir: str | Path,
     out_dir: str | Path,
     limit: int = 10,
+    bootstrap_resamples: int = 200,
+    bootstrap_seed: int = 1,
 ) -> list[dict[str, Any]]:
     _validate_limit(limit)
+    _validate_bootstrap_options(bootstrap_resamples, bootstrap_seed)
     pressure_path = Path(pressure_dir)
     output_path = Path(out_dir)
     _ensure_analysis_outputs_available(output_path)
@@ -123,6 +154,12 @@ def run_analysis(
         pressure_dir=pressure_path,
         pressure_rows=pressure_rows,
     )
+    bootstrap_rows = _pressure_bootstrap_rank_stability_rows(
+        pressure_dir=pressure_path,
+        pressure_rows=pressure_rows,
+        resamples=bootstrap_resamples,
+        bootstrap_seed=bootstrap_seed,
+    )
     interpretation_row = _interpretation_row(
         trajectory_rows=trajectory_rows_ranked,
         value_yield_rows=value_yield_rows,
@@ -146,6 +183,11 @@ def run_analysis(
         fieldnames=VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS,
     )
     _write_csv(
+        output_path / "pressure_bootstrap_rank_stability.csv",
+        rows=bootstrap_rows,
+        fieldnames=PRESSURE_BOOTSTRAP_RANK_STABILITY_FIELDS,
+    )
+    _write_csv(
         output_path / "interpretation.csv",
         rows=[interpretation_row],
         fieldnames=INTERPRETATION_FIELDS,
@@ -156,6 +198,7 @@ def run_analysis(
             trajectory_rows=trajectory_rows_ranked,
             value_yield_rows=value_yield_rows,
             divergence_stability_rows=divergence_stability_rows,
+            bootstrap_rows=bootstrap_rows,
             pressure_row_count=len(pressure_rows),
             trajectory_row_count=len(trajectory_rows),
             limit=limit,
@@ -223,6 +266,13 @@ def _interpretation_row(
 def _validate_limit(limit: int) -> None:
     if isinstance(limit, bool) or not isinstance(limit, int) or limit <= 0:
         raise ValueError("limit must be a positive integer.")
+
+
+def _validate_bootstrap_options(resamples: int, bootstrap_seed: int) -> None:
+    if isinstance(resamples, bool) or not isinstance(resamples, int) or resamples <= 0:
+        raise ValueError("bootstrap resamples must be a positive integer.")
+    if isinstance(bootstrap_seed, bool) or not isinstance(bootstrap_seed, int):
+        raise ValueError("bootstrap seed must be an integer.")
 
 
 def _ensure_analysis_outputs_available(output_path: Path) -> None:
@@ -320,6 +370,197 @@ def _trajectory_pressure_rows(
         {"rank": rank, **row}
         for rank, row in enumerate(candidates[:limit], start=1)
     ]
+
+
+def _pressure_bootstrap_rank_stability_rows(
+    *,
+    pressure_dir: Path,
+    pressure_rows: list[dict[str, str]],
+    resamples: int,
+    bootstrap_seed: int,
+) -> list[dict[str, Any]]:
+    normal_rows = _read_csv(
+        pressure_dir / "normal_pressure" / "comparison_metrics.csv",
+        required_fields=COMPARISON_FIELDS,
+    )
+    medium_pressure_rows = _read_csv(
+        pressure_dir / "medium_pressure" / "comparison_metrics.csv",
+        required_fields=COMPARISON_FIELDS,
+    )
+    high_pressure_rows = _read_csv(
+        pressure_dir / "high_pressure" / "comparison_metrics.csv",
+        required_fields=COMPARISON_FIELDS,
+    )
+    seeds = _comparison_seeds(normal_rows)
+    if not seeds:
+        return []
+
+    scope_candidates = (
+        ("global", _pressure_curve_response_candidates(pressure_rows)),
+        ("class_capture_pressure", _per_class_capture_pressure_candidates(pressure_rows)),
+        (
+            "value_yield_divergence",
+            _value_yield_divergence_bootstrap_candidates(pressure_rows),
+        ),
+    )
+    rng = random.Random(bootstrap_seed)
+    rows: list[dict[str, Any]] = []
+    for selection_scope, full_candidates in scope_candidates:
+        if not full_candidates:
+            continue
+        full_keys = [_candidate_key(candidate) for candidate in full_candidates]
+        top_counts = {key: 0 for key in full_keys}
+        sign_counts = {
+            key: {"positive": 0, "negative": 0, "zero": 0}
+            for key in full_keys
+        }
+
+        for _ in range(resamples):
+            sampled_seeds = tuple(
+                rng.choice(seeds)
+                for _sample_index in range(len(seeds))
+            )
+            sampled_pressure_rows = _pressure_rows(
+                _rows_for_seed_sample(normal_rows, sampled_seeds),
+                _rows_for_seed_sample(medium_pressure_rows, sampled_seeds),
+                _rows_for_seed_sample(high_pressure_rows, sampled_seeds),
+            )
+            sampled_candidates = (
+                _per_class_capture_pressure_candidates(sampled_pressure_rows)
+                if selection_scope == "class_capture_pressure"
+                else (
+                    _value_yield_divergence_bootstrap_candidates(sampled_pressure_rows)
+                    if selection_scope == "value_yield_divergence"
+                    else _pressure_curve_response_candidates(sampled_pressure_rows)
+                )
+            )
+            if not sampled_candidates:
+                continue
+            top_counts[_candidate_key(sampled_candidates[0])] += 1
+            sampled_by_key = {
+                _candidate_key(candidate): candidate
+                for candidate in sampled_candidates
+            }
+            for key in full_keys:
+                sign_counts[key][_sign_bucket(float(sampled_by_key[key]["value"]))] += 1
+
+        rows.extend(
+            _pressure_bootstrap_scope_rows(
+                selection_scope=selection_scope,
+                seeds=seeds,
+                full_candidates=full_candidates,
+                top_counts=top_counts,
+                sign_counts=sign_counts,
+                resamples=resamples,
+                bootstrap_seed=bootstrap_seed,
+            )
+        )
+    return rows
+
+
+def _pressure_bootstrap_scope_rows(
+    *,
+    selection_scope: str,
+    seeds: tuple[int, ...],
+    full_candidates: list[dict[str, Any]],
+    top_counts: dict[tuple[str, str, str, str], int],
+    sign_counts: dict[tuple[str, str, str, str], dict[str, int]],
+    resamples: int,
+    bootstrap_seed: int,
+) -> list[dict[str, Any]]:
+    rows = []
+    for rank, candidate in enumerate(full_candidates, start=1):
+        key = _candidate_key(candidate)
+        counts = sign_counts[key]
+        full_value = float(candidate["value"])
+        rows.append(
+            {
+                "selection_scope": selection_scope,
+                "full_seeds": _format_seed_set(seeds),
+                "resamples": resamples,
+                "sample_size": len(seeds),
+                "bootstrap_seed": bootstrap_seed,
+                "policy": candidate["policy"],
+                "observable": candidate["observable"],
+                "metric": candidate["metric"],
+                "field": candidate["field"],
+                "source_field": candidate["source_field"],
+                "full_rank": rank,
+                "full_response_value": round(full_value, 6),
+                "full_response_abs_value": round(abs(full_value), 6),
+                "top_selection_count": top_counts[key],
+                "top_selection_probability": round(top_counts[key] / resamples, 6),
+                "positive_count": counts["positive"],
+                "negative_count": counts["negative"],
+                "zero_count": counts["zero"],
+                "positive_probability": round(counts["positive"] / resamples, 6),
+                "negative_probability": round(counts["negative"] / resamples, 6),
+                "zero_probability": round(counts["zero"] / resamples, 6),
+                "sign_stability": round(
+                    counts[_sign_bucket(full_value)] / resamples,
+                    6,
+                ),
+            }
+        )
+    rows.sort(
+        key=lambda row: (
+            str(row["selection_scope"]),
+            -float(row["top_selection_probability"]),
+            int(row["full_rank"]),
+        )
+    )
+    return rows
+
+
+def _value_yield_divergence_bootstrap_candidates(
+    pressure_rows: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "policy": row["policy"],
+            "observable": "value-yield divergence",
+            "metric": row["metric"],
+            "field": "value_yield_divergence",
+            "source_field": "completion_vs_effort_yield_gap",
+            "value": row["divergence"],
+            "abs_value": row["abs_divergence"],
+        }
+        for row in _value_yield_divergence_rows(
+            pressure_rows=pressure_rows,
+            limit=len(pressure_rows) * 4,
+        )
+    ]
+
+
+def _candidate_key(candidate: dict[str, Any]) -> tuple[str, str, str, str]:
+    return (
+        str(candidate["policy"]),
+        str(candidate["observable"]),
+        str(candidate["metric"]),
+        str(candidate["field"]),
+    )
+
+
+def _rows_for_seed_sample(
+    rows: list[dict[str, str]],
+    sampled_seeds: tuple[int, ...],
+) -> list[dict[str, str]]:
+    by_seed: dict[int, list[dict[str, str]]] = {}
+    for row in rows:
+        by_seed.setdefault(int(row["seed"]), []).append(row)
+    return [
+        row
+        for seed in sampled_seeds
+        for row in by_seed.get(seed, [])
+    ]
+
+
+def _sign_bucket(value: float) -> str:
+    if value > 0.0:
+        return "positive"
+    if value < 0.0:
+        return "negative"
+    return "zero"
 
 
 def _value_yield_divergence_stability_rows(
@@ -522,6 +763,7 @@ def _summary(
     trajectory_rows: list[dict[str, Any]],
     value_yield_rows: list[dict[str, Any]],
     divergence_stability_rows: list[dict[str, Any]],
+    bootstrap_rows: list[dict[str, Any]],
     pressure_row_count: int,
     trajectory_row_count: int,
     limit: int,
@@ -606,7 +848,47 @@ def _summary(
                 ],
             ]
         )
+    lines.extend(["", "## Bootstrap rank stability"])
+    if not bootstrap_rows:
+        lines.append("- unavailable: no per-seed pressure rows were available.")
+    else:
+        top_rows = _top_bootstrap_rows_by_scope(bootstrap_rows, limit_per_scope=5)
+        lines.extend(
+            [
+                (
+                    "- method: deterministic seed-level bootstrap over comparison "
+                    "rows with replacement."
+                ),
+                "| scope | policy | observable | metric | top_probability | sign_stability |",
+                "| --- | --- | --- | --- | ---: | ---: |",
+                *[
+                    "| "
+                    f"{row['selection_scope']} | {row['policy']} | {row['observable']} | "
+                    f"{row['metric']} | {row['top_selection_probability']} | "
+                    f"{row['sign_stability']} |"
+                    for row in top_rows
+                ],
+            ]
+        )
     return "\n".join(lines) + "\n"
+
+
+def _top_bootstrap_rows_by_scope(
+    bootstrap_rows: list[dict[str, Any]],
+    *,
+    limit_per_scope: int,
+) -> list[dict[str, Any]]:
+    scopes = tuple(dict.fromkeys(str(row["selection_scope"]) for row in bootstrap_rows))
+    rows: list[dict[str, Any]] = []
+    for scope in scopes:
+        rows.extend(
+            [
+                row
+                for row in bootstrap_rows
+                if row["selection_scope"] == scope and row["top_selection_count"] > 0
+            ][:limit_per_scope]
+        )
+    return rows
 
 
 def _value_yield_divergence_interpretation(row: dict[str, Any]) -> str:
@@ -713,6 +995,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=10,
         help="Maximum number of ranked rows to write.",
     )
+    parser.add_argument(
+        "--bootstrap-resamples",
+        type=int,
+        default=200,
+        help="Deterministic seed-level bootstrap resample count.",
+    )
+    parser.add_argument(
+        "--bootstrap-seed",
+        type=int,
+        default=1,
+        help="Pseudo-random seed for bootstrap resampling.",
+    )
     return parser
 
 
@@ -724,6 +1018,8 @@ def main(argv: list[str] | None = None) -> int:
             pressure_dir=args.pressure_dir,
             out_dir=args.out,
             limit=args.limit,
+            bootstrap_resamples=args.bootstrap_resamples,
+            bootstrap_seed=args.bootstrap_seed,
         )
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))

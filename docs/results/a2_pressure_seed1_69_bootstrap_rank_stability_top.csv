@@ -1,0 +1,10 @@
+selection_scope,policy,observable,metric,field,source_field,full_rank,full_response_value,full_response_abs_value,top_selection_count,top_selection_probability,positive_probability,negative_probability,zero_probability,sign_stability
+global,internal_improvement,final queue depth,normal_to_medium_slope,queue_depth_normal_to_medium_slope,queue_depth,1,32.844204,32.844204,193,0.965,1.0,0.0,0.0,1.0
+global,research_heavy,final queue depth,normal_to_medium_slope,queue_depth_normal_to_medium_slope,queue_depth,2,32.19203,32.19203,4,0.02,1.0,0.0,0.0,1.0
+global,baseline,final queue depth,normal_to_medium_slope,queue_depth_normal_to_medium_slope,queue_depth,3,32.101449,32.101449,3,0.015,1.0,0.0,0.0,1.0
+class_capture_pressure,baseline,peak long term research capture pressure,normal_to_medium_slope,long_term_research_capture_pressure_peak_normal_to_medium_slope,long_term_research_capture_pressure_peak,53,-0.1544,0.1544,80,0.4,0.0,1.0,0.0,1.0
+class_capture_pressure,baseline,peak near term external capture pressure,curvature,near_term_external_capture_pressure_peak_pressure_curvature,near_term_external_capture_pressure_peak,57,0.125446,0.125446,35,0.175,1.0,0.0,0.0,1.0
+class_capture_pressure,baseline,peak near term external capture pressure,normal_to_medium_slope,near_term_external_capture_pressure_peak_normal_to_medium_slope,near_term_external_capture_pressure_peak,55,-0.133386,0.133386,15,0.075,0.0,1.0,0.0,1.0
+value_yield_divergence,internal_improvement,value-yield divergence,normal_to_medium_slope,value_yield_divergence,completion_vs_effort_yield_gap,2,0.111792,0.111792,128,0.64,1.0,0.0,0.0,1.0
+value_yield_divergence,internal_improvement,value-yield divergence,curvature,value_yield_divergence,completion_vs_effort_yield_gap,6,-0.042783,0.042783,23,0.115,0.03,0.97,0.0,0.97
+value_yield_divergence,research_heavy,value-yield divergence,medium_to_high_slope,value_yield_divergence,completion_vs_effort_yield_gap,1,0.122085,0.122085,15,0.075,0.97,0.03,0.0,0.97
