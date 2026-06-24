@@ -56,6 +56,8 @@ python -m ohdyn.run --config configs/a2_attention_smoke.yaml --seed 1 --out runs
 
 Attention-policy runs assign created tasks to `near_term_external`, `long_term_research`, `internal_improvement`, and `housekeeping`; work selection favors queued classes that are under their target share. `metrics.csv`, `manifest.yaml`, and `summary.md` add per-class queue, completion, queued-age, attention-share, share-deviation, and value-weighted completed-work fields only for configs that enable `attention_policy`.
 
+Attention-policy metrics also include value-yield fields derived from existing completion counters: `attention_value_per_completed_task_tick` and `attention_value_per_completed_task_total`. These distinguish pressure responses caused by completing more tasks from responses caused by shifting the completed task-class mix toward higher-value classes.
+
 Attention-policy runs also record deterministic capture-pressure telemetry. Per-class `attention_<class>_capture_pressure_tick` fields report how far each class's queued-task share exceeds its target share at the end of a tick, and `attention_capture_pressure_max_tick` reports the largest per-class pressure. When the quota-balancing scheduler works a different class while another available class is above target share, `events.csv` emits an `attention_capture_pressure` event with the selected class, pressure class, and pressure value. These fields are present only for configs that enable `attention_policy`; A0/A1 configs keep the baseline metrics shape.
 
 A contrasting research-heavy A2 fixture uses the same deterministic baseline with more reserved share for long-term research:
@@ -121,6 +123,7 @@ The output directory contains `normal_pressure/`, `medium_pressure/`, `high_pres
 - `regime_rate_deltas`, pipe-delimited `regime:delta` entries for high-minus-normal step-regime rates.
 - `regime_count_deltas`, pipe-delimited `regime:delta` entries for high-minus-normal step-regime counts.
 - `value_weighted_completed_mean_delta`, mean final value-weighted completed-work delta across seeds.
+- `value_per_completed_task_mean_delta`, mean final value yield per completed task delta across seeds.
 - `tasks_completed_mean_delta`, mean final completed-task delta across seeds.
 - `queue_depth_mean_delta`, mean final queue-depth delta across seeds.
 - `queued_task_age_mean_final_delta`, mean final queued-task mean-age delta across seeds.
@@ -131,6 +134,7 @@ The output directory contains `normal_pressure/`, `medium_pressure/`, `high_pres
 - `attention_capture_pressure_peak_delta`, mean peak max capture-pressure delta across seeds.
 - Per-class capture-pressure final, mean-over-ticks, and peak high-minus-normal deltas for each attention class.
 - Per-policy normal-to-medium slope, medium-to-high slope, and high-interval-minus-low-interval curvature fields for value-weighted completed work, completed tasks, final queue depth, final queued-task mean age, peak queued-task max age, final max capture pressure, mean max capture pressure, and peak max capture pressure.
+- Per-policy normal-to-medium slope, medium-to-high slope, and high-interval-minus-low-interval curvature fields for value yield per completed task.
 - Per-class capture-pressure normal-to-medium slope, medium-to-high slope, and high-interval-minus-low-interval curvature fields for final, mean-over-ticks, and peak capture pressure.
 
 The pressure comparison `summary.md` reports the normal, medium, and high-pressure config paths, seed set, policy-row count, a `Fixed-policy pressure deltas` section, a `Most pressure-sensitive curve metric` section, a `Pressure-curve response ranking` section, a `Top pressure-response explanation` section, a `Pressure-response interpretation` section, a `Pressure-condition source metric comparison` section, a `Per-class capture-pressure prefix comparison` section, a `Pressure-response stability agreement` section, a `Pressure-stability convergence inspection` section, a `Seed-set sensitivity` section, and a `Fixed-policy pressure curves` section. The sensitivity section identifies the policy/observable pair with the largest absolute slope or curvature response from the existing pressure-curve fields, including capture-pressure observables. The ranking section sorts every policy/observable pressure-curve response by absolute magnitude, the explanation section reports the top-ranked response's condition means, slopes, curvature, and high-minus-normal delta, the interpretation section turns the leading full-seed response into a compact deterministic reading and notes whether the last checked prefix selects the same response, the source-metric comparison section reports the normal/medium/high per-seed values and aggregate range for the source metric behind the selected top pressure response, and the curves section reports the same slope and curvature fields emitted in `pressure_comparison_metrics.csv`.

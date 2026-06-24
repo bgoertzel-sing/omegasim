@@ -478,6 +478,8 @@ def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> 
     assert "## Attention policy totals" in summary
     assert "- attention policy fields: " in summary
     assert "- value-weighted completed work: " in summary
+    assert "- value per completed task: " in summary
+    assert rows[-1]["attention_value_per_completed_task_total"]
     for class_name in ATTENTION_CLASSES:
         assert f"attention_{class_name}_queued_tick" in rows[0]
         assert f"attention_{class_name}_spent_share_tick" in rows[0]
@@ -567,13 +569,16 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
 
     assert len(csv_rows) == 6
     assert csv_rows[0]["value_weighted_completed_total"]
+    assert csv_rows[0]["value_per_completed_task_total"]
     assert csv_rows[0]["queue_depth_trajectory"].count("|") == 11
     assert csv_rows[0]["queued_task_age_mean_trajectory"].count("|") == 11
     assert csv_rows[0]["value_weighted_completed_total_trajectory"].count("|") == 11
+    assert csv_rows[0]["value_per_completed_task_total_trajectory"].count("|") == 11
     assert csv_rows[0]["attention_capture_pressure_max_trajectory"].count("|") == 11
     assert csv_rows[0]["queue_depth_step_deltas"].count("|") == 10
     assert csv_rows[0]["queued_task_age_mean_step_deltas"].count("|") == 10
     assert csv_rows[0]["value_weighted_completed_total_step_deltas"].count("|") == 10
+    assert csv_rows[0]["value_per_completed_task_total_step_deltas"].count("|") == 10
     assert csv_rows[0]["attention_capture_pressure_max_step_deltas"].count("|") == 10
     assert csv_rows[0]["phase_space_regime_dwell_runs"]
     assert csv_rows[0]["phase_space_longest_dwell_label"] in csv_rows[0][
@@ -589,6 +594,9 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     ]
     assert _step_deltas(csv_rows[0]["value_weighted_completed_total_trajectory"]) == csv_rows[0][
         "value_weighted_completed_total_step_deltas"
+    ]
+    assert _step_deltas(csv_rows[0]["value_per_completed_task_total_trajectory"]) == csv_rows[0][
+        "value_per_completed_task_total_step_deltas"
     ]
     assert _step_deltas(csv_rows[0]["attention_capture_pressure_max_trajectory"]) == csv_rows[0][
         "attention_capture_pressure_max_step_deltas"
@@ -615,12 +623,14 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert "## Policy deltas vs baseline" in summary
     assert "trajectory_final_queue_depth_mean=" in summary
     assert "trajectory_final_value_weighted_completed_mean=" in summary
+    assert "trajectory_final_value_per_completed_task_mean=" in summary
     assert "capture_pressure_max_final_mean=" in summary
     assert "capture_pressure_mean_over_ticks_mean=" in summary
     assert "capture_pressure_peak_mean=" in summary
     assert "queue_depth_step_delta_mean=" in summary
     assert "queued_task_age_mean_step_delta_mean=" in summary
     assert "value_weighted_step_delta_mean=" in summary
+    assert "value_per_completed_task_step_delta_mean=" in summary
     assert "capture_pressure_max_step_delta_mean=" in summary
     assert (
         "- baseline: label=queue_growth+stale_age_rising+value_throughput_rising, "
@@ -649,6 +659,7 @@ def test_a2_attention_comparison_runner_writes_aggregate_summary(tmp_path: Path)
     assert "- research_heavy queue-depth step delta mean: " in summary
     assert "- research_heavy queued-age step delta mean: " in summary
     assert "- research_heavy value-throughput step delta mean: " in summary
+    assert "- research_heavy value-yield step delta mean: " in summary
     assert "- research_heavy mean capture pressure: " in summary
     assert "- research_heavy peak capture pressure mean: " in summary
     assert "- research_heavy long-term research completions mean: " in summary
@@ -850,9 +861,13 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert csv_rows[0]["regime_rate_deltas"]
     assert csv_rows[0]["regime_count_deltas"]
     assert csv_rows[0]["queue_depth_mean_delta"]
+    assert csv_rows[0]["value_per_completed_task_mean_delta"]
     assert csv_rows[0]["queue_depth_normal_to_medium_slope"]
     assert csv_rows[0]["queue_depth_medium_to_high_slope"]
     assert csv_rows[0]["queue_depth_pressure_curvature"]
+    assert csv_rows[0]["value_per_completed_task_normal_to_medium_slope"]
+    assert csv_rows[0]["value_per_completed_task_medium_to_high_slope"]
+    assert csv_rows[0]["value_per_completed_task_pressure_curvature"]
     assert csv_rows[0]["attention_capture_pressure_max_final_delta"]
     assert csv_rows[0]["attention_capture_pressure_mean_over_ticks_delta"]
     assert csv_rows[0]["attention_capture_pressure_peak_delta"]
@@ -877,6 +892,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     ) in summary
     assert "regime_rate_deltas=" in summary
     assert "- research_heavy final queue depth mean pressure delta: " in summary
+    assert "- research_heavy value per completed task mean pressure delta: " in summary
     assert "- internal_improvement peak queued task max age pressure delta: " in summary
     assert "- baseline final attention capture pressure delta: " in summary
     assert "- baseline mean attention capture pressure delta: " in summary
@@ -885,6 +901,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "- baseline near term external mean capture pressure delta: " in summary
     assert "- baseline near term external peak capture pressure delta: " in summary
     assert "- baseline final queue depth pressure curve: " in summary
+    assert "- baseline value per completed task pressure curve: " in summary
     assert "- baseline final attention capture pressure curve: " in summary
     assert "- baseline mean attention capture pressure curve: " in summary
     assert "- baseline peak attention capture pressure curve: " in summary

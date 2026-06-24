@@ -142,6 +142,8 @@ def attention_policy_metric_fields() -> tuple[str, ...]:
         "attention_capture_pressure_max_tick",
         "attention_value_weighted_completed_tick",
         "attention_value_weighted_completed_total",
+        "attention_value_per_completed_task_tick",
+        "attention_value_per_completed_task_total",
     )
 
 
@@ -314,6 +316,8 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
             completed_counts=attention_completed_counts,
             value_weighted_completed_tick=attention_value_weighted_completed_tick,
             value_weighted_completed_total=attention_value_weighted_completed_total,
+            completed_this_tick=completed_this_tick,
+            completed_total=completed_tasks,
         )
         baseline_lobe_label = _baseline_lobe_label(
             action_counts=action_counts,
@@ -504,6 +508,8 @@ def _attention_policy_metrics(
     completed_counts: Counter[str],
     value_weighted_completed_tick: int,
     value_weighted_completed_total: int,
+    completed_this_tick: int,
+    completed_total: int,
 ) -> dict[str, int | float]:
     if config.attention_policy is None:
         return {}
@@ -546,6 +552,16 @@ def _attention_policy_metrics(
     )
     metrics["attention_value_weighted_completed_tick"] = value_weighted_completed_tick
     metrics["attention_value_weighted_completed_total"] = value_weighted_completed_total
+    metrics["attention_value_per_completed_task_tick"] = (
+        round(value_weighted_completed_tick / completed_this_tick, 6)
+        if completed_this_tick
+        else 0.0
+    )
+    metrics["attention_value_per_completed_task_total"] = (
+        round(value_weighted_completed_total / completed_total, 6)
+        if completed_total
+        else 0.0
+    )
     return metrics
 
 

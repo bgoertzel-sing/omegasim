@@ -422,6 +422,10 @@ def _attention_policy_summary(result: SimulationResult) -> list[str]:
         "- value-weighted completed work: "
         f"{last.get('attention_value_weighted_completed_total', 0)}"
     )
+    lines.append(
+        "- value per completed task: "
+        f"{last.get('attention_value_per_completed_task_total', 0)}"
+    )
     return lines
 
 
