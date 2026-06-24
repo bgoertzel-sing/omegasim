@@ -50,6 +50,7 @@ PRESSURE_COMPARISON_FIELDS = (
     "regime_count_deltas",
     "value_weighted_completed_mean_delta",
     "value_per_completed_task_mean_delta",
+    "value_per_work_event_mean_delta",
     "tasks_completed_mean_delta",
     "queue_depth_mean_delta",
     "queued_task_age_mean_final_delta",
@@ -73,6 +74,9 @@ PRESSURE_COMPARISON_FIELDS = (
     "value_per_completed_task_normal_to_medium_slope",
     "value_per_completed_task_medium_to_high_slope",
     "value_per_completed_task_pressure_curvature",
+    "value_per_work_event_normal_to_medium_slope",
+    "value_per_work_event_medium_to_high_slope",
+    "value_per_work_event_pressure_curvature",
     "tasks_completed_normal_to_medium_slope",
     "tasks_completed_medium_to_high_slope",
     "tasks_completed_pressure_curvature",
@@ -200,6 +204,11 @@ PRESSURE_CURVE_OBSERVABLES = (
         "value_per_completed_task",
         "value per completed task",
         "value_per_completed_task_total",
+    ),
+    (
+        "value_per_work_event",
+        "value per work event",
+        "value_per_work_event_total",
     ),
     ("tasks_completed", "tasks completed", "tasks_completed_total"),
     ("queue_depth", "final queue depth", "queue_depth"),
@@ -460,6 +469,11 @@ def _pressure_row(
             normal_rows,
             "value_per_completed_task_total",
         ),
+        "value_per_work_event_mean_delta": _metric_mean_delta(
+            high_pressure_rows,
+            normal_rows,
+            "value_per_work_event_total",
+        ),
         "tasks_completed_mean_delta": _metric_mean_delta(
             high_pressure_rows,
             normal_rows,
@@ -539,6 +553,15 @@ def _pressure_row(
             high_pressure_rows,
             source_field="value_per_completed_task_total",
             output_prefix="value_per_completed_task",
+        )
+    )
+    row.update(
+        _pressure_curve_metrics(
+            normal_rows,
+            medium_pressure_rows,
+            high_pressure_rows,
+            source_field="value_per_work_event_total",
+            output_prefix="value_per_work_event",
         )
     )
     row.update(
@@ -2148,6 +2171,7 @@ def _pressure_delta_field(observable_prefix: str) -> str:
     delta_fields = {
         "value_weighted_completed": "value_weighted_completed_mean_delta",
         "value_per_completed_task": "value_per_completed_task_mean_delta",
+        "value_per_work_event": "value_per_work_event_mean_delta",
         "tasks_completed": "tasks_completed_mean_delta",
         "queue_depth": "queue_depth_mean_delta",
         "queued_task_age_mean_final": "queued_task_age_mean_final_delta",
@@ -2181,6 +2205,8 @@ def _pressure_delta_lines(row: dict[str, Any]) -> list[str]:
         f"{row['value_weighted_completed_mean_delta']}",
         f"- {row['policy']} value per completed task mean pressure delta: "
         f"{row['value_per_completed_task_mean_delta']}",
+        f"- {row['policy']} value per work event mean pressure delta: "
+        f"{row['value_per_work_event_mean_delta']}",
         f"- {row['policy']} tasks completed mean pressure delta: "
         f"{row['tasks_completed_mean_delta']}",
         f"- {row['policy']} final queue depth mean pressure delta: "
@@ -2220,6 +2246,10 @@ def _pressure_curve_lines(row: dict[str, Any]) -> list[str]:
         f"normal_to_medium_slope={row['value_per_completed_task_normal_to_medium_slope']}, "
         f"medium_to_high_slope={row['value_per_completed_task_medium_to_high_slope']}, "
         f"curvature={row['value_per_completed_task_pressure_curvature']}",
+        f"- {row['policy']} value per work event pressure curve: "
+        f"normal_to_medium_slope={row['value_per_work_event_normal_to_medium_slope']}, "
+        f"medium_to_high_slope={row['value_per_work_event_medium_to_high_slope']}, "
+        f"curvature={row['value_per_work_event_pressure_curvature']}",
         f"- {row['policy']} tasks completed pressure curve: "
         f"normal_to_medium_slope={row['tasks_completed_normal_to_medium_slope']}, "
         f"medium_to_high_slope={row['tasks_completed_medium_to_high_slope']}, "

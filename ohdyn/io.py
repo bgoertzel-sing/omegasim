@@ -405,13 +405,14 @@ def _attention_policy_summary(result: SimulationResult) -> list[str]:
     lines = []
     for class_name in ATTENTION_CLASSES:
         completed = last.get(f"attention_{class_name}_completed_total", 0)
+        worked = last.get(f"attention_{class_name}_worked_total", 0)
         queued = last.get(f"attention_{class_name}_queued_tick", 0)
         target = last.get(f"attention_{class_name}_target_share", 0)
         mean_age = last.get(f"attention_{class_name}_queued_age_mean_tick", 0)
         capture_pressure = last.get(f"attention_{class_name}_capture_pressure_tick", 0)
         lines.append(
             f"- {class_name}: target_share={target}, completed={completed}, "
-            f"queued={queued}, final_mean_age={mean_age}, "
+            f"worked={worked}, queued={queued}, final_mean_age={mean_age}, "
             f"capture_pressure={capture_pressure}"
         )
     lines.append(
@@ -425,6 +426,10 @@ def _attention_policy_summary(result: SimulationResult) -> list[str]:
     lines.append(
         "- value per completed task: "
         f"{last.get('attention_value_per_completed_task_total', 0)}"
+    )
+    lines.append(
+        "- value per work event: "
+        f"{last.get('attention_value_per_work_event_total', 0)}"
     )
     return lines
 

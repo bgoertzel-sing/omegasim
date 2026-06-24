@@ -27,6 +27,7 @@ COMPARISON_FIELDS = (
     "run_dir",
     "value_weighted_completed_total",
     "value_per_completed_task_total",
+    "value_per_work_event_total",
     "tasks_completed_total",
     "queue_depth",
     "queued_task_age_mean_final",
@@ -36,10 +37,15 @@ COMPARISON_FIELDS = (
     "long_term_research_completed_total",
     "internal_improvement_completed_total",
     "housekeeping_completed_total",
+    "near_term_external_worked_total",
+    "long_term_research_worked_total",
+    "internal_improvement_worked_total",
+    "housekeeping_worked_total",
     "queue_depth_trajectory",
     "queued_task_age_mean_trajectory",
     "value_weighted_completed_total_trajectory",
     "value_per_completed_task_total_trajectory",
+    "value_per_work_event_total_trajectory",
     "attention_capture_pressure_max_final",
     "attention_capture_pressure_mean_over_ticks",
     "attention_capture_pressure_peak",
@@ -60,6 +66,7 @@ COMPARISON_FIELDS = (
     "queued_task_age_mean_step_deltas",
     "value_weighted_completed_total_step_deltas",
     "value_per_completed_task_total_step_deltas",
+    "value_per_work_event_total_step_deltas",
     "attention_capture_pressure_max_step_deltas",
     "phase_space_regime_dwell_runs",
     "phase_space_longest_dwell_label",
@@ -70,6 +77,10 @@ COMPARISON_FIELDS = (
     "long_term_research_completed_total_trajectory",
     "internal_improvement_completed_total_trajectory",
     "housekeeping_completed_total_trajectory",
+    "near_term_external_worked_total_trajectory",
+    "long_term_research_worked_total_trajectory",
+    "internal_improvement_worked_total_trajectory",
+    "housekeeping_worked_total_trajectory",
     "near_term_external_capture_pressure_trajectory",
     "long_term_research_capture_pressure_trajectory",
     "internal_improvement_capture_pressure_trajectory",
@@ -83,6 +94,7 @@ class PolicyAggregate:
     seeds: int
     value_weighted_completed_mean: float
     value_per_completed_task_mean: float
+    value_per_work_event_mean: float
     tasks_completed_mean: float
     queue_depth_mean: float
     queued_task_age_mean_final_mean: float
@@ -92,10 +104,15 @@ class PolicyAggregate:
     long_term_research_completed_mean: float
     internal_improvement_completed_mean: float
     housekeeping_completed_mean: float
+    near_term_external_worked_mean: float
+    long_term_research_worked_mean: float
+    internal_improvement_worked_mean: float
+    housekeeping_worked_mean: float
     queue_depth_final_trajectory_mean: float
     queued_task_age_mean_trajectory_final_mean: float
     value_weighted_trajectory_final_mean: float
     value_per_completed_task_trajectory_final_mean: float
+    value_per_work_event_trajectory_final_mean: float
     attention_capture_pressure_max_final_mean: float
     attention_capture_pressure_mean_over_ticks_mean: float
     attention_capture_pressure_peak_mean: float
@@ -111,6 +128,9 @@ class PolicyAggregate:
     value_per_completed_task_step_delta_mean: float
     value_per_completed_task_step_delta_min: float
     value_per_completed_task_step_delta_max: float
+    value_per_work_event_step_delta_mean: float
+    value_per_work_event_step_delta_min: float
+    value_per_work_event_step_delta_max: float
     attention_capture_pressure_max_step_delta_mean: float
     attention_capture_pressure_max_step_delta_min: float
     attention_capture_pressure_max_step_delta_max: float
@@ -200,6 +220,7 @@ def _comparison_row(
         "run_dir": run_dir.name,
         "value_weighted_completed_total": last["attention_value_weighted_completed_total"],
         "value_per_completed_task_total": last["attention_value_per_completed_task_total"],
+        "value_per_work_event_total": last["attention_value_per_work_event_total"],
         "tasks_completed_total": last["tasks_completed_total"],
         "queue_depth": last["queue_depth"],
         "queued_task_age_mean_final": last["queued_task_age_mean_tick"],
@@ -220,6 +241,18 @@ def _comparison_row(
         "housekeeping_completed_total": last[
             "attention_housekeeping_completed_total"
         ],
+        "near_term_external_worked_total": last[
+            "attention_near_term_external_worked_total"
+        ],
+        "long_term_research_worked_total": last[
+            "attention_long_term_research_worked_total"
+        ],
+        "internal_improvement_worked_total": last[
+            "attention_internal_improvement_worked_total"
+        ],
+        "housekeeping_worked_total": last[
+            "attention_housekeeping_worked_total"
+        ],
         "queue_depth_trajectory": _trajectory(result, "queue_depth"),
         "queued_task_age_mean_trajectory": _trajectory(
             result,
@@ -232,6 +265,10 @@ def _comparison_row(
         "value_per_completed_task_total_trajectory": _trajectory(
             result,
             "attention_value_per_completed_task_total",
+        ),
+        "value_per_work_event_total_trajectory": _trajectory(
+            result,
+            "attention_value_per_work_event_total",
         ),
         "attention_capture_pressure_max_final": last["attention_capture_pressure_max_tick"],
         "attention_capture_pressure_mean_over_ticks": _mean_metric(
@@ -279,6 +316,10 @@ def _comparison_row(
             result,
             "attention_value_per_completed_task_total",
         ),
+        "value_per_work_event_total_step_deltas": _trajectory_step_deltas(
+            result,
+            "attention_value_per_work_event_total",
+        ),
         "attention_capture_pressure_max_step_deltas": _trajectory_step_deltas(
             result,
             "attention_capture_pressure_max_tick",
@@ -298,6 +339,22 @@ def _comparison_row(
         "housekeeping_completed_total_trajectory": _trajectory(
             result,
             "attention_housekeeping_completed_total",
+        ),
+        "near_term_external_worked_total_trajectory": _trajectory(
+            result,
+            "attention_near_term_external_worked_total",
+        ),
+        "long_term_research_worked_total_trajectory": _trajectory(
+            result,
+            "attention_long_term_research_worked_total",
+        ),
+        "internal_improvement_worked_total_trajectory": _trajectory(
+            result,
+            "attention_internal_improvement_worked_total",
+        ),
+        "housekeeping_worked_total_trajectory": _trajectory(
+            result,
+            "attention_housekeeping_worked_total",
         ),
         **{
             f"{class_name}_capture_pressure_trajectory": _trajectory(
@@ -362,6 +419,7 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
             seeds=len(policy_rows),
             value_weighted_completed_mean=_mean(policy_rows, "value_weighted_completed_total"),
             value_per_completed_task_mean=_mean(policy_rows, "value_per_completed_task_total"),
+            value_per_work_event_mean=_mean(policy_rows, "value_per_work_event_total"),
             tasks_completed_mean=_mean(policy_rows, "tasks_completed_total"),
             queue_depth_mean=_mean(policy_rows, "queue_depth"),
             queued_task_age_mean_final_mean=_mean(policy_rows, "queued_task_age_mean_final"),
@@ -371,6 +429,10 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
             long_term_research_completed_mean=_mean(policy_rows, "long_term_research_completed_total"),
             internal_improvement_completed_mean=_mean(policy_rows, "internal_improvement_completed_total"),
             housekeeping_completed_mean=_mean(policy_rows, "housekeeping_completed_total"),
+            near_term_external_worked_mean=_mean(policy_rows, "near_term_external_worked_total"),
+            long_term_research_worked_mean=_mean(policy_rows, "long_term_research_worked_total"),
+            internal_improvement_worked_mean=_mean(policy_rows, "internal_improvement_worked_total"),
+            housekeeping_worked_mean=_mean(policy_rows, "housekeeping_worked_total"),
             queue_depth_final_trajectory_mean=_mean_trajectory_final(
                 policy_rows,
                 "queue_depth_trajectory",
@@ -386,6 +448,10 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
             value_per_completed_task_trajectory_final_mean=_mean_trajectory_final(
                 policy_rows,
                 "value_per_completed_task_total_trajectory",
+            ),
+            value_per_work_event_trajectory_final_mean=_mean_trajectory_final(
+                policy_rows,
+                "value_per_work_event_total_trajectory",
             ),
             attention_capture_pressure_max_final_mean=_mean(
                 policy_rows,
@@ -446,6 +512,18 @@ def _policy_aggregates(rows: list[dict[str, Any]]) -> dict[str, PolicyAggregate]
             value_per_completed_task_step_delta_max=_max_step_delta(
                 policy_rows,
                 "value_per_completed_task_total_step_deltas",
+            ),
+            value_per_work_event_step_delta_mean=_mean_step_delta(
+                policy_rows,
+                "value_per_work_event_total_step_deltas",
+            ),
+            value_per_work_event_step_delta_min=_min_step_delta(
+                policy_rows,
+                "value_per_work_event_total_step_deltas",
+            ),
+            value_per_work_event_step_delta_max=_max_step_delta(
+                policy_rows,
+                "value_per_work_event_total_step_deltas",
             ),
             attention_capture_pressure_max_step_delta_mean=_mean_step_delta(
                 policy_rows,
@@ -831,6 +909,7 @@ def _aggregate_lines(aggregate: PolicyAggregate) -> list[str]:
         f"- {aggregate.policy}: seeds={aggregate.seeds}, "
         f"value_weighted_completed_mean={aggregate.value_weighted_completed_mean}, "
         f"value_per_completed_task_mean={aggregate.value_per_completed_task_mean}, "
+        f"value_per_work_event_mean={aggregate.value_per_work_event_mean}, "
         f"tasks_completed_mean={aggregate.tasks_completed_mean}, "
         f"queue_depth_mean={aggregate.queue_depth_mean}, "
         f"queued_task_age_mean_final_mean={aggregate.queued_task_age_mean_final_mean}, "
@@ -840,10 +919,15 @@ def _aggregate_lines(aggregate: PolicyAggregate) -> list[str]:
         f"long_term_research_completed_mean={aggregate.long_term_research_completed_mean}, "
         f"internal_improvement_completed_mean={aggregate.internal_improvement_completed_mean}, "
         f"housekeeping_completed_mean={aggregate.housekeeping_completed_mean}, "
+        f"near_term_external_worked_mean={aggregate.near_term_external_worked_mean}, "
+        f"long_term_research_worked_mean={aggregate.long_term_research_worked_mean}, "
+        f"internal_improvement_worked_mean={aggregate.internal_improvement_worked_mean}, "
+        f"housekeeping_worked_mean={aggregate.housekeeping_worked_mean}, "
         f"trajectory_final_queue_depth_mean={aggregate.queue_depth_final_trajectory_mean}, "
         f"trajectory_final_queued_task_age_mean={aggregate.queued_task_age_mean_trajectory_final_mean}, "
         f"trajectory_final_value_weighted_completed_mean={aggregate.value_weighted_trajectory_final_mean}, "
         f"trajectory_final_value_per_completed_task_mean={aggregate.value_per_completed_task_trajectory_final_mean}, "
+        f"trajectory_final_value_per_work_event_mean={aggregate.value_per_work_event_trajectory_final_mean}, "
         f"capture_pressure_max_final_mean={aggregate.attention_capture_pressure_max_final_mean}, "
         f"capture_pressure_mean_over_ticks_mean={aggregate.attention_capture_pressure_mean_over_ticks_mean}, "
         f"capture_pressure_peak_mean={aggregate.attention_capture_pressure_peak_mean}, "
@@ -859,6 +943,9 @@ def _aggregate_lines(aggregate: PolicyAggregate) -> list[str]:
         f"value_per_completed_task_step_delta_mean={aggregate.value_per_completed_task_step_delta_mean}, "
         f"value_per_completed_task_step_delta_min={aggregate.value_per_completed_task_step_delta_min}, "
         f"value_per_completed_task_step_delta_max={aggregate.value_per_completed_task_step_delta_max}, "
+        f"value_per_work_event_step_delta_mean={aggregate.value_per_work_event_step_delta_mean}, "
+        f"value_per_work_event_step_delta_min={aggregate.value_per_work_event_step_delta_min}, "
+        f"value_per_work_event_step_delta_max={aggregate.value_per_work_event_step_delta_max}, "
         f"capture_pressure_max_step_delta_mean={aggregate.attention_capture_pressure_max_step_delta_mean}, "
         f"capture_pressure_max_step_delta_min={aggregate.attention_capture_pressure_max_step_delta_min}, "
         f"capture_pressure_max_step_delta_max={aggregate.attention_capture_pressure_max_step_delta_max}",
@@ -869,6 +956,7 @@ def _delta_lines(variant: PolicyAggregate, baseline: PolicyAggregate) -> list[st
     return [
         f"- {variant.policy} value-weighted completed work mean: {_delta(variant.value_weighted_completed_mean, baseline.value_weighted_completed_mean)}",
         f"- {variant.policy} value per completed task mean: {_delta(variant.value_per_completed_task_mean, baseline.value_per_completed_task_mean)}",
+        f"- {variant.policy} value per work event mean: {_delta(variant.value_per_work_event_mean, baseline.value_per_work_event_mean)}",
         f"- {variant.policy} tasks completed mean: {_delta(variant.tasks_completed_mean, baseline.tasks_completed_mean)}",
         f"- {variant.policy} final queue depth mean: {_delta(variant.queue_depth_mean, baseline.queue_depth_mean)}",
         f"- {variant.policy} final queued task mean age: {_delta(variant.queued_task_age_mean_final_mean, baseline.queued_task_age_mean_final_mean)}",
@@ -878,10 +966,15 @@ def _delta_lines(variant: PolicyAggregate, baseline: PolicyAggregate) -> list[st
         f"- {variant.policy} long-term research completions mean: {_delta(variant.long_term_research_completed_mean, baseline.long_term_research_completed_mean)}",
         f"- {variant.policy} internal-improvement completions mean: {_delta(variant.internal_improvement_completed_mean, baseline.internal_improvement_completed_mean)}",
         f"- {variant.policy} housekeeping completions mean: {_delta(variant.housekeeping_completed_mean, baseline.housekeeping_completed_mean)}",
+        f"- {variant.policy} near-term external work events mean: {_delta(variant.near_term_external_worked_mean, baseline.near_term_external_worked_mean)}",
+        f"- {variant.policy} long-term research work events mean: {_delta(variant.long_term_research_worked_mean, baseline.long_term_research_worked_mean)}",
+        f"- {variant.policy} internal-improvement work events mean: {_delta(variant.internal_improvement_worked_mean, baseline.internal_improvement_worked_mean)}",
+        f"- {variant.policy} housekeeping work events mean: {_delta(variant.housekeeping_worked_mean, baseline.housekeeping_worked_mean)}",
         f"- {variant.policy} queue-depth step delta mean: {_delta(variant.queue_depth_step_delta_mean, baseline.queue_depth_step_delta_mean)}",
         f"- {variant.policy} queued-age step delta mean: {_delta(variant.queued_task_age_mean_step_delta_mean, baseline.queued_task_age_mean_step_delta_mean)}",
         f"- {variant.policy} value-throughput step delta mean: {_delta(variant.value_weighted_step_delta_mean, baseline.value_weighted_step_delta_mean)}",
         f"- {variant.policy} value-yield step delta mean: {_delta(variant.value_per_completed_task_step_delta_mean, baseline.value_per_completed_task_step_delta_mean)}",
+        f"- {variant.policy} value-effort step delta mean: {_delta(variant.value_per_work_event_step_delta_mean, baseline.value_per_work_event_step_delta_mean)}",
         f"- {variant.policy} final capture pressure mean: {_delta(variant.attention_capture_pressure_max_final_mean, baseline.attention_capture_pressure_max_final_mean)}",
         f"- {variant.policy} mean capture pressure: {_delta(variant.attention_capture_pressure_mean_over_ticks_mean, baseline.attention_capture_pressure_mean_over_ticks_mean)}",
         f"- {variant.policy} peak capture pressure mean: {_delta(variant.attention_capture_pressure_peak_mean, baseline.attention_capture_pressure_peak_mean)}",

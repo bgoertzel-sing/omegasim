@@ -131,6 +131,7 @@ def attention_policy_metric_fields() -> tuple[str, ...]:
             for field in (
                 f"attention_{class_name}_queued_tick",
                 f"attention_{class_name}_completed_total",
+                f"attention_{class_name}_worked_total",
                 f"attention_{class_name}_queued_age_max_tick",
                 f"attention_{class_name}_queued_age_mean_tick",
                 f"attention_{class_name}_spent_share_tick",
@@ -144,6 +145,8 @@ def attention_policy_metric_fields() -> tuple[str, ...]:
         "attention_value_weighted_completed_total",
         "attention_value_per_completed_task_tick",
         "attention_value_per_completed_task_total",
+        "attention_value_per_work_event_tick",
+        "attention_value_per_work_event_total",
     )
 
 
@@ -313,6 +316,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
             task_queue=task_queue,
             tick=tick,
             work_counts_tick=attention_work_counts_tick,
+            work_counts=attention_work_counts,
             completed_counts=attention_completed_counts,
             value_weighted_completed_tick=attention_value_weighted_completed_tick,
             value_weighted_completed_total=attention_value_weighted_completed_total,
@@ -505,6 +509,7 @@ def _attention_policy_metrics(
     task_queue: deque[Task],
     tick: int,
     work_counts_tick: Counter[str],
+    work_counts: Counter[str],
     completed_counts: Counter[str],
     value_weighted_completed_tick: int,
     value_weighted_completed_total: int,
@@ -516,6 +521,7 @@ def _attention_policy_metrics(
 
     shares = config.attention_policy.shares()
     total_work_tick = sum(work_counts_tick.values())
+    total_work = sum(work_counts.values())
     metrics: dict[str, int | float] = {}
     for class_name in ATTENTION_CLASSES:
         queued_tasks = [task for task in task_queue if task.task_class == class_name]
@@ -527,6 +533,7 @@ def _attention_policy_metrics(
             {
                 f"attention_{class_name}_queued_tick": len(queued_tasks),
                 f"attention_{class_name}_completed_total": completed_counts[class_name],
+                f"attention_{class_name}_worked_total": work_counts[class_name],
                 f"attention_{class_name}_queued_age_max_tick": max(ages, default=0),
                 f"attention_{class_name}_queued_age_mean_tick": (
                     round(float(np.mean(ages)), 6) if ages else 0.0
@@ -560,6 +567,16 @@ def _attention_policy_metrics(
     metrics["attention_value_per_completed_task_total"] = (
         round(value_weighted_completed_total / completed_total, 6)
         if completed_total
+        else 0.0
+    )
+    metrics["attention_value_per_work_event_tick"] = (
+        round(value_weighted_completed_tick / total_work_tick, 6)
+        if total_work_tick
+        else 0.0
+    )
+    metrics["attention_value_per_work_event_total"] = (
+        round(value_weighted_completed_total / total_work, 6)
+        if total_work
         else 0.0
     )
     return metrics
