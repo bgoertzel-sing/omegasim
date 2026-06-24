@@ -10,8 +10,10 @@ from typing import Any
 import yaml
 
 from ohdyn.compare_pressure import (
+    PRESSURE_COMPARISON_FIELDS,
     PRESSURE_CURVE_METRICS,
     PRESSURE_CURVE_OBSERVABLES,
+    PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
 )
 
 
@@ -42,8 +44,14 @@ def run_analysis(
     output_path = Path(out_dir)
     _ensure_analysis_outputs_available(output_path)
 
-    pressure_rows = _read_csv(pressure_path / "pressure_comparison_metrics.csv")
-    trajectory_rows = _read_csv(pressure_path / "pressure_trajectory_structure.csv")
+    pressure_rows = _read_csv(
+        pressure_path / "pressure_comparison_metrics.csv",
+        required_fields=PRESSURE_COMPARISON_FIELDS,
+    )
+    trajectory_rows = _read_csv(
+        pressure_path / "pressure_trajectory_structure.csv",
+        required_fields=PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
+    )
     rows = _trajectory_pressure_rows(
         pressure_rows=pressure_rows,
         trajectory_rows=trajectory_rows,
@@ -82,11 +90,21 @@ def _ensure_analysis_outputs_available(output_path: Path) -> None:
         raise FileExistsError(f"Output path {output_path} already contains analysis artifacts: {names}")
 
 
-def _read_csv(path: Path) -> list[dict[str, str]]:
+def _read_csv(
+    path: Path,
+    *,
+    required_fields: tuple[str, ...],
+) -> list[dict[str, str]]:
     if not path.is_file():
         raise FileNotFoundError(f"Required pressure analysis input is missing: {path}")
     with path.open() as handle:
-        return list(csv.DictReader(handle))
+        reader = csv.DictReader(handle)
+        fieldnames = reader.fieldnames or []
+        missing = [field for field in required_fields if field not in fieldnames]
+        if missing:
+            names = ", ".join(missing)
+            raise ValueError(f"{path.name} is missing required fields: {names}")
+        return list(reader)
 
 
 def _trajectory_pressure_rows(
@@ -96,14 +114,20 @@ def _trajectory_pressure_rows(
     limit: int,
 ) -> list[dict[str, Any]]:
     trajectory_by_policy = _rows_by_policy(trajectory_rows, "pressure_trajectory_structure.csv")
-    missing = [
-        row["policy"]
-        for row in pressure_rows
-        if row["policy"] not in trajectory_by_policy
-    ]
-    if missing:
-        names = ", ".join(missing)
-        raise ValueError(f"pressure_trajectory_structure.csv is missing policies: {names}")
+    pressure_policies = {row["policy"] for row in pressure_rows}
+    trajectory_policies = set(trajectory_by_policy)
+    missing = sorted(pressure_policies - trajectory_policies)
+    extra = sorted(trajectory_policies - pressure_policies)
+    if missing or extra:
+        details = []
+        if missing:
+            details.append(f"missing policies in trajectory: {', '.join(missing)}")
+        if extra:
+            details.append(f"extra policies in trajectory: {', '.join(extra)}")
+        raise ValueError(
+            "Policy mismatch between pressure_comparison_metrics.csv and "
+            f"pressure_trajectory_structure.csv: {'; '.join(details)}"
+        )
 
     candidates: list[dict[str, Any]] = []
     for pressure_row in pressure_rows:

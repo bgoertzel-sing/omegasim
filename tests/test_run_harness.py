@@ -1879,6 +1879,70 @@ def test_pressure_analysis_requires_pressure_input_csv_pair(tmp_path: Path) -> N
     assert not analysis_dir.exists()
 
 
+def test_pressure_analysis_reports_malformed_pressure_csv_schema_without_partial_outputs(
+    tmp_path: Path,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+    pressure_fields = [
+        field
+        for field in PRESSURE_COMPARISON_FIELDS
+        if field != "queue_depth_pressure_curvature"
+    ]
+
+    _write_pressure_analysis_csv(
+        pressure_dir / "pressure_comparison_metrics.csv",
+        pressure_fields,
+        {"policy": "baseline"},
+    )
+    _write_pressure_analysis_csv(
+        pressure_dir / "pressure_trajectory_structure.csv",
+        PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
+        {"policy": "baseline"},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="pressure_comparison_metrics.csv is missing required fields: "
+        "queue_depth_pressure_curvature",
+    ):
+        run_analysis(pressure_dir=pressure_dir, out_dir=analysis_dir, limit=5)
+
+    assert not analysis_dir.exists()
+
+
+def test_pressure_analysis_reports_policy_mismatch_without_partial_outputs(
+    tmp_path: Path,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+
+    _write_pressure_analysis_csv(
+        pressure_dir / "pressure_comparison_metrics.csv",
+        PRESSURE_COMPARISON_FIELDS,
+        {"policy": "baseline"},
+    )
+    _write_pressure_analysis_csv(
+        pressure_dir / "pressure_trajectory_structure.csv",
+        PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
+        {"policy": "research_heavy"},
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Policy mismatch between pressure_comparison_metrics.csv and "
+            "pressure_trajectory_structure.csv: missing policies in trajectory: "
+            "baseline; extra policies in trajectory: research_heavy"
+        ),
+    ):
+        run_analysis(pressure_dir=pressure_dir, out_dir=analysis_dir, limit=5)
+
+    assert not analysis_dir.exists()
+
+
 @pytest.mark.parametrize(
     "collision_artifact",
     ["trajectory_pressure_ranking.csv", "summary.md"],
@@ -2054,6 +2118,19 @@ def test_metrics_csv_records_bus_graph_summary(tmp_path: Path) -> None:
     assert row["bus_degree_centralization"] == "1.0"
     assert "- bus density: 0.125" in (out_dir / "summary.md").read_text()
     assert "- bus mean degree: 1.875" in (out_dir / "summary.md").read_text()
+
+
+def _write_pressure_analysis_csv(
+    path: Path,
+    fieldnames: tuple[str, ...] | list[str],
+    overrides: dict[str, str],
+) -> None:
+    row = {field: "0" for field in fieldnames}
+    row.update(overrides)
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        writer.writerow(row)
 
 
 def _mean_csv_metric(
