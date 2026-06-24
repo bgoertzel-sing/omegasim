@@ -62,10 +62,31 @@ VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS = (
     "full_policy",
     "full_metric",
 )
+INTERPRETATION_FIELDS = (
+    "top_divergence_policy",
+    "top_divergence_metric",
+    "top_divergence_value_per_completed_task_response",
+    "top_divergence_value_per_work_event_response",
+    "top_divergence",
+    "top_divergence_abs",
+    "top_divergence_stable_last_prefix",
+    "top_divergence_stable_all_prefixes",
+    "top_divergence_full_seeds",
+    "top_divergence_last_prefix_seeds",
+    "top_divergence_last_prefix_instability_causes",
+    "top_trajectory_policy",
+    "top_trajectory_response_observable",
+    "top_trajectory_response_metric",
+    "top_trajectory_response_field",
+    "top_trajectory_response_value",
+    "top_trajectory_response_abs_value",
+    "top_trajectory_abs_delta_total",
+)
 ANALYSIS_ARTIFACTS = (
     "trajectory_pressure_ranking.csv",
     "value_yield_divergence_ranking.csv",
     "value_yield_divergence_stability.csv",
+    "interpretation.csv",
     "summary.md",
 )
 
@@ -102,6 +123,11 @@ def run_analysis(
         pressure_dir=pressure_path,
         pressure_rows=pressure_rows,
     )
+    interpretation_row = _interpretation_row(
+        trajectory_rows=trajectory_rows_ranked,
+        value_yield_rows=value_yield_rows,
+        divergence_stability_rows=divergence_stability_rows,
+    )
 
     output_path.mkdir(parents=True, exist_ok=True)
     _write_csv(
@@ -119,6 +145,11 @@ def run_analysis(
         rows=divergence_stability_rows,
         fieldnames=VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS,
     )
+    _write_csv(
+        output_path / "interpretation.csv",
+        rows=[interpretation_row],
+        fieldnames=INTERPRETATION_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             pressure_dir=pressure_path,
@@ -131,6 +162,62 @@ def run_analysis(
         )
     )
     return trajectory_rows_ranked
+
+
+def _interpretation_row(
+    *,
+    trajectory_rows: list[dict[str, Any]],
+    value_yield_rows: list[dict[str, Any]],
+    divergence_stability_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    top_divergence = value_yield_rows[0] if value_yield_rows else {}
+    top_trajectory = trajectory_rows[0] if trajectory_rows else {}
+    last_prefix = divergence_stability_rows[-1] if divergence_stability_rows else {}
+    all_prefixes_stable = (
+        bool(divergence_stability_rows)
+        and all(row["stable_with_full"] == "true" for row in divergence_stability_rows)
+    )
+
+    return {
+        "top_divergence_policy": top_divergence.get("policy", ""),
+        "top_divergence_metric": top_divergence.get("metric", ""),
+        "top_divergence_value_per_completed_task_response": top_divergence.get(
+            "value_per_completed_task_response",
+            "",
+        ),
+        "top_divergence_value_per_work_event_response": top_divergence.get(
+            "value_per_work_event_response",
+            "",
+        ),
+        "top_divergence": top_divergence.get("divergence", ""),
+        "top_divergence_abs": top_divergence.get("abs_divergence", ""),
+        "top_divergence_stable_last_prefix": last_prefix.get("stable_with_full", ""),
+        "top_divergence_stable_all_prefixes": (
+            str(all_prefixes_stable).lower() if divergence_stability_rows else ""
+        ),
+        "top_divergence_full_seeds": last_prefix.get("full_seeds", ""),
+        "top_divergence_last_prefix_seeds": last_prefix.get("prefix_seeds", ""),
+        "top_divergence_last_prefix_instability_causes": last_prefix.get(
+            "instability_causes",
+            "",
+        ),
+        "top_trajectory_policy": top_trajectory.get("policy", ""),
+        "top_trajectory_response_observable": top_trajectory.get(
+            "response_observable",
+            "",
+        ),
+        "top_trajectory_response_metric": top_trajectory.get("response_metric", ""),
+        "top_trajectory_response_field": top_trajectory.get("response_field", ""),
+        "top_trajectory_response_value": top_trajectory.get("response_value", ""),
+        "top_trajectory_response_abs_value": top_trajectory.get(
+            "response_abs_value",
+            "",
+        ),
+        "top_trajectory_abs_delta_total": top_trajectory.get(
+            "trajectory_abs_delta_total",
+            "",
+        ),
+    }
 
 
 def _validate_limit(limit: int) -> None:
