@@ -26,6 +26,7 @@ from ohdyn.sim import (
 from ohdyn.config import ATTENTION_CLASSES, load_config
 from ohdyn.analyze_pressure import (
     TRAJECTORY_PRESSURE_RANKING_FIELDS,
+    VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS,
     VALUE_YIELD_DIVERGENCE_RANKING_FIELDS,
     run_analysis,
 )
@@ -1902,16 +1903,20 @@ def test_pressure_analysis_reads_joined_csv_pair_and_ranks_responses(
     assert len(rows) == 5
     assert (analysis_dir / "trajectory_pressure_ranking.csv").is_file()
     assert (analysis_dir / "value_yield_divergence_ranking.csv").is_file()
+    assert (analysis_dir / "value_yield_divergence_stability.csv").is_file()
     assert (analysis_dir / "summary.md").is_file()
 
     with (analysis_dir / "trajectory_pressure_ranking.csv").open() as handle:
         csv_rows = list(csv.DictReader(handle))
     with (analysis_dir / "value_yield_divergence_ranking.csv").open() as handle:
         divergence_rows = list(csv.DictReader(handle))
+    with (analysis_dir / "value_yield_divergence_stability.csv").open() as handle:
+        stability_rows = list(csv.DictReader(handle))
     summary = (analysis_dir / "summary.md").read_text()
 
     assert list(csv_rows[0]) == list(TRAJECTORY_PRESSURE_RANKING_FIELDS)
     assert list(divergence_rows[0]) == list(VALUE_YIELD_DIVERGENCE_RANKING_FIELDS)
+    assert list(stability_rows[0]) == list(VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS)
     assert [row["rank"] for row in csv_rows] == ["1", "2", "3", "4", "5"]
     assert [row["rank"] for row in divergence_rows] == ["1", "2", "3", "4", "5"]
     assert csv_rows[0]["response_field"] == rows[0]["response_field"]
@@ -1920,10 +1925,15 @@ def test_pressure_analysis_reads_joined_csv_pair_and_ranks_responses(
     assert divergence_rows[0]["value_per_completed_task_field"]
     assert divergence_rows[0]["value_per_work_event_field"]
     assert divergence_rows[0]["abs_divergence"]
+    assert stability_rows[0]["full_seeds"] == "1,2"
+    assert stability_rows[0]["prefix_seeds"] == "1"
+    assert stability_rows[0]["stable_with_full"] in {"true", "false"}
     assert "## Ranking" in summary
     assert "## Value-yield divergence ranking" in summary
     assert "## Top value-yield divergence interpretation" in summary
+    assert "## Value-yield divergence prefix stability" in summary
     assert "- top divergence: " in summary
+    assert "- top divergence stable across last prefix: " in summary
     assert "completion-normalized yield" in summary
     assert "effort-normalized yield" in summary
     assert "pressure_comparison_metrics.csv" not in summary
@@ -2082,6 +2092,7 @@ def test_pressure_analysis_rejects_blank_or_duplicate_policy_keys_without_partia
     [
         "trajectory_pressure_ranking.csv",
         "value_yield_divergence_ranking.csv",
+        "value_yield_divergence_stability.csv",
         "summary.md",
     ],
 )
@@ -2120,6 +2131,7 @@ def test_documented_pressure_analysis_cli_reproduces_ranking_artifacts(
         [
             "trajectory_pressure_ranking.csv",
             "value_yield_divergence_ranking.csv",
+            "value_yield_divergence_stability.csv",
             "summary.md",
         ],
     )

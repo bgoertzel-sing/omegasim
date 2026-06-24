@@ -9,11 +9,15 @@ from typing import Any
 
 import yaml
 
+from ohdyn.compare_attention import COMPARISON_FIELDS
 from ohdyn.compare_pressure import (
     PRESSURE_COMPARISON_FIELDS,
     PRESSURE_CURVE_METRICS,
     PRESSURE_CURVE_OBSERVABLES,
     PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
+    _format_seed_set,
+    _pressure_rows,
+    _rows_for_seeds,
 )
 
 
@@ -42,9 +46,26 @@ VALUE_YIELD_DIVERGENCE_RANKING_FIELDS = (
     "divergence",
     "abs_divergence",
 )
+VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS = (
+    "full_seeds",
+    "prefix_seeds",
+    "stable_with_full",
+    "instability_causes",
+    "policy",
+    "metric",
+    "value_per_completed_task_field",
+    "value_per_work_event_field",
+    "value_per_completed_task_response",
+    "value_per_work_event_response",
+    "divergence",
+    "abs_divergence",
+    "full_policy",
+    "full_metric",
+)
 ANALYSIS_ARTIFACTS = (
     "trajectory_pressure_ranking.csv",
     "value_yield_divergence_ranking.csv",
+    "value_yield_divergence_stability.csv",
     "summary.md",
 )
 
@@ -77,6 +98,10 @@ def run_analysis(
         pressure_rows=pressure_rows,
         limit=limit,
     )
+    divergence_stability_rows = _value_yield_divergence_stability_rows(
+        pressure_dir=pressure_path,
+        pressure_rows=pressure_rows,
+    )
 
     output_path.mkdir(parents=True, exist_ok=True)
     _write_csv(
@@ -89,11 +114,17 @@ def run_analysis(
         rows=value_yield_rows,
         fieldnames=VALUE_YIELD_DIVERGENCE_RANKING_FIELDS,
     )
+    _write_csv(
+        output_path / "value_yield_divergence_stability.csv",
+        rows=divergence_stability_rows,
+        fieldnames=VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             pressure_dir=pressure_path,
             trajectory_rows=trajectory_rows_ranked,
             value_yield_rows=value_yield_rows,
+            divergence_stability_rows=divergence_stability_rows,
             pressure_row_count=len(pressure_rows),
             trajectory_row_count=len(trajectory_rows),
             limit=limit,
@@ -204,6 +235,104 @@ def _trajectory_pressure_rows(
     ]
 
 
+def _value_yield_divergence_stability_rows(
+    *,
+    pressure_dir: Path,
+    pressure_rows: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    normal_rows = _read_csv(
+        pressure_dir / "normal_pressure" / "comparison_metrics.csv",
+        required_fields=COMPARISON_FIELDS,
+    )
+    medium_pressure_rows = _read_csv(
+        pressure_dir / "medium_pressure" / "comparison_metrics.csv",
+        required_fields=COMPARISON_FIELDS,
+    )
+    high_pressure_rows = _read_csv(
+        pressure_dir / "high_pressure" / "comparison_metrics.csv",
+        required_fields=COMPARISON_FIELDS,
+    )
+    seeds = _comparison_seeds(normal_rows)
+    if len(seeds) < 2:
+        return []
+
+    full_top = _value_yield_divergence_rows(pressure_rows=pressure_rows, limit=1)[0]
+    rows: list[dict[str, Any]] = []
+    for prefix_length in range(1, len(seeds)):
+        prefix_seeds = seeds[:prefix_length]
+        prefix_seed_set = set(prefix_seeds)
+        prefix_pressure_rows = _pressure_rows(
+            _rows_for_seeds(normal_rows, prefix_seed_set),
+            _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
+            _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+        )
+        prefix_top = _value_yield_divergence_rows(
+            pressure_rows=prefix_pressure_rows,
+            limit=1,
+        )[0]
+        stable_with_full = _same_value_yield_divergence(full_top, prefix_top)
+        rows.append(
+            {
+                "full_seeds": _format_seed_set(seeds),
+                "prefix_seeds": _format_seed_set(prefix_seeds),
+                "stable_with_full": str(stable_with_full).lower(),
+                "instability_causes": _value_yield_divergence_instability_causes(
+                    full_top,
+                    prefix_top,
+                ),
+                "policy": prefix_top["policy"],
+                "metric": prefix_top["metric"],
+                "value_per_completed_task_field": prefix_top[
+                    "value_per_completed_task_field"
+                ],
+                "value_per_work_event_field": prefix_top[
+                    "value_per_work_event_field"
+                ],
+                "value_per_completed_task_response": prefix_top[
+                    "value_per_completed_task_response"
+                ],
+                "value_per_work_event_response": prefix_top[
+                    "value_per_work_event_response"
+                ],
+                "divergence": prefix_top["divergence"],
+                "abs_divergence": prefix_top["abs_divergence"],
+                "full_policy": full_top["policy"],
+                "full_metric": full_top["metric"],
+            }
+        )
+    return rows
+
+
+def _comparison_seeds(rows: list[dict[str, str]]) -> tuple[int, ...]:
+    seeds: list[int] = []
+    for row in rows:
+        seed = int(row["seed"])
+        if seed not in seeds:
+            seeds.append(seed)
+    return tuple(seeds)
+
+
+def _same_value_yield_divergence(
+    first: dict[str, Any],
+    second: dict[str, Any],
+) -> bool:
+    return (first["policy"], first["metric"]) == (second["policy"], second["metric"])
+
+
+def _value_yield_divergence_instability_causes(
+    full_top: dict[str, Any],
+    prefix_top: dict[str, Any],
+) -> str:
+    changed = []
+    if full_top["policy"] != prefix_top["policy"]:
+        changed.append("policy")
+    if full_top["metric"] != prefix_top["metric"]:
+        changed.append("metric")
+    if not changed:
+        return "none"
+    return ",".join(changed)
+
+
 def _value_yield_divergence_rows(
     *,
     pressure_rows: list[dict[str, str]],
@@ -305,6 +434,7 @@ def _summary(
     pressure_dir: Path,
     trajectory_rows: list[dict[str, Any]],
     value_yield_rows: list[dict[str, Any]],
+    divergence_stability_rows: list[dict[str, Any]],
     pressure_row_count: int,
     trajectory_row_count: int,
     limit: int,
@@ -357,6 +487,36 @@ def _summary(
                 "",
                 "## Top value-yield divergence interpretation",
                 _value_yield_divergence_interpretation(value_yield_rows[0]),
+            ]
+        )
+    lines.extend(["", "## Value-yield divergence prefix stability"])
+    if not divergence_stability_rows:
+        lines.append("- unavailable: at least two seeds are required for prefix stability.")
+    else:
+        last_prefix = divergence_stability_rows[-1]
+        all_stable = all(
+            row["stable_with_full"] == "true"
+            for row in divergence_stability_rows
+        )
+        lines.extend(
+            [
+                f"- full_seeds: {last_prefix['full_seeds']}",
+                f"- last_prefix: {last_prefix['prefix_seeds']}",
+                (
+                    "- top divergence stable across last prefix: "
+                    f"{last_prefix['stable_with_full']}"
+                ),
+                f"- top divergence stable across all prefixes: {str(all_stable).lower()}",
+                f"- last prefix instability causes: {last_prefix['instability_causes']}",
+                "| prefix_seeds | top_divergence | stable_with_full | instability_causes |",
+                "| --- | --- | --- | --- |",
+                *[
+                    "| "
+                    f"{row['prefix_seeds']} | policy={row['policy']}, "
+                    f"metric={row['metric']}, divergence={row['divergence']} | "
+                    f"{row['stable_with_full']} | {row['instability_causes']} |"
+                    for row in divergence_stability_rows
+                ],
             ]
         )
     return "\n".join(lines) + "\n"
