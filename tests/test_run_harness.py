@@ -2017,9 +2017,46 @@ def test_pressure_analysis_five_seed_interpretation_regression(
                 "effort-normalized yield"
             ),
         ),
+        (
+            0.0,
+            0.0,
+            "pressure leaves both yield normalizations unchanged",
+        ),
+        (
+            0.0,
+            0.75,
+            (
+                "pressure leaves completion-normalized yield unchanged while "
+                "improves effort-normalized yield"
+            ),
+        ),
+        (
+            0.0,
+            -0.75,
+            (
+                "pressure leaves completion-normalized yield unchanged while "
+                "degrades effort-normalized yield"
+            ),
+        ),
+        (
+            0.25,
+            0.0,
+            (
+                "pressure improves completion-normalized yield while leaving "
+                "effort-normalized yield unchanged"
+            ),
+        ),
+        (
+            -0.25,
+            0.0,
+            (
+                "pressure degrades completion-normalized yield while leaving "
+                "effort-normalized yield unchanged"
+            ),
+        ),
     ],
 )
-def test_pressure_analysis_value_yield_tradeoff_wording(
+def test_pressure_analysis_value_yield_branch_wording(
     completed_response: float,
     work_response: float,
     expected: str,
