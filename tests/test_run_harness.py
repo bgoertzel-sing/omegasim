@@ -24,6 +24,10 @@ from ohdyn.sim import (
     role_action_metric_fields,
 )
 from ohdyn.config import ATTENTION_CLASSES, load_config
+from ohdyn.analyze_pressure import (
+    TRAJECTORY_PRESSURE_RANKING_FIELDS,
+    run_analysis,
+)
 from ohdyn.compare_attention import run_comparison
 from ohdyn.compare_pressure import (
     PRESSURE_COMPARISON_FIELDS,
@@ -153,6 +157,34 @@ def _run_documented_pressure_cli(
             *(str(seed) for seed in seeds),
             "--out",
             str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    return completed
+
+
+def _run_documented_pressure_analysis_cli(
+    pressure_dir: Path,
+    out_dir: Path,
+    *,
+    limit: int = 5,
+) -> subprocess.CompletedProcess[str]:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.analyze_pressure",
+            "--pressure-dir",
+            str(pressure_dir),
+            "--out",
+            str(out_dir),
+            "--limit",
+            str(limit),
         ],
         capture_output=True,
         text=True,
@@ -1808,6 +1840,53 @@ def test_documented_pressure_cli_reproduces_source_metric_selection_fields(
     assert first_rows[0]["source_metric_normal_mean"] == "20.666667"
     assert first_rows[0]["source_metric_medium_mean"] == "39.333333"
     assert first_rows[0]["source_metric_high_mean"] == "45.666667"
+
+
+def test_pressure_analysis_reads_joined_csv_pair_and_ranks_responses(
+    tmp_path: Path,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=pressure_dir)
+    rows = run_analysis(pressure_dir=pressure_dir, out_dir=analysis_dir, limit=5)
+
+    assert len(rows) == 5
+    assert (analysis_dir / "trajectory_pressure_ranking.csv").is_file()
+    assert (analysis_dir / "summary.md").is_file()
+
+    with (analysis_dir / "trajectory_pressure_ranking.csv").open() as handle:
+        csv_rows = list(csv.DictReader(handle))
+    summary = (analysis_dir / "summary.md").read_text()
+
+    assert list(csv_rows[0]) == list(TRAJECTORY_PRESSURE_RANKING_FIELDS)
+    assert [row["rank"] for row in csv_rows] == ["1", "2", "3", "4", "5"]
+    assert csv_rows[0]["response_field"] == rows[0]["response_field"]
+    assert csv_rows[0]["response_abs_value"]
+    assert csv_rows[0]["trajectory_abs_delta_total"]
+    assert "## Ranking" in summary
+    assert "pressure_comparison_metrics.csv" not in summary
+
+
+def test_documented_pressure_analysis_cli_reproduces_ranking_artifacts(
+    tmp_path: Path,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    _run_documented_pressure_cli(pressure_dir, seeds=(1, 2))
+    _run_documented_pressure_analysis_cli(pressure_dir, first, limit=5)
+    _run_documented_pressure_analysis_cli(pressure_dir, second, limit=5)
+
+    _assert_artifacts_are_byte_identical(
+        first,
+        second,
+        [
+            "trajectory_pressure_ranking.csv",
+            "summary.md",
+        ],
+    )
 
 
 def test_documented_pressure_cli_refuses_existing_top_level_artifacts_without_modifying_them(

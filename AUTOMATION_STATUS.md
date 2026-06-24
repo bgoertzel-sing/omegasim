@@ -4,13 +4,13 @@ This file is maintained by the OmegaSim research automation so progress can be c
 
 ## Current Focus
 
-Phase A2 downstream consumption notes for machine-readable pressure comparison artifacts on top of the stable A0/A1 local simulator harness.
+Phase A2 executable downstream consumption helper for machine-readable pressure comparison artifacts on top of the stable A0/A1 local simulator harness.
 
 ## Latest Run
 
-- Status: ok, 2026-06-24 documented deterministic downstream consumption of the A2 pressure comparison CSV pair.
-- Changed: no simulator, scheduling, baseline run harness, A0/A1 schema, or artifact writer changes; README now states that downstream analysis should join `pressure_comparison_metrics.csv` and `pressure_trajectory_structure.csv` on stable `policy`, use the former for pressure-response slopes/curvature and queue/throughput/capture-pressure observables, and use the latter for fixed-policy turning-point and longest-dwell trajectory summaries; the documented pressure CLI smoke test now checks that both top-level CSVs expose the same policy row order.
-- Smoke run: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k documented_pressure_cli_writes_pressure_layout_and_curve_summary` passed with 1 selected test.
-- Verified: `.venv-conda/bin/python -m ruff check tests/test_run_harness.py` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py` passed with 465 tests.
+- Status: ok, 2026-06-24 added deterministic A2 pressure analysis helper that consumes the pressure comparison CSV pair without rerunning simulations.
+- Changed: no simulator, scheduling, baseline run harness, A0/A1 schema, or artifact writer changes; added `ohdyn.analyze_pressure` CLI/API to read `pressure_comparison_metrics.csv` and `pressure_trajectory_structure.csv`, join them by `policy`, and write `trajectory_pressure_ranking.csv` plus `summary.md`; README documents the helper command and output contract; tests cover direct helper output and documented CLI reproducibility.
+- Smoke run: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'pressure_analysis'` passed with 2 selected tests.
+- Verified: `.venv-conda/bin/python -m ruff check ohdyn tests` passed; `.venv-conda/bin/python -m pytest tests/test_run_harness.py` passed with 467 tests.
 - Blockers: none.
-- Next step: add one executable A2 analysis helper that reads the pressure comparison CSV pair by `policy` and emits a compact deterministic trajectory-vs-pressure ranking artifact.
+- Next step: add missing-input and existing-output collision regression tests for `ohdyn.analyze_pressure` before expanding the analysis surface.
