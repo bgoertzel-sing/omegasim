@@ -31,6 +31,22 @@ TRAJECTORY_PRESSURE_RANKING_FIELDS = (
     "longest_dwell_steps_abs_delta",
     "trajectory_abs_delta_total",
 )
+VALUE_YIELD_DIVERGENCE_RANKING_FIELDS = (
+    "rank",
+    "policy",
+    "metric",
+    "value_per_completed_task_field",
+    "value_per_work_event_field",
+    "value_per_completed_task_response",
+    "value_per_work_event_response",
+    "divergence",
+    "abs_divergence",
+)
+ANALYSIS_ARTIFACTS = (
+    "trajectory_pressure_ranking.csv",
+    "value_yield_divergence_ranking.csv",
+    "summary.md",
+)
 
 
 def run_analysis(
@@ -52,24 +68,38 @@ def run_analysis(
         pressure_path / "pressure_trajectory_structure.csv",
         required_fields=PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
     )
-    rows = _trajectory_pressure_rows(
+    trajectory_rows_ranked = _trajectory_pressure_rows(
         pressure_rows=pressure_rows,
         trajectory_rows=trajectory_rows,
         limit=limit,
     )
+    value_yield_rows = _value_yield_divergence_rows(
+        pressure_rows=pressure_rows,
+        limit=limit,
+    )
 
     output_path.mkdir(parents=True, exist_ok=True)
-    _write_ranking_csv(output_path / "trajectory_pressure_ranking.csv", rows)
+    _write_csv(
+        output_path / "trajectory_pressure_ranking.csv",
+        rows=trajectory_rows_ranked,
+        fieldnames=TRAJECTORY_PRESSURE_RANKING_FIELDS,
+    )
+    _write_csv(
+        output_path / "value_yield_divergence_ranking.csv",
+        rows=value_yield_rows,
+        fieldnames=VALUE_YIELD_DIVERGENCE_RANKING_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             pressure_dir=pressure_path,
-            rows=rows,
+            trajectory_rows=trajectory_rows_ranked,
+            value_yield_rows=value_yield_rows,
             pressure_row_count=len(pressure_rows),
             trajectory_row_count=len(trajectory_rows),
             limit=limit,
         )
     )
-    return rows
+    return trajectory_rows_ranked
 
 
 def _validate_limit(limit: int) -> None:
@@ -80,11 +110,7 @@ def _validate_limit(limit: int) -> None:
 def _ensure_analysis_outputs_available(output_path: Path) -> None:
     if output_path.exists() and not output_path.is_dir():
         raise FileExistsError(f"Output path {output_path} exists and is not a directory.")
-    collisions = [
-        artifact_name
-        for artifact_name in ("trajectory_pressure_ranking.csv", "summary.md")
-        if (output_path / artifact_name).exists()
-    ]
+    collisions = [name for name in ANALYSIS_ARTIFACTS if (output_path / name).exists()]
     if collisions:
         names = ", ".join(collisions)
         raise FileExistsError(f"Output path {output_path} already contains analysis artifacts: {names}")
@@ -178,6 +204,68 @@ def _trajectory_pressure_rows(
     ]
 
 
+def _value_yield_divergence_rows(
+    *,
+    pressure_rows: list[dict[str, str]],
+    limit: int,
+) -> list[dict[str, Any]]:
+    _rows_by_policy(pressure_rows, "pressure_comparison_metrics.csv")
+    candidates: list[dict[str, Any]] = []
+    metric_fields = (
+        (
+            "high_minus_normal_delta",
+            "value_per_completed_task_mean_delta",
+            "value_per_work_event_mean_delta",
+        ),
+        (
+            "normal_to_medium_slope",
+            "value_per_completed_task_normal_to_medium_slope",
+            "value_per_work_event_normal_to_medium_slope",
+        ),
+        (
+            "medium_to_high_slope",
+            "value_per_completed_task_medium_to_high_slope",
+            "value_per_work_event_medium_to_high_slope",
+        ),
+        (
+            "curvature",
+            "value_per_completed_task_pressure_curvature",
+            "value_per_work_event_pressure_curvature",
+        ),
+    )
+
+    for pressure_row in pressure_rows:
+        policy = pressure_row["policy"]
+        for metric, completed_field, work_field in metric_fields:
+            completed_response = _float_field(pressure_row, completed_field)
+            work_response = _float_field(pressure_row, work_field)
+            divergence = completed_response - work_response
+            candidates.append(
+                {
+                    "policy": policy,
+                    "metric": metric,
+                    "value_per_completed_task_field": completed_field,
+                    "value_per_work_event_field": work_field,
+                    "value_per_completed_task_response": round(completed_response, 6),
+                    "value_per_work_event_response": round(work_response, 6),
+                    "divergence": round(divergence, 6),
+                    "abs_divergence": round(abs(divergence), 6),
+                }
+            )
+
+    candidates.sort(
+        key=lambda row: (
+            -float(row["abs_divergence"]),
+            str(row["policy"]),
+            str(row["metric"]),
+        )
+    )
+    return [
+        {"rank": rank, **row}
+        for rank, row in enumerate(candidates[:limit], start=1)
+    ]
+
+
 def _rows_by_policy(
     rows: list[dict[str, str]],
     artifact_name: str,
@@ -200,9 +288,14 @@ def _float_field(row: dict[str, str], field: str) -> float:
         raise ValueError(f"CSV row is missing required field: {field}") from exc
 
 
-def _write_ranking_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+def _write_csv(
+    path: Path,
+    *,
+    rows: list[dict[str, Any]],
+    fieldnames: tuple[str, ...],
+) -> None:
     with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(TRAJECTORY_PRESSURE_RANKING_FIELDS))
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
         writer.writeheader()
         writer.writerows(rows)
 
@@ -210,7 +303,8 @@ def _write_ranking_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 def _summary(
     *,
     pressure_dir: Path,
-    rows: list[dict[str, Any]],
+    trajectory_rows: list[dict[str, Any]],
+    value_yield_rows: list[dict[str, Any]],
     pressure_row_count: int,
     trajectory_row_count: int,
     limit: int,
@@ -225,7 +319,7 @@ def _summary(
         "",
         "## Ranking",
     ]
-    if not rows:
+    if not trajectory_rows:
         lines.append("- none: no rows available")
     else:
         lines.extend(
@@ -237,7 +331,24 @@ def _summary(
                     f"{row['rank']} | {row['policy']} | {row['response_observable']} | "
                     f"{row['response_metric']} | {row['response_value']} | "
                     f"{row['trajectory_abs_delta_total']} |"
-                    for row in rows
+                    for row in trajectory_rows
+                ],
+            ]
+        )
+    lines.extend(["", "## Value-yield divergence ranking"])
+    if not value_yield_rows:
+        lines.append("- none: no rows available")
+    else:
+        lines.extend(
+            [
+                "| rank | policy | metric | value_per_completed_task_response | value_per_work_event_response | divergence |",
+                "| ---: | --- | --- | ---: | ---: | ---: |",
+                *[
+                    "| "
+                    f"{row['rank']} | {row['policy']} | {row['metric']} | "
+                    f"{row['value_per_completed_task_response']} | "
+                    f"{row['value_per_work_event_response']} | {row['divergence']} |"
+                    for row in value_yield_rows
                 ],
             ]
         )
