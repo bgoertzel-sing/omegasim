@@ -1,0 +1,11 @@
+selection_scope,policy,observable,metric,field,source_field,full_rank,full_response_value,full_response_abs_value,top_selection_count,top_selection_probability,positive_probability,negative_probability,zero_probability,sign_stability
+global,research_heavy,final queue depth,normal_to_medium_slope,queue_depth_normal_to_medium_slope,queue_depth,4,35.416666,35.416666,193,0.965,1.0,0.0,0.0,1.0
+global,baseline,value-weighted completed work,curvature,value_weighted_completed_pressure_curvature,value_weighted_completed_total,8,-24.583332,24.583332,7,0.035,0.23,0.77,0.0,0.77
+global,research_heavy,value-weighted completed work,medium_to_high_slope,value_weighted_completed_medium_to_high_slope,value_weighted_completed_total,1,-47.5,47.5,0,0.0,0.0,1.0,0.0,1.0
+class_capture_pressure,baseline,peak near term external capture pressure,curvature,near_term_external_capture_pressure_peak_pressure_curvature,near_term_external_capture_pressure_peak,1,0.320726,0.320726,122,0.61,1.0,0.0,0.0,1.0
+class_capture_pressure,research_heavy,peak long term research capture pressure,normal_to_medium_slope,long_term_research_capture_pressure_peak_normal_to_medium_slope,long_term_research_capture_pressure_peak,18,0.117474,0.117474,63,0.315,0.665,0.335,0.0,0.665
+class_capture_pressure,baseline,final near term external capture pressure,curvature,near_term_external_capture_pressure_final_pressure_curvature,near_term_external_capture_pressure_final,2,0.271757,0.271757,9,0.045,0.97,0.0,0.03,0.97
+value_yield_divergence,baseline,value-yield divergence,medium_to_high_slope,value_yield_divergence,completion_vs_effort_yield_gap,1,0.97354,0.97354,100,0.5,1.0,0.0,0.0,1.0
+value_yield_divergence,research_heavy,value-yield divergence,curvature,value_yield_divergence,completion_vs_effort_yield_gap,3,0.643045,0.643045,48,0.24,0.295,0.705,0.0,0.705
+value_yield_divergence,baseline,value-yield divergence,curvature,value_yield_divergence,completion_vs_effort_yield_gap,2,0.918797,0.918797,28,0.14,0.965,0.035,0.0,0.965
+value_yield_divergence,research_heavy,value-yield divergence,normal_to_medium_slope,value_yield_divergence,completion_vs_effort_yield_gap,7,-0.060367,0.060367,24,0.12,0.705,0.295,0.0,0.705
