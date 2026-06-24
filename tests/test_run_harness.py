@@ -62,6 +62,13 @@ A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE = Path(
 A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE = Path(
     "configs/a2_attention_internal_improvement_high_pressure.yaml"
 )
+A2_ATTENTION_EXTREME_PRESSURE = Path("configs/a2_attention_extreme_pressure.yaml")
+A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE = Path(
+    "configs/a2_attention_research_heavy_extreme_pressure.yaml"
+)
+A2_ATTENTION_INTERNAL_IMPROVEMENT_EXTREME_PRESSURE = Path(
+    "configs/a2_attention_internal_improvement_extreme_pressure.yaml"
+)
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -96,6 +103,9 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     A2_ATTENTION_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_INTERNAL_IMPROVEMENT_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -408,6 +418,17 @@ def test_loads_a2_attention_internal_improvement_config() -> None:
             A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE,
             "a2_attention_internal_improvement_high_pressure",
             1.8,
+        ),
+        (A2_ATTENTION_EXTREME_PRESSURE, "a2_attention_extreme_pressure", 2.2),
+        (
+            A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE,
+            "a2_attention_research_heavy_extreme_pressure",
+            2.2,
+        ),
+        (
+            A2_ATTENTION_INTERNAL_IMPROVEMENT_EXTREME_PRESSURE,
+            "a2_attention_internal_improvement_extreme_pressure",
+            2.2,
         ),
     ],
 )
@@ -1751,6 +1772,47 @@ def test_a2_attention_pressure_comparison_curve_metrics_match_condition_means(
         ),
         abs=2e-6,
     )
+
+
+def test_a2_attention_pressure_comparison_uses_custom_pressure_axis(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_extreme_pressure_compare"
+
+    rows = run_pressure_comparison(
+        medium_pressure_baseline_config=A2_ATTENTION_HIGH_PRESSURE,
+        medium_pressure_variant_config=A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE,
+        medium_pressure_internal_improvement_config=(
+            A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE
+        ),
+        high_pressure_baseline_config=A2_ATTENTION_EXTREME_PRESSURE,
+        high_pressure_variant_config=A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE,
+        high_pressure_internal_improvement_config=(
+            A2_ATTENTION_INTERNAL_IMPROVEMENT_EXTREME_PRESSURE
+        ),
+        seeds=(1,),
+        out_dir=out_dir,
+    )
+    baseline_row = next(row for row in rows if row["policy"] == "baseline")
+    means = {}
+    for condition in ("medium_pressure", "high_pressure"):
+        with (out_dir / condition / "comparison_metrics.csv").open() as handle:
+            condition_rows = [
+                row for row in csv.DictReader(handle)
+                if row["policy"] == "baseline"
+            ]
+        means[condition] = _mean_csv_metric(
+            condition_rows,
+            policy="baseline",
+            field="queue_depth",
+        )
+
+    expected_slope = round(
+        (means["high_pressure"] - means["medium_pressure"]) / (2.2 - 1.8),
+        6,
+    )
+
+    assert baseline_row["queue_depth_medium_to_high_slope"] == expected_slope
 
 
 def test_a2_attention_pressure_comparison_runner_is_reproducible(

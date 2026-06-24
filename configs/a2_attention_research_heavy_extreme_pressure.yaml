@@ -1,0 +1,24 @@
+run:
+  experiment_id: a2_attention_research_heavy_extreme_pressure
+  ticks: 12
+
+model:
+  agent_count: 15
+  task_creation_pressure: 2.2
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+attention_policy:
+  near_term_external: 0.20
+  long_term_research: 0.55
+  internal_improvement: 0.15
+  housekeeping: 0.10

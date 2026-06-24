@@ -10,7 +10,7 @@ from typing import Any
 
 import yaml
 
-from ohdyn.config import ATTENTION_CLASSES
+from ohdyn.config import ATTENTION_CLASSES, load_config
 from ohdyn.compare_attention import (
     DEFAULT_BASELINE_CONFIG,
     DEFAULT_INTERNAL_IMPROVEMENT_CONFIG,
@@ -41,6 +41,11 @@ DEFAULT_MEDIUM_PRESSURE_INTERNAL_IMPROVEMENT_CONFIG = Path(
 NORMAL_PRESSURE_VALUE = 1.0
 MEDIUM_PRESSURE_VALUE = 1.4
 HIGH_PRESSURE_VALUE = 1.8
+DEFAULT_PRESSURE_VALUES = (
+    NORMAL_PRESSURE_VALUE,
+    MEDIUM_PRESSURE_VALUE,
+    HIGH_PRESSURE_VALUE,
+)
 PRESSURE_COMPARISON_FIELDS = (
     "policy",
     "normal_total_steps",
@@ -279,6 +284,17 @@ def run_pressure_comparison(
     output_path = Path(out_dir)
     _ensure_pressure_outputs_available(output_path)
     output_path.mkdir(parents=True, exist_ok=True)
+    pressure_values = _pressure_values_from_configs(
+        normal_baseline_config,
+        normal_variant_config,
+        normal_internal_improvement_config,
+        medium_pressure_baseline_config,
+        medium_pressure_variant_config,
+        medium_pressure_internal_improvement_config,
+        high_pressure_baseline_config,
+        high_pressure_variant_config,
+        high_pressure_internal_improvement_config,
+    )
 
     normal_rows = run_comparison(
         baseline_config=normal_baseline_config,
@@ -302,13 +318,19 @@ def run_pressure_comparison(
         out_dir=output_path / "high_pressure",
     )
 
-    rows = _pressure_rows(normal_rows, medium_pressure_rows, high_pressure_rows)
+    rows = _pressure_rows(
+        normal_rows,
+        medium_pressure_rows,
+        high_pressure_rows,
+        pressure_values=pressure_values,
+    )
     stability_agreement_rows = _pressure_stability_agreement_rows(
         seeds=seeds,
         rows=rows,
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     )
     _write_pressure_comparison_csv(output_path / "pressure_comparison_metrics.csv", rows)
     _write_pressure_response_selection_csv(
@@ -319,6 +341,7 @@ def run_pressure_comparison(
             normal_rows=normal_rows,
             medium_pressure_rows=medium_pressure_rows,
             high_pressure_rows=high_pressure_rows,
+            pressure_values=pressure_values,
         ),
     )
     _write_pressure_stability_agreement_csv(
@@ -366,9 +389,66 @@ def run_pressure_comparison(
             medium_pressure_rows=medium_pressure_rows,
             high_pressure_rows=high_pressure_rows,
             stability_agreement_rows=stability_agreement_rows,
+            pressure_values=pressure_values,
         )
     )
     return rows
+
+
+def _pressure_values_from_configs(
+    normal_baseline_config: str | Path,
+    normal_variant_config: str | Path,
+    normal_internal_improvement_config: str | Path | None,
+    medium_pressure_baseline_config: str | Path,
+    medium_pressure_variant_config: str | Path,
+    medium_pressure_internal_improvement_config: str | Path | None,
+    high_pressure_baseline_config: str | Path,
+    high_pressure_variant_config: str | Path,
+    high_pressure_internal_improvement_config: str | Path | None,
+) -> tuple[float, float, float]:
+    values = (
+        _condition_pressure_value(
+            "normal",
+            normal_baseline_config,
+            normal_variant_config,
+            normal_internal_improvement_config,
+        ),
+        _condition_pressure_value(
+            "medium-pressure",
+            medium_pressure_baseline_config,
+            medium_pressure_variant_config,
+            medium_pressure_internal_improvement_config,
+        ),
+        _condition_pressure_value(
+            "high-pressure",
+            high_pressure_baseline_config,
+            high_pressure_variant_config,
+            high_pressure_internal_improvement_config,
+        ),
+    )
+    if not values[0] < values[1] < values[2]:
+        raise ValueError(
+            "Pressure comparison configs must have strictly increasing "
+            "task_creation_pressure values across normal, medium, and high conditions."
+        )
+    return values
+
+
+def _condition_pressure_value(
+    condition: str,
+    *config_paths: str | Path | None,
+) -> float:
+    paths = [Path(path) for path in config_paths if path is not None]
+    values = [load_config(path).model.task_creation_pressure for path in paths]
+    if not values:
+        raise ValueError(f"{condition} pressure comparison has no configs.")
+    first = values[0]
+    if any(value != first for value in values[1:]):
+        joined = ", ".join(f"{path}={value}" for path, value in zip(paths, values, strict=True))
+        raise ValueError(
+            f"{condition} pressure configs must use the same task_creation_pressure: {joined}"
+        )
+    return first
 
 
 def _ensure_pressure_outputs_available(output_path: Path) -> None:
@@ -395,6 +475,8 @@ def _pressure_rows(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    *,
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[dict[str, Any]]:
     policies = tuple(dict.fromkeys(row["policy"] for row in normal_rows))
     medium_pressure_policies = {row["policy"] for row in medium_pressure_rows}
@@ -416,6 +498,7 @@ def _pressure_rows(
             [row for row in normal_rows if row["policy"] == policy],
             [row for row in medium_pressure_rows if row["policy"] == policy],
             [row for row in high_pressure_rows if row["policy"] == policy],
+            pressure_values=pressure_values,
         )
         for policy in policies
     ]
@@ -437,6 +520,8 @@ def _pressure_row(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    *,
+    pressure_values: tuple[float, float, float],
 ) -> dict[str, Any]:
     normal_counts, normal_total_steps = _phase_space_regime_counts(normal_rows)
     _, medium_total_steps = _phase_space_regime_counts(medium_pressure_rows)
@@ -544,6 +629,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="value_weighted_completed_total",
             output_prefix="value_weighted_completed",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -553,6 +639,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="value_per_completed_task_total",
             output_prefix="value_per_completed_task",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -562,6 +649,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="value_per_work_event_total",
             output_prefix="value_per_work_event",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -571,6 +659,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="tasks_completed_total",
             output_prefix="tasks_completed",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -580,6 +669,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="queue_depth",
             output_prefix="queue_depth",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -589,6 +679,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="queued_task_age_mean_final",
             output_prefix="queued_task_age_mean_final",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -598,6 +689,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="queued_task_age_max_peak",
             output_prefix="queued_task_age_max_peak",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -607,6 +699,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="attention_capture_pressure_max_final",
             output_prefix="attention_capture_pressure_max_final",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -616,6 +709,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="attention_capture_pressure_mean_over_ticks",
             output_prefix="attention_capture_pressure_mean_over_ticks",
+            pressure_values=pressure_values,
         )
     )
     row.update(
@@ -625,6 +719,7 @@ def _pressure_row(
             high_pressure_rows,
             source_field="attention_capture_pressure_peak",
             output_prefix="attention_capture_pressure_peak",
+            pressure_values=pressure_values,
         )
     )
     for class_name in ATTENTION_CLASSES:
@@ -636,6 +731,7 @@ def _pressure_row(
                     high_pressure_rows,
                     source_field=f"{class_name}_capture_pressure_{statistic}",
                     output_prefix=f"{class_name}_capture_pressure_{statistic}",
+                    pressure_values=pressure_values,
                 )
             )
     return row
@@ -656,21 +752,23 @@ def _pressure_curve_metrics(
     *,
     source_field: str,
     output_prefix: str,
+    pressure_values: tuple[float, float, float],
 ) -> dict[str, float]:
     normal_mean = _mean(normal_rows, source_field)
     medium_mean = _mean(medium_pressure_rows, source_field)
     high_mean = _mean(high_pressure_rows, source_field)
+    normal_pressure, medium_pressure, high_pressure = pressure_values
     normal_to_medium_slope = _pressure_slope(
         normal_mean,
         medium_mean,
-        NORMAL_PRESSURE_VALUE,
-        MEDIUM_PRESSURE_VALUE,
+        normal_pressure,
+        medium_pressure,
     )
     medium_to_high_slope = _pressure_slope(
         medium_mean,
         high_mean,
-        MEDIUM_PRESSURE_VALUE,
-        HIGH_PRESSURE_VALUE,
+        medium_pressure,
+        high_pressure,
     )
     return {
         f"{output_prefix}_normal_to_medium_slope": normal_to_medium_slope,
@@ -881,6 +979,7 @@ def _pressure_response_selection_rows(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[dict[str, Any]]:
     candidates = _pressure_curve_response_candidates(rows)
     if not candidates:
@@ -906,6 +1005,7 @@ def _pressure_response_selection_rows(
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     ):
         prefix_seed_set = set(comparison["prefix_seeds"])
         selection_rows.append(
@@ -917,6 +1017,7 @@ def _pressure_response_selection_rows(
                     _rows_for_seeds(normal_rows, prefix_seed_set),
                     _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
                     _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+                    pressure_values=pressure_values,
                 ),
                 normal_rows=_rows_for_seeds(normal_rows, prefix_seed_set),
                 medium_pressure_rows=_rows_for_seeds(
@@ -935,6 +1036,7 @@ def _pressure_response_selection_rows(
             normal_rows=normal_rows,
             medium_pressure_rows=medium_pressure_rows,
             high_pressure_rows=high_pressure_rows,
+            pressure_values=pressure_values,
         )
     )
     return selection_rows
@@ -947,6 +1049,7 @@ def _pressure_stability_agreement_rows(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[dict[str, Any]]:
     if (
         len(seeds) < 2
@@ -961,6 +1064,7 @@ def _pressure_stability_agreement_rows(
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     )
     class_comparisons = _prefix_per_class_capture_pressure_comparisons(
         seeds=seeds,
@@ -968,6 +1072,7 @@ def _pressure_stability_agreement_rows(
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     )
     return [
         _pressure_stability_agreement_row(
@@ -1019,6 +1124,7 @@ def _per_class_capture_pressure_selection_rows(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[dict[str, Any]]:
     candidates = _per_class_capture_pressure_candidates(rows)
     if not candidates:
@@ -1044,6 +1150,7 @@ def _per_class_capture_pressure_selection_rows(
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     ):
         prefix_seed_set = set(comparison["prefix_seeds"])
         selection_rows.append(
@@ -1055,6 +1162,7 @@ def _per_class_capture_pressure_selection_rows(
                     _rows_for_seeds(normal_rows, prefix_seed_set),
                     _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
                     _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+                    pressure_values=pressure_values,
                 ),
                 normal_rows=_rows_for_seeds(normal_rows, prefix_seed_set),
                 medium_pressure_rows=_rows_for_seeds(
@@ -1134,6 +1242,7 @@ def _pressure_summary(
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
     stability_agreement_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> str:
     lines = [
         "# A2 attention pressure comparison",
@@ -1195,6 +1304,7 @@ def _pressure_summary(
             normal_rows=normal_rows,
             medium_pressure_rows=medium_pressure_rows,
             high_pressure_rows=high_pressure_rows,
+            pressure_values=pressure_values,
         ),
         "",
         "## Value throughput vs effort interpretation",
@@ -1240,6 +1350,7 @@ def _pressure_summary(
             normal_rows=normal_rows,
             medium_pressure_rows=medium_pressure_rows,
             high_pressure_rows=high_pressure_rows,
+            pressure_values=pressure_values,
         ),
         "",
         "## Pressure-response stability agreement",
@@ -1250,6 +1361,7 @@ def _pressure_summary(
             normal_rows=normal_rows,
             medium_pressure_rows=medium_pressure_rows,
             high_pressure_rows=high_pressure_rows,
+            pressure_values=pressure_values,
         ),
         "",
         "## Pressure-stability convergence inspection",
@@ -1264,6 +1376,7 @@ def _pressure_summary(
             normal_rows=normal_rows,
             medium_pressure_rows=medium_pressure_rows,
             high_pressure_rows=high_pressure_rows,
+            pressure_values=pressure_values,
         ),
         "",
         "## Fixed-policy pressure curves",
@@ -1416,6 +1529,7 @@ def _per_class_capture_pressure_prefix_comparison_lines(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[str]:
     if len(seeds) < 2:
         return ["- unavailable: at least two seeds are required for prefix comparison."]
@@ -1430,6 +1544,7 @@ def _per_class_capture_pressure_prefix_comparison_lines(
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     )
     last_prefix = prefix_comparisons[-1]
     full_top = full_candidates[0]
@@ -1473,6 +1588,7 @@ def _pressure_response_stability_agreement_lines(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[str]:
     if len(seeds) < 2:
         return ["- unavailable: at least two seeds are required for stability agreement."]
@@ -1489,6 +1605,7 @@ def _pressure_response_stability_agreement_lines(
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     )
     class_comparisons = _prefix_per_class_capture_pressure_comparisons(
         seeds=seeds,
@@ -1496,6 +1613,7 @@ def _pressure_response_stability_agreement_lines(
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     )
     comparison_pairs = list(zip(global_comparisons, class_comparisons, strict=True))
     last_global, last_class = comparison_pairs[-1]
@@ -1554,6 +1672,7 @@ def _prefix_per_class_capture_pressure_comparisons(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[dict[str, Any]]:
     full_top = _per_class_capture_pressure_candidates(rows)[0]
     comparisons: list[dict[str, Any]] = []
@@ -1564,6 +1683,7 @@ def _prefix_per_class_capture_pressure_comparisons(
             _rows_for_seeds(normal_rows, prefix_seed_set),
             _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
             _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+            pressure_values=pressure_values,
         )
         prefix_top = _per_class_capture_pressure_candidates(prefix_rows)[0]
         comparisons.append(
@@ -1770,6 +1890,7 @@ def _pressure_response_interpretation_lines(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[str]:
     candidates = _pressure_curve_response_candidates(rows)
     if not candidates:
@@ -1828,6 +1949,7 @@ def _pressure_response_interpretation_lines(
         _rows_for_seeds(normal_rows, prefix_seed_set),
         _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
         _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+        pressure_values=pressure_values,
     )
     prefix_details = _pressure_response_condition_details(
         prefix_top,
@@ -2022,6 +2144,7 @@ def _seed_set_sensitivity_lines(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[str]:
     if len(seeds) < 2:
         return ["- unavailable: at least two seeds are required for prefix sensitivity."]
@@ -2032,6 +2155,7 @@ def _seed_set_sensitivity_lines(
         normal_rows=normal_rows,
         medium_pressure_rows=medium_pressure_rows,
         high_pressure_rows=high_pressure_rows,
+        pressure_values=pressure_values,
     )
     last_prefix = prefix_comparisons[-1]
     full_top = _pressure_curve_response_candidates(rows)[0]
@@ -2072,6 +2196,7 @@ def _prefix_pressure_response_comparisons(
     normal_rows: list[dict[str, Any]],
     medium_pressure_rows: list[dict[str, Any]],
     high_pressure_rows: list[dict[str, Any]],
+    pressure_values: tuple[float, float, float] = DEFAULT_PRESSURE_VALUES,
 ) -> list[dict[str, Any]]:
     full_top = _pressure_curve_response_candidates(rows)[0]
     comparisons: list[dict[str, Any]] = []
@@ -2082,6 +2207,7 @@ def _prefix_pressure_response_comparisons(
             _rows_for_seeds(normal_rows, prefix_seed_set),
             _rows_for_seeds(medium_pressure_rows, prefix_seed_set),
             _rows_for_seeds(high_pressure_rows, prefix_seed_set),
+            pressure_values=pressure_values,
         )
         prefix_top = _pressure_curve_response_candidates(prefix_rows)[0]
         comparisons.append(

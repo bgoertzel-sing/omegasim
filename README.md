@@ -116,6 +116,28 @@ python -m ohdyn.compare_pressure --seeds 1 2 3 --out runs/a2_attention_pressure_
 
 The output directory contains `normal_pressure/`, `medium_pressure/`, `high_pressure/`, `pressure_comparison_metrics.csv`, `pressure_response_selection.csv`, `pressure_stability_agreement.csv`, `pressure_stability_convergence.csv`, `pressure_trajectory_structure.csv`, and a top-level `summary.md`. The three pressure-condition subdirectories are ordinary `ohdyn.compare_attention` outputs with their own `comparison_metrics.csv`, aggregate `summary.md`, and per-policy/per-seed run artifact directories.
 
+For an extreme-pressure extension, keep the normal-pressure fixtures at `1.0`,
+reuse the checked-in high-pressure fixtures as the middle endpoint at `1.8`,
+and use the extreme-pressure fixtures as the high endpoint at `2.2`:
+
+```bash
+python -m ohdyn.compare_pressure \
+  --medium-pressure-baseline-config configs/a2_attention_high_pressure.yaml \
+  --medium-pressure-variant-config configs/a2_attention_research_heavy_high_pressure.yaml \
+  --medium-pressure-internal-improvement-config configs/a2_attention_internal_improvement_high_pressure.yaml \
+  --high-pressure-baseline-config configs/a2_attention_extreme_pressure.yaml \
+  --high-pressure-variant-config configs/a2_attention_research_heavy_extreme_pressure.yaml \
+  --high-pressure-internal-improvement-config configs/a2_attention_internal_improvement_extreme_pressure.yaml \
+  --seeds 1 2 3 \
+  --out runs/a2_attention_extreme_pressure_compare
+```
+
+Pressure-curve slopes are computed from the actual `model.task_creation_pressure`
+values loaded from the three condition config sets, so custom pressure endpoints
+remain numerically meaningful as long as the normal, medium, and high condition
+pressures are strictly increasing and each policy config within a condition uses
+the same pressure value.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
