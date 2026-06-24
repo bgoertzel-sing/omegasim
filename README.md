@@ -159,7 +159,7 @@ The output directory contains `trajectory_pressure_ranking.csv`, `value_yield_di
 
 The analysis helper also writes `interpretation.csv`, a one-row machine-readable companion for downstream tools that need the selected top divergence, prefix-stability verdict, and top trajectory-pressure response without parsing `summary.md`.
 
-The analysis summary includes a deterministic interpretation of the top value-yield divergence row. It reports the selected policy and pressure metric, then states whether pressure improves completion-normalized yield while degrading effort-normalized yield, so the ranking can be read without manually comparing the two value-yield columns.
+The analysis summary includes a deterministic interpretation of the top value-yield divergence row. It reports the selected policy and pressure metric, then distinguishes true opposite-sign completion-vs-effort tradeoffs from same-direction yield shifts whose main signal is a magnitude gap between completion-normalized and effort-normalized yield.
 
 `value_yield_divergence_stability.csv` is a seed-prefix stability companion for the top divergence interpretation. It reads the per-seed `comparison_metrics.csv` files under `normal_pressure/`, `medium_pressure/`, and `high_pressure/`, recomputes pressure rows for each proper seed prefix, and records whether each prefix selects the same top divergence policy and pressure metric as the full seed set. The analysis summary's `Value-yield divergence prefix stability` section reports the full seed set, last prefix, last-prefix stability, all-prefix stability, instability causes, and one row per proper seed prefix.
 

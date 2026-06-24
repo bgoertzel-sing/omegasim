@@ -1966,6 +1966,7 @@ def test_pressure_analysis_five_seed_interpretation_regression(
 
     with (analysis_dir / "interpretation.csv").open() as handle:
         interpretation_rows = list(csv.DictReader(handle))
+    summary = (analysis_dir / "summary.md").read_text()
 
     assert interpretation_rows == [
         {
@@ -1989,6 +1990,11 @@ def test_pressure_analysis_five_seed_interpretation_regression(
             "top_trajectory_abs_delta_total": "4.2",
         }
     ]
+    assert (
+        "pressure improves both yield normalizations, with a larger "
+        "effort-normalized response; this is a same-direction divergence, not a "
+        "completion-vs-effort tradeoff."
+    ) in summary
 
 
 def test_pressure_analysis_requires_pressure_input_csv_pair(tmp_path: Path) -> None:

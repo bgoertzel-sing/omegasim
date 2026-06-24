@@ -614,28 +614,10 @@ def _value_yield_divergence_interpretation(row: dict[str, Any]) -> str:
     work_response = float(row["value_per_work_event_response"])
     completed_direction = _yield_direction(completed_response)
     work_direction = _yield_direction(work_response)
-    improves_completed = completed_response > 0.0
-    degrades_work = work_response < 0.0
-    if improves_completed and degrades_work:
-        pressure_tradeoff = (
-            "pressure improves completion-normalized yield while degrading "
-            "effort-normalized yield"
-        )
-    elif improves_completed:
-        pressure_tradeoff = (
-            "pressure improves completion-normalized yield without degrading "
-            "effort-normalized yield"
-        )
-    elif degrades_work:
-        pressure_tradeoff = (
-            "pressure degrades effort-normalized yield without improving "
-            "completion-normalized yield"
-        )
-    else:
-        pressure_tradeoff = (
-            "pressure neither improves completion-normalized yield nor degrades "
-            "effort-normalized yield"
-        )
+    pressure_tradeoff = _yield_divergence_interpretation(
+        completed_response,
+        work_response,
+    )
 
     return (
         "- top divergence: "
@@ -643,6 +625,68 @@ def _value_yield_divergence_interpretation(row: dict[str, Any]) -> str:
         f"by {completed_response:.6f} ({completed_direction}) and effort-normalized "
         f"yield by {work_response:.6f} ({work_direction}); {pressure_tradeoff}."
     )
+
+
+def _yield_divergence_interpretation(
+    completed_response: float,
+    work_response: float,
+) -> str:
+    completed_sign = _sign(completed_response)
+    work_sign = _sign(work_response)
+
+    if completed_sign == work_sign == 1:
+        stronger = _stronger_yield_axis(completed_response, work_response)
+        return (
+            "pressure improves both yield normalizations, with a larger "
+            f"{stronger} response; this is a same-direction divergence, not a "
+            "completion-vs-effort tradeoff"
+        )
+    if completed_sign == work_sign == -1:
+        stronger = _stronger_yield_axis(completed_response, work_response)
+        return (
+            "pressure degrades both yield normalizations, with a larger "
+            f"{stronger} response; this is a same-direction divergence, not a "
+            "completion-vs-effort tradeoff"
+        )
+    if completed_sign == 1 and work_sign == -1:
+        return (
+            "pressure improves completion-normalized yield while degrading "
+            "effort-normalized yield"
+        )
+    if completed_sign == -1 and work_sign == 1:
+        return (
+            "pressure degrades completion-normalized yield while improving "
+            "effort-normalized yield"
+        )
+    if completed_sign == 0 and work_sign == 0:
+        return "pressure leaves both yield normalizations unchanged"
+    if completed_sign == 0:
+        return (
+            "pressure leaves completion-normalized yield unchanged while "
+            f"{_yield_direction(work_response)} effort-normalized yield"
+        )
+    return (
+        f"pressure {_yield_direction(completed_response)} completion-normalized "
+        "yield while leaving effort-normalized yield unchanged"
+    )
+
+
+def _stronger_yield_axis(completed_response: float, work_response: float) -> str:
+    completed_abs = abs(completed_response)
+    work_abs = abs(work_response)
+    if completed_abs > work_abs:
+        return "completion-normalized"
+    if work_abs > completed_abs:
+        return "effort-normalized"
+    return "equal-magnitude"
+
+
+def _sign(value: float) -> int:
+    if value > 0.0:
+        return 1
+    if value < 0.0:
+        return -1
+    return 0
 
 
 def _yield_direction(value: float) -> str:
