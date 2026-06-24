@@ -1959,6 +1959,64 @@ def test_pressure_analysis_reports_policy_mismatch_without_partial_outputs(
 
 
 @pytest.mark.parametrize(
+    ("artifact_name", "pressure_overrides", "trajectory_overrides", "error"),
+    [
+        (
+            "pressure_comparison_metrics.csv",
+            [{"policy": ""}],
+            [{"policy": "baseline"}],
+            "pressure_comparison_metrics.csv contains a row without policy",
+        ),
+        (
+            "pressure_comparison_metrics.csv",
+            [{"policy": "baseline"}, {"policy": "baseline"}],
+            [{"policy": "baseline"}],
+            "pressure_comparison_metrics.csv contains duplicate policy: baseline",
+        ),
+        (
+            "pressure_trajectory_structure.csv",
+            [{"policy": "baseline"}],
+            [{"policy": ""}],
+            "pressure_trajectory_structure.csv contains a row without policy",
+        ),
+        (
+            "pressure_trajectory_structure.csv",
+            [{"policy": "baseline"}],
+            [{"policy": "baseline"}, {"policy": "baseline"}],
+            "pressure_trajectory_structure.csv contains duplicate policy: baseline",
+        ),
+    ],
+)
+def test_pressure_analysis_rejects_blank_or_duplicate_policy_keys_without_partial_outputs(
+    tmp_path: Path,
+    artifact_name: str,
+    pressure_overrides: list[dict[str, str]],
+    trajectory_overrides: list[dict[str, str]],
+    error: str,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+
+    _write_pressure_analysis_rows_csv(
+        pressure_dir / "pressure_comparison_metrics.csv",
+        PRESSURE_COMPARISON_FIELDS,
+        pressure_overrides,
+    )
+    _write_pressure_analysis_rows_csv(
+        pressure_dir / "pressure_trajectory_structure.csv",
+        PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
+        trajectory_overrides,
+    )
+
+    assert artifact_name in error
+    with pytest.raises(ValueError, match=error):
+        run_analysis(pressure_dir=pressure_dir, out_dir=analysis_dir, limit=5)
+
+    assert not analysis_dir.exists()
+
+
+@pytest.mark.parametrize(
     "collision_artifact",
     ["trajectory_pressure_ranking.csv", "summary.md"],
 )
@@ -2154,6 +2212,80 @@ def test_documented_pressure_analysis_cli_reports_policy_mismatch_without_partia
 
 
 @pytest.mark.parametrize(
+    ("artifact_name", "pressure_overrides", "trajectory_overrides", "error"),
+    [
+        (
+            "pressure_comparison_metrics.csv",
+            [{"policy": ""}],
+            [{"policy": "baseline"}],
+            "pressure_comparison_metrics.csv contains a row without policy",
+        ),
+        (
+            "pressure_comparison_metrics.csv",
+            [{"policy": "baseline"}, {"policy": "baseline"}],
+            [{"policy": "baseline"}],
+            "pressure_comparison_metrics.csv contains duplicate policy: baseline",
+        ),
+        (
+            "pressure_trajectory_structure.csv",
+            [{"policy": "baseline"}],
+            [{"policy": ""}],
+            "pressure_trajectory_structure.csv contains a row without policy",
+        ),
+        (
+            "pressure_trajectory_structure.csv",
+            [{"policy": "baseline"}],
+            [{"policy": "baseline"}, {"policy": "baseline"}],
+            "pressure_trajectory_structure.csv contains duplicate policy: baseline",
+        ),
+    ],
+)
+def test_documented_pressure_analysis_cli_reports_blank_or_duplicate_policy_keys_without_partial_outputs(
+    tmp_path: Path,
+    artifact_name: str,
+    pressure_overrides: list[dict[str, str]],
+    trajectory_overrides: list[dict[str, str]],
+    error: str,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+
+    _write_pressure_analysis_rows_csv(
+        pressure_dir / "pressure_comparison_metrics.csv",
+        PRESSURE_COMPARISON_FIELDS,
+        pressure_overrides,
+    )
+    _write_pressure_analysis_rows_csv(
+        pressure_dir / "pressure_trajectory_structure.csv",
+        PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
+        trajectory_overrides,
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.analyze_pressure",
+            "--pressure-dir",
+            str(pressure_dir),
+            "--out",
+            str(analysis_dir),
+            "--limit",
+            "5",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert artifact_name in error
+    assert completed.returncode != 0
+    assert error in completed.stderr
+    assert not analysis_dir.exists()
+
+
+@pytest.mark.parametrize(
     "collision_artifact",
     ["trajectory_pressure_ranking.csv", "summary.md"],
 )
@@ -2263,12 +2395,22 @@ def _write_pressure_analysis_csv(
     fieldnames: tuple[str, ...] | list[str],
     overrides: dict[str, str],
 ) -> None:
+    _write_pressure_analysis_rows_csv(path, fieldnames, [overrides])
+
+
+def _write_pressure_analysis_rows_csv(
+    path: Path,
+    fieldnames: tuple[str, ...] | list[str],
+    overrides_rows: list[dict[str, str]],
+) -> None:
     row = {field: "0" for field in fieldnames}
-    row.update(overrides)
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
         writer.writeheader()
-        writer.writerow(row)
+        for overrides in overrides_rows:
+            output_row = dict(row)
+            output_row.update(overrides)
+            writer.writerow(output_row)
 
 
 def _mean_csv_metric(

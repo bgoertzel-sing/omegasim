@@ -113,8 +113,9 @@ def _trajectory_pressure_rows(
     trajectory_rows: list[dict[str, str]],
     limit: int,
 ) -> list[dict[str, Any]]:
+    pressure_by_policy = _rows_by_policy(pressure_rows, "pressure_comparison_metrics.csv")
     trajectory_by_policy = _rows_by_policy(trajectory_rows, "pressure_trajectory_structure.csv")
-    pressure_policies = {row["policy"] for row in pressure_rows}
+    pressure_policies = set(pressure_by_policy)
     trajectory_policies = set(trajectory_by_policy)
     missing = sorted(pressure_policies - trajectory_policies)
     extra = sorted(trajectory_policies - pressure_policies)
@@ -130,7 +131,7 @@ def _trajectory_pressure_rows(
         )
 
     candidates: list[dict[str, Any]] = []
-    for pressure_row in pressure_rows:
+    for pressure_row in pressure_by_policy.values():
         policy = pressure_row["policy"]
         trajectory_row = trajectory_by_policy[policy]
         turning_delta = _float_field(
