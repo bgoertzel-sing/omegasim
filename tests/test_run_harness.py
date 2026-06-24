@@ -2015,6 +2015,98 @@ def test_documented_pressure_analysis_cli_reports_missing_input_without_partial_
     assert not analysis_dir.exists()
 
 
+def test_documented_pressure_analysis_cli_reports_malformed_schema_without_partial_outputs(
+    tmp_path: Path,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+    pressure_fields = [
+        field
+        for field in PRESSURE_COMPARISON_FIELDS
+        if field != "queue_depth_pressure_curvature"
+    ]
+
+    _write_pressure_analysis_csv(
+        pressure_dir / "pressure_comparison_metrics.csv",
+        pressure_fields,
+        {"policy": "baseline"},
+    )
+    _write_pressure_analysis_csv(
+        pressure_dir / "pressure_trajectory_structure.csv",
+        PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
+        {"policy": "baseline"},
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.analyze_pressure",
+            "--pressure-dir",
+            str(pressure_dir),
+            "--out",
+            str(analysis_dir),
+            "--limit",
+            "5",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert (
+        "pressure_comparison_metrics.csv is missing required fields: "
+        "queue_depth_pressure_curvature"
+    ) in completed.stderr
+    assert not analysis_dir.exists()
+
+
+def test_documented_pressure_analysis_cli_reports_policy_mismatch_without_partial_outputs(
+    tmp_path: Path,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+
+    _write_pressure_analysis_csv(
+        pressure_dir / "pressure_comparison_metrics.csv",
+        PRESSURE_COMPARISON_FIELDS,
+        {"policy": "baseline"},
+    )
+    _write_pressure_analysis_csv(
+        pressure_dir / "pressure_trajectory_structure.csv",
+        PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
+        {"policy": "research_heavy"},
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.analyze_pressure",
+            "--pressure-dir",
+            str(pressure_dir),
+            "--out",
+            str(analysis_dir),
+            "--limit",
+            "5",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert (
+        "Policy mismatch between pressure_comparison_metrics.csv and "
+        "pressure_trajectory_structure.csv: missing policies in trajectory: "
+        "baseline; extra policies in trajectory: research_heavy"
+    ) in completed.stderr
+    assert not analysis_dir.exists()
+
+
 @pytest.mark.parametrize(
     "collision_artifact",
     ["trajectory_pressure_ranking.csv", "summary.md"],
