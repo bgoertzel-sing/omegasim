@@ -1,0 +1,7 @@
+category,policy,observable,metric,value,top_selection_probability,sign_stability,notes
+global_top,quota_balance,final queue depth,normal_to_medium_slope,33.375,0.96,1.0,condition means 21.5 -> 48.2 -> 57.733333
+global_second,random_available,final queue depth,normal_to_medium_slope,29.875,0.04,1.0,condition means 21.6 -> 45.5 -> 56.166667
+class_capture_pressure,random_available,peak near-term-external capture pressure,curvature,0.260271,0.52,1.0,moderate bootstrap support; secondary signal
+value_yield_divergence,random_available,value-yield divergence,normal_to_medium_slope,0.1659,0.36,1.0,diffuse bootstrap support and ordered-prefix instability
+trajectory_delta,quota_balance,turning points,high_minus_normal_delta,-1.966666,,,"longest dwell high-minus-normal delta 0.766667"
+trajectory_delta,random_available,turning points,high_minus_normal_delta,-2.6,,,"longest dwell high-minus-normal delta 1.966667"
