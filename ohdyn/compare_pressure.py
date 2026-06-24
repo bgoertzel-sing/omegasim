@@ -172,6 +172,20 @@ PRESSURE_STABILITY_CONVERGENCE_FIELDS = (
     "last_stable_together",
     "last_both_stable",
 )
+PRESSURE_TRAJECTORY_STRUCTURE_FIELDS = (
+    "policy",
+    "normal_turning_points_mean",
+    "medium_pressure_turning_points_mean",
+    "high_pressure_turning_points_mean",
+    "turning_points_high_minus_normal_delta",
+    "normal_longest_dwell_steps_mean",
+    "medium_pressure_longest_dwell_steps_mean",
+    "high_pressure_longest_dwell_steps_mean",
+    "longest_dwell_steps_high_minus_normal_delta",
+    "normal_longest_dwell_label_counts",
+    "medium_pressure_longest_dwell_label_counts",
+    "high_pressure_longest_dwell_label_counts",
+)
 PRESSURE_CURVE_OBSERVABLES = (
     (
         "value_weighted_completed",
@@ -297,6 +311,14 @@ def run_pressure_comparison(
         output_path / "pressure_stability_convergence.csv",
         _pressure_stability_convergence_rows(stability_agreement_rows),
     )
+    _write_pressure_trajectory_structure_csv(
+        output_path / "pressure_trajectory_structure.csv",
+        _pressure_trajectory_structure_rows(
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+    )
     (output_path / "summary.md").write_text(
         _pressure_summary(
             normal_baseline_config=Path(normal_baseline_config),
@@ -341,6 +363,7 @@ def _ensure_pressure_outputs_available(output_path: Path) -> None:
             "pressure_response_selection.csv",
             "pressure_stability_agreement.csv",
             "pressure_stability_convergence.csv",
+            "pressure_trajectory_structure.csv",
             "summary.md",
         )
         if (output_path / artifact_name).exists()
@@ -657,6 +680,74 @@ def _write_pressure_stability_convergence_csv(
         writer = csv.DictWriter(handle, fieldnames=list(PRESSURE_STABILITY_CONVERGENCE_FIELDS))
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _write_pressure_trajectory_structure_csv(
+    path: Path,
+    rows: list[dict[str, Any]],
+) -> None:
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(PRESSURE_TRAJECTORY_STRUCTURE_FIELDS))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _pressure_trajectory_structure_rows(
+    *,
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    policies = tuple(dict.fromkeys(str(row["policy"]) for row in normal_rows))
+    return [
+        _pressure_trajectory_structure_row(
+            policy,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        )
+        for policy in policies
+    ]
+
+
+def _pressure_trajectory_structure_row(
+    policy: str,
+    *,
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    normal_summary = _trajectory_structure_summary(normal_rows, policy)
+    medium_summary = _trajectory_structure_summary(medium_pressure_rows, policy)
+    high_summary = _trajectory_structure_summary(high_pressure_rows, policy)
+    return {
+        "policy": policy,
+        "normal_turning_points_mean": normal_summary["turning_points_mean"],
+        "medium_pressure_turning_points_mean": medium_summary["turning_points_mean"],
+        "high_pressure_turning_points_mean": high_summary["turning_points_mean"],
+        "turning_points_high_minus_normal_delta": _format_float_delta(
+            high_summary["turning_points_mean"],
+            normal_summary["turning_points_mean"],
+        ),
+        "normal_longest_dwell_steps_mean": normal_summary["longest_dwell_steps_mean"],
+        "medium_pressure_longest_dwell_steps_mean": (
+            medium_summary["longest_dwell_steps_mean"]
+        ),
+        "high_pressure_longest_dwell_steps_mean": high_summary[
+            "longest_dwell_steps_mean"
+        ],
+        "longest_dwell_steps_high_minus_normal_delta": _format_float_delta(
+            high_summary["longest_dwell_steps_mean"],
+            normal_summary["longest_dwell_steps_mean"],
+        ),
+        "normal_longest_dwell_label_counts": normal_summary["longest_dwell_labels"],
+        "medium_pressure_longest_dwell_label_counts": medium_summary[
+            "longest_dwell_labels"
+        ],
+        "high_pressure_longest_dwell_label_counts": high_summary[
+            "longest_dwell_labels"
+        ],
+    }
 
 
 def _pressure_stability_convergence_rows(

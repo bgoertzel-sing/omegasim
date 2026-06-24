@@ -30,6 +30,7 @@ from ohdyn.compare_pressure import (
     PRESSURE_RESPONSE_SELECTION_FIELDS,
     PRESSURE_STABILITY_AGREEMENT_FIELDS,
     PRESSURE_STABILITY_CONVERGENCE_FIELDS,
+    PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
     run_pressure_comparison,
 )
 from ohdyn.run import run_experiment
@@ -803,6 +804,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert (out_dir / "pressure_response_selection.csv").is_file()
     assert (out_dir / "pressure_stability_agreement.csv").is_file()
     assert (out_dir / "pressure_stability_convergence.csv").is_file()
+    assert (out_dir / "pressure_trajectory_structure.csv").is_file()
     assert (out_dir / "summary.md").is_file()
 
     with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
@@ -893,6 +895,78 @@ def test_a2_attention_pressure_summary_includes_trajectory_structure(
     assert f"- baseline: longest_dwell_steps_mean normal={expected_dwell_mean}" in summary
     for policy in ("baseline", "research_heavy", "internal_improvement"):
         assert f"- {policy}: longest_dwell_labels normal=" in summary
+
+
+def test_a2_attention_pressure_trajectory_structure_csv_matches_condition_rows(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_attention_pressure_compare"
+
+    run_pressure_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    with (out_dir / "pressure_trajectory_structure.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    with (out_dir / "normal_pressure" / "comparison_metrics.csv").open() as handle:
+        normal_rows = list(csv.DictReader(handle))
+    with (out_dir / "medium_pressure" / "comparison_metrics.csv").open() as handle:
+        medium_rows = list(csv.DictReader(handle))
+    with (out_dir / "high_pressure" / "comparison_metrics.csv").open() as handle:
+        high_rows = list(csv.DictReader(handle))
+
+    assert rows
+    assert list(rows[0]) == list(PRESSURE_TRAJECTORY_STRUCTURE_FIELDS)
+    assert [row["policy"] for row in rows] == [
+        "baseline",
+        "research_heavy",
+        "internal_improvement",
+    ]
+
+    baseline = rows[0]
+    normal_summary = _trajectory_structure_summary_from_csv(normal_rows, "baseline")
+    medium_summary = _trajectory_structure_summary_from_csv(medium_rows, "baseline")
+    high_summary = _trajectory_structure_summary_from_csv(high_rows, "baseline")
+
+    assert baseline["normal_turning_points_mean"] == str(
+        normal_summary["turning_points_mean"]
+    )
+    assert baseline["medium_pressure_turning_points_mean"] == str(
+        medium_summary["turning_points_mean"]
+    )
+    assert baseline["high_pressure_turning_points_mean"] == str(
+        high_summary["turning_points_mean"]
+    )
+    assert baseline["turning_points_high_minus_normal_delta"] == str(
+        round(
+            high_summary["turning_points_mean"]
+            - normal_summary["turning_points_mean"],
+            6,
+        )
+    )
+    assert baseline["normal_longest_dwell_steps_mean"] == str(
+        normal_summary["longest_dwell_steps_mean"]
+    )
+    assert baseline["medium_pressure_longest_dwell_steps_mean"] == str(
+        medium_summary["longest_dwell_steps_mean"]
+    )
+    assert baseline["high_pressure_longest_dwell_steps_mean"] == str(
+        high_summary["longest_dwell_steps_mean"]
+    )
+    assert baseline["longest_dwell_steps_high_minus_normal_delta"] == str(
+        round(
+            high_summary["longest_dwell_steps_mean"]
+            - normal_summary["longest_dwell_steps_mean"],
+            6,
+        )
+    )
+    assert baseline["normal_longest_dwell_label_counts"] == normal_summary[
+        "longest_dwell_labels"
+    ]
+    assert baseline["medium_pressure_longest_dwell_label_counts"] == medium_summary[
+        "longest_dwell_labels"
+    ]
+    assert baseline["high_pressure_longest_dwell_label_counts"] == high_summary[
+        "longest_dwell_labels"
+    ]
 
 
 def test_a2_attention_pressure_summary_interprets_per_class_capture_pressure(
@@ -1617,6 +1691,9 @@ def test_a2_attention_pressure_comparison_runner_is_reproducible(
     assert (first / "pressure_stability_convergence.csv").read_text() == (
         second / "pressure_stability_convergence.csv"
     ).read_text()
+    assert (first / "pressure_trajectory_structure.csv").read_text() == (
+        second / "pressure_trajectory_structure.csv"
+    ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 
 
@@ -1637,6 +1714,7 @@ def test_documented_pressure_cli_writes_pressure_layout_and_curve_summary(
     assert (out_dir / "pressure_response_selection.csv").is_file()
     assert (out_dir / "pressure_stability_agreement.csv").is_file()
     assert (out_dir / "pressure_stability_convergence.csv").is_file()
+    assert (out_dir / "pressure_trajectory_structure.csv").is_file()
     assert (out_dir / "summary.md").is_file()
 
     with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
@@ -1681,6 +1759,7 @@ def test_documented_pressure_cli_reproduces_top_level_artifacts(
             "pressure_response_selection.csv",
             "pressure_stability_agreement.csv",
             "pressure_stability_convergence.csv",
+            "pressure_trajectory_structure.csv",
             "summary.md",
         ],
     )
@@ -1736,6 +1815,7 @@ def test_documented_pressure_cli_refuses_existing_top_level_artifacts_without_mo
     original_convergence = (
         out_dir / "pressure_stability_convergence.csv"
     ).read_bytes()
+    original_trajectory = (out_dir / "pressure_trajectory_structure.csv").read_bytes()
     original_summary = (out_dir / "summary.md").read_bytes()
 
     completed = subprocess.run(
@@ -1767,6 +1847,10 @@ def test_documented_pressure_cli_refuses_existing_top_level_artifacts_without_mo
         (out_dir / "pressure_stability_convergence.csv").read_bytes()
         == original_convergence
     )
+    assert (
+        (out_dir / "pressure_trajectory_structure.csv").read_bytes()
+        == original_trajectory
+    )
     assert (out_dir / "summary.md").read_bytes() == original_summary
 
 
@@ -1794,6 +1878,31 @@ def _mean_csv_metric(
 ) -> float:
     policy_rows = [row for row in rows if row["policy"] == policy]
     return sum(float(row[field]) for row in policy_rows) / len(policy_rows)
+
+
+def _trajectory_structure_summary_from_csv(
+    rows: list[dict[str, str]],
+    policy: str,
+) -> dict[str, float | str]:
+    policy_rows = [row for row in rows if row["policy"] == policy]
+    turning_points = [
+        float(row["phase_space_turning_point_count"])
+        for row in policy_rows
+    ]
+    dwell_steps = [
+        float(row["phase_space_longest_dwell_steps"])
+        for row in policy_rows
+    ]
+    labels = Counter(row["phase_space_longest_dwell_label"] for row in policy_rows)
+
+    return {
+        "turning_points_mean": round(sum(turning_points) / len(turning_points), 6),
+        "longest_dwell_steps_mean": round(sum(dwell_steps) / len(dwell_steps), 6),
+        "longest_dwell_labels": "|".join(
+            f"{label}:{labels[label]}"
+            for label in sorted(labels)
+        ),
+    }
 
 
 def _step_deltas(trajectory: str) -> str:
