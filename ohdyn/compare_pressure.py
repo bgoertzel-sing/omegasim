@@ -1197,6 +1197,15 @@ def _pressure_summary(
             high_pressure_rows=high_pressure_rows,
         ),
         "",
+        "## Value throughput vs effort interpretation",
+        "",
+        *_value_throughput_effort_interpretation_lines(
+            rows=rows,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        ),
+        "",
         "## Pressure-condition source metric comparison",
         "",
         *_pressure_condition_source_metric_comparison_lines(
@@ -1569,6 +1578,99 @@ def _prefix_per_class_capture_pressure_comparisons(
             }
         )
     return comparisons
+
+
+def _value_throughput_effort_interpretation_lines(
+    *,
+    rows: list[dict[str, Any]],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> list[str]:
+    if not rows:
+        return ["- no value-throughput rows available for interpretation."]
+
+    lines: list[str] = []
+    for row in rows:
+        policy = str(row["policy"])
+        weighted = _condition_means_and_delta(
+            policy,
+            "value_weighted_completed_total",
+            "value_weighted_completed_mean_delta",
+            row=row,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        )
+        per_completed = _condition_means_and_delta(
+            policy,
+            "value_per_completed_task_total",
+            "value_per_completed_task_mean_delta",
+            row=row,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        )
+        per_work = _condition_means_and_delta(
+            policy,
+            "value_per_work_event_total",
+            "value_per_work_event_mean_delta",
+            row=row,
+            normal_rows=normal_rows,
+            medium_pressure_rows=medium_pressure_rows,
+            high_pressure_rows=high_pressure_rows,
+        )
+        lines.append(
+            f"- {policy}: value_throughput normal={weighted['normal']}, "
+            f"medium={weighted['medium']}, high={weighted['high']}, "
+            f"high_minus_normal={weighted['delta']} ({_delta_direction(weighted['delta'])}); "
+            f"value_per_completed_task normal={per_completed['normal']}, "
+            f"medium={per_completed['medium']}, high={per_completed['high']}, "
+            f"high_minus_normal={per_completed['delta']} ({_delta_direction(per_completed['delta'])}); "
+            f"value_per_work_event normal={per_work['normal']}, "
+            f"medium={per_work['medium']}, high={per_work['high']}, "
+            f"high_minus_normal={per_work['delta']} ({_delta_direction(per_work['delta'])})"
+        )
+        lines.append(
+            f"- {policy} reading: pressure {_delta_verb(weighted['delta'])} raw value throughput, "
+            f"{_delta_verb(per_completed['delta'])} value per completed task, and "
+            f"{_delta_verb(per_work['delta'])} value per work event."
+        )
+    return lines
+
+
+def _condition_means_and_delta(
+    policy: str,
+    source_field: str,
+    delta_field: str,
+    *,
+    row: dict[str, Any],
+    normal_rows: list[dict[str, Any]],
+    medium_pressure_rows: list[dict[str, Any]],
+    high_pressure_rows: list[dict[str, Any]],
+) -> dict[str, float]:
+    return {
+        "normal": _policy_condition_mean(normal_rows, policy, source_field),
+        "medium": _policy_condition_mean(medium_pressure_rows, policy, source_field),
+        "high": _policy_condition_mean(high_pressure_rows, policy, source_field),
+        "delta": float(row[delta_field]),
+    }
+
+
+def _delta_direction(value: float) -> str:
+    if value > 0:
+        return "up"
+    if value < 0:
+        return "down"
+    return "flat"
+
+
+def _delta_verb(value: float) -> str:
+    if value > 0:
+        return "increased"
+    if value < 0:
+        return "decreased"
+    return "left unchanged"
 
 
 def _per_class_capture_pressure_interpretation_lines(

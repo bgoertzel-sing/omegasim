@@ -907,6 +907,7 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "## Most pressure-sensitive curve metric" in summary
     assert "## Pressure-curve response ranking" in summary
     assert "## Pressure-condition trajectory structure" in summary
+    assert "## Value throughput vs effort interpretation" in summary
     assert "## Per-class capture-pressure interpretation" in summary
     assert "## Fixed-policy pressure curves" in summary
     assert (
@@ -917,6 +918,10 @@ def test_a2_attention_pressure_comparison_runner_writes_fixed_policy_deltas(
     assert "- research_heavy final queue depth mean pressure delta: " in summary
     assert "- research_heavy value per completed task mean pressure delta: " in summary
     assert "- research_heavy value per work event mean pressure delta: " in summary
+    assert "- baseline: value_throughput normal=" in summary
+    assert "value_per_completed_task normal=" in summary
+    assert "value_per_work_event normal=" in summary
+    assert "- baseline reading: pressure " in summary
     assert "- internal_improvement peak queued task max age pressure delta: " in summary
     assert "- baseline final attention capture pressure delta: " in summary
     assert "- baseline mean attention capture pressure delta: " in summary
