@@ -1701,6 +1701,7 @@ def test_documented_pressure_cli_writes_pressure_layout_and_curve_summary(
     tmp_path: Path,
 ) -> None:
     out_dir = tmp_path / "a2_attention_pressure_compare_cli"
+    readme = Path("README.md").read_text()
 
     _run_documented_pressure_cli(out_dir, seeds=(1, 2))
 
@@ -1719,9 +1720,15 @@ def test_documented_pressure_cli_writes_pressure_layout_and_curve_summary(
 
     with (out_dir / "pressure_comparison_metrics.csv").open() as handle:
         rows = list(csv.DictReader(handle))
+    with (out_dir / "pressure_trajectory_structure.csv").open() as handle:
+        trajectory_rows = list(csv.DictReader(handle))
     summary = (out_dir / "summary.md").read_text()
 
+    assert "treat `policy` as the stable join key" in readme
+    assert "`pressure_comparison_metrics.csv`" in readme
+    assert "`pressure_trajectory_structure.csv`" in readme
     assert len(rows) == 3
+    assert [row["policy"] for row in trajectory_rows] == [row["policy"] for row in rows]
     assert {row["policy"] for row in rows} == {
         "baseline",
         "research_heavy",
