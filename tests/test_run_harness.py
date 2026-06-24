@@ -29,6 +29,7 @@ from ohdyn.analyze_pressure import (
     TRAJECTORY_PRESSURE_RANKING_FIELDS,
     VALUE_YIELD_DIVERGENCE_STABILITY_FIELDS,
     VALUE_YIELD_DIVERGENCE_RANKING_FIELDS,
+    _yield_divergence_interpretation,
     run_analysis,
 )
 from ohdyn.compare_attention import run_comparison
@@ -1995,6 +1996,35 @@ def test_pressure_analysis_five_seed_interpretation_regression(
         "effort-normalized response; this is a same-direction divergence, not a "
         "completion-vs-effort tradeoff."
     ) in summary
+
+
+@pytest.mark.parametrize(
+    ("completed_response", "work_response", "expected"),
+    [
+        (
+            0.25,
+            -0.75,
+            (
+                "pressure improves completion-normalized yield while degrading "
+                "effort-normalized yield"
+            ),
+        ),
+        (
+            -0.25,
+            0.75,
+            (
+                "pressure degrades completion-normalized yield while improving "
+                "effort-normalized yield"
+            ),
+        ),
+    ],
+)
+def test_pressure_analysis_value_yield_tradeoff_wording(
+    completed_response: float,
+    work_response: float,
+    expected: str,
+) -> None:
+    assert _yield_divergence_interpretation(completed_response, work_response) == expected
 
 
 def test_pressure_analysis_requires_pressure_input_csv_pair(tmp_path: Path) -> None:
