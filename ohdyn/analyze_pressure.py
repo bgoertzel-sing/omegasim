@@ -352,7 +352,58 @@ def _summary(
                 ],
             ]
         )
+        lines.extend(
+            [
+                "",
+                "## Top value-yield divergence interpretation",
+                _value_yield_divergence_interpretation(value_yield_rows[0]),
+            ]
+        )
     return "\n".join(lines) + "\n"
+
+
+def _value_yield_divergence_interpretation(row: dict[str, Any]) -> str:
+    completed_response = float(row["value_per_completed_task_response"])
+    work_response = float(row["value_per_work_event_response"])
+    completed_direction = _yield_direction(completed_response)
+    work_direction = _yield_direction(work_response)
+    improves_completed = completed_response > 0.0
+    degrades_work = work_response < 0.0
+    if improves_completed and degrades_work:
+        pressure_tradeoff = (
+            "pressure improves completion-normalized yield while degrading "
+            "effort-normalized yield"
+        )
+    elif improves_completed:
+        pressure_tradeoff = (
+            "pressure improves completion-normalized yield without degrading "
+            "effort-normalized yield"
+        )
+    elif degrades_work:
+        pressure_tradeoff = (
+            "pressure degrades effort-normalized yield without improving "
+            "completion-normalized yield"
+        )
+    else:
+        pressure_tradeoff = (
+            "pressure neither improves completion-normalized yield nor degrades "
+            "effort-normalized yield"
+        )
+
+    return (
+        "- top divergence: "
+        f"{row['policy']} {row['metric']} changes completion-normalized yield "
+        f"by {completed_response:.6f} ({completed_direction}) and effort-normalized "
+        f"yield by {work_response:.6f} ({work_direction}); {pressure_tradeoff}."
+    )
+
+
+def _yield_direction(value: float) -> str:
+    if value > 0.0:
+        return "improves"
+    if value < 0.0:
+        return "degrades"
+    return "unchanged"
 
 
 def build_parser() -> argparse.ArgumentParser:

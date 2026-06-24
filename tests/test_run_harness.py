@@ -1922,6 +1922,10 @@ def test_pressure_analysis_reads_joined_csv_pair_and_ranks_responses(
     assert divergence_rows[0]["abs_divergence"]
     assert "## Ranking" in summary
     assert "## Value-yield divergence ranking" in summary
+    assert "## Top value-yield divergence interpretation" in summary
+    assert "- top divergence: " in summary
+    assert "completion-normalized yield" in summary
+    assert "effort-normalized yield" in summary
     assert "pressure_comparison_metrics.csv" not in summary
 
 
