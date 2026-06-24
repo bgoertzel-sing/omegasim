@@ -1955,6 +1955,42 @@ def test_pressure_analysis_reads_joined_csv_pair_and_ranks_responses(
     assert "pressure_comparison_metrics.csv" not in summary
 
 
+def test_pressure_analysis_five_seed_interpretation_regression(
+    tmp_path: Path,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+
+    run_pressure_comparison(seeds=(1, 2, 3, 4, 5), out_dir=pressure_dir)
+    run_analysis(pressure_dir=pressure_dir, out_dir=analysis_dir, limit=10)
+
+    with (analysis_dir / "interpretation.csv").open() as handle:
+        interpretation_rows = list(csv.DictReader(handle))
+
+    assert interpretation_rows == [
+        {
+            "top_divergence_policy": "baseline",
+            "top_divergence_metric": "curvature",
+            "top_divergence_value_per_completed_task_response": "0.147768",
+            "top_divergence_value_per_work_event_response": "0.65523",
+            "top_divergence": "-0.507462",
+            "top_divergence_abs": "0.507462",
+            "top_divergence_stable_last_prefix": "true",
+            "top_divergence_stable_all_prefixes": "false",
+            "top_divergence_full_seeds": "1,2,3,4,5",
+            "top_divergence_last_prefix_seeds": "1,2,3,4",
+            "top_divergence_last_prefix_instability_causes": "none",
+            "top_trajectory_policy": "internal_improvement",
+            "top_trajectory_response_observable": "final queue depth",
+            "top_trajectory_response_metric": "normal_to_medium_slope",
+            "top_trajectory_response_field": "queue_depth_normal_to_medium_slope",
+            "top_trajectory_response_value": "45.0",
+            "top_trajectory_response_abs_value": "45.0",
+            "top_trajectory_abs_delta_total": "4.2",
+        }
+    ]
+
+
 def test_pressure_analysis_requires_pressure_input_csv_pair(tmp_path: Path) -> None:
     pressure_dir = tmp_path / "pressure"
     analysis_dir = tmp_path / "analysis"
