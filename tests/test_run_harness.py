@@ -1879,6 +1879,21 @@ def test_pressure_analysis_requires_pressure_input_csv_pair(tmp_path: Path) -> N
     assert not analysis_dir.exists()
 
 
+@pytest.mark.parametrize("limit", [0, -1, True, 1.5])
+def test_pressure_analysis_rejects_invalid_limit_without_partial_outputs(
+    tmp_path: Path,
+    limit: object,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+
+    with pytest.raises(ValueError, match="limit must be a positive integer"):
+        run_analysis(pressure_dir=pressure_dir, out_dir=analysis_dir, limit=limit)  # type: ignore[arg-type]
+
+    assert not analysis_dir.exists()
+
+
 def test_pressure_analysis_reports_malformed_pressure_csv_schema_without_partial_outputs(
     tmp_path: Path,
 ) -> None:
@@ -2012,6 +2027,37 @@ def test_documented_pressure_analysis_cli_reports_missing_input_without_partial_
 
     assert completed.returncode != 0
     assert "pressure_comparison_metrics.csv" in completed.stderr
+    assert not analysis_dir.exists()
+
+
+@pytest.mark.parametrize("limit", ["0", "-1"])
+def test_documented_pressure_analysis_cli_rejects_invalid_limit_without_partial_outputs(
+    tmp_path: Path,
+    limit: str,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.analyze_pressure",
+            "--pressure-dir",
+            str(pressure_dir),
+            "--out",
+            str(analysis_dir),
+            "--limit",
+            limit,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "limit must be a positive integer" in completed.stderr
     assert not analysis_dir.exists()
 
 
