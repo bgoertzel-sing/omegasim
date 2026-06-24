@@ -109,6 +109,7 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
     if result.config.attention_policy is not None:
         manifest["model"]["attention_policy"] = {
             "classes": list(ATTENTION_CLASSES),
+            "selection_strategy": result.config.attention_policy.selection_strategy,
             "fields": list(attention_policy_metric_fields()),
         }
     return manifest
@@ -403,6 +404,10 @@ def _role_action_totals(result: SimulationResult) -> dict[str, dict[str, int]]:
 def _attention_policy_summary(result: SimulationResult) -> list[str]:
     last = result.metrics[-1] if result.metrics else {}
     lines = []
+    lines.append(
+        "- selection strategy: "
+        f"{result.config.attention_policy.selection_strategy}"
+    )
     for class_name in ATTENTION_CLASSES:
         completed = last.get(f"attention_{class_name}_completed_total", 0)
         worked = last.get(f"attention_{class_name}_worked_total", 0)

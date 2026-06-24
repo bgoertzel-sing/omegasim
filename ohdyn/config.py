@@ -16,6 +16,11 @@ ATTENTION_CLASSES = (
     "housekeeping",
 )
 
+ATTENTION_SELECTION_STRATEGIES = (
+    "quota_balance",
+    "random_available",
+)
+
 
 @dataclass(frozen=True)
 class RunConfig:
@@ -44,6 +49,7 @@ class AttentionPolicyConfig:
     long_term_research: float
     internal_improvement: float
     housekeeping: float
+    selection_strategy: str = "quota_balance"
 
     def shares(self) -> dict[str, float]:
         return {
@@ -145,7 +151,8 @@ def _optional_attention_policy(value: Any) -> AttentionPolicyConfig | None:
     if value is None:
         return None
     policy = _expect_mapping(value, "attention_policy")
-    unknown = set(policy) - set(ATTENTION_CLASSES)
+    supported_keys = set(ATTENTION_CLASSES) | {"selection_strategy"}
+    unknown = set(policy) - supported_keys
     if unknown:
         names = ", ".join(sorted(unknown))
         raise ValueError(f"attention_policy contains unsupported classes: {names}")
@@ -161,7 +168,11 @@ def _optional_attention_policy(value: Any) -> AttentionPolicyConfig | None:
     total = sum(shares.values())
     if abs(total - 1.0) > 1e-9:
         raise ValueError("attention_policy values must sum to 1.0.")
-    return AttentionPolicyConfig(**shares)
+    selection_strategy = _attention_selection_strategy(
+        policy.get("selection_strategy", "quota_balance"),
+        "attention_policy.selection_strategy",
+    )
+    return AttentionPolicyConfig(**shares, selection_strategy=selection_strategy)
 
 
 def _share(value: Any, name: str) -> float:
@@ -180,6 +191,15 @@ def _nonnegative_float(value: Any, name: str) -> float:
     if parsed < 0.0:
         raise ValueError(f"Config value {name!r} must be non-negative.")
     return parsed
+
+
+def _attention_selection_strategy(value: Any, name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"Config value {name!r} must be a string.")
+    if value not in ATTENTION_SELECTION_STRATEGIES:
+        names = ", ".join(ATTENTION_SELECTION_STRATEGIES)
+        raise ValueError(f"Config value {name!r} must be one of: {names}.")
+    return value
 
 
 def _validate_actions(actions: tuple[str, ...]) -> None:

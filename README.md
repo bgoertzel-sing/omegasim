@@ -56,9 +56,23 @@ python -m ohdyn.run --config configs/a2_attention_smoke.yaml --seed 1 --out runs
 
 Attention-policy runs assign created tasks to `near_term_external`, `long_term_research`, `internal_improvement`, and `housekeeping`; work selection favors queued classes that are under their target share. `metrics.csv`, `manifest.yaml`, and `summary.md` add per-class queue, completion, queued-age, attention-share, share-deviation, and value-weighted completed-work fields only for configs that enable `attention_policy`.
 
+Attention-policy configs may set `attention_policy.selection_strategy`. The
+default `quota_balance` preserves the original soft quota scheduler. The
+`random_available` strategy is a preregistered scheduler-mechanism ablation: it
+keeps the same task creation process and target shares, but each work action
+selects uniformly from the queued tasks available under the run's deterministic
+seed. Baseline-share random-available fixtures are checked in at normal, high,
+and extreme task-creation pressure:
+
+```bash
+python -m ohdyn.run --config configs/a2_attention_random_available.yaml --seed 1 --out runs/a2_attention_random_available_seed1
+python -m ohdyn.run --config configs/a2_attention_random_available_high_pressure.yaml --seed 1 --out runs/a2_attention_random_available_high_pressure_seed1
+python -m ohdyn.run --config configs/a2_attention_random_available_extreme_pressure.yaml --seed 1 --out runs/a2_attention_random_available_extreme_pressure_seed1
+```
+
 Attention-policy metrics also include value-yield fields derived from existing completion counters: `attention_value_per_completed_task_tick` and `attention_value_per_completed_task_total`. These distinguish pressure responses caused by completing more tasks from responses caused by shifting the completed task-class mix toward higher-value classes. To separate that completed-task mix signal from task-work effort, A2 runs also emit per-class cumulative work-event totals plus effort-normalized value fields: `attention_value_per_work_event_tick` and `attention_value_per_work_event_total`.
 
-Attention-policy runs also record deterministic capture-pressure telemetry. Per-class `attention_<class>_capture_pressure_tick` fields report how far each class's queued-task share exceeds its target share at the end of a tick, and `attention_capture_pressure_max_tick` reports the largest per-class pressure. When the quota-balancing scheduler works a different class while another available class is above target share, `events.csv` emits an `attention_capture_pressure` event with the selected class, pressure class, and pressure value. These fields are present only for configs that enable `attention_policy`; A0/A1 configs keep the baseline metrics shape.
+Attention-policy runs also record deterministic capture-pressure telemetry. Per-class `attention_<class>_capture_pressure_tick` fields report how far each class's queued-task share exceeds its target share at the end of a tick, and `attention_capture_pressure_max_tick` reports the largest per-class pressure. When the selected work class differs from another available class above target share, `events.csv` emits an `attention_capture_pressure` event with the selected class, pressure class, and pressure value. These fields are present only for configs that enable `attention_policy`; A0/A1 configs keep the baseline metrics shape.
 
 A contrasting research-heavy A2 fixture uses the same deterministic baseline with more reserved share for long-term research:
 

@@ -47,6 +47,7 @@ from ohdyn.run import run_experiment
 
 CONFIG = Path("configs/a0_smoke.yaml")
 A2_ATTENTION = Path("configs/a2_attention_smoke.yaml")
+A2_ATTENTION_RANDOM_AVAILABLE = Path("configs/a2_attention_random_available.yaml")
 A2_ATTENTION_RESEARCH_HEAVY = Path("configs/a2_attention_research_heavy.yaml")
 A2_ATTENTION_INTERNAL_IMPROVEMENT = Path("configs/a2_attention_internal_improvement.yaml")
 A2_ATTENTION_MEDIUM_PRESSURE = Path("configs/a2_attention_medium_pressure.yaml")
@@ -57,6 +58,9 @@ A2_ATTENTION_INTERNAL_IMPROVEMENT_MEDIUM_PRESSURE = Path(
     "configs/a2_attention_internal_improvement_medium_pressure.yaml"
 )
 A2_ATTENTION_HIGH_PRESSURE = Path("configs/a2_attention_high_pressure.yaml")
+A2_ATTENTION_RANDOM_AVAILABLE_HIGH_PRESSURE = Path(
+    "configs/a2_attention_random_available_high_pressure.yaml"
+)
 A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE = Path(
     "configs/a2_attention_research_heavy_high_pressure.yaml"
 )
@@ -64,6 +68,9 @@ A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE = Path(
     "configs/a2_attention_internal_improvement_high_pressure.yaml"
 )
 A2_ATTENTION_EXTREME_PRESSURE = Path("configs/a2_attention_extreme_pressure.yaml")
+A2_ATTENTION_RANDOM_AVAILABLE_EXTREME_PRESSURE = Path(
+    "configs/a2_attention_random_available_extreme_pressure.yaml"
+)
 A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE = Path(
     "configs/a2_attention_research_heavy_extreme_pressure.yaml"
 )
@@ -96,15 +103,18 @@ NO_MANIFEST_ARTIFACTS = ["config.yaml", "metrics.csv", "events.csv", "summary.md
 OUTPUT_FIXTURE_ARTIFACTS = {
     CONFIG: A0_FULL_ARTIFACTS,
     A2_ATTENTION: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_RANDOM_AVAILABLE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT: A0_FULL_ARTIFACTS,
     A2_ATTENTION_MEDIUM_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY_MEDIUM_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT_MEDIUM_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_RANDOM_AVAILABLE_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_ATTENTION_RANDOM_AVAILABLE_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_INTERNAL_IMPROVEMENT_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
@@ -359,6 +369,23 @@ def test_loads_a2_attention_smoke_config() -> None:
         "internal_improvement": 0.2,
         "housekeeping": 0.1,
     }
+    assert config.attention_policy.selection_strategy == "quota_balance"
+
+
+def test_loads_a2_attention_random_available_config() -> None:
+    config = load_config(A2_ATTENTION_RANDOM_AVAILABLE)
+
+    assert config.run.experiment_id == "a2_attention_random_available"
+    assert config.run.ticks == 12
+    assert config.model.agent_count == 15
+    assert config.attention_policy is not None
+    assert config.attention_policy.shares() == {
+        "near_term_external": 0.45,
+        "long_term_research": 0.25,
+        "internal_improvement": 0.2,
+        "housekeeping": 0.1,
+    }
+    assert config.attention_policy.selection_strategy == "random_available"
 
 
 def test_loads_a2_attention_research_heavy_config() -> None:
@@ -411,6 +438,11 @@ def test_loads_a2_attention_internal_improvement_config() -> None:
         ),
         (A2_ATTENTION_HIGH_PRESSURE, "a2_attention_high_pressure", 1.8),
         (
+            A2_ATTENTION_RANDOM_AVAILABLE_HIGH_PRESSURE,
+            "a2_attention_random_available_high_pressure",
+            1.8,
+        ),
+        (
             A2_ATTENTION_RESEARCH_HEAVY_HIGH_PRESSURE,
             "a2_attention_research_heavy_high_pressure",
             1.8,
@@ -421,6 +453,11 @@ def test_loads_a2_attention_internal_improvement_config() -> None:
             1.8,
         ),
         (A2_ATTENTION_EXTREME_PRESSURE, "a2_attention_extreme_pressure", 2.2),
+        (
+            A2_ATTENTION_RANDOM_AVAILABLE_EXTREME_PRESSURE,
+            "a2_attention_random_available_extreme_pressure",
+            2.2,
+        ),
         (
             A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE,
             "a2_attention_research_heavy_extreme_pressure",
@@ -492,9 +529,11 @@ def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> 
         "long_term_research": 0.25,
         "internal_improvement": 0.2,
         "housekeeping": 0.1,
+        "selection_strategy": "quota_balance",
     }
     assert manifest["model"]["attention_policy"] == {
         "classes": list(ATTENTION_CLASSES),
+        "selection_strategy": "quota_balance",
         "fields": list(attention_policy_metric_fields()),
     }
     assert manifest["model"]["events"]["types"] == list(
@@ -503,6 +542,7 @@ def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> 
     assert set(attention_policy_metric_fields()) <= set(rows[0])
     assert "## Attention policy totals" in summary
     assert "- attention policy fields: " in summary
+    assert "- selection strategy: quota_balance" in summary
     assert "- value-weighted completed work: " in summary
     assert "- value per completed task: " in summary
     assert "- value per work event: " in summary
@@ -541,6 +581,36 @@ def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) ->
     assert (first / "metrics.csv").read_text() == (second / "metrics.csv").read_text()
     assert (first / "events.csv").read_text() == (second / "events.csv").read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_a2_random_available_scheduler_is_seeded_and_distinct(
+    tmp_path: Path,
+) -> None:
+    quota = run_experiment(A2_ATTENTION, seed=23, out_dir=tmp_path / "quota")
+    random_first = run_experiment(
+        A2_ATTENTION_RANDOM_AVAILABLE,
+        seed=23,
+        out_dir=tmp_path / "random_first",
+    )
+    random_second = run_experiment(
+        A2_ATTENTION_RANDOM_AVAILABLE,
+        seed=23,
+        out_dir=tmp_path / "random_second",
+    )
+
+    random_manifest = yaml.safe_load((tmp_path / "random_first" / "manifest.yaml").read_text())
+    random_summary = (tmp_path / "random_first" / "summary.md").read_text()
+
+    assert random_first.config.attention_policy is not None
+    assert random_first.config.attention_policy.selection_strategy == "random_available"
+    assert random_first.metrics == random_second.metrics
+    assert random_first.events == random_second.events
+    assert [event["task_id"] for event in random_first.events if event["event_type"] == "task_worked"] != [
+        event["task_id"] for event in quota.events if event["event_type"] == "task_worked"
+    ]
+    assert random_manifest["model"]["attention_policy"]["selection_strategy"] == "random_available"
+    assert random_manifest["config"]["attention_policy"]["selection_strategy"] == "random_available"
+    assert "- selection strategy: random_available" in random_summary
 
 
 def test_a2_attention_comparison_shifts_work_toward_research(tmp_path: Path) -> None:

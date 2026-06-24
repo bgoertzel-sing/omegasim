@@ -245,12 +245,16 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                     )
                 )
             elif action == "work_task":
+                selected_task_index: int | None = None
                 desired_attention_class = (
                     _desired_attention_class(task_queue, config, attention_work_counts)
                     if config.attention_policy is not None
                     else ""
                 )
                 if config.attention_policy is not None:
+                    if config.attention_policy.selection_strategy == "random_available":
+                        selected_task_index = int(rng.integers(0, len(task_queue)))
+                        desired_attention_class = task_queue[selected_task_index].task_class
                     capture_pressure_event = _attention_capture_pressure_event(
                         tick=tick,
                         agent=agent,
@@ -266,6 +270,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                     config,
                     attention_work_counts,
                     desired_class=desired_attention_class,
+                    selected_index=selected_task_index,
                 )
                 task.remaining_work -= 1
                 if config.attention_policy is not None:
@@ -470,9 +475,15 @@ def _pop_work_task(
     attention_work_counts: Counter[str],
     *,
     desired_class: str = "",
+    selected_index: int | None = None,
 ) -> Task:
     if config.attention_policy is None:
         return task_queue.popleft()
+
+    if selected_index is not None:
+        task = task_queue[selected_index]
+        del task_queue[selected_index]
+        return task
 
     if not desired_class:
         desired_class = _desired_attention_class(task_queue, config, attention_work_counts)
