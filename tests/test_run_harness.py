@@ -1868,6 +1868,39 @@ def test_pressure_analysis_reads_joined_csv_pair_and_ranks_responses(
     assert "pressure_comparison_metrics.csv" not in summary
 
 
+def test_pressure_analysis_requires_pressure_input_csv_pair(tmp_path: Path) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="pressure_comparison_metrics.csv"):
+        run_analysis(pressure_dir=pressure_dir, out_dir=analysis_dir, limit=5)
+
+    assert not analysis_dir.exists()
+
+
+@pytest.mark.parametrize(
+    "collision_artifact",
+    ["trajectory_pressure_ranking.csv", "summary.md"],
+)
+def test_pressure_analysis_refuses_existing_output_artifacts_without_modifying_them(
+    tmp_path: Path,
+    collision_artifact: str,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    sentinel = f"preexisting {collision_artifact} sentinel\n"
+
+    analysis_dir.mkdir()
+    (analysis_dir / collision_artifact).write_text(sentinel)
+
+    with pytest.raises(FileExistsError, match=collision_artifact):
+        run_analysis(pressure_dir=pressure_dir, out_dir=analysis_dir, limit=5)
+
+    assert (analysis_dir / collision_artifact).read_text() == sentinel
+    assert sorted(path.name for path in analysis_dir.iterdir()) == [collision_artifact]
+
+
 def test_documented_pressure_analysis_cli_reproduces_ranking_artifacts(
     tmp_path: Path,
 ) -> None:
@@ -1887,6 +1920,73 @@ def test_documented_pressure_analysis_cli_reproduces_ranking_artifacts(
             "summary.md",
         ],
     )
+
+
+def test_documented_pressure_analysis_cli_reports_missing_input_without_partial_outputs(
+    tmp_path: Path,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    pressure_dir.mkdir()
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.analyze_pressure",
+            "--pressure-dir",
+            str(pressure_dir),
+            "--out",
+            str(analysis_dir),
+            "--limit",
+            "5",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "pressure_comparison_metrics.csv" in completed.stderr
+    assert not analysis_dir.exists()
+
+
+@pytest.mark.parametrize(
+    "collision_artifact",
+    ["trajectory_pressure_ranking.csv", "summary.md"],
+)
+def test_documented_pressure_analysis_cli_refuses_existing_output_artifacts_without_modifying_them(
+    tmp_path: Path,
+    collision_artifact: str,
+) -> None:
+    pressure_dir = tmp_path / "pressure"
+    analysis_dir = tmp_path / "analysis"
+    sentinel = f"preexisting {collision_artifact} sentinel\n"
+
+    analysis_dir.mkdir()
+    (analysis_dir / collision_artifact).write_text(sentinel)
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.analyze_pressure",
+            "--pressure-dir",
+            str(pressure_dir),
+            "--out",
+            str(analysis_dir),
+            "--limit",
+            "5",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert collision_artifact in completed.stderr
+    assert (analysis_dir / collision_artifact).read_text() == sentinel
+    assert sorted(path.name for path in analysis_dir.iterdir()) == [collision_artifact]
 
 
 def test_documented_pressure_cli_refuses_existing_top_level_artifacts_without_modifying_them(
