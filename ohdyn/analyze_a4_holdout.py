@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import math
+import random
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
@@ -17,6 +19,8 @@ from ohdyn.sim import BASELINE_ROLES
 DEFAULT_A4_HOLDOUT_DIR = Path("runs/a4_two_hive_holdout_seed100_129")
 DEFAULT_A4_HOLDOUT_OUT_DIR = Path("runs/a4_two_hive_holdout_seed100_129_analysis")
 DEFAULT_A4_SEEDS = tuple(range(100, 130))
+DEFAULT_A4_BOOTSTRAP_REPS = 1000
+DEFAULT_A4_BOOTSTRAP_SEED = 4404
 A4_HOLDOUT_MODES = ("none", "direct", "delayed", "shuffled")
 A4_HOLDOUT_COMPARISONS = (
     ("direct_minus_none", "direct", "none"),
@@ -86,6 +90,15 @@ A4_EFFECT_FIELDS = (
     "mean_delta",
     "median_delta",
     "positive_delta_rate",
+    "bootstrap_reps",
+    "bootstrap_seed",
+    "bootstrap_mean_delta_ci_low",
+    "bootstrap_mean_delta_ci_high",
+    "bootstrap_median_delta_ci_low",
+    "bootstrap_median_delta_ci_high",
+    "bootstrap_positive_delta_rate_ci_low",
+    "bootstrap_positive_delta_rate_ci_high",
+    "bootstrap_sign_stability",
 )
 HIVE_EFFECT_ENDPOINTS = tuple(
     field
@@ -104,15 +117,19 @@ def run_a4_holdout_analysis(
     holdout_dir: str | Path = DEFAULT_A4_HOLDOUT_DIR,
     out_dir: str | Path = DEFAULT_A4_HOLDOUT_OUT_DIR,
     seeds: tuple[int, ...] = DEFAULT_A4_SEEDS,
+    bootstrap_reps: int = DEFAULT_A4_BOOTSTRAP_REPS,
+    bootstrap_seed: int = DEFAULT_A4_BOOTSTRAP_SEED,
+    overwrite: bool = False,
 ) -> dict[str, Any]:
     """Analyze an existing A4 holdout directory without running simulations."""
 
     if not seeds:
         raise ValueError("At least one seed is required.")
+    _validate_bootstrap_options(bootstrap_reps, bootstrap_seed)
     source_path = Path(holdout_dir)
     output_path = Path(out_dir)
     _validate_source(source_path, seeds)
-    _ensure_outputs_available(output_path)
+    _ensure_outputs_available(output_path, overwrite=overwrite)
     output_path.mkdir(parents=True, exist_ok=True)
 
     hive_rows: list[dict[str, Any]] = []
@@ -123,7 +140,12 @@ def run_a4_holdout_analysis(
             hive_rows.extend(_hive_endpoints(run_path, mode, seed))
             cross_rows.append(_cross_endpoints(run_path, mode, seed))
 
-    effect_rows = _effect_rows(hive_rows, cross_rows)
+    effect_rows = _effect_rows(
+        hive_rows,
+        cross_rows,
+        bootstrap_reps=bootstrap_reps,
+        bootstrap_seed=bootstrap_seed,
+    )
     _write_csv(output_path / "a4_holdout_hive_endpoints.csv", A4_HIVE_ENDPOINT_FIELDS, hive_rows)
     _write_csv(
         output_path / "a4_holdout_cross_hive_endpoints.csv",
@@ -141,7 +163,18 @@ def run_a4_holdout_analysis(
         "hive_endpoint_rows": len(hive_rows),
         "cross_endpoint_rows": len(cross_rows),
         "effect_rows": len(effect_rows),
+        "bootstrap_reps": bootstrap_reps,
+        "bootstrap_seed": bootstrap_seed,
     }
+
+
+def _validate_bootstrap_options(bootstrap_reps: int, bootstrap_seed: int) -> None:
+    if isinstance(bootstrap_reps, bool) or not isinstance(bootstrap_reps, int):
+        raise ValueError("bootstrap_reps must be an integer.")
+    if bootstrap_reps <= 0:
+        raise ValueError("bootstrap_reps must be positive.")
+    if isinstance(bootstrap_seed, bool) or not isinstance(bootstrap_seed, int):
+        raise ValueError("bootstrap_seed must be an integer.")
 
 
 def _validate_source(source_path: Path, seeds: tuple[int, ...]) -> None:
@@ -160,7 +193,7 @@ def _validate_source(source_path: Path, seeds: tuple[int, ...]) -> None:
         raise FileNotFoundError(f"A4 holdout source is missing artifacts: {sample}{suffix}")
 
 
-def _ensure_outputs_available(output_path: Path) -> None:
+def _ensure_outputs_available(output_path: Path, *, overwrite: bool) -> None:
     if output_path.exists() and not output_path.is_dir():
         raise FileExistsError(f"Output path {output_path} exists and is not a directory.")
     collisions = [
@@ -173,7 +206,7 @@ def _ensure_outputs_available(output_path: Path) -> None:
         )
         if (output_path / name).exists()
     ]
-    if collisions:
+    if collisions and not overwrite:
         raise FileExistsError(
             f"Output path {output_path} already contains A4 analysis artifacts: "
             f"{', '.join(collisions)}"
@@ -301,6 +334,9 @@ def _cross_endpoints(run_path: Path, mode: str, seed: int) -> dict[str, Any]:
 def _effect_rows(
     hive_rows: list[dict[str, Any]],
     cross_rows: list[dict[str, Any]],
+    *,
+    bootstrap_reps: int,
+    bootstrap_seed: int,
 ) -> list[dict[str, Any]]:
     rows = []
     hive_index = {
@@ -329,6 +365,8 @@ def _effect_rows(
                         high_mode=high_mode,
                         low_mode=low_mode,
                         pairs=pairs,
+                        bootstrap_reps=bootstrap_reps,
+                        bootstrap_seed=bootstrap_seed,
                     )
                 )
         for endpoint in CROSS_EFFECT_ENDPOINTS:
@@ -348,6 +386,8 @@ def _effect_rows(
                     high_mode=high_mode,
                     low_mode=low_mode,
                     pairs=pairs,
+                    bootstrap_reps=bootstrap_reps,
+                    bootstrap_seed=bootstrap_seed,
                 )
             )
     return rows
@@ -362,6 +402,8 @@ def _summarize_effect(
     high_mode: str,
     low_mode: str,
     pairs: list[tuple[float | None, float | None]],
+    bootstrap_reps: int,
+    bootstrap_seed: int,
 ) -> dict[str, Any]:
     valid_pairs = [(high, low) for high, low in pairs if high is not None and low is not None]
     if not valid_pairs:
@@ -378,10 +420,30 @@ def _summarize_effect(
             "mean_delta": "NA",
             "median_delta": "NA",
             "positive_delta_rate": "NA",
+            "bootstrap_reps": bootstrap_reps,
+            "bootstrap_seed": bootstrap_seed,
+            "bootstrap_mean_delta_ci_low": "NA",
+            "bootstrap_mean_delta_ci_high": "NA",
+            "bootstrap_median_delta_ci_low": "NA",
+            "bootstrap_median_delta_ci_high": "NA",
+            "bootstrap_positive_delta_rate_ci_low": "NA",
+            "bootstrap_positive_delta_rate_ci_high": "NA",
+            "bootstrap_sign_stability": "NA",
         }
     highs = [high for high, _low in valid_pairs]
     lows = [low for _high, low in valid_pairs]
     deltas = [high - low for high, low in valid_pairs]
+    bootstrap = _bootstrap_delta_stats(
+        deltas,
+        bootstrap_reps=bootstrap_reps,
+        bootstrap_seed=_effect_bootstrap_seed(
+            bootstrap_seed,
+            comparison=comparison,
+            endpoint_scope=endpoint_scope,
+            hive_id=hive_id,
+            endpoint=endpoint,
+        ),
+    )
     return {
         "comparison": comparison,
         "endpoint_scope": endpoint_scope,
@@ -397,6 +459,60 @@ def _summarize_effect(
         "positive_delta_rate": _format_number(
             sum(1 for delta in deltas if delta > 0.0) / len(deltas)
         ),
+        "bootstrap_reps": bootstrap_reps,
+        "bootstrap_seed": bootstrap_seed,
+        "bootstrap_mean_delta_ci_low": _format_number(bootstrap["mean_ci_low"]),
+        "bootstrap_mean_delta_ci_high": _format_number(bootstrap["mean_ci_high"]),
+        "bootstrap_median_delta_ci_low": _format_number(bootstrap["median_ci_low"]),
+        "bootstrap_median_delta_ci_high": _format_number(bootstrap["median_ci_high"]),
+        "bootstrap_positive_delta_rate_ci_low": _format_number(
+            bootstrap["positive_rate_ci_low"]
+        ),
+        "bootstrap_positive_delta_rate_ci_high": _format_number(
+            bootstrap["positive_rate_ci_high"]
+        ),
+        "bootstrap_sign_stability": _format_number(bootstrap["sign_stability"]),
+    }
+
+
+def _effect_bootstrap_seed(
+    bootstrap_seed: int,
+    *,
+    comparison: str,
+    endpoint_scope: str,
+    hive_id: str,
+    endpoint: str,
+) -> int:
+    key = f"{bootstrap_seed}|{comparison}|{endpoint_scope}|{hive_id}|{endpoint}"
+    digest = hashlib.sha256(key.encode("utf-8")).hexdigest()
+    return int(digest[:16], 16)
+
+
+def _bootstrap_delta_stats(
+    deltas: list[float],
+    *,
+    bootstrap_reps: int,
+    bootstrap_seed: int,
+) -> dict[str, float]:
+    rng = random.Random(bootstrap_seed)
+    mean_values: list[float] = []
+    median_values: list[float] = []
+    positive_rates: list[float] = []
+    sample_size = len(deltas)
+    for _ in range(bootstrap_reps):
+        sample = [rng.choice(deltas) for _index in range(sample_size)]
+        mean_values.append(_mean(sample))
+        median_values.append(_median(sample))
+        positive_rates.append(sum(1 for value in sample if value > 0.0) / sample_size)
+    observed_mean = _mean(deltas)
+    return {
+        "mean_ci_low": _quantile(mean_values, 0.025),
+        "mean_ci_high": _quantile(mean_values, 0.975),
+        "median_ci_low": _quantile(median_values, 0.025),
+        "median_ci_high": _quantile(median_values, 0.975),
+        "positive_rate_ci_low": _quantile(positive_rates, 0.025),
+        "positive_rate_ci_high": _quantile(positive_rates, 0.975),
+        "sign_stability": _sign_stability(mean_values, observed_mean),
     }
 
 
@@ -463,6 +579,24 @@ def _median(values: list[float]) -> float:
     return (ordered[midpoint - 1] + ordered[midpoint]) / 2.0
 
 
+def _quantile(values: list[float], quantile: float) -> float:
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    index = round((len(ordered) - 1) * quantile)
+    return ordered[index]
+
+
+def _sign_stability(values: list[float], observed_delta: float) -> float:
+    if not values or observed_delta == 0.0:
+        return 0.0
+    if observed_delta > 0.0:
+        stable = sum(1 for value in values if value > 0.0)
+    else:
+        stable = sum(1 for value in values if value < 0.0)
+    return stable / len(values)
+
+
 def _lagged_correlation(left: list[float], right: list[float], lag: int) -> str:
     if lag < 0:
         raise ValueError("lag must be non-negative.")
@@ -525,12 +659,12 @@ def _summary(
         "",
         "## Transfer Effects",
         "",
-        "| comparison | paired_seed_count | high_mean | low_mean | mean_delta | positive_delta_rate |",
+        "| comparison | paired_seed_count | mean_delta | mean_delta_ci | positive_delta_rate | sign_stability |",
         "| --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in transfer_rows:
         lines.append(
-            "| {comparison} | {paired_seed_count} | {high_mean} | {low_mean} | {mean_delta} | {positive_delta_rate} |".format(
+            "| {comparison} | {paired_seed_count} | {mean_delta} | [{bootstrap_mean_delta_ci_low}, {bootstrap_mean_delta_ci_high}] | {positive_delta_rate} | {bootstrap_sign_stability} |".format(
                 **row
             )
         )
@@ -541,7 +675,7 @@ def _summary(
             "",
             "- `a4_holdout_hive_endpoints.csv`: per-mode, per-seed, per-hive queue-flow/service/action endpoints.",
             "- `a4_holdout_cross_hive_endpoints.csv`: per-mode, per-seed transfer, divergence, and fixed-lag correlation endpoints.",
-            "- `a4_holdout_effects.csv`: paired-seed high-minus-low effects for preregistered comparisons.",
+            "- `a4_holdout_effects.csv`: paired-seed high-minus-low effects for preregistered comparisons, including deterministic paired-bootstrap uncertainty fields.",
             "",
             "## Interpretation Boundary",
             "",
@@ -578,6 +712,23 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="*",
         help="Seed list or inclusive ranges like 100..129. Defaults to 100..129.",
     )
+    parser.add_argument(
+        "--bootstrap-reps",
+        type=int,
+        default=DEFAULT_A4_BOOTSTRAP_REPS,
+        help="Deterministic paired bootstrap resamples per endpoint.",
+    )
+    parser.add_argument(
+        "--bootstrap-seed",
+        type=int,
+        default=DEFAULT_A4_BOOTSTRAP_SEED,
+        help="Base seed for deterministic paired bootstrap resampling.",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing A4 analyzer outputs in --out-dir.",
+    )
     return parser
 
 
@@ -589,6 +740,9 @@ def main(argv: list[str] | None = None) -> int:
             holdout_dir=args.holdout_dir,
             out_dir=args.out_dir,
             seeds=_parse_seed_args(args.seeds),
+            bootstrap_reps=args.bootstrap_reps,
+            bootstrap_seed=args.bootstrap_seed,
+            overwrite=args.overwrite,
         )
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))

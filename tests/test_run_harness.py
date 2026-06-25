@@ -65,7 +65,7 @@ from ohdyn.analyze_lagged_service_sync import (
     run_lagged_service_sync_analysis,
 )
 from ohdyn.analyze_a4_smoke_contract import run_a4_smoke_contract_preflight
-from ohdyn.analyze_a4_holdout import run_a4_holdout_analysis
+from ohdyn.analyze_a4_holdout import A4_EFFECT_FIELDS, run_a4_holdout_analysis
 from ohdyn.analyze_exogenous_arrival_controls import (
     EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS,
     EXOGENOUS_CONTROL_METRIC_FIELDS,
@@ -1046,6 +1046,7 @@ def test_a4_holdout_analyzer_consumes_existing_paired_seed_artifacts(
 
     with (out_dir / "a4_holdout_effects.csv").open() as handle:
         effect_rows = list(csv.DictReader(handle))
+    assert list(effect_rows[0]) == list(A4_EFFECT_FIELDS)
     transfer_effect = next(
         row
         for row in effect_rows
@@ -1054,9 +1055,27 @@ def test_a4_holdout_analyzer_consumes_existing_paired_seed_artifacts(
     )
     assert transfer_effect["paired_seed_count"] == "2"
     assert float(transfer_effect["mean_delta"]) > 0.0
+    assert transfer_effect["bootstrap_reps"] == "1000"
+    assert transfer_effect["bootstrap_seed"] == "4404"
+    assert float(transfer_effect["bootstrap_mean_delta_ci_low"]) > 0.0
+    assert float(transfer_effect["bootstrap_mean_delta_ci_high"]) > 0.0
+    assert float(transfer_effect["bootstrap_sign_stability"]) == 1.0
     summary = (out_dir / "summary.md").read_text()
     assert "# A4 Holdout Paired-Seed Analysis" in summary
+    assert "deterministic paired-bootstrap uncertainty fields" in summary
     assert "- This analyzer is read-only and does not run A4 holdout seeds." in summary
+
+    with pytest.raises(FileExistsError, match="already contains A4 analysis artifacts"):
+        run_a4_holdout_analysis(holdout_dir=source, out_dir=out_dir, seeds=seeds)
+    overwritten = run_a4_holdout_analysis(
+        holdout_dir=source,
+        out_dir=out_dir,
+        seeds=seeds,
+        bootstrap_reps=25,
+        bootstrap_seed=123,
+        overwrite=True,
+    )
+    assert overwritten["bootstrap_reps"] == 25
 
 
 def test_a4_holdout_analyzer_refuses_missing_artifacts(tmp_path: Path) -> None:
