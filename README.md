@@ -382,17 +382,28 @@ lagged endpoints. Any later multi-hive preregistration should use
 queue-flow/service synchronization endpoints as primary and keep lobe labels
 secondary unless a genuinely non-queue, non-action-derived observable is added.
 
-The next-stage multi-hive study plan is preregistered as a design artifact only:
+The next-stage multi-hive study plan is preregistered here:
 
 ```text
 docs/a4_multihive_queue_flow_service_preregistration.md
 ```
 
-Do not add multi-hive simulator mechanics until that preregistration is
-reviewed and converted into a concrete implementation plan. Its primary
-endpoints are cross-hive queue-flow/service relations under no-coupling,
-direct-coupling, delayed-coupling, and shuffled-coupling controls; lobe labels
-remain secondary diagnostics.
+External review has approved only the bounded A4 smoke-contract implementation,
+not A4 holdout runs. The checked-in A4 smoke fixtures keep multi-hive behavior
+opt-in through YAML. Absence of `hives` preserves the single-hive A0/A1 path.
+The inert two-hive control and direct same-tick transfer smoke can be run with:
+
+```bash
+python -m ohdyn.run --config configs/a4_two_hive_none_smoke.yaml --seed 1 --out runs/a4_two_hive_none_seed1
+python -m ohdyn.run --config configs/a4_two_hive_direct_smoke.yaml --seed 1 --out runs/a4_two_hive_direct_seed1
+```
+
+The direct smoke records deterministic coupling decisions in
+`coupling_events.csv`, emits per-hive transfer accounting fields in
+`hive_metrics.csv`, and checks aggregate transfer conservation through
+`cross_hive_metrics.csv`. Delayed and shuffled controls, A4 analysis scripts,
+and scientific holdout seeds remain deferred until the smoke contract is
+stable.
 
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 

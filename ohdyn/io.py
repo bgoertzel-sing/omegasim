@@ -26,6 +26,7 @@ from ohdyn.sim import (
     EXOGENOUS_ARRIVAL_EVENT_TYPES,
     EXOGENOUS_ARRIVAL_METRIC_FIELDS,
     HIVE_EVENT_FIELDS,
+    MULTI_HIVE_QUEUE_FLOW_METRIC_FIELDS,
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
@@ -257,11 +258,14 @@ def _write_csv(
 
 
 def _metrics_fieldnames(result: SimulationResult) -> tuple[str, ...]:
-    return metrics_fieldnames(
+    fields = metrics_fieldnames(
         result.config.model.actions,
         include_attention_policy=result.config.attention_policy is not None,
         include_exogenous_arrivals=_exogenous_arrivals_enabled(result),
     )
+    if _multi_hive_enabled(result):
+        return (*fields, *MULTI_HIVE_QUEUE_FLOW_METRIC_FIELDS)
+    return fields
 
 
 def _event_types(result: SimulationResult) -> tuple[str, ...]:
@@ -384,7 +388,7 @@ def _summary(result: SimulationResult) -> str:
                 f"- coupling mode: {result.config.coupling.mode}",
                 f"- transfer probability: {result.config.coupling.transfer_probability}",
                 f"- delay ticks: {result.config.coupling.delay_ticks}",
-                f"- completed transfers: {len(result.coupling_events or [])}",
+                f"- completed transfers: {_completed_transfer_count(result)}",
                 "",
                 "## Hive summaries",
                 "",
@@ -411,6 +415,13 @@ def _summary(result: SimulationResult) -> str:
         )
     lines.append("")
     return "\n".join(lines)
+
+
+def _completed_transfer_count(result: SimulationResult) -> int:
+    return sum(
+        int(bool(event.get("transfer_decision")))
+        for event in (result.coupling_events or [])
+    )
 
 
 def _exogenous_arrivals_enabled(result: SimulationResult) -> bool:

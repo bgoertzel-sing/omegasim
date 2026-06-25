@@ -119,6 +119,13 @@ QUEUED_TASK_AGE_METRIC_FIELDS = (
     "queued_task_age_mean_tick",
 )
 
+MULTI_HIVE_QUEUE_FLOW_METRIC_FIELDS = (
+    "inbound_transfers_tick",
+    "outbound_transfers_tick",
+    "explicit_drops_tick",
+    "queue_balance_residual_tick",
+)
+
 EXOGENOUS_ARRIVAL_METRIC_FIELDS = (
     "agent_tasks_created_tick",
     "agent_tasks_created_total",
@@ -234,9 +241,46 @@ class SimulationResult:
     cross_hive_metrics: list[dict[str, Any]] | None = None
 
 
+@dataclass
+class _HiveRuntime:
+    hive_id: str
+    transfer_probability: float
+    config: OmegaConfig
+    rng: np.random.Generator
+    exogenous_rng: np.random.Generator | None
+    bus_graph: nx.Graph
+    agents: tuple[AgentState, ...]
+    bus_metrics: dict[str, float]
+    task_queue: deque[Task]
+    events: list[dict[str, Any]]
+    metrics: list[dict[str, Any]]
+    task_counter: int = 0
+    agent_tasks_created: int = 0
+    exogenous_tasks_created: int = 0
+    completed_tasks: int = 0
+    attention_work_counts: Counter[str] | None = None
+    attention_completed_counts: Counter[str] | None = None
+    attention_value_weighted_completed_total: int = 0
+    previous_lobe_label: str = ""
+    baseline_lobe_run_id: int = 0
+    baseline_lobe_current_run_length: int = 0
+    queue_depth_start_tick: int = 0
+    action_counts_tick: Counter[str] | None = None
+    role_action_counts_tick: Counter[tuple[str, str]] | None = None
+    attention_work_counts_tick: Counter[str] | None = None
+    attention_completed_counts_tick: Counter[str] | None = None
+    completed_this_tick: int = 0
+    attention_value_weighted_completed_tick: int = 0
+    exogenous_created_this_tick: int = 0
+    inbound_transfers_tick: int = 0
+    outbound_transfers_tick: int = 0
+    transfer_attempts_tick: int = 0
+    transfers_completed_tick: int = 0
+
+
 def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
     if config.hives:
-        return _simulate_multi_hive_none(config, seed)
+        return _simulate_multi_hive(config, seed)
     return _simulate_single(config, seed)
 
 
@@ -497,11 +541,19 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
     )
 
 
+def _simulate_multi_hive(config: OmegaConfig, seed: int) -> SimulationResult:
+    assert config.coupling is not None
+    if config.coupling.mode == "none":
+        return _simulate_multi_hive_none(config, seed)
+    if config.coupling.mode == "direct":
+        return _simulate_multi_hive_direct(config, seed)
+    raise ValueError(
+        "A4 multi-hive simulation currently supports coupling.mode 'none' and 'direct'."
+    )
+
+
 def _simulate_multi_hive_none(config: OmegaConfig, seed: int) -> SimulationResult:
     assert config.coupling is not None
-    if config.coupling.mode != "none":
-        raise ValueError("A4 multi-hive simulation currently supports only coupling.mode 'none'.")
-
     hive_results = []
     for hive in config.hives:
         hive_config = _hive_local_config(config, hive_index_seed_offset=hive.seed_offset)
@@ -528,6 +580,435 @@ def _simulate_multi_hive_none(config: OmegaConfig, seed: int) -> SimulationResul
         hive_events=hive_events,
         coupling_events=coupling_events,
         cross_hive_metrics=cross_hive_metrics,
+    )
+
+
+def _simulate_multi_hive_direct(config: OmegaConfig, seed: int) -> SimulationResult:
+    assert config.coupling is not None
+    coupling_rng = np.random.default_rng(seed + config.coupling.shuffle_seed_offset)
+    runtimes = tuple(_make_hive_runtime(config, hive, seed) for hive in config.hives)
+    coupling_events: list[dict[str, Any]] = []
+
+    for tick in range(config.run.ticks):
+        for runtime in runtimes:
+            _begin_hive_tick(runtime)
+
+        for source_index, runtime in enumerate(runtimes):
+            _advance_hive_runtime_tick(
+                runtime=runtime,
+                runtimes=runtimes,
+                source_index=source_index,
+                tick=tick,
+                coupling_rng=coupling_rng,
+                coupling_events=coupling_events,
+            )
+
+        for runtime in runtimes:
+            _finish_hive_tick(runtime, tick)
+
+    hive_results = tuple(_runtime_result(runtime) for runtime in runtimes)
+    hive_metrics = _hive_metrics(config, hive_results)
+    hive_events = _hive_events(config, hive_results)
+    cross_hive_metrics = _cross_hive_metrics(
+        config,
+        hive_results,
+        coupling_events=coupling_events,
+    )
+    aggregate_metrics = _aggregate_hive_metrics(config, hive_results, cross_hive_metrics)
+    aggregate_events = _aggregate_hive_events(hive_events)
+    aggregate_graph = nx.disjoint_union_all([result.bus_graph for result in hive_results])
+    aggregate_agents = tuple(agent for result in hive_results for agent in result.agents)
+
+    return SimulationResult(
+        config=config,
+        seed=seed,
+        bus_graph=aggregate_graph,
+        agents=aggregate_agents,
+        metrics=aggregate_metrics,
+        events=aggregate_events,
+        hive_results=hive_results,
+        hive_metrics=hive_metrics,
+        hive_events=hive_events,
+        coupling_events=coupling_events,
+        cross_hive_metrics=cross_hive_metrics,
+    )
+
+
+def _make_hive_runtime(config: OmegaConfig, hive: Any, seed: int) -> _HiveRuntime:
+    assert config.coupling is not None
+    hive_config = _hive_local_config(config, hive_index_seed_offset=hive.seed_offset)
+    rng = np.random.default_rng(seed + hive.seed_offset)
+    exogenous_rng = _exogenous_arrival_rng(hive_config, seed + hive.seed_offset)
+    agents = _make_agents(hive_config.model.agent_count, rng)
+    bus_graph = _make_bus_graph(agents)
+    return _HiveRuntime(
+        hive_id=hive.hive_id,
+        transfer_probability=config.coupling.transfer_probability,
+        config=hive_config,
+        rng=rng,
+        exogenous_rng=exogenous_rng,
+        bus_graph=bus_graph,
+        agents=agents,
+        bus_metrics=_bus_graph_metrics(bus_graph),
+        task_queue=deque(),
+        events=[],
+        metrics=[],
+        attention_work_counts=Counter(),
+        attention_completed_counts=Counter(),
+    )
+
+
+def _begin_hive_tick(runtime: _HiveRuntime) -> None:
+    runtime.queue_depth_start_tick = len(runtime.task_queue)
+    runtime.action_counts_tick = Counter()
+    runtime.role_action_counts_tick = Counter()
+    runtime.attention_work_counts_tick = Counter()
+    runtime.attention_completed_counts_tick = Counter()
+    runtime.completed_this_tick = 0
+    runtime.attention_value_weighted_completed_tick = 0
+    runtime.exogenous_created_this_tick = 0
+    runtime.inbound_transfers_tick = 0
+    runtime.outbound_transfers_tick = 0
+    runtime.transfer_attempts_tick = 0
+    runtime.transfers_completed_tick = 0
+
+
+def _advance_hive_runtime_tick(
+    *,
+    runtime: _HiveRuntime,
+    runtimes: tuple[_HiveRuntime, ...],
+    source_index: int,
+    tick: int,
+    coupling_rng: np.random.Generator,
+    coupling_events: list[dict[str, Any]],
+) -> None:
+    config = runtime.config
+    if _exogenous_arrivals_enabled(config):
+        assert runtime.exogenous_rng is not None
+        runtime.exogenous_created_this_tick = int(
+            runtime.exogenous_rng.poisson(config.exogenous_arrivals.rate_per_tick)
+        )
+        for _ in range(runtime.exogenous_created_this_tick):
+            runtime.task_counter += 1
+            runtime.exogenous_tasks_created += 1
+            work_units = int(runtime.exogenous_rng.integers(1, 4))
+            task = Task(
+                task_id=f"task_{runtime.task_counter:05d}",
+                created_by="exogenous",
+                created_tick=tick,
+                remaining_work=work_units,
+                task_class=_choose_exogenous_task_class(config, runtime.exogenous_rng),
+            )
+            runtime.events.append(
+                _event(
+                    tick=tick,
+                    event_type="exogenous_task_arrived",
+                    agent_id="",
+                    action="exogenous_arrival",
+                    task_id=task.task_id,
+                    work_units=work_units,
+                    task_class=task.task_class,
+                )
+            )
+            _route_emitted_task(
+                task=task,
+                runtime=runtime,
+                runtimes=runtimes,
+                source_index=source_index,
+                tick=tick,
+                coupling_rng=coupling_rng,
+                coupling_events=coupling_events,
+            )
+
+    assert runtime.action_counts_tick is not None
+    assert runtime.role_action_counts_tick is not None
+    for agent in runtime.agents:
+        action = _choose_action(
+            config.model.actions,
+            bool(runtime.task_queue),
+            agent,
+            runtime.rng,
+            task_creation_pressure=config.model.task_creation_pressure,
+            work_service_capacity=config.model.work_service_capacity,
+        )
+        runtime.action_counts_tick[action] += 1
+        runtime.role_action_counts_tick[(agent.role, action)] += 1
+
+        if action == "message":
+            target = _choose_target(agent, runtime.agents, runtime.rng)
+            runtime.events.append(
+                _event(
+                    tick=tick,
+                    event_type="message_sent",
+                    agent_id=agent.agent_id,
+                    action=action,
+                    target_id=target.agent_id,
+                )
+            )
+        elif action == "create_task":
+            runtime.task_counter += 1
+            runtime.agent_tasks_created += 1
+            work_units = int(runtime.rng.integers(1, 4))
+            task = Task(
+                task_id=f"task_{runtime.task_counter:05d}",
+                created_by=agent.agent_id,
+                created_tick=tick,
+                remaining_work=work_units,
+                task_class=_choose_task_class(config, runtime.rng),
+            )
+            runtime.events.append(
+                _event(
+                    tick=tick,
+                    event_type="task_created",
+                    agent_id=agent.agent_id,
+                    action=action,
+                    task_id=task.task_id,
+                    work_units=work_units,
+                )
+            )
+            _route_emitted_task(
+                task=task,
+                runtime=runtime,
+                runtimes=runtimes,
+                source_index=source_index,
+                tick=tick,
+                coupling_rng=coupling_rng,
+                coupling_events=coupling_events,
+            )
+        elif action == "work_task":
+            selected_task_index: int | None = None
+            assert runtime.attention_work_counts is not None
+            assert runtime.attention_work_counts_tick is not None
+            assert runtime.attention_completed_counts is not None
+            assert runtime.attention_completed_counts_tick is not None
+            desired_attention_class = (
+                _desired_attention_class(
+                    runtime.task_queue,
+                    config,
+                    runtime.attention_work_counts,
+                )
+                if config.attention_policy is not None
+                else ""
+            )
+            if config.attention_policy is not None:
+                if config.attention_policy.selection_strategy == "random_available":
+                    selected_task_index = int(runtime.rng.integers(0, len(runtime.task_queue)))
+                    desired_attention_class = runtime.task_queue[
+                        selected_task_index
+                    ].task_class
+                capture_pressure_event = _attention_capture_pressure_event(
+                    tick=tick,
+                    agent=agent,
+                    action=action,
+                    task_queue=runtime.task_queue,
+                    config=config,
+                    selected_class=desired_attention_class,
+                )
+                if capture_pressure_event is not None:
+                    runtime.events.append(capture_pressure_event)
+            task = _pop_work_task(
+                runtime.task_queue,
+                config,
+                runtime.attention_work_counts,
+                desired_class=desired_attention_class,
+                selected_index=selected_task_index,
+            )
+            task.remaining_work -= 1
+            if config.attention_policy is not None:
+                runtime.attention_work_counts[task.task_class] += 1
+                runtime.attention_work_counts_tick[task.task_class] += 1
+            completed = task.remaining_work <= 0
+            if completed:
+                runtime.completed_tasks += 1
+                runtime.completed_this_tick += 1
+                if config.attention_policy is not None:
+                    runtime.attention_completed_counts[task.task_class] += 1
+                    runtime.attention_completed_counts_tick[task.task_class] += 1
+                    runtime.attention_value_weighted_completed_tick += (
+                        TASK_CLASS_VALUE_WEIGHTS[task.task_class]
+                    )
+                    runtime.attention_value_weighted_completed_total += (
+                        TASK_CLASS_VALUE_WEIGHTS[task.task_class]
+                    )
+            else:
+                runtime.task_queue.append(task)
+            runtime.events.append(
+                _event(
+                    tick=tick,
+                    event_type="task_worked",
+                    agent_id=agent.agent_id,
+                    action=action,
+                    task_id=task.task_id,
+                    remaining_work=max(task.remaining_work, 0),
+                    completed=completed,
+                    task_class=task.task_class,
+                )
+            )
+        else:
+            runtime.events.append(
+                _event(
+                    tick=tick,
+                    event_type="agent_idle",
+                    agent_id=agent.agent_id,
+                    action="idle",
+                )
+            )
+
+
+def _route_emitted_task(
+    *,
+    task: Task,
+    runtime: _HiveRuntime,
+    runtimes: tuple[_HiveRuntime, ...],
+    source_index: int,
+    tick: int,
+    coupling_rng: np.random.Generator,
+    coupling_events: list[dict[str, Any]],
+) -> None:
+    # The local runtime config intentionally strips coupling; the mode is direct
+    # whenever this helper is used. The source tuple order defines the target.
+    if len(runtimes) <= 1:
+        runtime.task_queue.append(task)
+        return
+
+    target_index = (source_index + 1) % len(runtimes)
+    target = runtimes[target_index]
+    runtime.transfer_attempts_tick += 1
+    transfer_decision = bool(coupling_rng.random() < runtime.transfer_probability)
+    global_task_id = _qualified_task_id(runtime.hive_id, task.task_id)
+    coupling_events.append(
+        {
+            "tick": tick,
+            "source_hive_id": runtime.hive_id,
+            "target_hive_id": target.hive_id,
+            "task_id": global_task_id,
+            "coupling_mode": "direct",
+            "delay_ticks": 0,
+            "transfer_decision": transfer_decision,
+            "arrival_tick": tick if transfer_decision else "",
+        }
+    )
+    if not transfer_decision:
+        runtime.task_queue.append(task)
+        return
+
+    runtime.outbound_transfers_tick += 1
+    runtime.transfers_completed_tick += 1
+    target.inbound_transfers_tick += 1
+    target.task_queue.append(replace(task, task_id=global_task_id))
+
+
+def _finish_hive_tick(runtime: _HiveRuntime, tick: int) -> None:
+    config = runtime.config
+    assert runtime.action_counts_tick is not None
+    assert runtime.role_action_counts_tick is not None
+    assert runtime.attention_work_counts_tick is not None
+    assert runtime.attention_completed_counts_tick is not None
+    assert runtime.attention_work_counts is not None
+    assert runtime.attention_completed_counts is not None
+    queue_depth_end = len(runtime.task_queue)
+    queue_delta = queue_depth_end - runtime.queue_depth_start_tick
+    queue_age_metrics = _queue_age_metrics(runtime.task_queue, tick)
+    attention_metrics = _attention_policy_metrics(
+        config=config,
+        task_queue=runtime.task_queue,
+        tick=tick,
+        work_counts_tick=runtime.attention_work_counts_tick,
+        work_counts=runtime.attention_work_counts,
+        completed_counts=runtime.attention_completed_counts,
+        value_weighted_completed_tick=runtime.attention_value_weighted_completed_tick,
+        value_weighted_completed_total=runtime.attention_value_weighted_completed_total,
+        completed_this_tick=runtime.completed_this_tick,
+        completed_total=runtime.completed_tasks,
+    )
+    baseline_lobe_label = _baseline_lobe_label(
+        action_counts=runtime.action_counts_tick,
+        queue_depth_start=runtime.queue_depth_start_tick,
+        queue_depth_end=queue_depth_end,
+    )
+    baseline_lobe_transition = _baseline_lobe_transition(
+        runtime.previous_lobe_label,
+        baseline_lobe_label,
+    )
+    if runtime.previous_lobe_label == baseline_lobe_label:
+        runtime.baseline_lobe_current_run_length += 1
+    else:
+        runtime.baseline_lobe_run_id += 1
+        runtime.baseline_lobe_current_run_length = 1
+
+    created_tick = (
+        runtime.action_counts_tick["create_task"] + runtime.exogenous_created_this_tick
+    )
+    balance = (
+        created_tick
+        + runtime.inbound_transfers_tick
+        - runtime.completed_this_tick
+        - runtime.outbound_transfers_tick
+    )
+    runtime.metrics.append(
+        {
+            "tick": tick,
+            "agent_count": len(runtime.agents),
+            "bus_nodes": runtime.bus_graph.number_of_nodes(),
+            "bus_edges": runtime.bus_graph.number_of_edges(),
+            **runtime.bus_metrics,
+            "queue_depth": queue_depth_end,
+            "queue_delta_tick": queue_delta,
+            "baseline_lobe_label": baseline_lobe_label,
+            "baseline_lobe_previous_label": runtime.previous_lobe_label,
+            "baseline_lobe_transition": baseline_lobe_transition,
+            "baseline_lobe_transition_tick": int(
+                bool(runtime.previous_lobe_label)
+                and runtime.previous_lobe_label != baseline_lobe_label
+            ),
+            "baseline_lobe_run_id": runtime.baseline_lobe_run_id,
+            "baseline_lobe_current_run_length": runtime.baseline_lobe_current_run_length,
+            "tasks_created_total": runtime.task_counter,
+            "tasks_completed_total": runtime.completed_tasks,
+            "tasks_completed_tick": runtime.completed_this_tick,
+            "messages_sent_tick": runtime.action_counts_tick["message"],
+            "tasks_created_tick": created_tick,
+            **_exogenous_arrival_metrics(
+                config=config,
+                agent_created_tick=runtime.action_counts_tick["create_task"],
+                agent_created_total=runtime.agent_tasks_created,
+                exogenous_created_tick=runtime.exogenous_created_this_tick,
+                exogenous_created_total=runtime.exogenous_tasks_created,
+            ),
+            "tasks_worked_tick": runtime.action_counts_tick["work_task"],
+            "created_completed_balance_tick": created_tick - runtime.completed_this_tick,
+            "created_worked_balance_tick": (
+                created_tick - runtime.action_counts_tick["work_task"]
+            ),
+            "work_completion_gap_tick": (
+                runtime.action_counts_tick["work_task"] - runtime.completed_this_tick
+            ),
+            "backlog_pressure_tick": queue_depth_end,
+            **queue_age_metrics,
+            **attention_metrics,
+            "idle_tick": runtime.action_counts_tick["idle"],
+            **_role_action_metrics(config.model.actions, runtime.role_action_counts_tick),
+            "mean_agent_bias": round(
+                float(np.mean([agent.bias for agent in runtime.agents])),
+                6,
+            ),
+            "inbound_transfers_tick": runtime.inbound_transfers_tick,
+            "outbound_transfers_tick": runtime.outbound_transfers_tick,
+            "explicit_drops_tick": 0,
+            "queue_balance_residual_tick": queue_delta - balance,
+        }
+    )
+    runtime.previous_lobe_label = baseline_lobe_label
+
+
+def _runtime_result(runtime: _HiveRuntime) -> SimulationResult:
+    return SimulationResult(
+        config=runtime.config,
+        seed=0,
+        bus_graph=runtime.bus_graph,
+        agents=runtime.agents,
+        metrics=runtime.metrics,
+        events=runtime.events,
     )
 
 
@@ -575,9 +1056,18 @@ def _hive_events(
         for event in result.events:
             event_row = dict(event)
             if event_row.get("task_id"):
-                event_row["task_id"] = f"{hive.hive_id}:{event_row['task_id']}"
+                event_row["task_id"] = _qualified_task_id(
+                    hive.hive_id,
+                    str(event_row["task_id"]),
+                )
             rows.append({"hive_id": hive.hive_id, **event_row})
     return rows
+
+
+def _qualified_task_id(hive_id: str, task_id: str) -> str:
+    if ":" in task_id:
+        return task_id
+    return f"{hive_id}:{task_id}"
 
 
 def _aggregate_hive_events(hive_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -587,16 +1077,25 @@ def _aggregate_hive_events(hive_events: list[dict[str, Any]]) -> list[dict[str, 
 def _cross_hive_metrics(
     config: OmegaConfig,
     hive_results: tuple[SimulationResult, ...],
+    *,
+    coupling_events: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     assert config.coupling is not None
     rows = []
     for tick in range(config.run.ticks):
         tick_rows = [result.metrics[tick] for result in hive_results]
+        tick_coupling_events = [
+            event for event in (coupling_events or [])
+            if int(event["tick"]) == tick
+        ]
         queue_depths = [int(row["queue_depth"]) for row in tick_rows]
         queue_deltas = [int(row["queue_delta_tick"]) for row in tick_rows]
         created = [int(row["tasks_created_tick"]) for row in tick_rows]
         completed = [int(row["tasks_completed_tick"]) for row in tick_rows]
         exogenous = [int(row.get("exogenous_tasks_created_tick", 0)) for row in tick_rows]
+        inbound = [int(row.get("inbound_transfers_tick", 0)) for row in tick_rows]
+        outbound = [int(row.get("outbound_transfers_tick", 0)) for row in tick_rows]
+        explicit_drops = [int(row.get("explicit_drops_tick", 0)) for row in tick_rows]
         age_means = [float(row["queued_task_age_mean_tick"]) for row in tick_rows]
         completion_fractions = [
             int(row["tasks_completed_total"]) / int(row["tasks_created_total"])
@@ -605,16 +1104,25 @@ def _cross_hive_metrics(
             for row in tick_rows
         ]
         aggregate_delta = sum(queue_deltas)
-        aggregate_balance = sum(created) + 0 - sum(completed) - 0 - 0
+        aggregate_balance = (
+            sum(created)
+            + sum(inbound)
+            - sum(completed)
+            - sum(outbound)
+            - sum(explicit_drops)
+        )
         rows.append(
             {
                 "tick": tick,
                 "hive_count": len(config.hives),
                 "coupling_mode": config.coupling.mode,
-                "transfer_attempts_tick": 0,
-                "transfers_completed_tick": 0,
-                "inbound_transfers_tick": 0,
-                "outbound_transfers_tick": 0,
+                "transfer_attempts_tick": len(tick_coupling_events),
+                "transfers_completed_tick": sum(
+                    int(bool(event["transfer_decision"]))
+                    for event in tick_coupling_events
+                ),
+                "inbound_transfers_tick": sum(inbound),
+                "outbound_transfers_tick": sum(outbound),
                 "queued_age_mean_divergence_tick": round(max(age_means) - min(age_means), 6),
                 "completion_fraction_min_tick": round(min(completion_fractions), 6),
                 "completion_fraction_max_tick": round(max(completion_fractions), 6),
@@ -627,9 +1135,9 @@ def _cross_hive_metrics(
                 "aggregate_created_tick": sum(created),
                 "aggregate_completed_tick": sum(completed),
                 "aggregate_exogenous_arrivals_tick": sum(exogenous),
-                "aggregate_inbound_transfers_tick": 0,
-                "aggregate_outbound_transfers_tick": 0,
-                "aggregate_explicit_drops_tick": 0,
+                "aggregate_inbound_transfers_tick": sum(inbound),
+                "aggregate_outbound_transfers_tick": sum(outbound),
+                "aggregate_explicit_drops_tick": sum(explicit_drops),
                 "aggregate_queue_balance_residual_tick": aggregate_delta - aggregate_balance,
                 **{
                     f"{hive.hive_id}_load_normalized_backlog_tick": round(
@@ -700,6 +1208,14 @@ def _aggregate_hive_metrics(
                 ),
             }
         )
+        for field in MULTI_HIVE_QUEUE_FLOW_METRIC_FIELDS:
+            if any(field in row for row in tick_rows):
+                if field == "queue_balance_residual_tick":
+                    aggregate_row[field] = cross_row["aggregate_queue_balance_residual_tick"]
+                elif field == "explicit_drops_tick":
+                    aggregate_row[field] = cross_row["aggregate_explicit_drops_tick"]
+                else:
+                    aggregate_row[field] = cross_row[f"aggregate_{field}"]
         for field in EXOGENOUS_ARRIVAL_METRIC_FIELDS:
             if field in aggregate_row:
                 aggregate_row[field] = sum(int(row.get(field, 0)) for row in tick_rows)
