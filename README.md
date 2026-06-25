@@ -363,6 +363,20 @@ lagged service/completion and service/load-change correlations at lag `-1` or
 retained only as an artifact identity diagnostic and is excluded from the
 primary synchronization interpretation.
 
+The A3 queue-flow/service synthesis freezes the seed `70..99` interpretation:
+
+```text
+docs/results/a3_queue_flow_service_synthesis_seed70_99.md
+```
+
+It combines the queue-flow/service and lagged synchronization artifacts,
+classifies the claims as load accounting, service-capacity response,
+work-opportunity accounting, modest synchronization diagnostics, and unsupported
+residual lobe grammar, and records seed-level uncertainty caveats for the
+lagged endpoints. Any later multi-hive preregistration should use
+queue-flow/service synchronization endpoints as primary and keep lobe labels
+secondary unless a genuinely non-queue, non-action-derived observable is added.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
