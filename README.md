@@ -313,6 +313,17 @@ load-normalized backlog, queued-task age, action/work-opportunity accounting,
 and, only after explicit preregistration, service/queue-flow synchronization
 endpoints.
 
+The next-stage queue-flow/service-capacity preregistration is:
+
+```text
+docs/a3_queue_flow_service_preregistration.md
+```
+
+It keeps A2 frozen as a load/action-accounting dominated result and restricts
+new work to deterministic queue-flow, service-capacity, load-normalized
+backlog, queued-age, completion-fraction, action/work-opportunity accounting,
+and explicitly preregistered synchronization endpoints.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
