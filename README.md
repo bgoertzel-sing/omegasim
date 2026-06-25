@@ -295,6 +295,24 @@ effect CSV reports each exogenous condition minus the endogenous control. Treat
 this helper as the frozen-rate holdout scaffold; do not interpret tiny smoke
 seed outputs as lobe-dynamics evidence.
 
+The seed `70..99` exogenous-arrival decision synthesis freezes the current A2
+interpretation:
+
+```text
+docs/results/a2_exogenous_arrival_decision_synthesis_seed70_99.md
+```
+
+The high exogenous-arrival holdout raises total created tasks while holding
+agent `task_creation_pressure` fixed, and it supports robust load/accounting
+effects plus action-budget-mediated trajectory effects. It does not support an
+independent residual lobe-grammar claim under the current simulator and label
+scheme. Do not extend A2 with broad residual-lobe sweeps or new simulator
+mechanisms unless a concrete artifact bug is found. Any next-stage experiment
+should be preregistered around queue-flow balance, service capacity,
+load-normalized backlog, queued-task age, action/work-opportunity accounting,
+and, only after explicit preregistration, service/queue-flow synchronization
+endpoints.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
