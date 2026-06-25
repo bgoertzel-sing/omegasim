@@ -265,6 +265,36 @@ The calibration output contains per-target and per-candidate run artifacts,
 does not use lobe, entropy, or value outcomes to choose rates; those outcomes
 belong to the later frozen-rate holdout.
 
+The provisional frozen exogenous-arrival fixtures selected by the seed `1..3`
+calibration are checked in as low/medium/high rates `1.0`, `2.0`, and `3.0`:
+
+```bash
+python -m ohdyn.run --config configs/a2_exogenous_arrivals_low.yaml --seed 1 --out runs/a2_exogenous_arrivals_low_seed1
+python -m ohdyn.run --config configs/a2_exogenous_arrivals_medium.yaml --seed 1 --out runs/a2_exogenous_arrivals_medium_seed1
+python -m ohdyn.run --config configs/a2_exogenous_arrivals_high.yaml --seed 1 --out runs/a2_exogenous_arrivals_high_seed1
+```
+
+The bounded comparison scaffold runs the endogenous control plus the three
+frozen exogenous-arrival fixtures while holding `model.task_creation_pressure:
+1.0`, baseline attention shares, `quota_balance`, and baseline service capacity:
+
+```bash
+python -m ohdyn.compare_exogenous_arrivals \
+  --seeds 1 2 3 \
+  --out runs/a2_exogenous_arrival_compare
+```
+
+The output directory contains one normal run artifact directory per
+condition/seed, `exogenous_arrival_comparison_metrics.csv`,
+`exogenous_arrival_effects.csv`, and `summary.md`. The aggregate metrics report
+agent-created tasks separately from exogenous arrivals, total created/completed
+tasks, action counts, load-normalized backlog, queued age, value per work
+event, capture pressure, baseline lobe entropy/dwell fields, and queue-blind
+action-only lobe summaries using `agent_tasks_created_tick` when present. The
+effect CSV reports each exogenous condition minus the endogenous control. Treat
+this helper as the frozen-rate holdout scaffold; do not interpret tiny smoke
+seed outputs as lobe-dynamics evidence.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.

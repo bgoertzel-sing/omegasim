@@ -58,6 +58,11 @@ from ohdyn.calibrate_exogenous_arrivals import (
     EXOGENOUS_CALIBRATION_FIELDS,
     run_exogenous_arrival_calibration,
 )
+from ohdyn.compare_exogenous_arrivals import (
+    EXOGENOUS_COMPARISON_FIELDS,
+    EXOGENOUS_EFFECT_FIELDS,
+    run_exogenous_arrival_comparison,
+)
 from ohdyn.compare_attention import run_comparison
 from ohdyn.compare_pressure import (
     PRESSURE_COMPARISON_FIELDS,
@@ -126,6 +131,9 @@ A2_ATTENTION_INTERNAL_IMPROVEMENT_EXTREME_PRESSURE = Path(
     "configs/a2_attention_internal_improvement_extreme_pressure.yaml"
 )
 A2_EXOGENOUS_ARRIVALS = Path("configs/a2_exogenous_arrivals_smoke.yaml")
+A2_EXOGENOUS_ARRIVALS_LOW = Path("configs/a2_exogenous_arrivals_low.yaml")
+A2_EXOGENOUS_ARRIVALS_MEDIUM = Path("configs/a2_exogenous_arrivals_medium.yaml")
+A2_EXOGENOUS_ARRIVALS_HIGH = Path("configs/a2_exogenous_arrivals_high.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -173,6 +181,9 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     A2_ATTENTION_LOW_SERVICE_CAPACITY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_HIGH_SERVICE_CAPACITY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     A2_EXOGENOUS_ARRIVALS: A0_FULL_ARTIFACTS,
+    A2_EXOGENOUS_ARRIVALS_LOW: A0_FULL_ARTIFACTS,
+    A2_EXOGENOUS_ARRIVALS_MEDIUM: A0_FULL_ARTIFACTS,
+    A2_EXOGENOUS_ARRIVALS_HIGH: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -862,6 +873,106 @@ def test_a2_exogenous_arrival_calibration_writes_accounting_report(
     assert "## Candidate accounting" in summary
     assert "## Provisional frozen rates" in summary
     assert "total created-task mean only" in summary
+
+
+def test_a2_frozen_exogenous_arrival_configs_use_calibrated_rates() -> None:
+    expected_rates = {
+        A2_EXOGENOUS_ARRIVALS_LOW: 1.0,
+        A2_EXOGENOUS_ARRIVALS_MEDIUM: 2.0,
+        A2_EXOGENOUS_ARRIVALS_HIGH: 3.0,
+    }
+
+    for config_path, expected_rate in expected_rates.items():
+        config = load_config(config_path)
+
+        assert config.model.task_creation_pressure == 1.0
+        assert config.model.work_service_capacity == 1.0
+        assert config.attention_policy is not None
+        assert config.attention_policy.selection_strategy == "quota_balance"
+        assert config.attention_policy.shares() == {
+            "near_term_external": 0.45,
+            "long_term_research": 0.25,
+            "internal_improvement": 0.2,
+            "housekeeping": 0.1,
+        }
+        assert config.exogenous_arrivals is not None
+        assert config.exogenous_arrivals.enabled is True
+        assert config.exogenous_arrivals.rate_per_tick == expected_rate
+        assert config.exogenous_arrivals.task_class_shares() == {
+            "near_term_external": 0.45,
+            "long_term_research": 0.25,
+            "internal_improvement": 0.2,
+            "housekeeping": 0.1,
+        }
+
+
+def test_a2_exogenous_arrival_comparison_runner_writes_scaffold_summary(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_exogenous_arrival_compare"
+
+    rows = run_exogenous_arrival_comparison(seeds=(1,), out_dir=out_dir)
+
+    assert [row["condition"] for row in rows] == [
+        "endogenous_control",
+        "exogenous_low",
+        "exogenous_medium",
+        "exogenous_high",
+    ]
+    assert [row["rate_per_tick"] for row in rows] == [0.0, 1.0, 2.0, 3.0]
+    assert (out_dir / "exogenous_arrival_comparison_metrics.csv").is_file()
+    assert (out_dir / "exogenous_arrival_effects.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+    assert (out_dir / "endogenous_control_seed1" / "metrics.csv").is_file()
+    assert (out_dir / "exogenous_high_seed1" / "summary.md").is_file()
+
+    with (out_dir / "exogenous_arrival_comparison_metrics.csv").open() as handle:
+        csv_rows = list(csv.DictReader(handle))
+    with (out_dir / "exogenous_arrival_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(csv_rows) == 4
+    assert len(effect_rows) == 3
+    assert float(csv_rows[0]["exogenous_tasks_created_mean"]) == 0.0
+    assert float(csv_rows[-1]["exogenous_tasks_created_mean"]) > 0.0
+    assert effect_rows[-1]["queue_blind_transition_entropy_mean_delta"]
+    assert "## Load and action accounting" in summary
+    assert "## Trajectory summaries" in summary
+    assert "## Endogenous-control deltas" in summary
+    assert "frozen-rate holdout scaffold" in summary
+
+
+def test_a2_exogenous_arrival_comparison_headers_match_declared_fields(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_exogenous_arrival_compare"
+
+    run_exogenous_arrival_comparison(seeds=(1,), out_dir=out_dir)
+
+    with (out_dir / "exogenous_arrival_comparison_metrics.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(EXOGENOUS_COMPARISON_FIELDS)
+
+    with (out_dir / "exogenous_arrival_effects.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(EXOGENOUS_EFFECT_FIELDS)
+
+
+def test_a2_exogenous_arrival_comparison_is_reproducible(tmp_path: Path) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_exogenous_arrival_comparison(seeds=(1, 2), out_dir=first)
+    run_exogenous_arrival_comparison(seeds=(1, 2), out_dir=second)
+
+    assert (first / "exogenous_arrival_comparison_metrics.csv").read_text() == (
+        second / "exogenous_arrival_comparison_metrics.csv"
+    ).read_text()
+    assert (first / "exogenous_arrival_effects.csv").read_text() == (
+        second / "exogenous_arrival_effects.csv"
+    ).read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 
 
 def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) -> None:
