@@ -241,6 +241,14 @@ Use this as an analysis-only robustness check for whether pressure structure
 survives outside the default queue-derived lobe labeler; do not promote it to a
 replacement lobe architecture without a preregistered follow-up.
 
+The next planned experiment is preregistered, but not yet implemented, in
+`docs/a2_exogenous_arrival_decoupling_preregistration.md`. It will decouple
+task arrivals from agent `create_task` action pressure by adding opt-in
+exogenous arrivals while holding `model.task_creation_pressure` fixed. Its
+primary purpose is to decide whether the remaining pressure-induced trajectory
+locking signal is load accounting, action-budget coupling, or a residual
+lobe-dynamics effect.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
