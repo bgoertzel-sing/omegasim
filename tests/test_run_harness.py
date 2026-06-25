@@ -54,6 +54,11 @@ from ohdyn.analyze_queue_blind_lobes import (
     _queue_blind_label,
     run_queue_blind_lobe_analysis,
 )
+from ohdyn.analyze_queue_flow_service import (
+    QUEUE_FLOW_SERVICE_EFFECT_FIELDS,
+    QUEUE_FLOW_SERVICE_FIELDS,
+    run_queue_flow_service_analysis,
+)
 from ohdyn.analyze_exogenous_arrival_controls import (
     EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS,
     EXOGENOUS_CONTROL_METRIC_FIELDS,
@@ -1741,6 +1746,102 @@ def test_a2_queue_blind_lobe_analysis_is_reproducible(
     ).read_text()
     assert (first / "queue_blind_lobe_effects.csv").read_text() == (
         second / "queue_blind_lobe_effects.csv"
+    ).read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_a3_queue_flow_service_analysis_reads_existing_artifacts(
+    tmp_path: Path,
+) -> None:
+    service_dir = tmp_path / "a2_service_capacity_compare"
+    exogenous_dir = tmp_path / "a2_exogenous_arrival_compare"
+    out_dir = tmp_path / "a3_queue_flow_service"
+
+    run_service_capacity_comparison(seeds=(1,), out_dir=service_dir)
+    run_exogenous_arrival_comparison(seeds=(1,), out_dir=exogenous_dir)
+    rows = run_queue_flow_service_analysis(
+        service_capacity_dir=service_dir,
+        exogenous_arrival_dir=exogenous_dir,
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == 13
+    assert (out_dir / "queue_flow_service_metrics.csv").is_file()
+    assert (out_dir / "queue_flow_service_effects.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+
+    with (out_dir / "queue_flow_service_metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "queue_flow_service_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(metric_rows) == 13
+    assert len(effect_rows) == 9
+    assert {
+        row["source_family"]
+        for row in metric_rows
+    } == {"service_capacity", "exogenous_arrivals"}
+    assert metric_rows[0]["queue_depth_per_created_task_mean"]
+    assert metric_rows[0]["service_opportunity_completion_corr_mean"]
+    assert metric_rows[0]["flow_balance_queue_delta_corr_mean"]
+    assert effect_rows[-1]["queue_depth_per_created_task_mean_delta"]
+    assert effect_rows[-1]["service_opportunity_completion_corr_mean_delta"]
+    assert "## Service-capacity grid" in summary
+    assert "## Exogenous-demand control" in summary
+    assert "existing artifacts only" in summary
+
+
+def test_a3_queue_flow_service_analysis_headers_match_declared_fields(
+    tmp_path: Path,
+) -> None:
+    service_dir = tmp_path / "a2_service_capacity_compare"
+    exogenous_dir = tmp_path / "a2_exogenous_arrival_compare"
+    out_dir = tmp_path / "a3_queue_flow_service"
+
+    run_service_capacity_comparison(seeds=(1,), out_dir=service_dir)
+    run_exogenous_arrival_comparison(seeds=(1,), out_dir=exogenous_dir)
+    run_queue_flow_service_analysis(
+        service_capacity_dir=service_dir,
+        exogenous_arrival_dir=exogenous_dir,
+        out_dir=out_dir,
+    )
+
+    with (out_dir / "queue_flow_service_metrics.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(QUEUE_FLOW_SERVICE_FIELDS)
+
+    with (out_dir / "queue_flow_service_effects.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(QUEUE_FLOW_SERVICE_EFFECT_FIELDS)
+
+
+def test_a3_queue_flow_service_analysis_is_reproducible(
+    tmp_path: Path,
+) -> None:
+    service_dir = tmp_path / "a2_service_capacity_compare"
+    exogenous_dir = tmp_path / "a2_exogenous_arrival_compare"
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_service_capacity_comparison(seeds=(1, 2), out_dir=service_dir)
+    run_exogenous_arrival_comparison(seeds=(1, 2), out_dir=exogenous_dir)
+    run_queue_flow_service_analysis(
+        service_capacity_dir=service_dir,
+        exogenous_arrival_dir=exogenous_dir,
+        out_dir=first,
+    )
+    run_queue_flow_service_analysis(
+        service_capacity_dir=service_dir,
+        exogenous_arrival_dir=exogenous_dir,
+        out_dir=second,
+    )
+
+    assert (first / "queue_flow_service_metrics.csv").read_text() == (
+        second / "queue_flow_service_metrics.csv"
+    ).read_text()
+    assert (first / "queue_flow_service_effects.csv").read_text() == (
+        second / "queue_flow_service_effects.csv"
     ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 

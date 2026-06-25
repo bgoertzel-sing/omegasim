@@ -323,6 +323,28 @@ new work to deterministic queue-flow, service-capacity, load-normalized
 backlog, queued-age, completion-fraction, action/work-opportunity accounting,
 and explicitly preregistered synchronization endpoints.
 
+The first A3 analysis-only artifact reader consumes existing A2
+service-capacity and exogenous-arrival comparison directories and writes
+queue-flow/service metrics, effect deltas, and a summary without rerunning
+simulations:
+
+```bash
+python -m ohdyn.analyze_queue_flow_service \
+  --service-capacity-dir runs/a2_service_capacity_holdout_seed70_99_20260624 \
+  --exogenous-arrival-dir runs/a2_exogenous_arrival_holdout_seed70_99_20260625_v2 \
+  --out runs/a3_queue_flow_service_analysis_seed70_99_20260625
+```
+
+The output directory contains `queue_flow_service_metrics.csv`,
+`queue_flow_service_effects.csv`, and `summary.md`. The metrics CSV reports
+load-normalized backlog, completion fraction, queued age, action/work-event
+accounting, per-run service-opportunity/completion correlation, and
+created-completed-flow/queue-delta correlation for each reused condition. The
+effect CSV reports high-minus-low service-capacity, extreme-minus-normal demand
+pressure, and exogenous-minus-endogenous demand deltas. These A3 fields are
+primary queue-flow/service endpoints; baseline and queue-blind lobe summaries
+remain secondary diagnostics only.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
