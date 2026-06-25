@@ -69,6 +69,25 @@ SERVICE_CAPACITY_COMPARISON_FIELDS = (
     "baseline_lobe_longest_dwell_label_counts",
 )
 
+SERVICE_CAPACITY_EFFECT_FIELDS = (
+    "effect_axis",
+    "fixed_label",
+    "fixed_value",
+    "low_label",
+    "high_label",
+    "low_value",
+    "high_value",
+    "queue_depth_mean_delta",
+    "queue_depth_per_created_task_mean_delta",
+    "completion_fraction_mean_delta",
+    "queued_task_age_mean_final_mean_delta",
+    "value_per_work_event_mean_delta",
+    "attention_capture_pressure_max_final_mean_delta",
+    "baseline_lobe_transition_count_mean_delta",
+    "baseline_lobe_longest_dwell_ticks_mean_delta",
+    "interpretation",
+)
+
 
 def run_service_capacity_comparison(
     *,
@@ -130,8 +149,10 @@ def run_service_capacity_comparison(
                 results.append(run_experiment(config_path, seed=seed, out_dir=run_dir))
             rows.append(_aggregate_row(pressure_label, service_label, config_path, results))
 
+    effect_rows = _effect_rows(rows)
     _write_csv(output_path / "service_capacity_comparison_metrics.csv", rows)
-    (output_path / "summary.md").write_text(_summary(rows, seeds))
+    _write_effect_csv(output_path / "service_capacity_effects.csv", effect_rows)
+    (output_path / "summary.md").write_text(_summary(rows, effect_rows, seeds))
     return rows
 
 
@@ -150,7 +171,11 @@ def _ensure_outputs_available(output_path: Path) -> None:
         raise FileExistsError(f"Output path {output_path} exists and is not a directory.")
     collisions = [
         artifact_name
-        for artifact_name in ("service_capacity_comparison_metrics.csv", "summary.md")
+        for artifact_name in (
+            "service_capacity_comparison_metrics.csv",
+            "service_capacity_effects.csv",
+            "summary.md",
+        )
         if (output_path / artifact_name).exists()
     ]
     if collisions:
@@ -342,7 +367,169 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
-def _summary(rows: list[dict[str, Any]], seeds: tuple[int, ...]) -> str:
+def _write_effect_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(SERVICE_CAPACITY_EFFECT_FIELDS))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_pressure = {
+        str(row["pressure_label"]): row
+        for row in rows
+        if str(row["service_capacity_label"]) == "low_service"
+    }
+    effect_rows: list[dict[str, Any]] = []
+    for low_row in by_pressure.values():
+        pressure_label = str(low_row["pressure_label"])
+        high_row = _find_row(rows, pressure_label, "high_service")
+        effect_rows.append(
+            _delta_row(
+                effect_axis="service_capacity",
+                fixed_label=pressure_label,
+                fixed_value=float(low_row["task_creation_pressure"]),
+                low_label="low_service",
+                high_label="high_service",
+                low_value=float(low_row["work_service_capacity"]),
+                high_value=float(high_row["work_service_capacity"]),
+                low_row=low_row,
+                high_row=high_row,
+                interpretation=(
+                    "fixed-pressure high-minus-low service-capacity effect; "
+                    "negative load-normalized backlog delta means additional service absorbs "
+                    "queued load beyond raw creation accounting"
+                ),
+            )
+        )
+
+    service_labels = ("low_service", "baseline_service", "high_service")
+    for service_label in service_labels:
+        normal_row = _find_row(rows, "normal_pressure", service_label)
+        extreme_row = _find_row(rows, "extreme_pressure", service_label)
+        effect_rows.append(
+            _delta_row(
+                effect_axis="task_creation_pressure",
+                fixed_label=service_label,
+                fixed_value=float(normal_row["work_service_capacity"]),
+                low_label="normal_pressure",
+                high_label="extreme_pressure",
+                low_value=float(normal_row["task_creation_pressure"]),
+                high_value=float(extreme_row["task_creation_pressure"]),
+                low_row=normal_row,
+                high_row=extreme_row,
+                interpretation=(
+                    "fixed-service extreme-minus-normal pressure effect; "
+                    "positive load-normalized backlog delta means demand pressure changes "
+                    "queue absorption after scaling by created tasks"
+                ),
+            )
+        )
+    return effect_rows
+
+
+def _find_row(
+    rows: list[dict[str, Any]],
+    pressure_label: str,
+    service_label: str,
+) -> dict[str, Any]:
+    for row in rows:
+        if (
+            str(row["pressure_label"]) == pressure_label
+            and str(row["service_capacity_label"]) == service_label
+        ):
+            return row
+    raise ValueError(f"Missing service-capacity row for {pressure_label} / {service_label}.")
+
+
+def _delta_row(
+    *,
+    effect_axis: str,
+    fixed_label: str,
+    fixed_value: float,
+    low_label: str,
+    high_label: str,
+    low_value: float,
+    high_value: float,
+    low_row: dict[str, Any],
+    high_row: dict[str, Any],
+    interpretation: str,
+) -> dict[str, Any]:
+    return {
+        "effect_axis": effect_axis,
+        "fixed_label": fixed_label,
+        "fixed_value": fixed_value,
+        "low_label": low_label,
+        "high_label": high_label,
+        "low_value": low_value,
+        "high_value": high_value,
+        "queue_depth_mean_delta": _delta(low_row, high_row, "queue_depth_mean"),
+        "queue_depth_per_created_task_mean_delta": _delta(
+            low_row,
+            high_row,
+            "queue_depth_per_created_task_mean",
+        ),
+        "completion_fraction_mean_delta": _delta(
+            low_row,
+            high_row,
+            "completion_fraction_mean",
+        ),
+        "queued_task_age_mean_final_mean_delta": _delta(
+            low_row,
+            high_row,
+            "queued_task_age_mean_final_mean",
+        ),
+        "value_per_work_event_mean_delta": _delta(
+            low_row,
+            high_row,
+            "value_per_work_event_mean",
+        ),
+        "attention_capture_pressure_max_final_mean_delta": _delta(
+            low_row,
+            high_row,
+            "attention_capture_pressure_max_final_mean",
+        ),
+        "baseline_lobe_transition_count_mean_delta": _delta(
+            low_row,
+            high_row,
+            "baseline_lobe_transition_count_mean",
+        ),
+        "baseline_lobe_longest_dwell_ticks_mean_delta": _delta(
+            low_row,
+            high_row,
+            "baseline_lobe_longest_dwell_ticks_mean",
+        ),
+        "interpretation": interpretation,
+    }
+
+
+def _delta(
+    low_row: dict[str, Any],
+    high_row: dict[str, Any],
+    field: str,
+) -> float:
+    return round(float(high_row[field]) - float(low_row[field]), 6)
+
+
+def _summary(
+    rows: list[dict[str, Any]],
+    effect_rows: list[dict[str, Any]],
+    seeds: tuple[int, ...],
+) -> str:
+    service_effects = [
+        row for row in effect_rows if row["effect_axis"] == "service_capacity"
+    ]
+    pressure_effects = [
+        row for row in effect_rows if row["effect_axis"] == "task_creation_pressure"
+    ]
+    strongest_service_effect = _strongest_abs_delta(
+        service_effects,
+        "queue_depth_per_created_task_mean_delta",
+    )
+    strongest_pressure_effect = _strongest_abs_delta(
+        pressure_effects,
+        "queue_depth_per_created_task_mean_delta",
+    )
     lines = [
         "# A2 demand vs service-capacity comparison",
         "",
@@ -390,8 +577,81 @@ def _summary(rows: list[dict[str, Any]], seeds: tuple[int, ...]) -> str:
             for row in rows
         ],
         "",
+        "## Fixed-pressure service-capacity effects",
+        "",
+        *[
+            f"- {row['fixed_label']}: "
+            f"queue_depth_delta={_format_number(float(row['queue_depth_mean_delta']))}, "
+            "queue_per_created_delta="
+            f"{_format_number(float(row['queue_depth_per_created_task_mean_delta']))}, "
+            "completion_fraction_delta="
+            f"{_format_number(float(row['completion_fraction_mean_delta']))}, "
+            "queued_age_final_delta="
+            f"{_format_number(float(row['queued_task_age_mean_final_mean_delta']))}, "
+            "value_per_work_event_delta="
+            f"{_format_number(float(row['value_per_work_event_mean_delta']))}, "
+            "capture_pressure_final_delta="
+            f"{_format_number(float(row['attention_capture_pressure_max_final_mean_delta']))}, "
+            "transition_count_delta="
+            f"{_format_number(float(row['baseline_lobe_transition_count_mean_delta']))}, "
+            "longest_dwell_delta="
+            f"{_format_number(float(row['baseline_lobe_longest_dwell_ticks_mean_delta']))}"
+            for row in service_effects
+        ],
+        "",
+        "## Fixed-service demand-pressure effects",
+        "",
+        *[
+            f"- {row['fixed_label']}: "
+            f"queue_depth_delta={_format_number(float(row['queue_depth_mean_delta']))}, "
+            "queue_per_created_delta="
+            f"{_format_number(float(row['queue_depth_per_created_task_mean_delta']))}, "
+            "completion_fraction_delta="
+            f"{_format_number(float(row['completion_fraction_mean_delta']))}, "
+            "queued_age_final_delta="
+            f"{_format_number(float(row['queued_task_age_mean_final_mean_delta']))}, "
+            "value_per_work_event_delta="
+            f"{_format_number(float(row['value_per_work_event_mean_delta']))}, "
+            "capture_pressure_final_delta="
+            f"{_format_number(float(row['attention_capture_pressure_max_final_mean_delta']))}, "
+            "transition_count_delta="
+            f"{_format_number(float(row['baseline_lobe_transition_count_mean_delta']))}, "
+            "longest_dwell_delta="
+            f"{_format_number(float(row['baseline_lobe_longest_dwell_ticks_mean_delta']))}"
+            for row in pressure_effects
+        ],
+        "",
+        "## Interpretation",
+        "",
+        (
+            "- Strongest fixed-pressure service-capacity load-normalized backlog effect: "
+            f"{strongest_service_effect['fixed_label']} "
+            "queue_per_created_delta="
+            f"{_format_number(float(strongest_service_effect['queue_depth_per_created_task_mean_delta']))}."
+        ),
+        (
+            "- Strongest fixed-service demand-pressure load-normalized backlog effect: "
+            f"{strongest_pressure_effect['fixed_label']} "
+            "queue_per_created_delta="
+            f"{_format_number(float(strongest_pressure_effect['queue_depth_per_created_task_mean_delta']))}."
+        ),
+        (
+            "- Interpret raw queue depth as load accounting first; residual dynamics are "
+            "the load-normalized backlog, age, value-efficiency, capture-pressure, and "
+            "lobe-transition/dwell deltas reported above."
+        ),
+        "",
     ]
     return "\n".join(lines)
+
+
+def _strongest_abs_delta(
+    rows: list[dict[str, Any]],
+    field: str,
+) -> dict[str, Any]:
+    if not rows:
+        raise ValueError("At least one effect row is required.")
+    return max(rows, key=lambda row: abs(float(row[field])))
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -188,16 +188,19 @@ python -m ohdyn.compare_service_capacity \
 ```
 
 The output directory contains one normal run artifact directory for each
-pressure/service/seed cell, `service_capacity_comparison_metrics.csv`, and a
-top-level `summary.md`. The aggregate CSV has one row per pressure/service
-cell and reports task creation/completion totals, completion fraction,
-created-completed balance, queue depth normalized by created tasks and by
-created-completed balance, queued-age summaries, value per work event, capture
-pressure, and baseline lobe transition/dwell summaries. The helper validates
-that pressure increases across the three pressure rows, service capacity
-increases across the three service columns, every pressure row uses the same
-service-capacity axis, and every config uses baseline attention shares with the
-`quota_balance` scheduler.
+pressure/service/seed cell, `service_capacity_comparison_metrics.csv`,
+`service_capacity_effects.csv`, and a top-level `summary.md`. The aggregate CSV
+has one row per pressure/service cell and reports task creation/completion
+totals, completion fraction, created-completed balance, queue depth normalized
+by created tasks and by created-completed balance, queued-age summaries, value
+per work event, capture pressure, and baseline lobe transition/dwell summaries.
+The effect CSV reports high-minus-low service-capacity deltas at fixed pressure
+and extreme-minus-normal pressure deltas at fixed service capacity for the
+load-normalized backlog, age, value-efficiency, capture-pressure, and
+lobe-transition/dwell fields. The helper validates that pressure increases
+across the three pressure rows, service capacity increases across the three
+service columns, every pressure row uses the same service-capacity axis, and
+every config uses baseline attention shares with the `quota_balance` scheduler.
 
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
