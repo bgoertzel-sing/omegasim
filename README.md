@@ -241,17 +241,16 @@ Use this as an analysis-only robustness check for whether pressure structure
 survives outside the default queue-derived lobe labeler; do not promote it to a
 replacement lobe architecture without a preregistered follow-up.
 
-The next planned experiment is preregistered, but not yet implemented, in
-`docs/a2_exogenous_arrival_decoupling_preregistration.md`. It will decouple
-task arrivals from agent `create_task` action pressure by adding opt-in
-exogenous arrivals while holding `model.task_creation_pressure` fixed. Its
-primary purpose is to decide whether the remaining pressure-induced trajectory
-locking signal is load accounting, action-budget coupling, or a residual
-lobe-dynamics effect.
+The A2 exogenous-arrival decoupling experiment was preregistered in
+`docs/a2_exogenous_arrival_decoupling_preregistration.md` and has now been
+completed by the seed `70..99` decision synthesis below. It decoupled task
+arrivals from agent `create_task` action pressure by adding opt-in exogenous
+arrivals while holding `model.task_creation_pressure` fixed. Its purpose was to
+decide whether the remaining pressure-induced trajectory locking signal was
+load accounting, action-budget coupling, or a residual lobe-dynamics effect.
 
-Before running that holdout grid, calibrate the opt-in exogenous arrival rates
-against existing coupled-pressure created-task totals using load/accounting
-fields only:
+The completed calibration step selected opt-in exogenous arrival rates against
+existing coupled-pressure created-task totals using load/accounting fields only:
 
 ```bash
 python -m ohdyn.calibrate_exogenous_arrivals \
