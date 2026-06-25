@@ -40,6 +40,11 @@ from ohdyn.analyze_service_capacity_trajectory import (
     SERVICE_CAPACITY_TRAJECTORY_NULL_FIELDS,
     run_service_capacity_trajectory_analysis,
 )
+from ohdyn.analyze_queue_blind_lobes import (
+    QUEUE_BLIND_LOBE_EFFECT_FIELDS,
+    QUEUE_BLIND_LOBE_FIELDS,
+    run_queue_blind_lobe_analysis,
+)
 from ohdyn.compare_attention import run_comparison
 from ohdyn.compare_pressure import (
     PRESSURE_COMPARISON_FIELDS,
@@ -1244,6 +1249,83 @@ def test_a2_service_capacity_trajectory_analysis_is_reproducible(
     ).read_text()
     assert (first / "service_capacity_trajectory_nulls.csv").read_text() == (
         second / "service_capacity_trajectory_nulls.csv"
+    ).read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_a2_queue_blind_lobe_analysis_writes_grid_summary(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "a2_service_capacity_compare"
+    out_dir = tmp_path / "a2_queue_blind_lobes"
+
+    run_service_capacity_comparison(seeds=(1, 2), out_dir=source_dir)
+    rows = run_queue_blind_lobe_analysis(
+        service_capacity_dir=source_dir,
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == 9
+    assert (out_dir / "queue_blind_lobe_metrics.csv").is_file()
+    assert (out_dir / "queue_blind_lobe_effects.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+
+    with (out_dir / "queue_blind_lobe_metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "queue_blind_lobe_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(metric_rows) == 9
+    assert len(effect_rows) == 6
+    assert metric_rows[0]["transition_entropy_mean"]
+    assert metric_rows[0]["task_generation_dwell_share_mean"]
+    assert metric_rows[0]["execution_dwell_share_mean"]
+    assert metric_rows[0]["dominant_queue_blind_lobe_counts"]
+    assert effect_rows[0]["task_generation_dwell_share_mean_delta"]
+    assert effect_rows[0]["execution_dwell_share_mean_delta"]
+    assert "## Grid queue-blind lobe metrics" in summary
+    assert "## Fixed-service pressure queue-blind effects" in summary
+    assert "excluded inputs: queue_depth, queue_delta_tick, baseline_lobe_label" in summary
+
+
+def test_a2_queue_blind_lobe_analysis_header_matches_declared_fields(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "a2_service_capacity_compare"
+    out_dir = tmp_path / "a2_queue_blind_lobes"
+
+    run_service_capacity_comparison(seeds=(1,), out_dir=source_dir)
+    run_queue_blind_lobe_analysis(
+        service_capacity_dir=source_dir,
+        out_dir=out_dir,
+    )
+
+    with (out_dir / "queue_blind_lobe_metrics.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(QUEUE_BLIND_LOBE_FIELDS)
+
+    with (out_dir / "queue_blind_lobe_effects.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(QUEUE_BLIND_LOBE_EFFECT_FIELDS)
+
+
+def test_a2_queue_blind_lobe_analysis_is_reproducible(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "a2_service_capacity_compare"
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_service_capacity_comparison(seeds=(1, 2), out_dir=source_dir)
+    run_queue_blind_lobe_analysis(service_capacity_dir=source_dir, out_dir=first)
+    run_queue_blind_lobe_analysis(service_capacity_dir=source_dir, out_dir=second)
+
+    assert (first / "queue_blind_lobe_metrics.csv").read_text() == (
+        second / "queue_blind_lobe_metrics.csv"
+    ).read_text()
+    assert (first / "queue_blind_lobe_effects.csv").read_text() == (
+        second / "queue_blind_lobe_effects.csv"
     ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 

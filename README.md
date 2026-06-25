@@ -224,6 +224,23 @@ load-normalized backlog, queued age, transition entropy, dwell lengths, and
 backlog-growth dwell share. Use this analysis to distinguish load accounting
 from pressure-induced regime locking before adding another experiment.
 
+The queue-blind lobe analyzer reads the same existing comparison directory and
+relabels each tick from action counts only: `tasks_worked_tick`,
+`tasks_created_tick`, `messages_sent_tick`, and `idle_tick`. It excludes
+`queue_depth`, `queue_delta_tick`, and the queue-derived `baseline_lobe_label`,
+then reports transition entropy, dwell summaries, task-generation share, and
+execution share:
+
+```bash
+python -m ohdyn.analyze_queue_blind_lobes \
+  --service-capacity-dir runs/a2_service_capacity_compare \
+  --out runs/a2_queue_blind_lobes
+```
+
+Use this as an analysis-only robustness check for whether pressure structure
+survives outside the default queue-derived lobe labeler; do not promote it to a
+replacement lobe architecture without a preregistered follow-up.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.

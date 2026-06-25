@@ -1,0 +1,7 @@
+effect_axis,fixed_label,fixed_value,low_label,high_label,low_value,high_value,transition_entropy_mean_delta,transition_entropy_normalized_mean_delta,dwell_length_mean_delta,dwell_length_max_mean_delta,task_generation_dwell_share_mean_delta,execution_dwell_share_mean_delta,interpretation
+service_capacity,normal_pressure,1.0,low_service,high_service,0.7,1.3,0.076563,-0.012193,-0.135079,-0.433334,-0.125,0.316667,queue-blind fixed-pressure high-minus-low service effect
+service_capacity,high_pressure,1.8,low_service,high_service,0.7,1.3,0.431595,-0.015907,-0.415079,-1.433334,-0.177778,0.236111,queue-blind fixed-pressure high-minus-low service effect
+service_capacity,extreme_pressure,2.2,low_service,high_service,0.7,1.3,0.457113,0.051435,-0.980476,-1.766667,-0.125,0.152778,queue-blind fixed-pressure high-minus-low service effect
+task_creation_pressure,low_service,0.7,normal_pressure,extreme_pressure,1.0,2.2,-0.556783,-0.049459,1.143333,2.1,0.472222,-0.05,queue-blind fixed-service extreme-minus-normal pressure effect
+task_creation_pressure,baseline_service,1.0,normal_pressure,extreme_pressure,1.0,2.2,-0.506507,-0.046212,0.963333,2.066667,0.491667,-0.147222,queue-blind fixed-service extreme-minus-normal pressure effect
+task_creation_pressure,high_service,1.3,normal_pressure,extreme_pressure,1.0,2.2,-0.176233,0.014169,0.297936,0.766667,0.472222,-0.213889,queue-blind fixed-service extreme-minus-normal pressure effect
