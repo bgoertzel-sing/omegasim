@@ -261,3 +261,52 @@ Before writing simulator code, confirm:
 - the implementation can preserve single-hive artifact compatibility.
 
 Only after that gate is written should the repository add multi-hive mechanics.
+
+## Gate Review Record
+
+Automation review date: 2026-06-25.
+
+Review basis:
+
+- `AUTOMATION_STATUS.md` is the source of truth and says A0/A1 is complete,
+  A2/A3 are frozen, and the only next step is to review this A4 implementation
+  gate before simulator mechanics are added.
+- The latest external strategic review is `strategic_change_level: minor` and
+  `notify_ben: false`. It recommends stopping closure-only A2/A3 commits and
+  drafting a preregistered multi-hive queue-flow/service study plan before any
+  simulator change.
+- The existing A0/A1 tests cover deterministic YAML loading, artifact emission,
+  role/action metrics, lobe labels, lobe-transition summaries, and same-seed
+  reproducibility for the single-hive baseline.
+
+Gate acceptance:
+
+- Scientific objective is narrow enough for a first A4 code increment: test
+  queue-flow/service phase relations under preregistered coupling controls,
+  without treating lobe diagnostics as mechanism evidence.
+- Implementation surface is opt-in: configs without `hives` must preserve the
+  existing single-hive config model, simulator behavior, artifact schemas, and
+  byte-reproducibility.
+- Coupling modes, seed streams, task-ID provenance, artifact names, append-safe
+  output behavior, and invalid-config checks are specified before code changes.
+- The first holdout boundary is blocked until the two-hive smoke contract is
+  implemented and passing.
+
+Pre-code blockers:
+
+- A human/research review should confirm that the YAML and artifact schemas
+  above are the desired first A4 interface. The automation should not silently
+  broaden the scope into three-hive mechanics, dashboards, external
+  integrations, or new lobe architectures.
+- The first code change must be a smoke-contract implementation only. It should
+  add no scientific holdout runs and no A2/A3 reruns.
+
+Permitted first implementation slice after this gate is approved:
+
+- config dataclasses and validation for opt-in `hives` and `coupling`;
+- a two-hive `mode: none` smoke fixture plus direct/delayed/shuffled minimal
+  fixtures;
+- per-hive/cross-hive artifact writers with append-safe failure behavior;
+- reproducibility and invalid-config tests listed in the smoke expectations.
+
+Everything else remains out of scope until those tests pass.
