@@ -16,6 +16,8 @@ from ohdyn.sim import (
     BASELINE_LOBE_TRANSITION_FIELDS,
     BASELINE_ROLES,
     EVENT_FIELDS,
+    EXOGENOUS_ARRIVAL_EVENT_TYPES,
+    EXOGENOUS_ARRIVAL_METRIC_FIELDS,
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
@@ -112,6 +114,7 @@ A2_ATTENTION_RESEARCH_HEAVY_EXTREME_PRESSURE = Path(
 A2_ATTENTION_INTERNAL_IMPROVEMENT_EXTREME_PRESSURE = Path(
     "configs/a2_attention_internal_improvement_extreme_pressure.yaml"
 )
+A2_EXOGENOUS_ARRIVALS = Path("configs/a2_exogenous_arrivals_smoke.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -158,6 +161,7 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     A2_ATTENTION_HIGH_SERVICE_CAPACITY_HIGH_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_LOW_SERVICE_CAPACITY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
     A2_ATTENTION_HIGH_SERVICE_CAPACITY_EXTREME_PRESSURE: A0_FULL_ARTIFACTS,
+    A2_EXOGENOUS_ARRIVALS: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -585,6 +589,27 @@ def test_loads_a2_attention_service_capacity_fixtures(
     assert config.attention_policy.selection_strategy == "quota_balance"
 
 
+def test_loads_a2_exogenous_arrivals_fixture() -> None:
+    config = load_config(A2_EXOGENOUS_ARRIVALS)
+
+    assert config.run.experiment_id == "a2_exogenous_arrivals_smoke"
+    assert config.run.ticks == 12
+    assert config.model.agent_count == 15
+    assert config.model.task_creation_pressure == 1.0
+    assert config.model.work_service_capacity == 1.0
+    assert config.attention_policy is not None
+    assert config.attention_policy.selection_strategy == "quota_balance"
+    assert config.exogenous_arrivals is not None
+    assert config.exogenous_arrivals.enabled is True
+    assert config.exogenous_arrivals.rate_per_tick == 1.0
+    assert config.exogenous_arrivals.task_class_shares() == {
+        "near_term_external": 0.45,
+        "long_term_research": 0.25,
+        "internal_improvement": 0.2,
+        "housekeeping": 0.1,
+    }
+
+
 def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     out_dir = tmp_path / "a0_seed1"
 
@@ -667,6 +692,66 @@ def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> 
     assert capture_events[0]["attention_pressure_class"] in ATTENTION_CLASSES
     assert float(capture_events[0]["attention_capture_pressure"]) > 0.0
     assert "- max capture pressure: 0.188889" in summary
+
+
+def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(
+    tmp_path: Path,
+) -> None:
+    first = run_experiment(
+        A2_EXOGENOUS_ARRIVALS,
+        seed=23,
+        out_dir=tmp_path / "first",
+    )
+    second = run_experiment(
+        A2_EXOGENOUS_ARRIVALS,
+        seed=23,
+        out_dir=tmp_path / "second",
+    )
+
+    with (tmp_path / "first" / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    with (tmp_path / "first" / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+    manifest = yaml.safe_load((tmp_path / "first" / "manifest.yaml").read_text())
+    summary = (tmp_path / "first" / "summary.md").read_text()
+
+    assert first.metrics == second.metrics
+    assert first.events == second.events
+    assert (tmp_path / "first" / "metrics.csv").read_text() == (
+        tmp_path / "second" / "metrics.csv"
+    ).read_text()
+    assert set(EXOGENOUS_ARRIVAL_METRIC_FIELDS) <= set(rows[0])
+    assert manifest["config"]["exogenous_arrivals"] == {
+        "enabled": True,
+        "rate_per_tick": 1.0,
+        "task_class_shares": {
+            "near_term_external": 0.45,
+            "long_term_research": 0.25,
+            "internal_improvement": 0.2,
+            "housekeeping": 0.1,
+        },
+    }
+    assert manifest["model"]["exogenous_arrivals"]["event_types"] == list(
+        EXOGENOUS_ARRIVAL_EVENT_TYPES
+    )
+    assert manifest["model"]["exogenous_arrivals"]["fields"] == list(
+        EXOGENOUS_ARRIVAL_METRIC_FIELDS
+    )
+    assert "exogenous_task_arrived" in manifest["model"]["events"]["types"]
+    exogenous_events = [
+        row for row in event_rows
+        if row["event_type"] == "exogenous_task_arrived"
+    ]
+    assert exogenous_events
+    assert exogenous_events[0]["action"] == "exogenous_arrival"
+    assert exogenous_events[0]["task_class"] in ATTENTION_CLASSES
+    assert int(rows[-1]["exogenous_tasks_created_total"]) == len(exogenous_events)
+    assert int(rows[-1]["tasks_created_total"]) == (
+        int(rows[-1]["agent_tasks_created_total"])
+        + int(rows[-1]["exogenous_tasks_created_total"])
+    )
+    assert "## Exogenous arrival totals" in summary
+    assert "- exogenous tasks: " in summary
 
 
 def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) -> None:

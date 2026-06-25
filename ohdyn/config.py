@@ -60,17 +60,42 @@ class AttentionPolicyConfig:
 
 
 @dataclass(frozen=True)
+class ExogenousArrivalsConfig:
+    enabled: bool = False
+    rate_per_tick: float = 0.0
+    near_term_external: float = 0.0
+    long_term_research: float = 0.0
+    internal_improvement: float = 0.0
+    housekeeping: float = 0.0
+
+    def task_class_shares(self) -> dict[str, float]:
+        return {
+            class_name: float(getattr(self, class_name))
+            for class_name in ATTENTION_CLASSES
+        }
+
+
+@dataclass(frozen=True)
 class OmegaConfig:
     run: RunConfig
     model: ModelConfig
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
     attention_policy: AttentionPolicyConfig | None = None
+    exogenous_arrivals: ExogenousArrivalsConfig | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["model"]["actions"] = list(self.model.actions)
         if self.attention_policy is None:
             data.pop("attention_policy")
+        if self.exogenous_arrivals is None:
+            data.pop("exogenous_arrivals")
+        else:
+            arrivals = data["exogenous_arrivals"]
+            arrivals["task_class_shares"] = {
+                class_name: arrivals.pop(class_name)
+                for class_name in ATTENTION_CLASSES
+            }
         return data
 
 
@@ -90,6 +115,7 @@ def load_config(path: str | Path) -> OmegaConfig:
         outputs = {}
     outputs = _expect_mapping(outputs, "outputs")
     attention_policy = _optional_attention_policy(raw.get("attention_policy"))
+    exogenous_arrivals = _optional_exogenous_arrivals(raw.get("exogenous_arrivals"))
 
     actions = tuple(str(action) for action in model.get("actions", ()))
     cfg = OmegaConfig(
@@ -116,6 +142,7 @@ def load_config(path: str | Path) -> OmegaConfig:
             write_summary=_bool(outputs.get("write_summary", True), "outputs.write_summary"),
         ),
         attention_policy=attention_policy,
+        exogenous_arrivals=exogenous_arrivals,
     )
     _validate_actions(cfg.model.actions)
     return cfg
@@ -178,6 +205,60 @@ def _optional_attention_policy(value: Any) -> AttentionPolicyConfig | None:
         "attention_policy.selection_strategy",
     )
     return AttentionPolicyConfig(**shares, selection_strategy=selection_strategy)
+
+
+def _optional_exogenous_arrivals(value: Any) -> ExogenousArrivalsConfig | None:
+    if value is None:
+        return None
+    arrivals = _expect_mapping(value, "exogenous_arrivals")
+    supported_keys = {"enabled", "rate_per_tick", "task_class_shares"}
+    unknown = set(arrivals) - supported_keys
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"exogenous_arrivals contains unsupported keys: {names}")
+
+    enabled = _bool(arrivals.get("enabled", False), "exogenous_arrivals.enabled")
+    rate_per_tick = _nonnegative_float(
+        arrivals.get("rate_per_tick", 0.0),
+        "exogenous_arrivals.rate_per_tick",
+    )
+    raw_shares = arrivals.get("task_class_shares")
+    if raw_shares is None:
+        if enabled:
+            raise ValueError(
+                "exogenous_arrivals.task_class_shares is required when exogenous arrivals are enabled."
+            )
+        shares = {class_name: 0.0 for class_name in ATTENTION_CLASSES}
+    else:
+        share_mapping = _expect_mapping(raw_shares, "exogenous_arrivals.task_class_shares")
+        unknown_shares = set(share_mapping) - set(ATTENTION_CLASSES)
+        if unknown_shares:
+            names = ", ".join(sorted(unknown_shares))
+            raise ValueError(
+                f"exogenous_arrivals.task_class_shares contains unsupported classes: {names}"
+            )
+        missing = set(ATTENTION_CLASSES) - set(share_mapping)
+        if missing:
+            names = ", ".join(sorted(missing))
+            raise ValueError(
+                f"exogenous_arrivals.task_class_shares is missing required classes: {names}"
+            )
+        shares = {
+            class_name: _share(
+                share_mapping[class_name],
+                f"exogenous_arrivals.task_class_shares.{class_name}",
+            )
+            for class_name in ATTENTION_CLASSES
+        }
+        total = sum(shares.values())
+        if abs(total - 1.0) > 1e-9:
+            raise ValueError("exogenous_arrivals.task_class_shares values must sum to 1.0.")
+
+    return ExogenousArrivalsConfig(
+        enabled=enabled,
+        rate_per_tick=rate_per_tick,
+        **shares,
+    )
 
 
 def _share(value: Any, name: str) -> float:

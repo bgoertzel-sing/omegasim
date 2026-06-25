@@ -21,6 +21,8 @@ from ohdyn.sim import (
     BASELINE_LOBE_TRANSITION_FIELDS,
     BASELINE_ROLES,
     EVENT_FIELDS,
+    EXOGENOUS_ARRIVAL_EVENT_TYPES,
+    EXOGENOUS_ARRIVAL_METRIC_FIELDS,
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
@@ -112,6 +114,15 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "selection_strategy": result.config.attention_policy.selection_strategy,
             "fields": list(attention_policy_metric_fields()),
         }
+    if _exogenous_arrivals_enabled(result):
+        assert result.config.exogenous_arrivals is not None
+        manifest["model"]["exogenous_arrivals"] = {
+            "enabled": result.config.exogenous_arrivals.enabled,
+            "rate_per_tick": result.config.exogenous_arrivals.rate_per_tick,
+            "task_class_shares": result.config.exogenous_arrivals.task_class_shares(),
+            "event_types": list(EXOGENOUS_ARRIVAL_EVENT_TYPES),
+            "fields": list(EXOGENOUS_ARRIVAL_METRIC_FIELDS),
+        }
     return manifest
 
 
@@ -188,13 +199,17 @@ def _metrics_fieldnames(result: SimulationResult) -> tuple[str, ...]:
     return metrics_fieldnames(
         result.config.model.actions,
         include_attention_policy=result.config.attention_policy is not None,
+        include_exogenous_arrivals=_exogenous_arrivals_enabled(result),
     )
 
 
 def _event_types(result: SimulationResult) -> tuple[str, ...]:
-    if result.config.attention_policy is None:
-        return BASELINE_EVENT_TYPES
-    return (*BASELINE_EVENT_TYPES, *ATTENTION_EVENT_TYPES)
+    event_types = list(BASELINE_EVENT_TYPES)
+    if result.config.attention_policy is not None:
+        event_types.extend(ATTENTION_EVENT_TYPES)
+    if _exogenous_arrivals_enabled(result):
+        event_types.extend(EXOGENOUS_ARRIVAL_EVENT_TYPES)
+    return tuple(event_types)
 
 
 def _summary(result: SimulationResult) -> str:
@@ -291,8 +306,24 @@ def _summary(result: SimulationResult) -> str:
                 *_attention_policy_summary(result),
             ]
         )
+    if _exogenous_arrivals_enabled(result):
+        lines.extend(
+            [
+                "",
+                "## Exogenous arrival totals",
+                "",
+                *_exogenous_arrival_summary(result),
+            ]
+        )
     lines.append("")
     return "\n".join(lines)
+
+
+def _exogenous_arrivals_enabled(result: SimulationResult) -> bool:
+    return (
+        result.config.exogenous_arrivals is not None
+        and result.config.exogenous_arrivals.enabled
+    )
 
 
 def _baseline_lobe_totals(result: SimulationResult) -> dict[str, int]:
@@ -336,6 +367,11 @@ def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
         *(
             [f"- attention policy fields: {len(attention_policy_metric_fields())}"]
             if result.config.attention_policy is not None
+            else []
+        ),
+        *(
+            [f"- exogenous arrival fields: {len(EXOGENOUS_ARRIVAL_METRIC_FIELDS)}"]
+            if _exogenous_arrivals_enabled(result)
             else []
         ),
         f"- role/action fields: {len(role_action_fields)}",
@@ -437,6 +473,19 @@ def _attention_policy_summary(result: SimulationResult) -> list[str]:
         f"{last.get('attention_value_per_work_event_total', 0)}"
     )
     return lines
+
+
+def _exogenous_arrival_summary(result: SimulationResult) -> list[str]:
+    last = result.metrics[-1] if result.metrics else {}
+    assert result.config.exogenous_arrivals is not None
+    return [
+        f"- enabled: {result.config.exogenous_arrivals.enabled}",
+        f"- rate per tick: {result.config.exogenous_arrivals.rate_per_tick}",
+        f"- task class shares: {result.config.exogenous_arrivals.task_class_shares()}",
+        f"- agent-created tasks: {last.get('agent_tasks_created_total', 0)}",
+        f"- exogenous tasks: {last.get('exogenous_tasks_created_total', 0)}",
+        f"- total created tasks: {last.get('tasks_created_total', 0)}",
+    ]
 
 
 def _created_completed_balance(result: SimulationResult) -> int:

@@ -47,6 +47,10 @@ ATTENTION_EVENT_TYPES = (
     "attention_capture_pressure",
 )
 
+EXOGENOUS_ARRIVAL_EVENT_TYPES = (
+    "exogenous_task_arrived",
+)
+
 EVENT_FIELDS = (
     "tick",
     "event_type",
@@ -75,6 +79,13 @@ QUEUED_TASK_AGE_METRIC_FIELDS = (
     "queued_task_age_mean_tick",
 )
 
+EXOGENOUS_ARRIVAL_METRIC_FIELDS = (
+    "agent_tasks_created_tick",
+    "agent_tasks_created_total",
+    "exogenous_tasks_created_tick",
+    "exogenous_tasks_created_total",
+)
+
 TASK_CLASS_VALUE_WEIGHTS = {
     "near_term_external": 4,
     "long_term_research": 3,
@@ -87,6 +98,7 @@ def metrics_fieldnames(
     actions: tuple[str, ...],
     *,
     include_attention_policy: bool = False,
+    include_exogenous_arrivals: bool = False,
 ) -> tuple[str, ...]:
     return (
         "tick",
@@ -105,6 +117,7 @@ def metrics_fieldnames(
         "tasks_completed_tick",
         "messages_sent_tick",
         "tasks_created_tick",
+        *(EXOGENOUS_ARRIVAL_METRIC_FIELDS if include_exogenous_arrivals else ()),
         "tasks_worked_tick",
         *QUEUE_PRESSURE_METRIC_FIELDS,
         *QUEUED_TASK_AGE_METRIC_FIELDS,
@@ -185,6 +198,8 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
     events: list[dict[str, Any]] = []
     metrics: list[dict[str, Any]] = []
     task_counter = 0
+    agent_tasks_created = 0
+    exogenous_tasks_created = 0
     completed_tasks = 0
     attention_work_counts: Counter[str] = Counter()
     attention_completed_counts: Counter[str] = Counter()
@@ -201,6 +216,34 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
         attention_completed_counts_tick: Counter[str] = Counter()
         completed_this_tick = 0
         attention_value_weighted_completed_tick = 0
+        exogenous_created_this_tick = 0
+        if _exogenous_arrivals_enabled(config):
+            exogenous_created_this_tick = int(
+                rng.poisson(config.exogenous_arrivals.rate_per_tick)
+            )
+            for _ in range(exogenous_created_this_tick):
+                task_counter += 1
+                exogenous_tasks_created += 1
+                work_units = int(rng.integers(1, 4))
+                task = Task(
+                    task_id=f"task_{task_counter:05d}",
+                    created_by="exogenous",
+                    created_tick=tick,
+                    remaining_work=work_units,
+                    task_class=_choose_exogenous_task_class(config, rng),
+                )
+                task_queue.append(task)
+                events.append(
+                    _event(
+                        tick=tick,
+                        event_type="exogenous_task_arrived",
+                        agent_id="",
+                        action="exogenous_arrival",
+                        task_id=task.task_id,
+                        work_units=work_units,
+                        task_class=task.task_class,
+                    )
+                )
         for agent in agents:
             action = _choose_action(
                 config.model.actions,
@@ -226,6 +269,7 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 )
             elif action == "create_task":
                 task_counter += 1
+                agent_tasks_created += 1
                 work_units = int(rng.integers(1, 4))
                 task = Task(
                     task_id=f"task_{task_counter:05d}",
@@ -364,10 +408,21 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
                 "tasks_completed_total": completed_tasks,
                 "tasks_completed_tick": completed_this_tick,
                 "messages_sent_tick": action_counts["message"],
-                "tasks_created_tick": action_counts["create_task"],
+                "tasks_created_tick": action_counts["create_task"] + exogenous_created_this_tick,
+                **_exogenous_arrival_metrics(
+                    config=config,
+                    agent_created_tick=action_counts["create_task"],
+                    agent_created_total=agent_tasks_created,
+                    exogenous_created_tick=exogenous_created_this_tick,
+                    exogenous_created_total=exogenous_tasks_created,
+                ),
                 "tasks_worked_tick": action_counts["work_task"],
-                "created_completed_balance_tick": action_counts["create_task"] - completed_this_tick,
-                "created_worked_balance_tick": action_counts["create_task"] - action_counts["work_task"],
+                "created_completed_balance_tick": (
+                    action_counts["create_task"] + exogenous_created_this_tick - completed_this_tick
+                ),
+                "created_worked_balance_tick": (
+                    action_counts["create_task"] + exogenous_created_this_tick - action_counts["work_task"]
+                ),
                 "work_completion_gap_tick": action_counts["work_task"] - completed_this_tick,
                 "backlog_pressure_tick": queue_depth_end,
                 **queue_age_metrics,
@@ -468,6 +523,38 @@ def _choose_task_class(config: OmegaConfig, rng: np.random.Generator) -> str:
     shares = config.attention_policy.shares()
     probabilities = np.array([shares[class_name] for class_name in ATTENTION_CLASSES], dtype=float)
     return str(rng.choice(ATTENTION_CLASSES, p=probabilities))
+
+
+def _exogenous_arrivals_enabled(config: OmegaConfig) -> bool:
+    return (
+        config.exogenous_arrivals is not None
+        and config.exogenous_arrivals.enabled
+    )
+
+
+def _choose_exogenous_task_class(config: OmegaConfig, rng: np.random.Generator) -> str:
+    assert config.exogenous_arrivals is not None
+    shares = config.exogenous_arrivals.task_class_shares()
+    probabilities = np.array([shares[class_name] for class_name in ATTENTION_CLASSES], dtype=float)
+    return str(rng.choice(ATTENTION_CLASSES, p=probabilities))
+
+
+def _exogenous_arrival_metrics(
+    *,
+    config: OmegaConfig,
+    agent_created_tick: int,
+    agent_created_total: int,
+    exogenous_created_tick: int,
+    exogenous_created_total: int,
+) -> dict[str, int]:
+    if not _exogenous_arrivals_enabled(config):
+        return {}
+    return {
+        "agent_tasks_created_tick": agent_created_tick,
+        "agent_tasks_created_total": agent_created_total,
+        "exogenous_tasks_created_tick": exogenous_created_tick,
+        "exogenous_tasks_created_total": exogenous_created_total,
+    }
 
 
 def _pop_work_task(
