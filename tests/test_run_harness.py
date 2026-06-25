@@ -33,6 +33,11 @@ from ohdyn.analyze_pressure import (
     _yield_divergence_interpretation,
     run_analysis,
 )
+from ohdyn.analyze_service_capacity_trajectory import (
+    SERVICE_CAPACITY_TRAJECTORY_EFFECT_FIELDS,
+    SERVICE_CAPACITY_TRAJECTORY_FIELDS,
+    run_service_capacity_trajectory_analysis,
+)
 from ohdyn.compare_attention import run_comparison
 from ohdyn.compare_pressure import (
     PRESSURE_COMPARISON_FIELDS,
@@ -1122,6 +1127,88 @@ def test_a2_service_capacity_comparison_runner_is_reproducible(
     ).read_text()
     assert (first / "service_capacity_effects.csv").read_text() == (
         second / "service_capacity_effects.csv"
+    ).read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_a2_service_capacity_trajectory_analysis_writes_grid_summary(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "a2_service_capacity_compare"
+    out_dir = tmp_path / "a2_service_capacity_trajectory"
+
+    run_service_capacity_comparison(seeds=(1, 2), out_dir=source_dir)
+    rows = run_service_capacity_trajectory_analysis(
+        service_capacity_dir=source_dir,
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == 9
+    assert (out_dir / "service_capacity_trajectory_metrics.csv").is_file()
+    assert (out_dir / "service_capacity_trajectory_effects.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+
+    with (out_dir / "service_capacity_trajectory_metrics.csv").open() as handle:
+        trajectory_rows = list(csv.DictReader(handle))
+    with (out_dir / "service_capacity_trajectory_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(trajectory_rows) == 9
+    assert len(effect_rows) == 6
+    assert trajectory_rows[0]["transition_entropy_mean"]
+    assert trajectory_rows[0]["transition_entropy_normalized_mean"]
+    assert trajectory_rows[0]["dwell_length_histogram"]
+    assert trajectory_rows[0]["transition_pair_counts"]
+    assert effect_rows[0]["backlog_growth_dwell_share_mean_delta"]
+    assert "## Grid trajectory metrics" in summary
+    assert "## Fixed-pressure service-capacity trajectory effects" in summary
+    assert "## Fixed-service demand-pressure trajectory effects" in summary
+
+
+def test_a2_service_capacity_trajectory_analysis_header_matches_declared_fields(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "a2_service_capacity_compare"
+    out_dir = tmp_path / "a2_service_capacity_trajectory"
+
+    run_service_capacity_comparison(seeds=(1,), out_dir=source_dir)
+    run_service_capacity_trajectory_analysis(
+        service_capacity_dir=source_dir,
+        out_dir=out_dir,
+    )
+
+    with (out_dir / "service_capacity_trajectory_metrics.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(SERVICE_CAPACITY_TRAJECTORY_FIELDS)
+
+    with (out_dir / "service_capacity_trajectory_effects.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(SERVICE_CAPACITY_TRAJECTORY_EFFECT_FIELDS)
+
+
+def test_a2_service_capacity_trajectory_analysis_is_reproducible(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "a2_service_capacity_compare"
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_service_capacity_comparison(seeds=(1, 2), out_dir=source_dir)
+    run_service_capacity_trajectory_analysis(
+        service_capacity_dir=source_dir,
+        out_dir=first,
+    )
+    run_service_capacity_trajectory_analysis(
+        service_capacity_dir=source_dir,
+        out_dir=second,
+    )
+
+    assert (first / "service_capacity_trajectory_metrics.csv").read_text() == (
+        second / "service_capacity_trajectory_metrics.csv"
+    ).read_text()
+    assert (first / "service_capacity_trajectory_effects.csv").read_text() == (
+        second / "service_capacity_trajectory_effects.csv"
     ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 

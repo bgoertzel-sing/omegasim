@@ -202,6 +202,28 @@ across the three pressure rows, service capacity increases across the three
 service columns, every pressure row uses the same service-capacity axis, and
 every config uses baseline attention shares with the `quota_balance` scheduler.
 
+The service-capacity trajectory analyzer reads an existing comparison directory
+without rerunning the grid and computes transition-entropy plus dwell
+distribution summaries from each run's baseline lobe labels:
+
+```bash
+python -m ohdyn.analyze_service_capacity_trajectory \
+  --service-capacity-dir runs/a2_service_capacity_compare \
+  --out runs/a2_service_capacity_trajectory_analysis
+```
+
+The output directory contains `service_capacity_trajectory_metrics.csv`,
+`service_capacity_trajectory_effects.csv`, and `summary.md`. The metrics CSV
+joins each pressure/service cell's load-normalized backlog and final queued age
+to transition count, transition entropy, normalized transition entropy, dwell
+run count, mean and max dwell length, backlog-growth dwell share, dominant lobe
+counts, transition-pair counts, and dwell-length histograms. The effect CSV
+reports high-minus-low service-capacity deltas at fixed pressure and
+extreme-minus-normal pressure deltas at fixed service capacity for
+load-normalized backlog, queued age, transition entropy, dwell lengths, and
+backlog-growth dwell share. Use this analysis to distinguish load accounting
+from pressure-induced regime locking before adding another experiment.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
