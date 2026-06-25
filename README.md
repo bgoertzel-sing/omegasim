@@ -414,6 +414,28 @@ null. Coupled fixtures emit per-hive transfer accounting fields in
 `cross_hive_metrics.csv`. A4 analysis scripts and scientific holdout seeds
 remain deferred until the smoke contract is stable.
 
+The A4 smoke-contract preflight analyzer runs the four two-hive smoke fixtures
+with a bounded smoke seed, validates artifact presence, same-seed
+reproducibility, manifest/config provenance, stable CSV schemas, per-hive
+queue-flow conservation, aggregate transfer conservation including delayed
+pending deliveries, mode-specific coupling semantics, and dry-run endpoint
+computability. It emits a readiness report without running A4 holdout seeds:
+
+```bash
+python -m ohdyn.analyze_a4_smoke_contract \
+  --out docs/results/a4_smoke_contract_preflight.md
+```
+
+The current committed report is:
+
+```text
+docs/results/a4_smoke_contract_preflight.md
+```
+
+It passes all four smoke modes and preserves the two-hive shuffled limitation:
+the shuffled fixture is a schema/conservation control, not a meaningful
+phase-structure null.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.

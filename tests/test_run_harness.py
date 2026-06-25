@@ -64,6 +64,7 @@ from ohdyn.analyze_lagged_service_sync import (
     LAGGED_SERVICE_SYNC_FIELDS,
     run_lagged_service_sync_analysis,
 )
+from ohdyn.analyze_a4_smoke_contract import run_a4_smoke_contract_preflight
 from ohdyn.analyze_exogenous_arrival_controls import (
     EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS,
     EXOGENOUS_CONTROL_METRIC_FIELDS,
@@ -922,6 +923,39 @@ def test_a4_two_hive_shuffled_preserves_smoke_marginals_and_conserves_queue_flow
             row["aggregate_outbound_transfers_tick"]
         )
         assert row["aggregate_queue_balance_residual_tick"] == "0"
+
+
+def test_a4_smoke_contract_preflight_writes_readiness_report(tmp_path: Path) -> None:
+    out = tmp_path / "a4_smoke_contract_preflight.md"
+    work_dir = tmp_path / "a4_smoke_contract_work"
+
+    result = run_a4_smoke_contract_preflight(out=out, work_dir=work_dir, seed=31)
+
+    assert result["passed"] is True
+    report = out.read_text()
+    assert "# A4 Smoke Contract Preflight" in report
+    assert "- scientific holdout seeds run: none" in report
+    assert "| none | PASS | PASS | PASS | PASS | PASS | PASS | PASS | PASS |" in report
+    assert "| direct | PASS | PASS | PASS | PASS | PASS | PASS | PASS | PASS |" in report
+    assert "| delayed | PASS | PASS | PASS | PASS | PASS | PASS | PASS | PASS |" in report
+    assert "| shuffled | PASS | PASS | PASS | PASS | PASS | PASS | PASS | PASS |" in report
+    assert "Two-hive shuffled" in report
+    assert (work_dir / "none_first" / "hive_metrics.csv").exists()
+    assert (work_dir / "shuffled_second" / "coupling_events.csv").exists()
+
+
+def test_a4_smoke_contract_preflight_refuses_existing_report_without_work(
+    tmp_path: Path,
+) -> None:
+    out = tmp_path / "a4_smoke_contract_preflight.md"
+    work_dir = tmp_path / "a4_smoke_contract_work"
+    out.write_text("sentinel")
+
+    with pytest.raises(FileExistsError, match="Output report already exists"):
+        run_a4_smoke_contract_preflight(out=out, work_dir=work_dir, seed=31)
+
+    assert out.read_text() == "sentinel"
+    assert not work_dir.exists()
 
 
 def test_loads_a0_default_outputs_fixture() -> None:
