@@ -553,11 +553,11 @@ def _simulate_multi_hive(config: OmegaConfig, seed: int) -> SimulationResult:
     assert config.coupling is not None
     if config.coupling.mode == "none":
         return _simulate_multi_hive_none(config, seed)
-    if config.coupling.mode in {"direct", "delayed"}:
+    if config.coupling.mode in {"direct", "delayed", "shuffled"}:
         return _simulate_multi_hive_coupled(config, seed)
     raise ValueError(
         "A4 multi-hive simulation currently supports coupling.mode 'none', "
-        "'direct', and 'delayed'."
+        "'direct', 'delayed', and 'shuffled'."
     )
 
 
@@ -901,7 +901,12 @@ def _route_emitted_task(
         runtime.task_queue.append(task)
         return
 
-    target_index = (source_index + 1) % len(runtimes)
+    target_index = _coupling_target_index(
+        runtimes=runtimes,
+        source_index=source_index,
+        coupling_mode=coupling_mode,
+        coupling_rng=coupling_rng,
+    )
     target = runtimes[target_index]
     runtime.transfer_attempts_tick += 1
     transfer_decision = bool(coupling_rng.random() < runtime.transfer_probability)
@@ -939,6 +944,23 @@ def _route_emitted_task(
             task=transferred_task,
         )
     )
+
+
+def _coupling_target_index(
+    *,
+    runtimes: tuple[_HiveRuntime, ...],
+    source_index: int,
+    coupling_mode: str,
+    coupling_rng: np.random.Generator,
+) -> int:
+    if coupling_mode != "shuffled":
+        return (source_index + 1) % len(runtimes)
+
+    eligible_targets = [
+        index for index in range(len(runtimes))
+        if index != source_index
+    ]
+    return int(coupling_rng.choice(eligible_targets))
 
 
 def _deliver_pending_transfers(
