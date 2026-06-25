@@ -24,8 +24,14 @@ from ohdyn.sim import (
     attention_policy_metric_fields,
     metrics_fieldnames,
     role_action_metric_fields,
+    simulate,
 )
-from ohdyn.config import ATTENTION_CLASSES, load_config
+from ohdyn.config import (
+    ATTENTION_CLASSES,
+    ExogenousArrivalsConfig,
+    OmegaConfig,
+    load_config,
+)
 from ohdyn.analyze_pressure import (
     INTERPRETATION_FIELDS,
     PRESSURE_BOOTSTRAP_RANK_STABILITY_FIELDS,
@@ -45,6 +51,7 @@ from ohdyn.analyze_service_capacity_trajectory import (
 from ohdyn.analyze_queue_blind_lobes import (
     QUEUE_BLIND_LOBE_EFFECT_FIELDS,
     QUEUE_BLIND_LOBE_FIELDS,
+    _queue_blind_label,
     run_queue_blind_lobe_analysis,
 )
 from ohdyn.compare_attention import run_comparison
@@ -731,6 +738,13 @@ def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(
             "housekeeping": 0.1,
         },
     }
+    assert manifest["model"]["exogenous_arrivals"]["rng_stream"] == {
+        "agent_action_stream": "numpy.default_rng(seed)",
+        "exogenous_arrival_stream": (
+            "numpy.default_rng(SeedSequence([seed, 0xE906E, 0xA2]))"
+        ),
+        "separated_from_agent_actions": True,
+    }
     assert manifest["model"]["exogenous_arrivals"]["event_types"] == list(
         EXOGENOUS_ARRIVAL_EVENT_TYPES
     )
@@ -752,6 +766,58 @@ def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(
     )
     assert "## Exogenous arrival totals" in summary
     assert "- exogenous tasks: " in summary
+
+
+def test_a2_exogenous_arrivals_use_independent_rng_stream_for_agent_actions() -> None:
+    baseline_config = load_config(A2_ATTENTION)
+    exogenous_config = OmegaConfig(
+        run=baseline_config.run,
+        model=baseline_config.model,
+        outputs=baseline_config.outputs,
+        attention_policy=baseline_config.attention_policy,
+        exogenous_arrivals=ExogenousArrivalsConfig(
+            enabled=True,
+            rate_per_tick=0.0,
+            near_term_external=0.45,
+            long_term_research=0.25,
+            internal_improvement=0.2,
+            housekeeping=0.1,
+        ),
+    )
+
+    baseline = simulate(baseline_config, seed=17)
+    exogenous_zero_rate = simulate(exogenous_config, seed=17)
+
+    assert exogenous_zero_rate.events == baseline.events
+    for baseline_row, exogenous_row in zip(
+        baseline.metrics,
+        exogenous_zero_rate.metrics,
+        strict=True,
+    ):
+        common_fields = set(baseline_row) & set(exogenous_row)
+        assert {
+            field: exogenous_row[field]
+            for field in common_fields
+        } == {
+            field: baseline_row[field]
+            for field in common_fields
+        }
+        assert exogenous_row["exogenous_tasks_created_tick"] == 0
+        assert exogenous_row["agent_tasks_created_tick"] == baseline_row[
+            "tasks_created_tick"
+        ]
+
+
+def test_queue_blind_label_uses_agent_created_count_when_available() -> None:
+    row = {
+        "tasks_worked_tick": "1",
+        "tasks_created_tick": "12",
+        "agent_tasks_created_tick": "0",
+        "messages_sent_tick": "2",
+        "idle_tick": "0",
+    }
+
+    assert _queue_blind_label(row) == "coordination"
 
 
 def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) -> None:

@@ -191,6 +191,7 @@ class SimulationResult:
 
 def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
     rng = np.random.default_rng(seed)
+    exogenous_rng = _exogenous_arrival_rng(config, seed)
     agents = _make_agents(config.model.agent_count, rng)
     bus_graph = _make_bus_graph(agents)
     bus_metrics = _bus_graph_metrics(bus_graph)
@@ -218,19 +219,20 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
         attention_value_weighted_completed_tick = 0
         exogenous_created_this_tick = 0
         if _exogenous_arrivals_enabled(config):
+            assert exogenous_rng is not None
             exogenous_created_this_tick = int(
-                rng.poisson(config.exogenous_arrivals.rate_per_tick)
+                exogenous_rng.poisson(config.exogenous_arrivals.rate_per_tick)
             )
             for _ in range(exogenous_created_this_tick):
                 task_counter += 1
                 exogenous_tasks_created += 1
-                work_units = int(rng.integers(1, 4))
+                work_units = int(exogenous_rng.integers(1, 4))
                 task = Task(
                     task_id=f"task_{task_counter:05d}",
                     created_by="exogenous",
                     created_tick=tick,
                     remaining_work=work_units,
-                    task_class=_choose_exogenous_task_class(config, rng),
+                    task_class=_choose_exogenous_task_class(config, exogenous_rng),
                 )
                 task_queue.append(task)
                 events.append(
@@ -456,6 +458,13 @@ def _make_agents(agent_count: int, rng: np.random.Generator) -> tuple[AgentState
             )
         )
     return tuple(agents)
+
+
+def _exogenous_arrival_rng(config: OmegaConfig, seed: int) -> np.random.Generator | None:
+    if not _exogenous_arrivals_enabled(config):
+        return None
+    seed_sequence = np.random.SeedSequence([int(seed), 0xE906E, 0xA2])
+    return np.random.default_rng(seed_sequence)
 
 
 def _make_bus_graph(agents: tuple[AgentState, ...]) -> nx.Graph:

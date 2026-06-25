@@ -120,6 +120,13 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "enabled": result.config.exogenous_arrivals.enabled,
             "rate_per_tick": result.config.exogenous_arrivals.rate_per_tick,
             "task_class_shares": result.config.exogenous_arrivals.task_class_shares(),
+            "rng_stream": {
+                "agent_action_stream": "numpy.default_rng(seed)",
+                "exogenous_arrival_stream": (
+                    "numpy.default_rng(SeedSequence([seed, 0xE906E, 0xA2]))"
+                ),
+                "separated_from_agent_actions": True,
+            },
             "event_types": list(EXOGENOUS_ARRIVAL_EVENT_TYPES),
             "fields": list(EXOGENOUS_ARRIVAL_METRIC_FIELDS),
         }

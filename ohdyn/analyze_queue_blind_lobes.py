@@ -235,9 +235,14 @@ def _queue_blind_labels_from_metrics(metrics_path: Path) -> list[str]:
 
 
 def _queue_blind_label(row: dict[str, str]) -> str:
+    created_field = (
+        "agent_tasks_created_tick"
+        if "agent_tasks_created_tick" in row
+        else "tasks_created_tick"
+    )
     counts = {
         "work_task": int(float(row["tasks_worked_tick"])),
-        "create_task": int(float(row["tasks_created_tick"])),
+        "create_task": int(float(row[created_field])),
         "message": int(float(row["messages_sent_tick"])),
         "idle": int(float(row["idle_tick"])),
     }
@@ -400,7 +405,8 @@ def _summary(
         "",
         f"- source: {source_path}",
         f"- grid rows: {len(rows)}",
-        "- label inputs: tasks_worked_tick, tasks_created_tick, messages_sent_tick, idle_tick",
+        "- label inputs: tasks_worked_tick, agent_tasks_created_tick when present "
+        "else tasks_created_tick, messages_sent_tick, idle_tick",
         "- excluded inputs: queue_depth, queue_delta_tick, baseline_lobe_label",
         "",
         "## Grid queue-blind lobe metrics",
