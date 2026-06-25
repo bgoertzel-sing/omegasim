@@ -42,6 +42,10 @@ from ohdyn.compare_pressure import (
     PRESSURE_TRAJECTORY_STRUCTURE_FIELDS,
     run_pressure_comparison,
 )
+from ohdyn.compare_service_capacity import (
+    SERVICE_CAPACITY_COMPARISON_FIELDS,
+    run_service_capacity_comparison,
+)
 from ohdyn.run import run_experiment
 
 
@@ -1020,6 +1024,78 @@ def test_a2_attention_service_capacity_changes_work_absorption(
     assert high.config.model.work_service_capacity == 1.3
     assert low_work < baseline_work < high_work
     assert low.metrics[-1]["queue_depth"] > baseline.metrics[-1]["queue_depth"] > high.metrics[-1]["queue_depth"]
+
+
+def test_a2_service_capacity_comparison_runner_writes_grid_summary(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_service_capacity_compare"
+
+    rows = run_service_capacity_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    assert len(rows) == 9
+    assert {
+        (row["task_creation_pressure"], row["work_service_capacity"])
+        for row in rows
+    } == {
+        (1.0, 0.7),
+        (1.0, 1.0),
+        (1.0, 1.3),
+        (1.8, 0.7),
+        (1.8, 1.0),
+        (1.8, 1.3),
+        (2.2, 0.7),
+        (2.2, 1.0),
+        (2.2, 1.3),
+    }
+    assert (out_dir / "service_capacity_comparison_metrics.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+    assert (out_dir / "normal_pressure_low_service_seed1" / "metrics.csv").is_file()
+    assert (
+        out_dir / "extreme_pressure_high_service_seed2" / "summary.md"
+    ).is_file()
+
+    with (out_dir / "service_capacity_comparison_metrics.csv").open() as handle:
+        csv_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(csv_rows) == 9
+    assert csv_rows[0]["queue_depth_per_created_task_mean"]
+    assert csv_rows[0]["queue_depth_per_created_completed_balance_mean"]
+    assert csv_rows[0]["value_per_work_event_mean"]
+    assert csv_rows[0]["attention_capture_pressure_peak_mean"]
+    assert csv_rows[0]["baseline_lobe_transition_count_mean"]
+    assert csv_rows[0]["baseline_lobe_longest_dwell_label_counts"]
+    assert "## Load-normalized backlog" in summary
+    assert "## Queue age, value, and capture pressure" in summary
+    assert "## Baseline lobe transition and dwell" in summary
+
+
+def test_a2_service_capacity_comparison_metrics_header_matches_declared_fields(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_service_capacity_compare"
+
+    run_service_capacity_comparison(seeds=(1,), out_dir=out_dir)
+
+    with (out_dir / "service_capacity_comparison_metrics.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(SERVICE_CAPACITY_COMPARISON_FIELDS)
+
+
+def test_a2_service_capacity_comparison_runner_is_reproducible(
+    tmp_path: Path,
+) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_service_capacity_comparison(seeds=(1, 2), out_dir=first)
+    run_service_capacity_comparison(seeds=(1, 2), out_dir=second)
+
+    assert (first / "service_capacity_comparison_metrics.csv").read_text() == (
+        second / "service_capacity_comparison_metrics.csv"
+    ).read_text()
+    assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 
 
 def test_a2_attention_high_pressure_comparison_runner_is_reproducible(
