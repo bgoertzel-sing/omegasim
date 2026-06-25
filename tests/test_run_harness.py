@@ -2078,9 +2078,20 @@ def test_a3_lagged_service_sync_analysis_reads_existing_artifacts(
     assert metric_rows[0]["service_load_change_best_lagged_corr_mean"]
     assert metric_rows[0]["flow_balance_queue_delta_same_tick_corr_mean"]
     assert effect_rows[-1]["service_completion_best_lagged_corr_mean_delta"]
+    assert effect_rows[-1]["service_completion_paired_seed_count"] == "1"
+    assert effect_rows[-1]["service_completion_seed_median_delta"]
+    assert effect_rows[-1]["service_completion_seed_bootstrap_median_ci_low"]
+    assert effect_rows[-1]["service_completion_seed_bootstrap_median_ci_high"]
+    assert effect_rows[-1]["service_completion_seed_sign_stability"]
     assert effect_rows[-1]["service_load_change_best_lagged_corr_mean_delta"]
+    assert effect_rows[-1]["service_load_change_paired_seed_count"] == "1"
+    assert effect_rows[-1]["service_load_change_seed_median_delta"]
+    assert effect_rows[-1]["service_load_change_seed_bootstrap_median_ci_low"]
+    assert effect_rows[-1]["service_load_change_seed_bootstrap_median_ci_high"]
+    assert effect_rows[-1]["service_load_change_seed_sign_stability"]
     assert "primary endpoints: lagged service/completion" in summary
     assert "diagnostic only: same-tick created-completed balance versus queue delta" in summary
+    assert "uncertainty: paired seed medians" in summary
 
 
 def test_a3_lagged_service_sync_analysis_headers_match_declared_fields(

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import random
 from pathlib import Path
 from typing import Any
 
@@ -54,10 +55,23 @@ LAGGED_SERVICE_SYNC_EFFECT_FIELDS = (
     "low_value",
     "high_value",
     "service_completion_best_lagged_corr_mean_delta",
+    "service_completion_paired_seed_count",
+    "service_completion_seed_median_delta",
+    "service_completion_seed_bootstrap_median_ci_low",
+    "service_completion_seed_bootstrap_median_ci_high",
+    "service_completion_seed_sign_stability",
     "service_load_change_best_lagged_corr_mean_delta",
+    "service_load_change_paired_seed_count",
+    "service_load_change_seed_median_delta",
+    "service_load_change_seed_bootstrap_median_ci_low",
+    "service_load_change_seed_bootstrap_median_ci_high",
+    "service_load_change_seed_sign_stability",
     "flow_balance_queue_delta_same_tick_corr_mean_delta",
     "interpretation",
 )
+
+DEFAULT_BOOTSTRAP_REPS = 200
+DEFAULT_BOOTSTRAP_SEED = 1
 
 
 def run_lagged_service_sync_analysis(
@@ -65,7 +79,10 @@ def run_lagged_service_sync_analysis(
     service_capacity_dir: str | Path = DEFAULT_SERVICE_CAPACITY_DIR,
     exogenous_arrival_dir: str | Path = DEFAULT_EXOGENOUS_ARRIVAL_DIR,
     out_dir: str | Path,
+    bootstrap_reps: int = DEFAULT_BOOTSTRAP_REPS,
+    bootstrap_seed: int = DEFAULT_BOOTSTRAP_SEED,
 ) -> list[dict[str, Any]]:
+    _validate_bootstrap_options(bootstrap_reps, bootstrap_seed)
     service_path = Path(service_capacity_dir)
     exogenous_path = Path(exogenous_arrival_dir)
     output_path = Path(out_dir)
@@ -74,7 +91,11 @@ def run_lagged_service_sync_analysis(
     output_path.mkdir(parents=True, exist_ok=True)
 
     rows = _service_rows(service_path) + _exogenous_rows(exogenous_path)
-    effect_rows = _effect_rows(rows)
+    effect_rows = _effect_rows(
+        rows,
+        bootstrap_reps=bootstrap_reps,
+        bootstrap_seed=bootstrap_seed,
+    )
     _write_csv(
         output_path / "lagged_service_sync_metrics.csv",
         LAGGED_SERVICE_SYNC_FIELDS,
@@ -86,9 +107,25 @@ def run_lagged_service_sync_analysis(
         effect_rows,
     )
     (output_path / "summary.md").write_text(
-        _summary(rows, effect_rows, service_path, exogenous_path)
+        _summary(
+            rows,
+            effect_rows,
+            service_path,
+            exogenous_path,
+            bootstrap_reps=bootstrap_reps,
+            bootstrap_seed=bootstrap_seed,
+        )
     )
     return rows
+
+
+def _validate_bootstrap_options(bootstrap_reps: int, bootstrap_seed: int) -> None:
+    if isinstance(bootstrap_reps, bool) or not isinstance(bootstrap_reps, int):
+        raise ValueError("bootstrap_reps must be an integer.")
+    if bootstrap_reps <= 0:
+        raise ValueError("bootstrap_reps must be positive.")
+    if isinstance(bootstrap_seed, bool) or not isinstance(bootstrap_seed, int):
+        raise ValueError("bootstrap_seed must be an integer.")
 
 
 def _validate_source_dirs(service_path: Path, exogenous_path: Path) -> None:
@@ -195,7 +232,11 @@ def _row_from_run_dirs(
 ) -> dict[str, Any]:
     if not run_dirs:
         raise FileNotFoundError(f"No run directories found for {condition_label}.")
-    summaries = [_run_sync_summary(run_dir / "metrics.csv") for run_dir in run_dirs]
+    summaries_by_seed = {
+        _seed_from_run_dir(run_dir): _run_sync_summary(run_dir / "metrics.csv")
+        for run_dir in run_dirs
+    }
+    summaries = [summaries_by_seed[seed] for seed in sorted(summaries_by_seed)]
     completion_best = _best_lagged_mean(
         summaries,
         "service_completion_lag_minus1_corr",
@@ -240,7 +281,19 @@ def _row_from_run_dirs(
             summaries,
             "flow_balance_queue_delta_same_tick_corr",
         ),
+        "_seed_summaries": summaries_by_seed,
     }
+
+
+def _seed_from_run_dir(run_dir: Path) -> int:
+    marker = "_seed"
+    if marker not in run_dir.name:
+        raise ValueError(f"Run directory name does not include a seed suffix: {run_dir}")
+    seed_text = run_dir.name.rsplit(marker, 1)[1]
+    try:
+        return int(seed_text)
+    except ValueError as exc:
+        raise ValueError(f"Run directory seed suffix is not an integer: {run_dir}") from exc
 
 
 def _run_sync_summary(metrics_path: Path) -> dict[str, float]:
@@ -259,27 +312,31 @@ def _run_sync_summary(metrics_path: Path) -> dict[str, float]:
         for previous, current in zip(load_normalized, load_normalized[1:])
     ]
     service_for_load_change = service_opportunity[1:]
+    service_completion_lag_minus1 = _lagged_corr(
+        service_opportunity,
+        completion_fraction,
+        -1,
+    )
+    service_completion_lag_plus1 = _lagged_corr(
+        service_opportunity,
+        completion_fraction,
+        1,
+    )
+    service_load_change_lag_minus1 = _lagged_corr(
+        service_for_load_change,
+        load_change,
+        -1,
+    )
+    service_load_change_lag_plus1 = _lagged_corr(
+        service_for_load_change,
+        load_change,
+        1,
+    )
     return {
-        "service_completion_lag_minus1_corr": _lagged_corr(
-            service_opportunity,
-            completion_fraction,
-            -1,
-        ),
-        "service_completion_lag_plus1_corr": _lagged_corr(
-            service_opportunity,
-            completion_fraction,
-            1,
-        ),
-        "service_load_change_lag_minus1_corr": _lagged_corr(
-            service_for_load_change,
-            load_change,
-            -1,
-        ),
-        "service_load_change_lag_plus1_corr": _lagged_corr(
-            service_for_load_change,
-            load_change,
-            1,
-        ),
+        "service_completion_lag_minus1_corr": service_completion_lag_minus1,
+        "service_completion_lag_plus1_corr": service_completion_lag_plus1,
+        "service_load_change_lag_minus1_corr": service_load_change_lag_minus1,
+        "service_load_change_lag_plus1_corr": service_load_change_lag_plus1,
         "flow_balance_queue_delta_same_tick_corr": _pearson(
             [float(row["created_completed_balance_tick"]) for row in rows],
             [float(row["queue_delta_tick"]) for row in rows],
@@ -334,7 +391,12 @@ def _best_lagged_mean(
     return {"lag": lag, "value": value}
 
 
-def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _effect_rows(
+    rows: list[dict[str, Any]],
+    *,
+    bootstrap_reps: int,
+    bootstrap_seed: int,
+) -> list[dict[str, Any]]:
     effects: list[dict[str, Any]] = []
     for pressure_label in ("normal_pressure", "high_pressure", "extreme_pressure"):
         effects.append(
@@ -347,6 +409,8 @@ def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 interpretation=(
                     "fixed-pressure high-minus-low service-capacity lagged sync effect"
                 ),
+                bootstrap_reps=bootstrap_reps,
+                bootstrap_seed=bootstrap_seed,
             )
         )
     for service_label in ("low_service", "baseline_service", "high_service"):
@@ -360,6 +424,8 @@ def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 interpretation=(
                     "fixed-service extreme-minus-normal pressure lagged sync effect"
                 ),
+                bootstrap_reps=bootstrap_reps,
+                bootstrap_seed=bootstrap_seed,
             )
         )
 
@@ -375,6 +441,8 @@ def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 interpretation=(
                     "fixed-action-pressure exogenous-minus-endogenous lagged sync effect"
                 ),
+                bootstrap_reps=bootstrap_reps,
+                bootstrap_seed=bootstrap_seed,
             )
         )
     return effects
@@ -388,7 +456,35 @@ def _delta_row(
     low_row: dict[str, Any],
     high_row: dict[str, Any],
     interpretation: str,
+    bootstrap_reps: int,
+    bootstrap_seed: int,
 ) -> dict[str, Any]:
+    completion_stats = _paired_seed_delta_stats(
+        low_row,
+        high_row,
+        metric_prefix="service_completion",
+        lag_field="service_completion_best_lag",
+        observed_delta=_delta(
+            low_row,
+            high_row,
+            "service_completion_best_lagged_corr_mean",
+        ),
+        bootstrap_reps=bootstrap_reps,
+        bootstrap_seed=bootstrap_seed,
+    )
+    load_change_stats = _paired_seed_delta_stats(
+        low_row,
+        high_row,
+        metric_prefix="service_load_change",
+        lag_field="service_load_change_best_lag",
+        observed_delta=_delta(
+            low_row,
+            high_row,
+            "service_load_change_best_lagged_corr_mean",
+        ),
+        bootstrap_reps=bootstrap_reps,
+        bootstrap_seed=bootstrap_seed + 1,
+    )
     return {
         "source_family": source_family,
         "effect_axis": effect_axis,
@@ -402,11 +498,21 @@ def _delta_row(
             high_row,
             "service_completion_best_lagged_corr_mean",
         ),
+        "service_completion_paired_seed_count": completion_stats["paired_seed_count"],
+        "service_completion_seed_median_delta": completion_stats["seed_median_delta"],
+        "service_completion_seed_bootstrap_median_ci_low": completion_stats["ci_low"],
+        "service_completion_seed_bootstrap_median_ci_high": completion_stats["ci_high"],
+        "service_completion_seed_sign_stability": completion_stats["sign_stability"],
         "service_load_change_best_lagged_corr_mean_delta": _delta(
             low_row,
             high_row,
             "service_load_change_best_lagged_corr_mean",
         ),
+        "service_load_change_paired_seed_count": load_change_stats["paired_seed_count"],
+        "service_load_change_seed_median_delta": load_change_stats["seed_median_delta"],
+        "service_load_change_seed_bootstrap_median_ci_low": load_change_stats["ci_low"],
+        "service_load_change_seed_bootstrap_median_ci_high": load_change_stats["ci_high"],
+        "service_load_change_seed_sign_stability": load_change_stats["sign_stability"],
         "flow_balance_queue_delta_same_tick_corr_mean_delta": _delta(
             low_row,
             high_row,
@@ -426,11 +532,90 @@ def _axis_value(row: dict[str, Any], effect_axis: str) -> float:
     raise ValueError(f"Unsupported effect axis: {effect_axis}")
 
 
+def _paired_seed_delta_stats(
+    low_row: dict[str, Any],
+    high_row: dict[str, Any],
+    *,
+    metric_prefix: str,
+    lag_field: str,
+    observed_delta: float,
+    bootstrap_reps: int,
+    bootstrap_seed: int,
+) -> dict[str, Any]:
+    low_summaries = low_row["_seed_summaries"]
+    high_summaries = high_row["_seed_summaries"]
+    paired_seeds = sorted(set(low_summaries) & set(high_summaries))
+    if not paired_seeds:
+        raise ValueError(
+            f"No paired seeds for lagged sync effect "
+            f"{low_row['condition_label']} -> {high_row['condition_label']}."
+        )
+    low_metric = _lagged_seed_metric(metric_prefix, str(low_row[lag_field]))
+    high_metric = _lagged_seed_metric(metric_prefix, str(high_row[lag_field]))
+    deltas = [
+        round(
+            float(high_summaries[seed][high_metric])
+            - float(low_summaries[seed][low_metric]),
+            6,
+        )
+        for seed in paired_seeds
+    ]
+    rng = random.Random(bootstrap_seed)
+    bootstrap_medians = [
+        _median([rng.choice(deltas) for _ in deltas]) for _ in range(bootstrap_reps)
+    ]
+    return {
+        "paired_seed_count": len(paired_seeds),
+        "seed_median_delta": _median(deltas),
+        "ci_low": _quantile(bootstrap_medians, 0.025),
+        "ci_high": _quantile(bootstrap_medians, 0.975),
+        "sign_stability": _raw_sign_stability(deltas, observed_delta),
+    }
+
+
+def _lagged_seed_metric(metric_prefix: str, lag: str) -> str:
+    if lag == "-1":
+        return f"{metric_prefix}_lag_minus1_corr"
+    if lag == "+1":
+        return f"{metric_prefix}_lag_plus1_corr"
+    raise ValueError(f"Unsupported lag for paired seed uncertainty: {lag}")
+
+
+def _median(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    sorted_values = sorted(values)
+    midpoint = len(sorted_values) // 2
+    if len(sorted_values) % 2 == 1:
+        return round(sorted_values[midpoint], 6)
+    return round((sorted_values[midpoint - 1] + sorted_values[midpoint]) / 2.0, 6)
+
+
+def _quantile(values: list[float], quantile: float) -> float:
+    if not values:
+        return 0.0
+    sorted_values = sorted(values)
+    index = round((len(sorted_values) - 1) * quantile)
+    return round(sorted_values[index], 6)
+
+
+def _raw_sign_stability(values: list[float], observed_delta: float) -> float:
+    if not values or observed_delta == 0:
+        return 0.0
+    if observed_delta > 0:
+        stable = sum(1 for value in values if value > 0)
+    else:
+        stable = sum(1 for value in values if value < 0)
+    return _safe_ratio(float(stable), float(len(values)))
+
+
 def _summary(
     rows: list[dict[str, Any]],
     effect_rows: list[dict[str, Any]],
     service_path: Path,
     exogenous_path: Path,
+    bootstrap_reps: int,
+    bootstrap_seed: int,
 ) -> str:
     strongest_completion = max(
         effect_rows,
@@ -454,6 +639,11 @@ def _summary(
             "correlations at lag -1 or +1"
         ),
         "- diagnostic only: same-tick created-completed balance versus queue delta",
+        (
+            "- uncertainty: paired seed medians, deterministic bootstrap median CIs, "
+            f"and raw seed sign stability; bootstrap_reps={bootstrap_reps}, "
+            f"bootstrap_seed={bootstrap_seed}"
+        ),
         "",
         "## Service-capacity conditions",
         "",
@@ -505,13 +695,27 @@ def _summary(
             "- Strongest lagged service/completion shift: "
             f"{strongest_completion['source_family']} {strongest_completion['low_label']} -> "
             f"{strongest_completion['high_label']} = "
-            f"{_format_number(float(strongest_completion['service_completion_best_lagged_corr_mean_delta']))}."
+            f"{_format_number(float(strongest_completion['service_completion_best_lagged_corr_mean_delta']))}; "
+            "seed_median_delta="
+            f"{_format_number(float(strongest_completion['service_completion_seed_median_delta']))}, "
+            "bootstrap_median_ci=["
+            f"{_format_number(float(strongest_completion['service_completion_seed_bootstrap_median_ci_low']))}, "
+            f"{_format_number(float(strongest_completion['service_completion_seed_bootstrap_median_ci_high']))}], "
+            "sign_stability="
+            f"{_format_number(float(strongest_completion['service_completion_seed_sign_stability']))}."
         ),
         (
             "- Strongest lagged service/load-change shift: "
             f"{strongest_load_change['source_family']} {strongest_load_change['low_label']} -> "
             f"{strongest_load_change['high_label']} = "
-            f"{_format_number(float(strongest_load_change['service_load_change_best_lagged_corr_mean_delta']))}."
+            f"{_format_number(float(strongest_load_change['service_load_change_best_lagged_corr_mean_delta']))}; "
+            "seed_median_delta="
+            f"{_format_number(float(strongest_load_change['service_load_change_seed_median_delta']))}, "
+            "bootstrap_median_ci=["
+            f"{_format_number(float(strongest_load_change['service_load_change_seed_bootstrap_median_ci_low']))}, "
+            f"{_format_number(float(strongest_load_change['service_load_change_seed_bootstrap_median_ci_high']))}], "
+            "sign_stability="
+            f"{_format_number(float(strongest_load_change['service_load_change_seed_sign_stability']))}."
         ),
         (
             "- The same-tick flow-balance correlation is retained only as an artifact "
@@ -525,7 +729,12 @@ def _summary(
 
 def _write_csv(path: Path, fieldnames: tuple[str, ...], rows: list[dict[str, Any]]) -> None:
     with path.open("w", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(fieldnames), lineterminator="\n")
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=list(fieldnames),
+            lineterminator="\n",
+            extrasaction="ignore",
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -539,6 +748,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--service-capacity-dir", default=str(DEFAULT_SERVICE_CAPACITY_DIR))
     parser.add_argument("--exogenous-arrival-dir", default=str(DEFAULT_EXOGENOUS_ARRIVAL_DIR))
     parser.add_argument("--out", required=True, help="Output directory for lagged sync artifacts.")
+    parser.add_argument(
+        "--bootstrap-reps",
+        type=int,
+        default=DEFAULT_BOOTSTRAP_REPS,
+        help="Deterministic paired seed-bootstrap resamples for median delta CIs.",
+    )
+    parser.add_argument(
+        "--bootstrap-seed",
+        type=int,
+        default=DEFAULT_BOOTSTRAP_SEED,
+        help="Pseudo-random seed for deterministic bootstrap resampling.",
+    )
     return parser
 
 
@@ -550,6 +771,8 @@ def main(argv: list[str] | None = None) -> int:
             service_capacity_dir=args.service_capacity_dir,
             exogenous_arrival_dir=args.exogenous_arrival_dir,
             out_dir=args.out,
+            bootstrap_reps=args.bootstrap_reps,
+            bootstrap_seed=args.bootstrap_seed,
         )
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))

@@ -361,7 +361,12 @@ The output directory contains `lagged_service_sync_metrics.csv`,
 lagged service/completion and service/load-change correlations at lag `-1` or
 `+1`; the same-tick created-completed balance versus queue-delta correlation is
 retained only as an artifact identity diagnostic and is excluded from the
-primary synchronization interpretation.
+primary synchronization interpretation. The effect CSV also reports paired
+seed-count, seed-median delta, deterministic bootstrap median CI, and raw
+paired-seed sign stability for both lagged endpoints. Those uncertainty fields
+are required guardrails: best-lag effects remain descriptive unless they show
+strong seed-level support or are replaced by a preregistered causal lag
+direction.
 
 The A3 queue-flow/service synthesis freezes the seed `70..99` interpretation:
 

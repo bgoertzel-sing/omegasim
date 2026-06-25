@@ -57,8 +57,8 @@ are useful diagnostics, not primary evidence for independent lobe dynamics.
 | Service-capacity response | Higher service capacity reduces backlog at fixed pressure | High-minus-low service queue-depth-per-created deltas are `-0.315145`, `-0.168067`, and `-0.151263` | More service absorbs queue load, with the largest effect at normal pressure |
 | Service-capacity response | Higher service capacity improves completion fraction | Completion-fraction deltas match the backlog deltas with opposite sign: `+0.315145`, `+0.168067`, and `+0.151263` | Completion fraction and load-normalized backlog are tightly coupled queue-flow summaries |
 | Work opportunity | Higher service capacity increases realized work events | Work-event deltas are `+18.066667`, `+18.800000`, and `+18.266667` | The service axis changes work opportunity and successful work volume |
-| Modest synchronization diagnostic | Lagged service/completion shifts exist but are small | Strongest condition-mean shift is `0.168460`; its seed median is `0.220475`, bootstrap median CI `[-0.052914, 0.447535]`, sign stability `0.67` | Useful descriptive diagnostic, but not a mechanism claim |
-| Modest synchronization diagnostic | Lagged service/load-change shifts are weaker | Strongest condition-mean shift is `-0.096587`; its seed median is `-0.144239`, bootstrap median CI `[-0.342856, 0.036087]`, sign stability `0.60` | Direction is not seed-stable enough to carry scientific weight |
+| Modest synchronization diagnostic | Lagged service/completion shifts exist but are small | Strongest condition-mean shift is `0.168460`; analyzer-reported seed median is `0.220475`, deterministic bootstrap median CI `[-0.063508, 0.447535]`, sign stability `0.666667` | Useful descriptive diagnostic, but not a mechanism claim |
+| Modest synchronization diagnostic | Lagged service/load-change shifts are weaker | Strongest condition-mean shift is `-0.096587`; analyzer-reported seed median is `-0.144240`, deterministic bootstrap median CI `[-0.276765, 0.034522]`, sign stability `0.600000` | Direction is not seed-stable enough to carry scientific weight |
 | Artifact invariant | Same-tick flow balance tracks queue delta exactly | Flow-balance versus queue-delta correlation is `1.0` across condition means and effect deltas are `0.0` | This validates accounting consistency and must not be interpreted as synchronization |
 | Unsupported residual structure | No primary A3 endpoint requires residual lobe grammar | Load, service capacity, completion fraction, and work opportunity explain the observed effects | Do not reopen broad A2 residual-lobe sweeps without a concrete artifact bug |
 
@@ -74,15 +74,15 @@ lagged effects are not robust enough for a mechanism claim:
 
 - Strongest service/completion condition-mean shift:
   `normal_pressure/low_service -> normal_pressure/high_service = 0.168460`;
-  seed median `0.220475`; bootstrap median CI `[-0.052914, 0.447535]`; sign
-  stability `0.67` over 30 paired seeds.
+  analyzer-reported seed median `0.220475`; deterministic bootstrap median CI
+  `[-0.063508, 0.447535]`; sign stability `0.666667` over 30 paired seeds.
 - Next service/completion shifts include confidence intervals that either cross
   zero or have only moderate sign stability, even when the condition mean is
   similar in magnitude.
 - Strongest service/load-change condition-mean shift:
   `normal_pressure/high_service -> extreme_pressure/high_service = -0.096587`;
-  seed median `-0.144239`; bootstrap median CI `[-0.342856, 0.036087]`; sign
-  stability `0.60` over 30 paired seeds.
+  analyzer-reported seed median `-0.144240`; deterministic bootstrap median CI
+  `[-0.276765, 0.034522]`; sign stability `0.600000` over 30 paired seeds.
 - The lagged endpoint should therefore remain an exploratory diagnostic until a
   temporal-shift, block-shuffle, or preregistered lag-direction null is added.
 
