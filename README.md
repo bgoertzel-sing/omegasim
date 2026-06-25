@@ -382,6 +382,18 @@ lagged endpoints. Any later multi-hive preregistration should use
 queue-flow/service synchronization endpoints as primary and keep lobe labels
 secondary unless a genuinely non-queue, non-action-derived observable is added.
 
+The next-stage multi-hive study plan is preregistered as a design artifact only:
+
+```text
+docs/a4_multihive_queue_flow_service_preregistration.md
+```
+
+Do not add multi-hive simulator mechanics until that preregistration is
+reviewed and converted into a concrete implementation plan. Its primary
+endpoints are cross-hive queue-flow/service relations under no-coupling,
+direct-coupling, delayed-coupling, and shuffled-coupling controls; lobe labels
+remain secondary diagnostics.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
