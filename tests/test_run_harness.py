@@ -54,6 +54,10 @@ from ohdyn.analyze_queue_blind_lobes import (
     _queue_blind_label,
     run_queue_blind_lobe_analysis,
 )
+from ohdyn.calibrate_exogenous_arrivals import (
+    EXOGENOUS_CALIBRATION_FIELDS,
+    run_exogenous_arrival_calibration,
+)
 from ohdyn.compare_attention import run_comparison
 from ohdyn.compare_pressure import (
     PRESSURE_COMPARISON_FIELDS,
@@ -818,6 +822,46 @@ def test_queue_blind_label_uses_agent_created_count_when_available() -> None:
     }
 
     assert _queue_blind_label(row) == "coordination"
+
+
+def test_a2_exogenous_arrival_calibration_writes_accounting_report(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a2_exogenous_arrival_calibration"
+
+    rows = run_exogenous_arrival_calibration(
+        candidate_rates=(0.0, 1.0, 2.0),
+        seeds=(1, 2),
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == 3
+    assert [row["rate_per_tick"] for row in rows] == [0.0, 1.0, 2.0]
+    assert (out_dir / "exogenous_arrival_calibration.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+    assert (out_dir / "target_control" / "seed1" / "metrics.csv").is_file()
+    assert (out_dir / "exogenous_rate_1p0" / "seed2" / "summary.md").is_file()
+
+    with (out_dir / "exogenous_arrival_calibration.csv").open() as handle:
+        csv_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert list(csv_rows[0]) == list(EXOGENOUS_CALIBRATION_FIELDS)
+    assert int(csv_rows[0]["seed_count"]) == 2
+    assert float(csv_rows[1]["exogenous_tasks_created_mean"]) > 0.0
+    assert float(csv_rows[2]["tasks_created_mean"]) > float(
+        csv_rows[1]["tasks_created_mean"]
+    )
+    assert csv_rows[1]["target_label"] in {
+        "endogenous_control",
+        "low_exogenous_target",
+        "high_pressure_target",
+        "extreme_pressure_target",
+    }
+    assert "## Coupled-pressure targets" in summary
+    assert "## Candidate accounting" in summary
+    assert "## Provisional frozen rates" in summary
+    assert "total created-task mean only" in summary
 
 
 def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) -> None:

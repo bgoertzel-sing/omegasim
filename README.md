@@ -249,6 +249,22 @@ primary purpose is to decide whether the remaining pressure-induced trajectory
 locking signal is load accounting, action-budget coupling, or a residual
 lobe-dynamics effect.
 
+Before running that holdout grid, calibrate the opt-in exogenous arrival rates
+against existing coupled-pressure created-task totals using load/accounting
+fields only:
+
+```bash
+python -m ohdyn.calibrate_exogenous_arrivals \
+  --candidate-rates 0.0 0.5 1.0 1.5 2.0 2.5 3.0 \
+  --seeds 1 2 3 \
+  --out runs/a2_exogenous_arrival_calibration
+```
+
+The calibration output contains per-target and per-candidate run artifacts,
+`exogenous_arrival_calibration.csv`, and `summary.md`. The report intentionally
+does not use lobe, entropy, or value outcomes to choose rates; those outcomes
+belong to the later frozen-rate holdout.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
