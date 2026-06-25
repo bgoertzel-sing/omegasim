@@ -20,9 +20,12 @@ from ohdyn.sim import (
     BASELINE_LOBE_LABELS,
     BASELINE_LOBE_TRANSITION_FIELDS,
     BASELINE_ROLES,
+    COUPLING_EVENT_FIELDS,
+    CROSS_HIVE_METRIC_FIELDS,
     EVENT_FIELDS,
     EXOGENOUS_ARRIVAL_EVENT_TYPES,
     EXOGENOUS_ARRIVAL_METRIC_FIELDS,
+    HIVE_EVENT_FIELDS,
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
@@ -50,8 +53,30 @@ def write_outputs(result: SimulationResult, out_dir: str | Path) -> None:
             result.metrics,
             fieldnames=_metrics_fieldnames(result),
         )
+        if _multi_hive_enabled(result):
+            _write_csv(
+                output_path / "hive_metrics.csv",
+                result.hive_metrics or [],
+                fieldnames=("hive_id", *_metrics_fieldnames(result)),
+            )
+            _write_csv(
+                output_path / "cross_hive_metrics.csv",
+                result.cross_hive_metrics or [],
+                fieldnames=_cross_hive_metric_fieldnames(result),
+            )
     if result.config.outputs.write_events:
         _write_csv(output_path / "events.csv", result.events, fieldnames=EVENT_FIELDS)
+        if _multi_hive_enabled(result):
+            _write_csv(
+                output_path / "hive_events.csv",
+                result.hive_events or [],
+                fieldnames=HIVE_EVENT_FIELDS,
+            )
+            _write_csv(
+                output_path / "coupling_events.csv",
+                result.coupling_events or [],
+                fieldnames=COUPLING_EVENT_FIELDS,
+            )
     if result.config.outputs.write_summary:
         (output_path / "summary.md").write_text(_summary(result))
 
@@ -114,7 +139,7 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "selection_strategy": result.config.attention_policy.selection_strategy,
             "fields": list(attention_policy_metric_fields()),
         }
-    if _exogenous_arrivals_enabled(result):
+    if _exogenous_arrivals_enabled(result) and result.config.exogenous_arrivals is not None:
         assert result.config.exogenous_arrivals is not None
         manifest["model"]["exogenous_arrivals"] = {
             "enabled": result.config.exogenous_arrivals.enabled,
@@ -129,6 +154,25 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             },
             "event_types": list(EXOGENOUS_ARRIVAL_EVENT_TYPES),
             "fields": list(EXOGENOUS_ARRIVAL_METRIC_FIELDS),
+        }
+    if _multi_hive_enabled(result):
+        assert result.config.coupling is not None
+        manifest["hive_count"] = len(result.config.hives)
+        manifest["hive_ids"] = [hive.hive_id for hive in result.config.hives]
+        manifest["coupling_mode"] = result.config.coupling.mode
+        manifest["model"]["multi_hive"] = {
+            "hive_count": len(result.config.hives),
+            "hive_ids": [hive.hive_id for hive in result.config.hives],
+            "coupling_mode": result.config.coupling.mode,
+            "hive_seed_streams": {
+                hive.hive_id: f"cli_seed + {hive.seed_offset}"
+                for hive in result.config.hives
+            },
+            "coupling_seed_stream": (
+                f"cli_seed + {result.config.coupling.shuffle_seed_offset}"
+            ),
+            "coupling_event_fields": list(COUPLING_EVENT_FIELDS),
+            "cross_hive_metric_fields": list(_cross_hive_metric_fieldnames(result)),
         }
     return manifest
 
@@ -184,6 +228,11 @@ def _artifact_names(result: SimulationResult) -> list[str]:
         artifacts.append("events.csv")
     if result.config.outputs.write_summary:
         artifacts.append("summary.md")
+    if _multi_hive_enabled(result):
+        if result.config.outputs.write_metrics:
+            artifacts.extend(["hive_metrics.csv", "cross_hive_metrics.csv"])
+        if result.config.outputs.write_events:
+            artifacts.extend(["hive_events.csv", "coupling_events.csv"])
     return artifacts
 
 
@@ -194,7 +243,12 @@ def _write_csv(
     fieldnames: tuple[str, ...] | None = None,
 ) -> None:
     if not rows:
-        path.write_text("")
+        if fieldnames is None:
+            path.write_text("")
+            return
+        with path.open("w", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+            writer.writeheader()
         return
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(fieldnames or rows[0].keys()))
@@ -217,6 +271,20 @@ def _event_types(result: SimulationResult) -> tuple[str, ...]:
     if _exogenous_arrivals_enabled(result):
         event_types.extend(EXOGENOUS_ARRIVAL_EVENT_TYPES)
     return tuple(event_types)
+
+
+def _multi_hive_enabled(result: SimulationResult) -> bool:
+    return bool(result.config.hives)
+
+
+def _cross_hive_metric_fieldnames(result: SimulationResult) -> tuple[str, ...]:
+    return (
+        *CROSS_HIVE_METRIC_FIELDS,
+        *(
+            f"{hive.hive_id}_load_normalized_backlog_tick"
+            for hive in result.config.hives
+        ),
+    )
 
 
 def _summary(result: SimulationResult) -> str:
@@ -304,6 +372,25 @@ def _summary(result: SimulationResult) -> str:
             f"- {role}: idle={totals['idle']}, message={totals['message']}, "
             f"create_task={totals['create_task']}, work_task={totals['work_task']}"
         )
+    if _multi_hive_enabled(result):
+        assert result.config.coupling is not None
+        lines.extend(
+            [
+                "",
+                "## Multi-hive coupling",
+                "",
+                f"- hive count: {len(result.config.hives)}",
+                f"- hive ids: {', '.join(hive.hive_id for hive in result.config.hives)}",
+                f"- coupling mode: {result.config.coupling.mode}",
+                f"- transfer probability: {result.config.coupling.transfer_probability}",
+                f"- delay ticks: {result.config.coupling.delay_ticks}",
+                f"- completed transfers: {len(result.coupling_events or [])}",
+                "",
+                "## Hive summaries",
+                "",
+                *_hive_summary(result),
+            ]
+        )
     if result.config.attention_policy is not None:
         lines.extend(
             [
@@ -313,7 +400,7 @@ def _summary(result: SimulationResult) -> str:
                 *_attention_policy_summary(result),
             ]
         )
-    if _exogenous_arrivals_enabled(result):
+    if _exogenous_arrivals_enabled(result) and result.config.exogenous_arrivals is not None:
         lines.extend(
             [
                 "",
@@ -330,7 +417,22 @@ def _exogenous_arrivals_enabled(result: SimulationResult) -> bool:
     return (
         result.config.exogenous_arrivals is not None
         and result.config.exogenous_arrivals.enabled
-    )
+    ) or any(_exogenous_arrivals_enabled(hive_result) for hive_result in result.hive_results)
+
+
+def _hive_summary(result: SimulationResult) -> list[str]:
+    lines = []
+    for hive, hive_result in zip(result.config.hives, result.hive_results, strict=True):
+        last = hive_result.metrics[-1] if hive_result.metrics else {}
+        lines.append(
+            f"- {hive.hive_id}: seed_offset={hive.seed_offset}, "
+            f"exogenous_arrival_rate={hive.exogenous_arrival_rate}, "
+            f"work_service_capacity={hive.work_service_capacity}, "
+            f"tasks_created={last.get('tasks_created_total', 0)}, "
+            f"tasks_completed={last.get('tasks_completed_total', 0)}, "
+            f"final_queue_depth={last.get('queue_depth', 0)}"
+        )
+    return lines
 
 
 def _baseline_lobe_totals(result: SimulationResult) -> dict[str, int]:

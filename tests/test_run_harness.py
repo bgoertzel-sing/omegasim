@@ -150,6 +150,7 @@ A2_EXOGENOUS_ARRIVALS = Path("configs/a2_exogenous_arrivals_smoke.yaml")
 A2_EXOGENOUS_ARRIVALS_LOW = Path("configs/a2_exogenous_arrivals_low.yaml")
 A2_EXOGENOUS_ARRIVALS_MEDIUM = Path("configs/a2_exogenous_arrivals_medium.yaml")
 A2_EXOGENOUS_ARRIVALS_HIGH = Path("configs/a2_exogenous_arrivals_high.yaml")
+A4_TWO_HIVE_NONE = Path("configs/a4_two_hive_none_smoke.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -200,6 +201,13 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     A2_EXOGENOUS_ARRIVALS_LOW: A0_FULL_ARTIFACTS,
     A2_EXOGENOUS_ARRIVALS_MEDIUM: A0_FULL_ARTIFACTS,
     A2_EXOGENOUS_ARRIVALS_HIGH: A0_FULL_ARTIFACTS,
+    A4_TWO_HIVE_NONE: [
+        *A0_FULL_ARTIFACTS,
+        "hive_metrics.csv",
+        "cross_hive_metrics.csv",
+        "hive_events.csv",
+        "coupling_events.csv",
+    ],
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -623,6 +631,69 @@ def test_documented_cli_rejects_invalid_a4_config_before_writing_artifacts(
     assert completed.returncode != 0
     assert "duplicate hive_id" in completed.stderr
     assert not out_dir.exists()
+
+
+def test_a4_two_hive_none_writes_inert_multi_hive_artifacts_and_reproduces(
+    tmp_path: Path,
+) -> None:
+    first, second, _, _ = _run_documented_cli_pair(
+        A4_TWO_HIVE_NONE,
+        tmp_path,
+        first_seed=31,
+        second_seed=31,
+        first_name="a4_first",
+        second_name="a4_second",
+    )
+    third = tmp_path / "a4_third"
+    _run_documented_cli(A4_TWO_HIVE_NONE, third, seed=32)
+
+    for out_dir in (first, second, third):
+        _assert_artifacts_match_output_directory(
+            out_dir,
+            _expected_artifacts(A4_TWO_HIVE_NONE),
+        )
+
+    for artifact in _expected_artifacts(A4_TWO_HIVE_NONE):
+        assert (first / artifact).read_text() == (second / artifact).read_text()
+    assert (first / "hive_metrics.csv").read_text() != (
+        third / "hive_metrics.csv"
+    ).read_text()
+
+    manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    summary = (first / "summary.md").read_text()
+    with (first / "hive_metrics.csv").open() as handle:
+        hive_rows = list(csv.DictReader(handle))
+    with (first / "cross_hive_metrics.csv").open() as handle:
+        cross_rows = list(csv.DictReader(handle))
+    with (first / "hive_events.csv").open() as handle:
+        hive_events = list(csv.DictReader(handle))
+    with (first / "coupling_events.csv").open() as handle:
+        coupling_events = list(csv.DictReader(handle))
+
+    assert manifest["hive_count"] == 2
+    assert manifest["hive_ids"] == ["hive_a", "hive_b"]
+    assert manifest["coupling_mode"] == "none"
+    assert manifest["model"]["multi_hive"]["hive_seed_streams"] == {
+        "hive_a": "cli_seed + 0",
+        "hive_b": "cli_seed + 1000",
+    }
+    assert "## Multi-hive coupling" in summary
+    assert "- completed transfers: 0" in summary
+    assert {row["hive_id"] for row in hive_rows} == {"hive_a", "hive_b"}
+    assert {row["hive_id"] for row in hive_events} == {"hive_a", "hive_b"}
+    assert coupling_events == []
+    assert (first / "coupling_events.csv").read_text().splitlines()[0] == (
+        "tick,source_hive_id,target_hive_id,task_id,coupling_mode,delay_ticks,"
+        "transfer_decision,arrival_tick"
+    )
+    for row in cross_rows:
+        assert row["coupling_mode"] == "none"
+        assert row["transfer_attempts_tick"] == "0"
+        assert row["transfers_completed_tick"] == "0"
+        assert row["aggregate_inbound_transfers_tick"] == "0"
+        assert row["aggregate_outbound_transfers_tick"] == "0"
+        assert row["aggregate_explicit_drops_tick"] == "0"
+        assert row["aggregate_queue_balance_residual_tick"] == "0"
 
 
 def test_loads_a0_default_outputs_fixture() -> None:

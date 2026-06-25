@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 from collections import Counter, deque
-from dataclasses import dataclass
+from dataclasses import replace, dataclass
 from typing import Any
 
 import networkx as nx
 import numpy as np
 
-from ohdyn.config import ATTENTION_CLASSES, OmegaConfig
+from ohdyn.config import (
+    ATTENTION_CLASSES,
+    ExogenousArrivalsConfig,
+    OmegaConfig,
+)
 
 
 BASELINE_ROLES = (
@@ -65,6 +69,42 @@ EVENT_FIELDS = (
     "attention_selected_class",
     "attention_pressure_class",
     "attention_capture_pressure",
+)
+
+HIVE_EVENT_FIELDS = ("hive_id", *EVENT_FIELDS)
+
+COUPLING_EVENT_FIELDS = (
+    "tick",
+    "source_hive_id",
+    "target_hive_id",
+    "task_id",
+    "coupling_mode",
+    "delay_ticks",
+    "transfer_decision",
+    "arrival_tick",
+)
+
+CROSS_HIVE_METRIC_FIELDS = (
+    "tick",
+    "hive_count",
+    "coupling_mode",
+    "transfer_attempts_tick",
+    "transfers_completed_tick",
+    "inbound_transfers_tick",
+    "outbound_transfers_tick",
+    "queued_age_mean_divergence_tick",
+    "completion_fraction_min_tick",
+    "completion_fraction_max_tick",
+    "completion_fraction_divergence_tick",
+    "aggregate_queue_depth",
+    "aggregate_queue_delta_tick",
+    "aggregate_created_tick",
+    "aggregate_completed_tick",
+    "aggregate_exogenous_arrivals_tick",
+    "aggregate_inbound_transfers_tick",
+    "aggregate_outbound_transfers_tick",
+    "aggregate_explicit_drops_tick",
+    "aggregate_queue_balance_residual_tick",
 )
 
 QUEUE_PRESSURE_METRIC_FIELDS = (
@@ -187,9 +227,20 @@ class SimulationResult:
     agents: tuple[AgentState, ...]
     metrics: list[dict[str, Any]]
     events: list[dict[str, Any]]
+    hive_results: tuple["SimulationResult", ...] = ()
+    hive_metrics: list[dict[str, Any]] | None = None
+    hive_events: list[dict[str, Any]] | None = None
+    coupling_events: list[dict[str, Any]] | None = None
+    cross_hive_metrics: list[dict[str, Any]] | None = None
 
 
 def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
+    if config.hives:
+        return _simulate_multi_hive_none(config, seed)
+    return _simulate_single(config, seed)
+
+
+def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
     rng = np.random.default_rng(seed)
     exogenous_rng = _exogenous_arrival_rng(config, seed)
     agents = _make_agents(config.model.agent_count, rng)
@@ -444,6 +495,220 @@ def simulate(config: OmegaConfig, seed: int) -> SimulationResult:
         metrics=metrics,
         events=events,
     )
+
+
+def _simulate_multi_hive_none(config: OmegaConfig, seed: int) -> SimulationResult:
+    assert config.coupling is not None
+    if config.coupling.mode != "none":
+        raise ValueError("A4 multi-hive simulation currently supports only coupling.mode 'none'.")
+
+    hive_results = []
+    for hive in config.hives:
+        hive_config = _hive_local_config(config, hive_index_seed_offset=hive.seed_offset)
+        hive_results.append(_simulate_single(hive_config, seed + hive.seed_offset))
+
+    hive_metrics = _hive_metrics(config, tuple(hive_results))
+    hive_events = _hive_events(config, tuple(hive_results))
+    coupling_events: list[dict[str, Any]] = []
+    cross_hive_metrics = _cross_hive_metrics(config, tuple(hive_results))
+    aggregate_metrics = _aggregate_hive_metrics(config, tuple(hive_results), cross_hive_metrics)
+    aggregate_events = _aggregate_hive_events(hive_events)
+    aggregate_graph = nx.disjoint_union_all([result.bus_graph for result in hive_results])
+    aggregate_agents = tuple(agent for result in hive_results for agent in result.agents)
+
+    return SimulationResult(
+        config=config,
+        seed=seed,
+        bus_graph=aggregate_graph,
+        agents=aggregate_agents,
+        metrics=aggregate_metrics,
+        events=aggregate_events,
+        hive_results=tuple(hive_results),
+        hive_metrics=hive_metrics,
+        hive_events=hive_events,
+        coupling_events=coupling_events,
+        cross_hive_metrics=cross_hive_metrics,
+    )
+
+
+def _hive_local_config(config: OmegaConfig, *, hive_index_seed_offset: int) -> OmegaConfig:
+    hive = next(hive for hive in config.hives if hive.seed_offset == hive_index_seed_offset)
+    arrivals = config.exogenous_arrivals
+    if arrivals is None and hive.exogenous_arrival_rate > 0.0:
+        arrivals = ExogenousArrivalsConfig(
+            enabled=True,
+            rate_per_tick=hive.exogenous_arrival_rate,
+            near_term_external=0.45,
+            long_term_research=0.25,
+            internal_improvement=0.20,
+            housekeeping=0.10,
+        )
+    elif arrivals is not None:
+        arrivals = replace(arrivals, rate_per_tick=hive.exogenous_arrival_rate)
+
+    return replace(
+        config,
+        model=replace(config.model, work_service_capacity=hive.work_service_capacity),
+        exogenous_arrivals=arrivals,
+        hives=(),
+        coupling=None,
+    )
+
+
+def _hive_metrics(
+    config: OmegaConfig,
+    hive_results: tuple[SimulationResult, ...],
+) -> list[dict[str, Any]]:
+    rows = []
+    for hive, result in zip(config.hives, hive_results, strict=True):
+        for row in result.metrics:
+            rows.append({"hive_id": hive.hive_id, **row})
+    return rows
+
+
+def _hive_events(
+    config: OmegaConfig,
+    hive_results: tuple[SimulationResult, ...],
+) -> list[dict[str, Any]]:
+    rows = []
+    for hive, result in zip(config.hives, hive_results, strict=True):
+        for event in result.events:
+            event_row = dict(event)
+            if event_row.get("task_id"):
+                event_row["task_id"] = f"{hive.hive_id}:{event_row['task_id']}"
+            rows.append({"hive_id": hive.hive_id, **event_row})
+    return rows
+
+
+def _aggregate_hive_events(hive_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{field: row.get(field, "") for field in EVENT_FIELDS} for row in hive_events]
+
+
+def _cross_hive_metrics(
+    config: OmegaConfig,
+    hive_results: tuple[SimulationResult, ...],
+) -> list[dict[str, Any]]:
+    assert config.coupling is not None
+    rows = []
+    for tick in range(config.run.ticks):
+        tick_rows = [result.metrics[tick] for result in hive_results]
+        queue_depths = [int(row["queue_depth"]) for row in tick_rows]
+        queue_deltas = [int(row["queue_delta_tick"]) for row in tick_rows]
+        created = [int(row["tasks_created_tick"]) for row in tick_rows]
+        completed = [int(row["tasks_completed_tick"]) for row in tick_rows]
+        exogenous = [int(row.get("exogenous_tasks_created_tick", 0)) for row in tick_rows]
+        age_means = [float(row["queued_task_age_mean_tick"]) for row in tick_rows]
+        completion_fractions = [
+            int(row["tasks_completed_total"]) / int(row["tasks_created_total"])
+            if int(row["tasks_created_total"])
+            else 0.0
+            for row in tick_rows
+        ]
+        aggregate_delta = sum(queue_deltas)
+        aggregate_balance = sum(created) + 0 - sum(completed) - 0 - 0
+        rows.append(
+            {
+                "tick": tick,
+                "hive_count": len(config.hives),
+                "coupling_mode": config.coupling.mode,
+                "transfer_attempts_tick": 0,
+                "transfers_completed_tick": 0,
+                "inbound_transfers_tick": 0,
+                "outbound_transfers_tick": 0,
+                "queued_age_mean_divergence_tick": round(max(age_means) - min(age_means), 6),
+                "completion_fraction_min_tick": round(min(completion_fractions), 6),
+                "completion_fraction_max_tick": round(max(completion_fractions), 6),
+                "completion_fraction_divergence_tick": round(
+                    max(completion_fractions) - min(completion_fractions),
+                    6,
+                ),
+                "aggregate_queue_depth": sum(queue_depths),
+                "aggregate_queue_delta_tick": aggregate_delta,
+                "aggregate_created_tick": sum(created),
+                "aggregate_completed_tick": sum(completed),
+                "aggregate_exogenous_arrivals_tick": sum(exogenous),
+                "aggregate_inbound_transfers_tick": 0,
+                "aggregate_outbound_transfers_tick": 0,
+                "aggregate_explicit_drops_tick": 0,
+                "aggregate_queue_balance_residual_tick": aggregate_delta - aggregate_balance,
+                **{
+                    f"{hive.hive_id}_load_normalized_backlog_tick": round(
+                        int(row["queue_depth"]) / int(row["tasks_created_total"]),
+                        6,
+                    )
+                    if int(row["tasks_created_total"])
+                    else 0.0
+                    for hive, row in zip(config.hives, tick_rows, strict=True)
+                },
+            }
+        )
+    return rows
+
+
+def _aggregate_hive_metrics(
+    config: OmegaConfig,
+    hive_results: tuple[SimulationResult, ...],
+    cross_hive_metrics: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows = []
+    first_result = hive_results[0]
+    for tick in range(config.run.ticks):
+        tick_rows = [result.metrics[tick] for result in hive_results]
+        cross_row = cross_hive_metrics[tick]
+        aggregate_row = dict(first_result.metrics[tick])
+        aggregate_row.update(
+            {
+                "agent_count": sum(int(row["agent_count"]) for row in tick_rows),
+                "bus_nodes": sum(int(row["bus_nodes"]) for row in tick_rows),
+                "bus_edges": sum(int(row["bus_edges"]) for row in tick_rows),
+                "queue_depth": cross_row["aggregate_queue_depth"],
+                "queue_delta_tick": cross_row["aggregate_queue_delta_tick"],
+                "tasks_created_total": sum(
+                    int(row["tasks_created_total"]) for row in tick_rows
+                ),
+                "tasks_completed_total": sum(
+                    int(row["tasks_completed_total"]) for row in tick_rows
+                ),
+                "tasks_completed_tick": cross_row["aggregate_completed_tick"],
+                "messages_sent_tick": sum(int(row["messages_sent_tick"]) for row in tick_rows),
+                "tasks_created_tick": cross_row["aggregate_created_tick"],
+                "tasks_worked_tick": sum(int(row["tasks_worked_tick"]) for row in tick_rows),
+                "created_completed_balance_tick": (
+                    cross_row["aggregate_created_tick"] - cross_row["aggregate_completed_tick"]
+                ),
+                "created_worked_balance_tick": (
+                    cross_row["aggregate_created_tick"]
+                    - sum(int(row["tasks_worked_tick"]) for row in tick_rows)
+                ),
+                "work_completion_gap_tick": (
+                    sum(int(row["tasks_worked_tick"]) for row in tick_rows)
+                    - cross_row["aggregate_completed_tick"]
+                ),
+                "backlog_pressure_tick": cross_row["aggregate_queue_depth"],
+                "queued_task_age_max_tick": max(
+                    int(row["queued_task_age_max_tick"]) for row in tick_rows
+                ),
+                "queued_task_age_mean_tick": round(
+                    sum(float(row["queued_task_age_mean_tick"]) for row in tick_rows)
+                    / len(tick_rows),
+                    6,
+                ),
+                "idle_tick": sum(int(row["idle_tick"]) for row in tick_rows),
+                "mean_agent_bias": round(
+                    sum(float(row["mean_agent_bias"]) for row in tick_rows) / len(tick_rows),
+                    6,
+                ),
+            }
+        )
+        for field in EXOGENOUS_ARRIVAL_METRIC_FIELDS:
+            if field in aggregate_row:
+                aggregate_row[field] = sum(int(row.get(field, 0)) for row in tick_rows)
+        for role in BASELINE_ROLES:
+            for action in config.model.actions:
+                field = f"role_{role}_{action}_tick"
+                aggregate_row[field] = sum(int(row[field]) for row in tick_rows)
+        rows.append(aggregate_row)
+    return rows
 
 
 def _make_agents(agent_count: int, rng: np.random.Generator) -> tuple[AgentState, ...]:
