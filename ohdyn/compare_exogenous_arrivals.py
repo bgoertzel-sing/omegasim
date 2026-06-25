@@ -18,7 +18,7 @@ from ohdyn.analyze_service_capacity_trajectory import (
     _safe_ratio,
 )
 from ohdyn.calibrate_exogenous_arrivals import BASELINE_ARRIVAL_SHARES
-from ohdyn.compare_attention import DEFAULT_SEEDS, _format_number, _format_regime_counts
+from ohdyn.compare_attention import DEFAULT_SEEDS, _format_number
 from ohdyn.config import OmegaConfig, load_config
 from ohdyn.run import run_experiment
 from ohdyn.sim import SimulationResult

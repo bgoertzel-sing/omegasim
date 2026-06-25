@@ -280,7 +280,6 @@ def _row_from_run_dirs(
 
 def _run_summary(metrics_path: Path) -> dict[str, float]:
     rows = _metrics_rows(metrics_path)
-    first = rows[0]
     last = rows[-1]
     created = float(last["tasks_created_total"])
     completed = float(last["tasks_completed_total"])
