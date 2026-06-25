@@ -345,6 +345,24 @@ pressure, and exogenous-minus-endogenous demand deltas. These A3 fields are
 primary queue-flow/service endpoints; baseline and queue-blind lobe summaries
 remain secondary diagnostics only.
 
+The lagged synchronization reader is the preregistered A3 analysis-only check
+that separates primary lagged service/queue-flow endpoints from the same-tick
+flow-balance identity diagnostic:
+
+```bash
+python -m ohdyn.analyze_lagged_service_sync \
+  --service-capacity-dir runs/a2_service_capacity_holdout_seed70_99_20260624 \
+  --exogenous-arrival-dir runs/a2_exogenous_arrival_holdout_seed70_99_20260625_v2 \
+  --out runs/a3_lagged_service_sync_seed70_99_20260625
+```
+
+The output directory contains `lagged_service_sync_metrics.csv`,
+`lagged_service_sync_effects.csv`, and `summary.md`. The primary endpoints are
+lagged service/completion and service/load-change correlations at lag `-1` or
+`+1`; the same-tick created-completed balance versus queue-delta correlation is
+retained only as an artifact identity diagnostic and is excluded from the
+primary synchronization interpretation.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
