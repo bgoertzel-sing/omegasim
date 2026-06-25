@@ -140,13 +140,124 @@ exploratory diagnostic.
 
 ## First Implementation Gate
 
-Before writing simulator code, specify:
+Before writing simulator code, freeze the concrete implementation contract below.
+The first code change should implement only this contract and its smoke tests.
 
-- exact YAML config shape for hives and coupling;
-- artifact filenames and schemas;
-- append-safe output behavior;
-- seed-stream derivation for each hive and coupling process;
-- smoke-test expectations for deterministic replay;
-- holdout seed set and primary endpoint table.
+### YAML Shape
+
+Use an opt-in `hives` section. Absence of `hives` keeps the existing single-hive
+A0/A1 behavior unchanged.
+
+```yaml
+run:
+  experiment_id: a4_two_hive_smoke
+  ticks: 100
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+hives:
+  - hive_id: hive_a
+    seed_offset: 0
+    exogenous_arrival_rate: 1.0
+    work_service_capacity: 1.0
+  - hive_id: hive_b
+    seed_offset: 1000
+    exogenous_arrival_rate: 1.0
+    work_service_capacity: 1.0
+
+coupling:
+  mode: none
+  transfer_probability: 0.0
+  delay_ticks: 0
+  shuffle_seed_offset: 2000
+```
+
+Allowed initial `coupling.mode` values are `none`, `direct`, `delayed`, and
+`shuffled`. `delayed` requires `delay_ticks > 0`; `none` requires
+`transfer_probability: 0.0`; `direct` and `shuffled` require
+`transfer_probability >= 0.0`. The first implementation should reject duplicate
+`hive_id` values, blank IDs, negative rates, negative service capacity, and
+unknown coupling modes before writing artifacts.
+
+### Artifact Contract
+
+For a multi-hive run, write the existing top-level artifacts plus per-hive and
+cross-hive companions. All files remain append-safe: if any enabled output file
+already exists, fail before writing partial artifacts.
+
+- `config.yaml`: normalized complete config, including `hives` and `coupling`.
+- `manifest.yaml`: existing manifest fields plus `hive_count`, `hive_ids`, and
+  `coupling_mode`.
+- `metrics.csv`: top-level aggregate tick metrics, preserving existing A0/A1
+  field names where meaningful.
+- `events.csv`: top-level event stream, including all coupling events.
+- `summary.md`: aggregate run summary with one short per-hive section and one
+  coupling section.
+- `hive_metrics.csv`: one row per `tick,hive_id` with per-hive queue-flow,
+  service, age, action, role/action, lobe diagnostic, and attention fields.
+- `hive_events.csv`: one event row per hive-local agent/task event with
+  `hive_id` and deterministic `task_id` provenance.
+- `coupling_events.csv`: one row per attempted or completed transfer with
+  `tick`, `source_hive_id`, `target_hive_id`, `task_id`,
+  `coupling_mode`, `delay_ticks`, `transfer_decision`, and `arrival_tick`.
+- `cross_hive_metrics.csv`: one row per tick with transfer counts, per-hive
+  load-normalized backlog values, queued-age divergence, completion-fraction
+  relation fields, and preregistered lagged service/load phase fields.
+
+Keep existing single-hive artifact schemas byte-compatible for configs without
+`hives`.
+
+### Seed Streams
+
+Derive deterministic random streams from the CLI seed without sharing mutable
+RNG state across hives:
+
+- hive stream seed: `cli_seed + hive.seed_offset`;
+- coupling stream seed: `cli_seed + coupling.shuffle_seed_offset`;
+- delayed-transfer ordering: stable sort by `arrival_tick`, then
+  `source_hive_id`, `target_hive_id`, `task_id`;
+- task IDs: include `hive_id`, tick, agent ID or `exogenous`, and a per-hive
+  monotonic counter.
+
+The same config, seed, and output flags must produce byte-identical artifacts
+across output directories. Changing only output directory paths must not enter
+any artifact content.
+
+### Smoke-Test Expectations
+
+The first multi-hive implementation must add tests proving:
+
+- configs without `hives` still pass the current A0/A1 reproducibility tests;
+- a two-hive `mode: none` config writes all multi-hive artifacts and creates no
+  completed transfers;
+- same-seed two-hive runs are byte-identical across output directories;
+- different seeds change at least one stochastic artifact;
+- `direct`, `delayed`, and `shuffled` smoke fixtures produce deterministic
+  coupling event schemas;
+- invalid duplicate hive IDs and invalid coupling settings fail before partial
+  output files are created.
+
+### Holdout Boundary
+
+Do not run a scientific A4 holdout until the two-hive smoke contract is stable.
+The preregistered first holdout should use paired seeds `100..129`, two hives,
+fixed exogenous load per hive, and the four coupling modes
+`none/direct/delayed/shuffled`. Primary comparisons are direct-minus-none,
+delayed-minus-none, and shuffled-minus-none for cross-hive service/load phase
+relations, load-normalized backlog correlation, completion-fraction
+correlation, queued-age divergence, and transfer volume. Interpret lobe fields
+as secondary diagnostics only.
+
+Before writing simulator code, confirm:
+
+- no new external-system integrations are needed;
+- no A2/A3 residual-lobe experiment is being reopened;
+- the implementation can preserve single-hive artifact compatibility.
 
 Only after that gate is written should the repository add multi-hive mechanics.
