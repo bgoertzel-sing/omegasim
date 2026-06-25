@@ -34,8 +34,10 @@ from ohdyn.analyze_pressure import (
     run_analysis,
 )
 from ohdyn.analyze_service_capacity_trajectory import (
+    SERVICE_CAPACITY_TRAJECTORY_BOOTSTRAP_FIELDS,
     SERVICE_CAPACITY_TRAJECTORY_EFFECT_FIELDS,
     SERVICE_CAPACITY_TRAJECTORY_FIELDS,
+    SERVICE_CAPACITY_TRAJECTORY_NULL_FIELDS,
     run_service_capacity_trajectory_analysis,
 )
 from ohdyn.compare_attention import run_comparison
@@ -1146,24 +1148,39 @@ def test_a2_service_capacity_trajectory_analysis_writes_grid_summary(
     assert len(rows) == 9
     assert (out_dir / "service_capacity_trajectory_metrics.csv").is_file()
     assert (out_dir / "service_capacity_trajectory_effects.csv").is_file()
+    assert (out_dir / "service_capacity_trajectory_bootstrap.csv").is_file()
+    assert (out_dir / "service_capacity_trajectory_nulls.csv").is_file()
     assert (out_dir / "summary.md").is_file()
 
     with (out_dir / "service_capacity_trajectory_metrics.csv").open() as handle:
         trajectory_rows = list(csv.DictReader(handle))
     with (out_dir / "service_capacity_trajectory_effects.csv").open() as handle:
         effect_rows = list(csv.DictReader(handle))
+    with (out_dir / "service_capacity_trajectory_bootstrap.csv").open() as handle:
+        bootstrap_rows = list(csv.DictReader(handle))
+    with (out_dir / "service_capacity_trajectory_nulls.csv").open() as handle:
+        null_rows = list(csv.DictReader(handle))
     summary = (out_dir / "summary.md").read_text()
 
     assert len(trajectory_rows) == 9
     assert len(effect_rows) == 6
+    assert len(bootstrap_rows) == 30
+    assert len(null_rows) == 9
     assert trajectory_rows[0]["transition_entropy_mean"]
     assert trajectory_rows[0]["transition_entropy_normalized_mean"]
     assert trajectory_rows[0]["dwell_length_histogram"]
     assert trajectory_rows[0]["transition_pair_counts"]
     assert effect_rows[0]["backlog_growth_dwell_share_mean_delta"]
+    assert bootstrap_rows[0]["ci_low"]
+    assert bootstrap_rows[0]["ci_high"]
+    assert bootstrap_rows[0]["sign_stability"]
+    assert null_rows[0]["transition_entropy_observed_minus_null"]
+    assert null_rows[0]["dwell_length_max_observed_minus_null"]
     assert "## Grid trajectory metrics" in summary
     assert "## Fixed-pressure service-capacity trajectory effects" in summary
     assert "## Fixed-service demand-pressure trajectory effects" in summary
+    assert "## Paired bootstrap uncertainty" in summary
+    assert "## Label-count null control" in summary
 
 
 def test_a2_service_capacity_trajectory_analysis_header_matches_declared_fields(
@@ -1185,6 +1202,14 @@ def test_a2_service_capacity_trajectory_analysis_header_matches_declared_fields(
     with (out_dir / "service_capacity_trajectory_effects.csv").open() as handle:
         reader = csv.DictReader(handle)
         assert reader.fieldnames == list(SERVICE_CAPACITY_TRAJECTORY_EFFECT_FIELDS)
+
+    with (out_dir / "service_capacity_trajectory_bootstrap.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(SERVICE_CAPACITY_TRAJECTORY_BOOTSTRAP_FIELDS)
+
+    with (out_dir / "service_capacity_trajectory_nulls.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(SERVICE_CAPACITY_TRAJECTORY_NULL_FIELDS)
 
 
 def test_a2_service_capacity_trajectory_analysis_is_reproducible(
@@ -1209,6 +1234,12 @@ def test_a2_service_capacity_trajectory_analysis_is_reproducible(
     ).read_text()
     assert (first / "service_capacity_trajectory_effects.csv").read_text() == (
         second / "service_capacity_trajectory_effects.csv"
+    ).read_text()
+    assert (first / "service_capacity_trajectory_bootstrap.csv").read_text() == (
+        second / "service_capacity_trajectory_bootstrap.csv"
+    ).read_text()
+    assert (first / "service_capacity_trajectory_nulls.csv").read_text() == (
+        second / "service_capacity_trajectory_nulls.csv"
     ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
 

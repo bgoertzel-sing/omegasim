@@ -1,0 +1,10 @@
+pressure_label,service_capacity_label,null_reps,run_count,transition_count_observed_mean,transition_count_null_mean,transition_count_observed_minus_null,transition_entropy_observed_mean,transition_entropy_null_mean,transition_entropy_observed_minus_null,transition_entropy_normalized_observed_mean,transition_entropy_normalized_null_mean,transition_entropy_normalized_observed_minus_null,dwell_length_max_observed_mean,dwell_length_max_null_mean,dwell_length_max_observed_minus_null
+normal_pressure,low_service,500,30,5.433333,5.441533,-0.0082,1.769076,1.754372,0.014704,0.966843,0.96321,0.003633,4.4,4.620867,-0.220867
+normal_pressure,baseline_service,500,30,7.133333,7.100267,0.033066,2.141011,2.112728,0.028283,0.961042,0.960766,0.000276,3.233333,3.248533,-0.0152
+normal_pressure,high_service,500,30,7.7,7.478133,0.221867,2.106739,2.114445,-0.007706,0.950608,0.962707,-0.012099,2.866667,2.820133,0.046534
+high_pressure,low_service,500,30,2.333333,2.205733,0.1276,0.895393,0.890985,0.004408,0.627922,0.645544,-0.017622,8.233333,8.448,-0.214667
+high_pressure,baseline_service,500,30,3.933333,3.767933,0.1654,1.340621,1.327257,0.013364,0.914135,0.926839,-0.012704,6.066667,6.312533,-0.245866
+high_pressure,high_service,500,30,5.2,5.391267,-0.191267,1.561217,1.534097,0.02712,0.966551,0.94731,0.019241,4.3,4.587667,-0.287667
+extreme_pressure,low_service,500,30,1.4,1.356667,0.043333,0.602941,0.580254,0.022687,0.53061,0.500338,0.030272,9.7,9.602,0.098
+extreme_pressure,baseline_service,500,30,2.3,2.245667,0.054333,0.848225,0.817871,0.030354,0.725199,0.689779,0.03542,8.5,8.297,0.203
+extreme_pressure,high_service,500,30,4.0,3.975267,0.024733,1.403745,1.407635,-0.00389,0.880108,0.902792,-0.022684,5.866667,6.182067,-0.3154

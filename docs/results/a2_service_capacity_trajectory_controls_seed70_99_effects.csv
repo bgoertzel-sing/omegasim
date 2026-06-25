@@ -1,0 +1,7 @@
+effect_axis,fixed_label,fixed_value,low_label,high_label,low_value,high_value,queue_depth_per_created_task_mean_delta,queued_task_age_mean_final_mean_delta,transition_entropy_mean_delta,transition_entropy_normalized_mean_delta,dwell_length_mean_delta,dwell_length_max_mean_delta,backlog_growth_dwell_share_mean_delta,interpretation
+service_capacity,normal_pressure,1.0,low_service,high_service,0.7,1.3,-0.315145,-1.601838,0.337663,-0.016235,-0.57948,-1.533333,-0.322223,fixed-pressure high-minus-low service-capacity trajectory effect
+service_capacity,high_pressure,1.8,low_service,high_service,0.7,1.3,-0.168067,-0.760996,0.665824,0.338629,-3.717619,-3.933333,-0.213889,fixed-pressure high-minus-low service-capacity trajectory effect
+service_capacity,extreme_pressure,2.2,low_service,high_service,0.7,1.3,-0.151263,-0.633885,0.800804,0.349498,-4.203174,-3.833333,-0.15,fixed-pressure high-minus-low service-capacity trajectory effect
+task_creation_pressure,low_service,0.7,normal_pressure,extreme_pressure,1.0,2.2,0.20541,0.769206,-1.166135,-0.436233,5.229365,5.3,0.255555,fixed-service extreme-minus-normal demand-pressure trajectory effect
+task_creation_pressure,baseline_service,1.0,normal_pressure,extreme_pressure,1.0,2.2,0.298512,1.165276,-1.292786,-0.235843,3.775036,5.266667,0.375,fixed-service extreme-minus-normal demand-pressure trajectory effect
+task_creation_pressure,high_service,1.3,normal_pressure,extreme_pressure,1.0,2.2,0.369292,1.737159,-0.702994,-0.0705,1.605671,3.0,0.427778,fixed-service extreme-minus-normal demand-pressure trajectory effect

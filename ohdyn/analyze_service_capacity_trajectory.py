@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 import math
+import random
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -53,11 +54,53 @@ SERVICE_CAPACITY_TRAJECTORY_EFFECT_FIELDS = (
     "interpretation",
 )
 
+SERVICE_CAPACITY_TRAJECTORY_BOOTSTRAP_FIELDS = (
+    "effect_axis",
+    "fixed_label",
+    "metric",
+    "bootstrap_reps",
+    "seed_count",
+    "observed_delta",
+    "ci_low",
+    "ci_high",
+    "sign_stability",
+)
+
+SERVICE_CAPACITY_TRAJECTORY_NULL_FIELDS = (
+    "pressure_label",
+    "service_capacity_label",
+    "null_reps",
+    "run_count",
+    "transition_count_observed_mean",
+    "transition_count_null_mean",
+    "transition_count_observed_minus_null",
+    "transition_entropy_observed_mean",
+    "transition_entropy_null_mean",
+    "transition_entropy_observed_minus_null",
+    "transition_entropy_normalized_observed_mean",
+    "transition_entropy_normalized_null_mean",
+    "transition_entropy_normalized_observed_minus_null",
+    "dwell_length_max_observed_mean",
+    "dwell_length_max_null_mean",
+    "dwell_length_max_observed_minus_null",
+)
+
+BOOTSTRAP_EFFECT_METRICS = (
+    "queue_depth_per_created_task",
+    "transition_entropy",
+    "transition_entropy_normalized",
+    "dwell_length_max",
+    "backlog_growth_dwell_share",
+)
+
 
 def run_service_capacity_trajectory_analysis(
     *,
     service_capacity_dir: str | Path,
     out_dir: str | Path,
+    bootstrap_reps: int = 200,
+    null_reps: int = 100,
+    random_seed: int = 271828,
 ) -> list[dict[str, Any]]:
     source_path = Path(service_capacity_dir)
     output_path = Path(out_dir)
@@ -73,6 +116,18 @@ def run_service_capacity_trajectory_analysis(
         for comparison_row in comparison_rows
     ]
     effect_rows = _effect_rows(rows)
+    per_seed_rows = _per_seed_rows(source_path, comparison_rows)
+    bootstrap_rows = _bootstrap_effect_rows(
+        per_seed_rows,
+        reps=bootstrap_reps,
+        random_seed=random_seed,
+    )
+    null_rows = _null_rows(
+        source_path,
+        comparison_rows,
+        reps=null_reps,
+        random_seed=random_seed,
+    )
     _write_csv(
         output_path / "service_capacity_trajectory_metrics.csv",
         SERVICE_CAPACITY_TRAJECTORY_FIELDS,
@@ -83,7 +138,19 @@ def run_service_capacity_trajectory_analysis(
         SERVICE_CAPACITY_TRAJECTORY_EFFECT_FIELDS,
         effect_rows,
     )
-    (output_path / "summary.md").write_text(_summary(rows, effect_rows, source_path))
+    _write_csv(
+        output_path / "service_capacity_trajectory_bootstrap.csv",
+        SERVICE_CAPACITY_TRAJECTORY_BOOTSTRAP_FIELDS,
+        bootstrap_rows,
+    )
+    _write_csv(
+        output_path / "service_capacity_trajectory_nulls.csv",
+        SERVICE_CAPACITY_TRAJECTORY_NULL_FIELDS,
+        null_rows,
+    )
+    (output_path / "summary.md").write_text(
+        _summary(rows, effect_rows, bootstrap_rows, null_rows, source_path)
+    )
     return rows
 
 
@@ -110,6 +177,8 @@ def _ensure_outputs_available(output_path: Path) -> None:
         for name in (
             "service_capacity_trajectory_metrics.csv",
             "service_capacity_trajectory_effects.csv",
+            "service_capacity_trajectory_bootstrap.csv",
+            "service_capacity_trajectory_nulls.csv",
             "summary.md",
         )
         if (output_path / name).exists()
@@ -198,6 +267,56 @@ def _trajectory_row(
     }
 
 
+def _per_seed_rows(
+    source_path: Path,
+    comparison_rows: list[dict[str, str]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for comparison_row in comparison_rows:
+        pressure_label = comparison_row["pressure_label"]
+        service_label = comparison_row["service_capacity_label"]
+        run_dirs = sorted(source_path.glob(f"{pressure_label}_{service_label}_seed*"))
+        for run_dir in run_dirs:
+            metrics_path = run_dir / "metrics.csv"
+            lobe_summary = _run_lobe_summary(metrics_path)
+            final_metrics = _final_metrics(metrics_path)
+            rows.append(
+                {
+                    "pressure_label": pressure_label,
+                    "service_capacity_label": service_label,
+                    "seed": _seed_from_run_dir(run_dir),
+                    "queue_depth_per_created_task": _safe_ratio(
+                        float(final_metrics["queue_depth"]),
+                        float(final_metrics["tasks_created_total"]),
+                    ),
+                    "transition_entropy": float(lobe_summary["transition_entropy"]),
+                    "transition_entropy_normalized": float(
+                        lobe_summary["transition_entropy_normalized"]
+                    ),
+                    "dwell_length_max": float(lobe_summary["dwell_length_max"]),
+                    "backlog_growth_dwell_share": float(
+                        lobe_summary["backlog_growth_dwell_share"]
+                    ),
+                }
+            )
+    return rows
+
+
+def _seed_from_run_dir(run_dir: Path) -> int:
+    try:
+        return int(run_dir.name.rsplit("_seed", maxsplit=1)[1])
+    except (IndexError, ValueError) as exc:
+        raise ValueError(f"Cannot parse seed from run directory {run_dir}.") from exc
+
+
+def _final_metrics(metrics_path: Path) -> dict[str, str]:
+    with metrics_path.open() as handle:
+        rows = list(csv.DictReader(handle))
+    if not rows:
+        raise ValueError(f"{metrics_path} contains no metric rows.")
+    return rows[-1]
+
+
 def _run_lobe_summary(metrics_path: Path) -> dict[str, Any]:
     if not metrics_path.is_file():
         raise FileNotFoundError(f"Missing metrics artifact: {metrics_path}")
@@ -232,6 +351,37 @@ def _run_lobe_summary(metrics_path: Path) -> dict[str, Any]:
         ),
         "dwell_length_histogram": Counter(str(length) for length in dwell_lengths),
         "dominant_lobe_label": dominant_label,
+    }
+
+
+def _labels_from_metrics(metrics_path: Path) -> list[str]:
+    if not metrics_path.is_file():
+        raise FileNotFoundError(f"Missing metrics artifact: {metrics_path}")
+    with metrics_path.open() as handle:
+        labels = [row["baseline_lobe_label"] for row in csv.DictReader(handle)]
+    if not labels:
+        raise ValueError(f"{metrics_path} contains no metric rows.")
+    return labels
+
+
+def _lobe_summary_from_labels(labels: list[str]) -> dict[str, Any]:
+    transition_pairs = [
+        f"{previous}->{current}"
+        for previous, current in zip(labels, labels[1:])
+        if previous != current
+    ]
+    dwell_runs = _dwell_runs(labels)
+    dwell_lengths = [length for _, length in dwell_runs]
+    label_ticks = Counter(labels)
+    return {
+        "transition_count": len(transition_pairs),
+        "transition_entropy": _entropy(transition_pairs),
+        "transition_entropy_normalized": _normalized_entropy(transition_pairs),
+        "dwell_length_max": max(dwell_lengths),
+        "backlog_growth_dwell_share": _safe_ratio(
+            float(label_ticks["backlog_growth"]),
+            float(len(labels)),
+        ),
     }
 
 
@@ -335,6 +485,194 @@ def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return effect_rows
 
 
+def _bootstrap_effect_rows(
+    per_seed_rows: list[dict[str, Any]],
+    *,
+    reps: int,
+    random_seed: int,
+) -> list[dict[str, Any]]:
+    if reps <= 0:
+        raise ValueError("bootstrap_reps must be positive.")
+    seeds = sorted({int(row["seed"]) for row in per_seed_rows})
+    by_cell_seed = {
+        (
+            str(row["pressure_label"]),
+            str(row["service_capacity_label"]),
+            int(row["seed"]),
+        ): row
+        for row in per_seed_rows
+    }
+    rng = random.Random(random_seed)
+    rows: list[dict[str, Any]] = []
+    for contrast in _effect_contrasts():
+        low_key = (contrast["low_pressure"], contrast["low_service"])
+        high_key = (contrast["high_pressure"], contrast["high_service"])
+        for metric in BOOTSTRAP_EFFECT_METRICS:
+            observed_delta = _paired_delta_for_seeds(
+                by_cell_seed,
+                seeds,
+                low_key=low_key,
+                high_key=high_key,
+                metric=metric,
+            )
+            deltas = [
+                _paired_delta_for_seeds(
+                    by_cell_seed,
+                    [rng.choice(seeds) for _ in seeds],
+                    low_key=low_key,
+                    high_key=high_key,
+                    metric=metric,
+                )
+                for _ in range(reps)
+            ]
+            rows.append(
+                {
+                    "effect_axis": contrast["effect_axis"],
+                    "fixed_label": contrast["fixed_label"],
+                    "metric": metric,
+                    "bootstrap_reps": reps,
+                    "seed_count": len(seeds),
+                    "observed_delta": observed_delta,
+                    "ci_low": _quantile(deltas, 0.025),
+                    "ci_high": _quantile(deltas, 0.975),
+                    "sign_stability": _sign_stability(deltas, observed_delta),
+                }
+            )
+    return rows
+
+
+def _effect_contrasts() -> list[dict[str, str]]:
+    contrasts: list[dict[str, str]] = []
+    for pressure_label in ("normal_pressure", "high_pressure", "extreme_pressure"):
+        contrasts.append(
+            {
+                "effect_axis": "service_capacity",
+                "fixed_label": pressure_label,
+                "low_pressure": pressure_label,
+                "low_service": "low_service",
+                "high_pressure": pressure_label,
+                "high_service": "high_service",
+            }
+        )
+    for service_label in ("low_service", "baseline_service", "high_service"):
+        contrasts.append(
+            {
+                "effect_axis": "task_creation_pressure",
+                "fixed_label": service_label,
+                "low_pressure": "normal_pressure",
+                "low_service": service_label,
+                "high_pressure": "extreme_pressure",
+                "high_service": service_label,
+            }
+        )
+    return contrasts
+
+
+def _paired_delta_for_seeds(
+    by_cell_seed: dict[tuple[str, str, int], dict[str, Any]],
+    seeds: list[int],
+    *,
+    low_key: tuple[str, str],
+    high_key: tuple[str, str],
+    metric: str,
+) -> float:
+    deltas = []
+    for seed in seeds:
+        low_row = by_cell_seed[(low_key[0], low_key[1], seed)]
+        high_row = by_cell_seed[(high_key[0], high_key[1], seed)]
+        deltas.append(float(high_row[metric]) - float(low_row[metric]))
+    return _mean_values(deltas)
+
+
+def _quantile(values: list[float], quantile: float) -> float:
+    if not values:
+        return 0.0
+    sorted_values = sorted(values)
+    index = round((len(sorted_values) - 1) * quantile)
+    return round(sorted_values[index], 6)
+
+
+def _sign_stability(values: list[float], observed_delta: float) -> float:
+    if not values or observed_delta == 0:
+        return 0.0
+    if observed_delta > 0:
+        stable = sum(1 for value in values if value > 0)
+    else:
+        stable = sum(1 for value in values if value < 0)
+    return _safe_ratio(float(stable), float(len(values)))
+
+
+def _null_rows(
+    source_path: Path,
+    comparison_rows: list[dict[str, str]],
+    *,
+    reps: int,
+    random_seed: int,
+) -> list[dict[str, Any]]:
+    if reps <= 0:
+        raise ValueError("null_reps must be positive.")
+    rows: list[dict[str, Any]] = []
+    for comparison_row in comparison_rows:
+        pressure_label = comparison_row["pressure_label"]
+        service_label = comparison_row["service_capacity_label"]
+        run_dirs = sorted(source_path.glob(f"{pressure_label}_{service_label}_seed*"))
+        observed_summaries: list[dict[str, Any]] = []
+        null_summaries: list[dict[str, Any]] = []
+        for run_dir in run_dirs:
+            labels = _labels_from_metrics(run_dir / "metrics.csv")
+            observed_summaries.append(_lobe_summary_from_labels(labels))
+            for rep in range(reps):
+                shuffled_labels = list(labels)
+                rng = random.Random(
+                    f"{random_seed}:{pressure_label}:{service_label}:{run_dir.name}:{rep}"
+                )
+                rng.shuffle(shuffled_labels)
+                null_summaries.append(_lobe_summary_from_labels(shuffled_labels))
+        rows.append(
+            {
+                "pressure_label": pressure_label,
+                "service_capacity_label": service_label,
+                "null_reps": reps,
+                "run_count": len(run_dirs),
+                **_null_metric_fields(
+                    observed_summaries,
+                    null_summaries,
+                    "transition_count",
+                ),
+                **_null_metric_fields(
+                    observed_summaries,
+                    null_summaries,
+                    "transition_entropy",
+                ),
+                **_null_metric_fields(
+                    observed_summaries,
+                    null_summaries,
+                    "transition_entropy_normalized",
+                ),
+                **_null_metric_fields(
+                    observed_summaries,
+                    null_summaries,
+                    "dwell_length_max",
+                ),
+            }
+        )
+    return rows
+
+
+def _null_metric_fields(
+    observed_summaries: list[dict[str, Any]],
+    null_summaries: list[dict[str, Any]],
+    metric: str,
+) -> dict[str, float]:
+    observed = _mean_values([float(summary[metric]) for summary in observed_summaries])
+    null = _mean_values([float(summary[metric]) for summary in null_summaries])
+    return {
+        f"{metric}_observed_mean": observed,
+        f"{metric}_null_mean": null,
+        f"{metric}_observed_minus_null": round(observed - null, 6),
+    }
+
+
 def _find_row(
     rows: list[dict[str, Any]],
     pressure_label: str,
@@ -412,6 +750,8 @@ def _delta(
 def _summary(
     rows: list[dict[str, Any]],
     effect_rows: list[dict[str, Any]],
+    bootstrap_rows: list[dict[str, Any]],
+    null_rows: list[dict[str, Any]],
     source_path: Path,
 ) -> str:
     service_effects = [
@@ -427,6 +767,13 @@ def _summary(
     strongest_entropy_gain = max(
         service_effects,
         key=lambda row: float(row["transition_entropy_mean_delta"]),
+    )
+    stable_bootstrap_rows = [
+        row for row in bootstrap_rows if float(row["sign_stability"]) >= 0.95
+    ]
+    strongest_null_locking = max(
+        null_rows,
+        key=lambda row: float(row["dwell_length_max_observed_minus_null"]),
     )
     lines = [
         "# A2 service-capacity trajectory analysis",
@@ -479,6 +826,36 @@ def _summary(
             for row in pressure_effects
         ],
         "",
+        "## Paired bootstrap uncertainty",
+        "",
+        (
+            "- paired seed bootstrap rows: "
+            f"{len(bootstrap_rows)}; sign-stable rows at >=0.95: "
+            f"{len(stable_bootstrap_rows)}"
+        ),
+        *[
+            f"- {row['effect_axis']} / {row['fixed_label']} / {row['metric']}: "
+            f"delta={_format_number(float(row['observed_delta']))}, "
+            f"ci=[{_format_number(float(row['ci_low']))}, "
+            f"{_format_number(float(row['ci_high']))}], "
+            f"sign_stability={_format_number(float(row['sign_stability']))}"
+            for row in bootstrap_rows
+            if row["metric"] in {"transition_entropy", "dwell_length_max"}
+        ],
+        "",
+        "## Label-count null control",
+        "",
+        *[
+            f"- {row['pressure_label']} / {row['service_capacity_label']}: "
+            "transition_entropy_observed_minus_null="
+            f"{_format_number(float(row['transition_entropy_observed_minus_null']))}, "
+            "normalized_entropy_observed_minus_null="
+            f"{_format_number(float(row['transition_entropy_normalized_observed_minus_null']))}, "
+            "dwell_length_max_observed_minus_null="
+            f"{_format_number(float(row['dwell_length_max_observed_minus_null']))}"
+            for row in null_rows
+        ],
+        "",
         "## Interpretation",
         "",
         (
@@ -497,6 +874,13 @@ def _summary(
             "- Compare these trajectory deltas with queue_per_created deltas before "
             "treating raw queue depth as an emergent lobe-dynamics result."
         ),
+        (
+            "- Strongest observed-minus-null dwell locking: "
+            f"{strongest_null_locking['pressure_label']} / "
+            f"{strongest_null_locking['service_capacity_label']} "
+            "dwell_length_max_observed_minus_null="
+            f"{_format_number(float(strongest_null_locking['dwell_length_max_observed_minus_null']))}."
+        ),
         "",
     ]
     return "\n".join(lines)
@@ -512,6 +896,24 @@ def build_parser() -> argparse.ArgumentParser:
         help="Existing ohdyn.compare_service_capacity output directory.",
     )
     parser.add_argument("--out", required=True, help="Output directory for analysis artifacts.")
+    parser.add_argument(
+        "--bootstrap-reps",
+        type=int,
+        default=200,
+        help="Deterministic paired seed-bootstrap resamples per effect.",
+    )
+    parser.add_argument(
+        "--null-reps",
+        type=int,
+        default=100,
+        help="Deterministic label-count-preserving shuffles per run.",
+    )
+    parser.add_argument(
+        "--random-seed",
+        type=int,
+        default=271828,
+        help="Seed for deterministic bootstrap and null-control generation.",
+    )
     return parser
 
 
@@ -522,6 +924,9 @@ def main(argv: list[str] | None = None) -> int:
         run_service_capacity_trajectory_analysis(
             service_capacity_dir=args.service_capacity_dir,
             out_dir=args.out,
+            bootstrap_reps=args.bootstrap_reps,
+            null_reps=args.null_reps,
+            random_seed=args.random_seed,
         )
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))
