@@ -325,6 +325,126 @@ def _run_documented_cli_pair(
     return first, second, first_completed, second_completed
 
 
+def _replay_a0_lobes_from_events(
+    event_rows: list[dict[str, str]],
+    *,
+    ticks: int,
+) -> list[dict[str, int | str]]:
+    rows_by_tick: dict[int, list[dict[str, str]]] = {tick: [] for tick in range(ticks)}
+    for row in event_rows:
+        rows_by_tick[int(row["tick"])].append(row)
+
+    replay_rows: list[dict[str, int | str]] = []
+    previous_label = ""
+    run_id = 0
+    current_run_length = 0
+    queue_depth = 0
+    for tick in range(ticks):
+        queue_depth_start = queue_depth
+        action_counts = Counter(row["action"] for row in rows_by_tick[tick])
+        created = action_counts["create_task"]
+        completed = sum(
+            1
+            for row in rows_by_tick[tick]
+            if row["event_type"] == "task_worked" and row["completed"] == "True"
+        )
+        queue_depth = queue_depth_start + created - completed
+        label = _replayed_baseline_lobe_label(
+            action_counts=action_counts,
+            queue_depth_start=queue_depth_start,
+            queue_depth_end=queue_depth,
+        )
+        transition = _replayed_baseline_lobe_transition(previous_label, label)
+        if previous_label == label:
+            current_run_length += 1
+        else:
+            run_id += 1
+            current_run_length = 1
+        replay_rows.append(
+            {
+                "tick": tick,
+                "queue_depth": queue_depth,
+                "queue_delta_tick": queue_depth - queue_depth_start,
+                "baseline_lobe_label": label,
+                "baseline_lobe_previous_label": previous_label,
+                "baseline_lobe_transition": transition,
+                "baseline_lobe_transition_tick": int(
+                    bool(previous_label) and previous_label != label
+                ),
+                "baseline_lobe_run_id": run_id,
+                "baseline_lobe_current_run_length": current_run_length,
+            }
+        )
+        previous_label = label
+    return replay_rows
+
+
+def _replayed_baseline_lobe_label(
+    *,
+    action_counts: Counter[str],
+    queue_depth_start: int,
+    queue_depth_end: int,
+) -> str:
+    queue_delta = queue_depth_end - queue_depth_start
+    if (
+        queue_depth_end > 0
+        and queue_delta > 0
+        and action_counts["create_task"] >= action_counts["work_task"]
+    ):
+        return "backlog_growth"
+
+    priority = ("work_task", "create_task", "message", "idle")
+    dominant_action = max(
+        priority,
+        key=lambda action: (action_counts[action], -priority.index(action)),
+    )
+    if dominant_action == "work_task":
+        return "execution"
+    if dominant_action == "create_task":
+        return "task_generation"
+    if dominant_action == "message":
+        return "coordination"
+    return "low_activity"
+
+
+def _replayed_baseline_lobe_transition(previous_label: str, current_label: str) -> str:
+    if not previous_label:
+        return "start"
+    if previous_label == current_label:
+        return "stable"
+    return f"{previous_label}->{current_label}"
+
+
+def _replayed_dwell_summary(
+    replay_rows: list[dict[str, int | str]],
+) -> dict[str, dict[str, int | float]]:
+    runs_by_label: dict[str, list[int]] = {label: [] for label in BASELINE_LOBE_LABELS}
+    previous_label = ""
+    current_run_length = 0
+    for row in replay_rows:
+        label = str(row["baseline_lobe_label"])
+        if label == previous_label:
+            current_run_length += 1
+        else:
+            if previous_label:
+                runs_by_label[previous_label].append(current_run_length)
+            previous_label = label
+            current_run_length = 1
+    if previous_label:
+        runs_by_label[previous_label].append(current_run_length)
+
+    return {
+        label: {
+            "runs": len(runs),
+            "total_ticks": sum(runs),
+            "max_run": max(runs),
+            "mean_run": round(sum(runs) / len(runs), 6),
+        }
+        for label, runs in runs_by_label.items()
+        if runs
+    }
+
+
 def test_loads_a0_smoke_config() -> None:
     config = load_config(CONFIG)
 
@@ -689,6 +809,57 @@ def test_a0_cli_reproduces_artifacts_by_seed(tmp_path: Path) -> None:
         assert (first / artifact).read_text() == (second / artifact).read_text()
     assert (first / "metrics.csv").read_text() != (third / "metrics.csv").read_text()
     assert (first / "events.csv").read_text() != (third / "events.csv").read_text()
+
+
+def test_a0_no_manifest_events_replay_lobe_transitions_and_dwell(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a0_no_manifest_replay"
+    _run_documented_cli(NO_MANIFEST_REORDERED_ACTIONS, out_dir, seed=29)
+    _assert_artifacts_match_output_directory(
+        out_dir,
+        _expected_artifacts(NO_MANIFEST_REORDERED_ACTIONS),
+    )
+    assert not (out_dir / "manifest.yaml").exists()
+
+    normalized_config = yaml.safe_load((out_dir / "config.yaml").read_text())
+    with (out_dir / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+    with (out_dir / "metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    replay_rows = _replay_a0_lobes_from_events(
+        event_rows,
+        ticks=int(normalized_config["run"]["ticks"]),
+    )
+    assert len(replay_rows) == len(metric_rows)
+    for replay_row, metric_row in zip(replay_rows, metric_rows, strict=True):
+        for field in (
+            "queue_depth",
+            "queue_delta_tick",
+            "baseline_lobe_label",
+            "baseline_lobe_previous_label",
+            "baseline_lobe_transition",
+            "baseline_lobe_transition_tick",
+            "baseline_lobe_run_id",
+            "baseline_lobe_current_run_length",
+        ):
+            assert str(replay_row[field]) == metric_row[field]
+
+    transition_counts = Counter(
+        str(row["baseline_lobe_transition"])
+        for row in replay_rows
+        if row["baseline_lobe_transition"] not in {"start", "stable"}
+    )
+    for transition, count in sorted(transition_counts.items()):
+        assert f"- {transition}: {count}" in summary
+
+    for label, dwell in _replayed_dwell_summary(replay_rows).items():
+        assert (
+            f"- {label}: runs={dwell['runs']}, total_ticks={dwell['total_ticks']}, "
+            f"max_run={dwell['max_run']}, mean_run={dwell['mean_run']}"
+        ) in summary
 
 
 def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> None:
