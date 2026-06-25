@@ -450,6 +450,22 @@ current probabilistic-transfer RNG-stream confound and continues to treat
 two-hive shuffled as a schema/conservation control rather than a meaningful
 phase-structure null.
 
+The read-only A4 holdout analyzer consumes an existing paired-seed output root
+and emits endpoint/effect tables without running any holdout seeds:
+
+```bash
+python -m ohdyn.analyze_a4_holdout \
+  --holdout-dir runs/a4_two_hive_holdout_seed100_129 \
+  --out-dir runs/a4_two_hive_holdout_seed100_129_analysis \
+  --seeds 100..129
+```
+
+The analyzer writes `a4_holdout_hive_endpoints.csv`,
+`a4_holdout_cross_hive_endpoints.csv`, `a4_holdout_effects.csv`, and
+`summary.md`. The effect table covers `direct-minus-none`,
+`delayed-minus-none`, `shuffled-minus-none`, and `direct-minus-shuffled`; the
+last contrast keeps the documented two-hive shuffled caveat.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.

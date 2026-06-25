@@ -65,6 +65,7 @@ from ohdyn.analyze_lagged_service_sync import (
     run_lagged_service_sync_analysis,
 )
 from ohdyn.analyze_a4_smoke_contract import run_a4_smoke_contract_preflight
+from ohdyn.analyze_a4_holdout import run_a4_holdout_analysis
 from ohdyn.analyze_exogenous_arrival_controls import (
     EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS,
     EXOGENOUS_CONTROL_METRIC_FIELDS,
@@ -1014,6 +1015,56 @@ def test_a4_holdout_config_bundle_loads_without_running_holdout_seeds() -> None:
         assert config.coupling.transfer_probability == probability
         assert config.coupling.delay_ticks == delay_ticks
         assert config.coupling.shuffle_seed_offset == 2000
+
+
+def test_a4_holdout_analyzer_consumes_existing_paired_seed_artifacts(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "a4_existing_artifacts"
+    configs_by_mode = {
+        "none": A4_TWO_HIVE_NONE,
+        "direct": A4_TWO_HIVE_DIRECT,
+        "delayed": A4_TWO_HIVE_DELAYED,
+        "shuffled": A4_TWO_HIVE_SHUFFLED,
+    }
+    seeds = (31, 32)
+    for seed in seeds:
+        for mode, config_path in configs_by_mode.items():
+            run_experiment(config_path, seed, source / f"{mode}_seed{seed}")
+    out_dir = tmp_path / "a4_analysis"
+
+    result = run_a4_holdout_analysis(holdout_dir=source, out_dir=out_dir, seeds=seeds)
+
+    assert result["seed_count"] == 2
+    assert result["run_count"] == 8
+    assert result["hive_endpoint_rows"] == 16
+    assert result["cross_endpoint_rows"] == 8
+    assert (out_dir / "a4_holdout_hive_endpoints.csv").exists()
+    assert (out_dir / "a4_holdout_cross_hive_endpoints.csv").exists()
+    assert (out_dir / "a4_holdout_effects.csv").exists()
+    assert (out_dir / "summary.md").exists()
+
+    with (out_dir / "a4_holdout_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    transfer_effect = next(
+        row
+        for row in effect_rows
+        if row["comparison"] == "direct_minus_none"
+        and row["endpoint"] == "transfer_attempts_total"
+    )
+    assert transfer_effect["paired_seed_count"] == "2"
+    assert float(transfer_effect["mean_delta"]) > 0.0
+    summary = (out_dir / "summary.md").read_text()
+    assert "# A4 Holdout Paired-Seed Analysis" in summary
+    assert "- This analyzer is read-only and does not run A4 holdout seeds." in summary
+
+
+def test_a4_holdout_analyzer_refuses_missing_artifacts(tmp_path: Path) -> None:
+    source = tmp_path / "a4_incomplete"
+    source.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="missing artifacts"):
+        run_a4_holdout_analysis(holdout_dir=source, out_dir=tmp_path / "out", seeds=(31,))
 
 
 def test_loads_a0_default_outputs_fixture() -> None:

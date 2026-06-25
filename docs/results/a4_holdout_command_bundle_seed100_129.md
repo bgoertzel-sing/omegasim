@@ -87,6 +87,22 @@ load-normalized backlog, queued-task age, work-event opportunity, action mix,
 transfer counts and direction, fixed lag `0`, fixed lag `2` for delayed, and
 cross-hive divergence/correlation fields with deterministic `NA` handling.
 
+The read-only analyzer command is:
+
+```bash
+python -m ohdyn.analyze_a4_holdout \
+  --holdout-dir runs/a4_two_hive_holdout_seed100_129 \
+  --out-dir runs/a4_two_hive_holdout_seed100_129_analysis \
+  --seeds 100..129
+```
+
+It writes:
+
+- `a4_holdout_hive_endpoints.csv`;
+- `a4_holdout_cross_hive_endpoints.csv`;
+- `a4_holdout_effects.csv`;
+- `summary.md`.
+
 ## Boundary
 
 This bundle is ready for review, not execution. A4 holdout seeds remain blocked
