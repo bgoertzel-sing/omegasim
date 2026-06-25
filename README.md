@@ -436,6 +436,20 @@ It passes all four smoke modes and preserves the two-hive shuffled limitation:
 the shuffled fixture is a schema/conservation control, not a meaningful
 phase-structure null.
 
+The exact seed `100..129` A4 holdout command/config bundle has been drafted for
+review without running holdout seeds:
+
+```text
+docs/results/a4_holdout_command_bundle_seed100_129.md
+```
+
+The bundle introduces reviewed-only holdout configs for `none`, `direct`,
+`delayed`, and `shuffled`, all using the same two-hive contract with 100 ticks.
+It keeps `transfer_probability: 1.0` for the first coupled holdout to avoid the
+current probabilistic-transfer RNG-stream confound and continues to treat
+two-hive shuffled as a schema/conservation control rather than a meaningful
+phase-structure null.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.

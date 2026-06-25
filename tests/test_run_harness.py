@@ -155,6 +155,10 @@ A4_TWO_HIVE_NONE = Path("configs/a4_two_hive_none_smoke.yaml")
 A4_TWO_HIVE_DIRECT = Path("configs/a4_two_hive_direct_smoke.yaml")
 A4_TWO_HIVE_DELAYED = Path("configs/a4_two_hive_delayed_smoke.yaml")
 A4_TWO_HIVE_SHUFFLED = Path("configs/a4_two_hive_shuffled_smoke.yaml")
+A4_TWO_HIVE_NONE_HOLDOUT = Path("configs/a4_two_hive_none_holdout.yaml")
+A4_TWO_HIVE_DIRECT_HOLDOUT = Path("configs/a4_two_hive_direct_holdout.yaml")
+A4_TWO_HIVE_DELAYED_HOLDOUT = Path("configs/a4_two_hive_delayed_holdout.yaml")
+A4_TWO_HIVE_SHUFFLED_HOLDOUT = Path("configs/a4_two_hive_shuffled_holdout.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -227,6 +231,34 @@ OUTPUT_FIXTURE_ARTIFACTS = {
         "coupling_events.csv",
     ],
     A4_TWO_HIVE_SHUFFLED: [
+        *A0_FULL_ARTIFACTS,
+        "hive_metrics.csv",
+        "cross_hive_metrics.csv",
+        "hive_events.csv",
+        "coupling_events.csv",
+    ],
+    A4_TWO_HIVE_NONE_HOLDOUT: [
+        *A0_FULL_ARTIFACTS,
+        "hive_metrics.csv",
+        "cross_hive_metrics.csv",
+        "hive_events.csv",
+        "coupling_events.csv",
+    ],
+    A4_TWO_HIVE_DIRECT_HOLDOUT: [
+        *A0_FULL_ARTIFACTS,
+        "hive_metrics.csv",
+        "cross_hive_metrics.csv",
+        "hive_events.csv",
+        "coupling_events.csv",
+    ],
+    A4_TWO_HIVE_DELAYED_HOLDOUT: [
+        *A0_FULL_ARTIFACTS,
+        "hive_metrics.csv",
+        "cross_hive_metrics.csv",
+        "hive_events.csv",
+        "coupling_events.csv",
+    ],
+    A4_TWO_HIVE_SHUFFLED_HOLDOUT: [
         *A0_FULL_ARTIFACTS,
         "hive_metrics.csv",
         "cross_hive_metrics.csv",
@@ -956,6 +988,32 @@ def test_a4_smoke_contract_preflight_refuses_existing_report_without_work(
 
     assert out.read_text() == "sentinel"
     assert not work_dir.exists()
+
+
+def test_a4_holdout_config_bundle_loads_without_running_holdout_seeds() -> None:
+    expected = {
+        A4_TWO_HIVE_NONE_HOLDOUT: ("none", 0.0, 0),
+        A4_TWO_HIVE_DIRECT_HOLDOUT: ("direct", 1.0, 0),
+        A4_TWO_HIVE_DELAYED_HOLDOUT: ("delayed", 1.0, 2),
+        A4_TWO_HIVE_SHUFFLED_HOLDOUT: ("shuffled", 1.0, 0),
+    }
+
+    for path, (mode, probability, delay_ticks) in expected.items():
+        config = load_config(path)
+
+        assert config.run.experiment_id == f"a4_two_hive_{mode}_holdout"
+        assert config.run.ticks == 100
+        assert config.model.agent_count == 15
+        assert config.model.actions == ("idle", "message", "create_task", "work_task")
+        assert [hive.hive_id for hive in config.hives] == ["hive_a", "hive_b"]
+        assert [hive.seed_offset for hive in config.hives] == [0, 1000]
+        assert [hive.exogenous_arrival_rate for hive in config.hives] == [1.0, 1.0]
+        assert [hive.work_service_capacity for hive in config.hives] == [1.0, 1.0]
+        assert config.coupling is not None
+        assert config.coupling.mode == mode
+        assert config.coupling.transfer_probability == probability
+        assert config.coupling.delay_ticks == delay_ticks
+        assert config.coupling.shuffle_seed_offset == 2000
 
 
 def test_loads_a0_default_outputs_fixture() -> None:

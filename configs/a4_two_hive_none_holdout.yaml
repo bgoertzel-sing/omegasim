@@ -1,0 +1,33 @@
+run:
+  experiment_id: a4_two_hive_none_holdout
+  ticks: 100
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+hives:
+  - hive_id: hive_a
+    seed_offset: 0
+    exogenous_arrival_rate: 1.0
+    work_service_capacity: 1.0
+  - hive_id: hive_b
+    seed_offset: 1000
+    exogenous_arrival_rate: 1.0
+    work_service_capacity: 1.0
+
+coupling:
+  mode: none
+  transfer_probability: 0.0
+  delay_ticks: 0
+  shuffle_seed_offset: 2000
