@@ -13,8 +13,10 @@ The latest external strategic review at
 
 Accepted recommendation: stop making closure-only A2/A3 commits and, if
 OmegaSim remains active, draft a preregistered multi-hive queue-flow/service
-study plan before any simulator changes. This preregistration follows that
-recommendation.
+study plan before any simulator changes. The review also recommends making the
+A4 primary estimands, coupling contrasts, lag handling, null-control semantics,
+RNG provenance, and queue-flow conservation identities explicit before any
+implementation. This preregistration follows that recommendation.
 
 No recommendation is rejected. A temporal-shift or block-shuffle null for A3
 lagged synchronization remains scientifically sensible, but is deferred because
@@ -84,6 +86,14 @@ Primary coupling axis:
 - delayed coupling control;
 - shuffled coupling control.
 
+Primary contrasts, fixed before any holdout:
+
+- direct minus no-coupling;
+- delayed minus no-coupling;
+- shuffled minus no-coupling;
+- direct minus shuffled as the coupling-structure contrast when transfer
+  volumes and timing marginals are comparable.
+
 Primary demand/service axis:
 
 - fixed exogenous-load controls for each hive;
@@ -96,6 +106,10 @@ Initial hive count:
 - add a third hive only after the two-hive artifact contract is stable.
 
 ## Primary Endpoints
+
+The primary estimands are the paired-seed condition effects on the fields below.
+No best-lag endpoint is primary; lagged analyses must report fixed lag `0` and
+the preregistered causal lag(s) implied by the configured coupling delay.
 
 Per hive:
 
@@ -123,6 +137,55 @@ Secondary diagnostics:
 - lobe diagnostics must not be used as mechanism evidence unless a new
   non-queue, non-action-derived observable and stronger null model are
   preregistered first.
+
+## Coupling-Control Semantics
+
+The first implementation must keep coupling controls interpretable as
+queue-flow/service controls rather than as accidental load changes.
+
+- `none`: no transfer attempts are completed and transfer probability must be
+  `0.0`.
+- `direct`: eligible transfer decisions arrive in the target hive on the same
+  tick, after the source-hive local event that emitted the task and before the
+  next tick's local scheduling.
+- `delayed`: eligible transfer decisions preserve source hive, target hive,
+  task payload, and task provenance, but arrive exactly `delay_ticks` after the
+  decision tick. The configured `delay_ticks` is the preregistered causal lag to
+  report alongside lag `0`.
+- `shuffled`: eligible transfer decisions preserve the same deterministic
+  transfer-opportunity schedule as the paired direct run when feasible, but
+  shuffle target assignment or delivery order using the coupling RNG stream.
+  The first implementation must document which marginals are preserved. At
+  minimum it must preserve seed, coupling mode, tick count, transfer probability,
+  source-hive opportunity counts, and total transfer-attempt counts for a
+  paired seed.
+
+If transfer-volume matching is not implemented for a control, the artifact and
+summary must name that limitation, and any affected result must be treated as a
+load-volume contrast rather than a phase-structure contrast.
+
+## Queue-Flow Conservation
+
+The multi-hive artifact contract must include deterministic conservation fields
+and tests so accounting identities are separated from scientific endpoints.
+
+Per hive, each tick must reconcile:
+
+```text
+queue_delta =
+  local_agent_created
+  + exogenous_arrivals
+  + inbound_transfers
+  - completed_tasks
+  - outbound_transfers
+  - explicit_drops
+```
+
+`explicit_drops` is zero unless a future preregistration adds a drop mechanism.
+Aggregate multi-hive queue balance must also reconcile total local creation,
+exogenous arrivals, completions, and transfer conservation. Same-tick
+queue-balance correlations are artifact diagnostics only; they are not
+scientific synchronization endpoints.
 
 ## Decision Rules
 
@@ -218,8 +281,10 @@ Keep existing single-hive artifact schemas byte-compatible for configs without
 Derive deterministic random streams from the CLI seed without sharing mutable
 RNG state across hives:
 
-- hive stream seed: `cli_seed + hive.seed_offset`;
-- coupling stream seed: `cli_seed + coupling.shuffle_seed_offset`;
+- hive stream seed: `cli_seed + hive.seed_offset`, with unique offsets required
+  across hives;
+- coupling stream seed: `cli_seed + coupling.shuffle_seed_offset`, with the
+  coupling offset distinct from all hive offsets;
 - delayed-transfer ordering: stable sort by `arrival_tick`, then
   `source_hive_id`, `target_hive_id`, `task_id`;
 - task IDs: include `hive_id`, tick, agent ID or `exogenous`, and a per-hive
@@ -228,6 +293,11 @@ RNG state across hives:
 The same config, seed, and output flags must produce byte-identical artifacts
 across output directories. Changing only output directory paths must not enter
 any artifact content.
+
+Paired-seed comparisons should reuse the same per-hive streams across coupling
+modes and reserve the coupling stream only for transfer decisions or shuffled
+controls. A change in coupling mode must not silently reseed hive-local task
+creation, exogenous-arrival, or work-selection streams.
 
 ### Smoke-Test Expectations
 
@@ -242,6 +312,8 @@ The first multi-hive implementation must add tests proving:
   coupling event schemas;
 - invalid duplicate hive IDs and invalid coupling settings fail before partial
   output files are created.
+- per-hive and aggregate conservation identities reconcile on every tick for
+  `none`, `direct`, `delayed`, and `shuffled` smoke fixtures.
 
 ### Holdout Boundary
 
