@@ -219,6 +219,14 @@ def _aggregate_row(
     rate = 0.0
     if cfg.exogenous_arrivals is not None and cfg.exogenous_arrivals.enabled:
         rate = cfg.exogenous_arrivals.rate_per_tick
+    agent_created_values = [
+        _agent_tasks_created_total(row)
+        for row in last_rows
+    ]
+    exogenous_created_values = [
+        float(row.get("exogenous_tasks_created_total", 0.0))
+        for row in last_rows
+    ]
     return {
         "condition": condition,
         "config": str(config_path),
@@ -227,8 +235,8 @@ def _aggregate_row(
         "work_service_capacity": cfg.model.work_service_capacity,
         "seed_count": len(results),
         "run_count": len(results),
-        "agent_tasks_created_mean": _mean(last_rows, "agent_tasks_created_total"),
-        "exogenous_tasks_created_mean": _mean(last_rows, "exogenous_tasks_created_total"),
+        "agent_tasks_created_mean": _mean_values(agent_created_values),
+        "exogenous_tasks_created_mean": _mean_values(exogenous_created_values),
         "tasks_created_mean": _mean_values(created_values),
         "tasks_completed_mean": _mean_values(completed_values),
         "work_events_mean": _mean_values([float(totals["work_task"]) for totals in action_totals]),
@@ -286,6 +294,12 @@ def _action_totals(result: SimulationResult) -> dict[str, int]:
         totals["message"] += int(row["messages_sent_tick"])
         totals["idle"] += int(row["idle_tick"])
     return totals
+
+
+def _agent_tasks_created_total(row: dict[str, Any]) -> float:
+    if "agent_tasks_created_total" in row:
+        return float(row["agent_tasks_created_total"])
+    return float(row["tasks_created_total"])
 
 
 def _lobe_summary(result: SimulationResult, label_source: str) -> dict[str, float]:

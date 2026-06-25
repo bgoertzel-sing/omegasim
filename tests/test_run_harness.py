@@ -934,6 +934,9 @@ def test_a2_exogenous_arrival_comparison_runner_writes_scaffold_summary(
 
     assert len(csv_rows) == 4
     assert len(effect_rows) == 3
+    assert float(csv_rows[0]["agent_tasks_created_mean"]) == float(
+        csv_rows[0]["tasks_created_mean"]
+    )
     assert float(csv_rows[0]["exogenous_tasks_created_mean"]) == 0.0
     assert float(csv_rows[-1]["exogenous_tasks_created_mean"]) > 0.0
     assert effect_rows[-1]["queue_blind_transition_entropy_mean_delta"]
