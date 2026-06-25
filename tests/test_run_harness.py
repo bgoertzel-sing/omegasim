@@ -672,6 +672,25 @@ def test_run_writes_required_artifacts(tmp_path: Path) -> None:
     assert manifest["model"]["bus_edges"] == 15
 
 
+def test_a0_cli_reproduces_artifacts_by_seed(tmp_path: Path) -> None:
+    first, second, _, _ = _run_documented_cli_pair(
+        CONFIG,
+        tmp_path,
+        first_seed=23,
+        second_seed=23,
+        first_name="a0_first",
+        second_name="a0_second",
+    )
+    third = tmp_path / "a0_third"
+    _run_documented_cli(CONFIG, third, seed=24)
+    _assert_artifacts_match_output_directory(third, _expected_artifacts(CONFIG))
+
+    for artifact in _expected_artifacts(CONFIG):
+        assert (first / artifact).read_text() == (second / artifact).read_text()
+    assert (first / "metrics.csv").read_text() != (third / "metrics.csv").read_text()
+    assert (first / "events.csv").read_text() != (third / "events.csv").read_text()
+
+
 def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> None:
     out_dir = tmp_path / "a2_attention_seed1"
 
