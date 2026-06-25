@@ -227,6 +227,14 @@ class Task:
 
 
 @dataclass(frozen=True)
+class _PendingTransfer:
+    arrival_tick: int
+    source_hive_id: str
+    target_hive_id: str
+    task: Task
+
+
+@dataclass(frozen=True)
 class SimulationResult:
     config: OmegaConfig
     seed: int
@@ -545,10 +553,11 @@ def _simulate_multi_hive(config: OmegaConfig, seed: int) -> SimulationResult:
     assert config.coupling is not None
     if config.coupling.mode == "none":
         return _simulate_multi_hive_none(config, seed)
-    if config.coupling.mode == "direct":
-        return _simulate_multi_hive_direct(config, seed)
+    if config.coupling.mode in {"direct", "delayed"}:
+        return _simulate_multi_hive_coupled(config, seed)
     raise ValueError(
-        "A4 multi-hive simulation currently supports coupling.mode 'none' and 'direct'."
+        "A4 multi-hive simulation currently supports coupling.mode 'none', "
+        "'direct', and 'delayed'."
     )
 
 
@@ -583,15 +592,21 @@ def _simulate_multi_hive_none(config: OmegaConfig, seed: int) -> SimulationResul
     )
 
 
-def _simulate_multi_hive_direct(config: OmegaConfig, seed: int) -> SimulationResult:
+def _simulate_multi_hive_coupled(config: OmegaConfig, seed: int) -> SimulationResult:
     assert config.coupling is not None
     coupling_rng = np.random.default_rng(seed + config.coupling.shuffle_seed_offset)
     runtimes = tuple(_make_hive_runtime(config, hive, seed) for hive in config.hives)
     coupling_events: list[dict[str, Any]] = []
+    pending_transfers: list[_PendingTransfer] = []
 
     for tick in range(config.run.ticks):
         for runtime in runtimes:
             _begin_hive_tick(runtime)
+        _deliver_pending_transfers(
+            pending_transfers=pending_transfers,
+            runtimes=runtimes,
+            tick=tick,
+        )
 
         for source_index, runtime in enumerate(runtimes):
             _advance_hive_runtime_tick(
@@ -601,6 +616,9 @@ def _simulate_multi_hive_direct(config: OmegaConfig, seed: int) -> SimulationRes
                 tick=tick,
                 coupling_rng=coupling_rng,
                 coupling_events=coupling_events,
+                pending_transfers=pending_transfers,
+                coupling_mode=config.coupling.mode,
+                delay_ticks=config.coupling.delay_ticks,
             )
 
         for runtime in runtimes:
@@ -681,6 +699,9 @@ def _advance_hive_runtime_tick(
     tick: int,
     coupling_rng: np.random.Generator,
     coupling_events: list[dict[str, Any]],
+    pending_transfers: list[_PendingTransfer],
+    coupling_mode: str,
+    delay_ticks: int,
 ) -> None:
     config = runtime.config
     if _exogenous_arrivals_enabled(config):
@@ -718,6 +739,9 @@ def _advance_hive_runtime_tick(
                 tick=tick,
                 coupling_rng=coupling_rng,
                 coupling_events=coupling_events,
+                pending_transfers=pending_transfers,
+                coupling_mode=coupling_mode,
+                delay_ticks=delay_ticks,
             )
 
     assert runtime.action_counts_tick is not None
@@ -774,6 +798,9 @@ def _advance_hive_runtime_tick(
                 tick=tick,
                 coupling_rng=coupling_rng,
                 coupling_events=coupling_events,
+                pending_transfers=pending_transfers,
+                coupling_mode=coupling_mode,
+                delay_ticks=delay_ticks,
             )
         elif action == "work_task":
             selected_task_index: int | None = None
@@ -864,9 +891,12 @@ def _route_emitted_task(
     tick: int,
     coupling_rng: np.random.Generator,
     coupling_events: list[dict[str, Any]],
+    pending_transfers: list[_PendingTransfer],
+    coupling_mode: str,
+    delay_ticks: int,
 ) -> None:
-    # The local runtime config intentionally strips coupling; the mode is direct
-    # whenever this helper is used. The source tuple order defines the target.
+    # The local runtime config intentionally strips coupling; the shared parent
+    # config controls the active mode through runtime transfer settings.
     if len(runtimes) <= 1:
         runtime.task_queue.append(task)
         return
@@ -876,16 +906,17 @@ def _route_emitted_task(
     runtime.transfer_attempts_tick += 1
     transfer_decision = bool(coupling_rng.random() < runtime.transfer_probability)
     global_task_id = _qualified_task_id(runtime.hive_id, task.task_id)
+    arrival_tick = tick + delay_ticks
     coupling_events.append(
         {
             "tick": tick,
             "source_hive_id": runtime.hive_id,
             "target_hive_id": target.hive_id,
             "task_id": global_task_id,
-            "coupling_mode": "direct",
-            "delay_ticks": 0,
+            "coupling_mode": coupling_mode,
+            "delay_ticks": delay_ticks,
             "transfer_decision": transfer_decision,
-            "arrival_tick": tick if transfer_decision else "",
+            "arrival_tick": arrival_tick if transfer_decision else "",
         }
     )
     if not transfer_decision:
@@ -894,8 +925,52 @@ def _route_emitted_task(
 
     runtime.outbound_transfers_tick += 1
     runtime.transfers_completed_tick += 1
-    target.inbound_transfers_tick += 1
-    target.task_queue.append(replace(task, task_id=global_task_id))
+    transferred_task = replace(task, task_id=global_task_id)
+    if delay_ticks == 0:
+        target.inbound_transfers_tick += 1
+        target.task_queue.append(transferred_task)
+        return
+
+    pending_transfers.append(
+        _PendingTransfer(
+            arrival_tick=arrival_tick,
+            source_hive_id=runtime.hive_id,
+            target_hive_id=target.hive_id,
+            task=transferred_task,
+        )
+    )
+
+
+def _deliver_pending_transfers(
+    *,
+    pending_transfers: list[_PendingTransfer],
+    runtimes: tuple[_HiveRuntime, ...],
+    tick: int,
+) -> None:
+    if not pending_transfers:
+        return
+
+    runtime_by_id = {runtime.hive_id: runtime for runtime in runtimes}
+    arrivals = sorted(
+        (transfer for transfer in pending_transfers if transfer.arrival_tick == tick),
+        key=lambda transfer: (
+            transfer.arrival_tick,
+            transfer.source_hive_id,
+            transfer.target_hive_id,
+            transfer.task.task_id,
+        ),
+    )
+    if not arrivals:
+        return
+
+    remaining = [
+        transfer for transfer in pending_transfers if transfer.arrival_tick != tick
+    ]
+    pending_transfers[:] = remaining
+    for transfer in arrivals:
+        target = runtime_by_id[transfer.target_hive_id]
+        target.inbound_transfers_tick += 1
+        target.task_queue.append(transfer.task)
 
 
 def _finish_hive_tick(runtime: _HiveRuntime, tick: int) -> None:

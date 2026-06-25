@@ -152,6 +152,7 @@ A2_EXOGENOUS_ARRIVALS_MEDIUM = Path("configs/a2_exogenous_arrivals_medium.yaml")
 A2_EXOGENOUS_ARRIVALS_HIGH = Path("configs/a2_exogenous_arrivals_high.yaml")
 A4_TWO_HIVE_NONE = Path("configs/a4_two_hive_none_smoke.yaml")
 A4_TWO_HIVE_DIRECT = Path("configs/a4_two_hive_direct_smoke.yaml")
+A4_TWO_HIVE_DELAYED = Path("configs/a4_two_hive_delayed_smoke.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -210,6 +211,13 @@ OUTPUT_FIXTURE_ARTIFACTS = {
         "coupling_events.csv",
     ],
     A4_TWO_HIVE_DIRECT: [
+        *A0_FULL_ARTIFACTS,
+        "hive_metrics.csv",
+        "cross_hive_metrics.csv",
+        "hive_events.csv",
+        "coupling_events.csv",
+    ],
+    A4_TWO_HIVE_DELAYED: [
         *A0_FULL_ARTIFACTS,
         "hive_metrics.csv",
         "cross_hive_metrics.csv",
@@ -770,6 +778,77 @@ def test_a4_two_hive_direct_records_coupling_and_conserves_queue_flow(
         assert int(row["aggregate_inbound_transfers_tick"]) == int(
             row["aggregate_outbound_transfers_tick"]
         )
+        assert row["aggregate_queue_balance_residual_tick"] == "0"
+
+
+def test_a4_two_hive_delayed_records_fixed_lag_arrivals_and_conserves_queue_flow(
+    tmp_path: Path,
+) -> None:
+    first, second, _, _ = _run_documented_cli_pair(
+        A4_TWO_HIVE_DELAYED,
+        tmp_path,
+        first_seed=31,
+        second_seed=31,
+        first_name="a4_delayed_first",
+        second_name="a4_delayed_second",
+    )
+    third = tmp_path / "a4_delayed_third"
+    _run_documented_cli(A4_TWO_HIVE_DELAYED, third, seed=32)
+
+    for artifact in _expected_artifacts(A4_TWO_HIVE_DELAYED):
+        assert (first / artifact).read_text() == (second / artifact).read_text()
+    assert (first / "coupling_events.csv").read_text() != (
+        third / "coupling_events.csv"
+    ).read_text()
+
+    manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    summary = (first / "summary.md").read_text()
+    with (first / "hive_metrics.csv").open() as handle:
+        hive_rows = list(csv.DictReader(handle))
+    with (first / "cross_hive_metrics.csv").open() as handle:
+        cross_rows = list(csv.DictReader(handle))
+    with (first / "coupling_events.csv").open() as handle:
+        coupling_events = list(csv.DictReader(handle))
+    with (first / "hive_events.csv").open() as handle:
+        hive_events = list(csv.DictReader(handle))
+
+    assert manifest["coupling_mode"] == "delayed"
+    assert manifest["model"]["multi_hive"]["coupling_mode"] == "delayed"
+    assert coupling_events
+    assert "- coupling mode: delayed" in summary
+    assert "- delay ticks: 2" in summary
+    assert {row["coupling_mode"] for row in coupling_events} == {"delayed"}
+    assert {row["delay_ticks"] for row in coupling_events} == {"2"}
+    assert {row["transfer_decision"] for row in coupling_events} == {"True"}
+    assert all(int(row["arrival_tick"]) == int(row["tick"]) + 2 for row in coupling_events)
+    assert any(
+        row["event_type"] == "task_worked" and ":" in row["task_id"]
+        for row in hive_events
+    )
+
+    inbound_by_tick = Counter(
+        int(row["arrival_tick"])
+        for row in coupling_events
+        if int(row["arrival_tick"]) < len(cross_rows)
+    )
+    outbound_by_tick = Counter(int(row["tick"]) for row in coupling_events)
+    assert any(tick + 2 in inbound_by_tick for tick in outbound_by_tick)
+
+    for row in hive_rows:
+        created = int(row["tasks_created_tick"])
+        inbound = int(row["inbound_transfers_tick"])
+        completed = int(row["tasks_completed_tick"])
+        outbound = int(row["outbound_transfers_tick"])
+        drops = int(row["explicit_drops_tick"])
+        delta = int(row["queue_delta_tick"])
+        assert int(row["queue_balance_residual_tick"]) == 0
+        assert delta == created + inbound - completed - outbound - drops
+
+    for row in cross_rows:
+        tick = int(row["tick"])
+        assert row["coupling_mode"] == "delayed"
+        assert int(row["transfer_attempts_tick"]) == outbound_by_tick[tick]
+        assert int(row["aggregate_inbound_transfers_tick"]) == inbound_by_tick[tick]
         assert row["aggregate_queue_balance_residual_tick"] == "0"
 
 

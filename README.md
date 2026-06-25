@@ -391,19 +391,21 @@ docs/a4_multihive_queue_flow_service_preregistration.md
 External review has approved only the bounded A4 smoke-contract implementation,
 not A4 holdout runs. The checked-in A4 smoke fixtures keep multi-hive behavior
 opt-in through YAML. Absence of `hives` preserves the single-hive A0/A1 path.
-The inert two-hive control and direct same-tick transfer smoke can be run with:
+The inert two-hive control plus direct and delayed transfer smokes can be run with:
 
 ```bash
 python -m ohdyn.run --config configs/a4_two_hive_none_smoke.yaml --seed 1 --out runs/a4_two_hive_none_seed1
 python -m ohdyn.run --config configs/a4_two_hive_direct_smoke.yaml --seed 1 --out runs/a4_two_hive_direct_seed1
+python -m ohdyn.run --config configs/a4_two_hive_delayed_smoke.yaml --seed 1 --out runs/a4_two_hive_delayed_seed1
 ```
 
 The direct smoke records deterministic coupling decisions in
-`coupling_events.csv`, emits per-hive transfer accounting fields in
-`hive_metrics.csv`, and checks aggregate transfer conservation through
-`cross_hive_metrics.csv`. Delayed and shuffled controls, A4 analysis scripts,
-and scientific holdout seeds remain deferred until the smoke contract is
-stable.
+`coupling_events.csv`; the delayed smoke preserves task provenance but delivers
+accepted transfers exactly two ticks after the decision tick. Both coupled
+fixtures emit per-hive transfer accounting fields in `hive_metrics.csv` and
+check aggregate transfer conservation through `cross_hive_metrics.csv`.
+Shuffled controls, A4 analysis scripts, and scientific holdout seeds remain
+deferred until the smoke contract is stable.
 
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
