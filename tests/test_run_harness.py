@@ -454,6 +454,175 @@ def test_loads_a0_smoke_config() -> None:
     assert config.model.task_creation_pressure == 1.0
     assert config.model.work_service_capacity == 1.0
     assert set(config.model.actions) == {"idle", "message", "create_task", "work_task"}
+    assert config.hives == ()
+    assert config.coupling is None
+
+
+def _write_config(path: Path, overrides: dict[str, object]) -> Path:
+    data = {
+        "run": {"experiment_id": "a4_config_validation", "ticks": 3},
+        "model": {
+            "agent_count": 15,
+            "actions": ["idle", "message", "create_task", "work_task"],
+        },
+        "outputs": {
+            "write_manifest": True,
+            "write_metrics": True,
+            "write_events": True,
+            "write_summary": True,
+        },
+    }
+    data.update(overrides)
+    path.write_text(yaml.safe_dump(data, sort_keys=False))
+    return path
+
+
+def test_loads_opt_in_two_hive_coupling_config(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path / "a4_two_hive_none.yaml",
+        {
+            "hives": [
+                {
+                    "hive_id": "hive_a",
+                    "seed_offset": 0,
+                    "exogenous_arrival_rate": 1.0,
+                    "work_service_capacity": 1.0,
+                },
+                {
+                    "hive_id": "hive_b",
+                    "seed_offset": 1000,
+                    "exogenous_arrival_rate": 1.5,
+                    "work_service_capacity": 0.7,
+                },
+            ],
+            "coupling": {
+                "mode": "none",
+                "transfer_probability": 0.0,
+                "delay_ticks": 0,
+                "shuffle_seed_offset": 2000,
+            },
+        },
+    )
+
+    config = load_config(config_path)
+
+    assert [hive.hive_id for hive in config.hives] == ["hive_a", "hive_b"]
+    assert [hive.seed_offset for hive in config.hives] == [0, 1000]
+    assert config.hives[1].exogenous_arrival_rate == 1.5
+    assert config.hives[1].work_service_capacity == 0.7
+    assert config.coupling is not None
+    assert config.coupling.mode == "none"
+    assert config.coupling.transfer_probability == 0.0
+    assert config.coupling.delay_ticks == 0
+    assert config.coupling.shuffle_seed_offset == 2000
+
+
+@pytest.mark.parametrize(
+    ("overrides", "error"),
+    [
+        (
+            {
+                "hives": [
+                    {"hive_id": "hive_a", "seed_offset": 0},
+                    {"hive_id": "hive_a", "seed_offset": 1000},
+                ]
+            },
+            "duplicate hive_id",
+        ),
+        (
+            {"hives": [{"hive_id": " ", "seed_offset": 0}]},
+            "non-empty string",
+        ),
+        (
+            {"hives": [{"hive_id": "hive_a", "seed_offset": -1}]},
+            "non-negative integer",
+        ),
+        (
+            {
+                "hives": [{"hive_id": "hive_a", "seed_offset": 0}],
+                "coupling": {"mode": "mystery"},
+            },
+            "must be one of",
+        ),
+        (
+            {
+                "hives": [{"hive_id": "hive_a", "seed_offset": 0}],
+                "coupling": {"mode": "none", "transfer_probability": 0.1},
+            },
+            "requires transfer_probability 0.0",
+        ),
+        (
+            {
+                "hives": [{"hive_id": "hive_a", "seed_offset": 0}],
+                "coupling": {"mode": "delayed", "delay_ticks": 0},
+            },
+            "requires delay_ticks > 0",
+        ),
+        (
+            {
+                "hives": [{"hive_id": "hive_a", "seed_offset": 0}],
+                "coupling": {"mode": "direct", "transfer_probability": 1.1},
+            },
+            "between 0.0 and 1.0",
+        ),
+        (
+            {
+                "hives": [{"hive_id": "hive_a", "seed_offset": 0}],
+                "coupling": {"mode": "direct", "shuffle_seed_offset": 0},
+            },
+            "distinct from hive seed_offset",
+        ),
+        (
+            {"coupling": {"mode": "none"}},
+            "requires opt-in 'hives'",
+        ),
+    ],
+)
+def test_invalid_a4_hive_and_coupling_configs_fail(
+    tmp_path: Path,
+    overrides: dict[str, object],
+    error: str,
+) -> None:
+    config_path = _write_config(tmp_path / "invalid_a4.yaml", overrides)
+
+    with pytest.raises(ValueError, match=error):
+        load_config(config_path)
+
+
+def test_documented_cli_rejects_invalid_a4_config_before_writing_artifacts(
+    tmp_path: Path,
+) -> None:
+    config_path = _write_config(
+        tmp_path / "invalid_a4.yaml",
+        {
+            "hives": [
+                {"hive_id": "hive_a", "seed_offset": 0},
+                {"hive_id": "hive_a", "seed_offset": 1000},
+            ],
+        },
+    )
+    out_dir = tmp_path / "out"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.run",
+            "--config",
+            str(config_path),
+            "--seed",
+            "1",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode != 0
+    assert "duplicate hive_id" in completed.stderr
+    assert not out_dir.exists()
 
 
 def test_loads_a0_default_outputs_fixture() -> None:

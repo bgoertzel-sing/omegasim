@@ -21,6 +21,13 @@ ATTENTION_SELECTION_STRATEGIES = (
     "random_available",
 )
 
+COUPLING_MODES = (
+    "none",
+    "direct",
+    "delayed",
+    "shuffled",
+)
+
 
 @dataclass(frozen=True)
 class RunConfig:
@@ -76,12 +83,30 @@ class ExogenousArrivalsConfig:
 
 
 @dataclass(frozen=True)
+class HiveConfig:
+    hive_id: str
+    seed_offset: int
+    exogenous_arrival_rate: float = 0.0
+    work_service_capacity: float = 1.0
+
+
+@dataclass(frozen=True)
+class CouplingConfig:
+    mode: str = "none"
+    transfer_probability: float = 0.0
+    delay_ticks: int = 0
+    shuffle_seed_offset: int = 2000
+
+
+@dataclass(frozen=True)
 class OmegaConfig:
     run: RunConfig
     model: ModelConfig
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
     attention_policy: AttentionPolicyConfig | None = None
     exogenous_arrivals: ExogenousArrivalsConfig | None = None
+    hives: tuple[HiveConfig, ...] = ()
+    coupling: CouplingConfig | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -96,6 +121,9 @@ class OmegaConfig:
                 class_name: arrivals.pop(class_name)
                 for class_name in ATTENTION_CLASSES
             }
+        if not self.hives:
+            data.pop("hives")
+            data.pop("coupling")
         return data
 
 
@@ -116,6 +144,8 @@ def load_config(path: str | Path) -> OmegaConfig:
     outputs = _expect_mapping(outputs, "outputs")
     attention_policy = _optional_attention_policy(raw.get("attention_policy"))
     exogenous_arrivals = _optional_exogenous_arrivals(raw.get("exogenous_arrivals"))
+    hives = _optional_hives(raw.get("hives"))
+    coupling = _optional_coupling(raw.get("coupling"), hives)
 
     actions = tuple(str(action) for action in model.get("actions", ()))
     cfg = OmegaConfig(
@@ -143,8 +173,11 @@ def load_config(path: str | Path) -> OmegaConfig:
         ),
         attention_policy=attention_policy,
         exogenous_arrivals=exogenous_arrivals,
+        hives=hives,
+        coupling=coupling,
     )
     _validate_actions(cfg.model.actions)
+    _validate_hive_seed_streams(cfg.hives, cfg.coupling)
     return cfg
 
 
@@ -163,6 +196,12 @@ def _nonempty_str(value: Any, name: str) -> str:
 def _positive_int(value: Any, name: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise ValueError(f"Config value {name!r} must be a positive integer.")
+    return value
+
+
+def _nonnegative_int(value: Any, name: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ValueError(f"Config value {name!r} must be a non-negative integer.")
     return value
 
 
@@ -261,6 +300,87 @@ def _optional_exogenous_arrivals(value: Any) -> ExogenousArrivalsConfig | None:
     )
 
 
+def _optional_hives(value: Any) -> tuple[HiveConfig, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise ValueError("Config section 'hives' must be a list.")
+    if not value:
+        raise ValueError("Config section 'hives' must contain at least one hive.")
+
+    hives = []
+    seen_ids: set[str] = set()
+    seen_offsets: set[int] = set()
+    for index, raw_hive in enumerate(value):
+        section = f"hives[{index}]"
+        hive = _expect_mapping(raw_hive, section)
+        supported_keys = {
+            "hive_id",
+            "seed_offset",
+            "exogenous_arrival_rate",
+            "work_service_capacity",
+        }
+        unknown = set(hive) - supported_keys
+        if unknown:
+            names = ", ".join(sorted(unknown))
+            raise ValueError(f"{section} contains unsupported keys: {names}")
+
+        hive_id = _nonempty_str(hive.get("hive_id"), f"{section}.hive_id")
+        if hive_id in seen_ids:
+            raise ValueError(f"hives contains duplicate hive_id: {hive_id}")
+        seen_ids.add(hive_id)
+
+        seed_offset = _nonnegative_int(hive.get("seed_offset"), f"{section}.seed_offset")
+        if seed_offset in seen_offsets:
+            raise ValueError(f"hives contains duplicate seed_offset: {seed_offset}")
+        seen_offsets.add(seed_offset)
+
+        hives.append(
+            HiveConfig(
+                hive_id=hive_id,
+                seed_offset=seed_offset,
+                exogenous_arrival_rate=_nonnegative_float(
+                    hive.get("exogenous_arrival_rate", 0.0),
+                    f"{section}.exogenous_arrival_rate",
+                ),
+                work_service_capacity=_nonnegative_float(
+                    hive.get("work_service_capacity", 1.0),
+                    f"{section}.work_service_capacity",
+                ),
+            )
+        )
+    return tuple(hives)
+
+
+def _optional_coupling(value: Any, hives: tuple[HiveConfig, ...]) -> CouplingConfig | None:
+    if not hives:
+        if value is not None:
+            raise ValueError("Config section 'coupling' requires opt-in 'hives'.")
+        return None
+
+    coupling = {} if value is None else _expect_mapping(value, "coupling")
+    supported_keys = {"mode", "transfer_probability", "delay_ticks", "shuffle_seed_offset"}
+    unknown = set(coupling) - supported_keys
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"coupling contains unsupported keys: {names}")
+
+    cfg = CouplingConfig(
+        mode=_coupling_mode(coupling.get("mode", "none"), "coupling.mode"),
+        transfer_probability=_probability(
+            coupling.get("transfer_probability", 0.0),
+            "coupling.transfer_probability",
+        ),
+        delay_ticks=_nonnegative_int(coupling.get("delay_ticks", 0), "coupling.delay_ticks"),
+        shuffle_seed_offset=_nonnegative_int(
+            coupling.get("shuffle_seed_offset", 2000),
+            "coupling.shuffle_seed_offset",
+        ),
+    )
+    _validate_coupling(cfg)
+    return cfg
+
+
 def _share(value: Any, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"Config value {name!r} must be a number.")
@@ -279,6 +399,13 @@ def _nonnegative_float(value: Any, name: str) -> float:
     return parsed
 
 
+def _probability(value: Any, name: str) -> float:
+    parsed = _nonnegative_float(value, name)
+    if parsed > 1.0:
+        raise ValueError(f"Config value {name!r} must be between 0.0 and 1.0.")
+    return parsed
+
+
 def _attention_selection_strategy(value: Any, name: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"Config value {name!r} must be a string.")
@@ -286,6 +413,41 @@ def _attention_selection_strategy(value: Any, name: str) -> str:
         names = ", ".join(ATTENTION_SELECTION_STRATEGIES)
         raise ValueError(f"Config value {name!r} must be one of: {names}.")
     return value
+
+
+def _coupling_mode(value: Any, name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"Config value {name!r} must be a string.")
+    if value not in COUPLING_MODES:
+        names = ", ".join(COUPLING_MODES)
+        raise ValueError(f"Config value {name!r} must be one of: {names}.")
+    return value
+
+
+def _validate_coupling(coupling: CouplingConfig) -> None:
+    if coupling.mode == "none":
+        if coupling.transfer_probability != 0.0:
+            raise ValueError("coupling.mode 'none' requires transfer_probability 0.0.")
+        if coupling.delay_ticks != 0:
+            raise ValueError("coupling.mode 'none' requires delay_ticks 0.")
+    elif coupling.mode == "direct":
+        if coupling.delay_ticks != 0:
+            raise ValueError("coupling.mode 'direct' requires delay_ticks 0.")
+    elif coupling.mode == "delayed" and coupling.delay_ticks <= 0:
+        raise ValueError("coupling.mode 'delayed' requires delay_ticks > 0.")
+
+
+def _validate_hive_seed_streams(
+    hives: tuple[HiveConfig, ...],
+    coupling: CouplingConfig | None,
+) -> None:
+    if not hives or coupling is None:
+        return
+    hive_offsets = {hive.seed_offset for hive in hives}
+    if coupling.shuffle_seed_offset in hive_offsets:
+        raise ValueError(
+            "coupling.shuffle_seed_offset must be distinct from hive seed_offset values."
+        )
 
 
 def _validate_actions(actions: tuple[str, ...]) -> None:
