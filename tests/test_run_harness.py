@@ -54,6 +54,12 @@ from ohdyn.analyze_queue_blind_lobes import (
     _queue_blind_label,
     run_queue_blind_lobe_analysis,
 )
+from ohdyn.analyze_exogenous_arrival_controls import (
+    EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS,
+    EXOGENOUS_CONTROL_METRIC_FIELDS,
+    EXOGENOUS_CONTROL_NULL_FIELDS,
+    run_exogenous_arrival_control_analysis,
+)
 from ohdyn.calibrate_exogenous_arrivals import (
     EXOGENOUS_CALIBRATION_FIELDS,
     run_exogenous_arrival_calibration,
@@ -976,6 +982,106 @@ def test_a2_exogenous_arrival_comparison_is_reproducible(tmp_path: Path) -> None
         second / "exogenous_arrival_effects.csv"
     ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_a2_exogenous_arrival_control_analysis_writes_bootstrap_and_nulls(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    out_dir = tmp_path / "controls"
+    run_exogenous_arrival_comparison(seeds=(1, 2), out_dir=source)
+
+    rows = run_exogenous_arrival_control_analysis(
+        exogenous_arrival_dir=source,
+        out_dir=out_dir,
+        bootstrap_reps=7,
+        null_reps=5,
+        random_seed=11,
+    )
+
+    assert [row["condition"] for row in rows] == [
+        "endogenous_control",
+        "exogenous_low",
+        "exogenous_medium",
+        "exogenous_high",
+    ]
+    assert (out_dir / "exogenous_arrival_control_metrics.csv").is_file()
+    assert (out_dir / "exogenous_arrival_control_bootstrap.csv").is_file()
+    assert (out_dir / "exogenous_arrival_control_nulls.csv").is_file()
+    assert (out_dir / "summary.md").is_file()
+
+    with (out_dir / "exogenous_arrival_control_bootstrap.csv").open() as handle:
+        bootstrap_rows = list(csv.DictReader(handle))
+    with (out_dir / "exogenous_arrival_control_nulls.csv").open() as handle:
+        null_rows = list(csv.DictReader(handle))
+    summary = (out_dir / "summary.md").read_text()
+
+    assert len(bootstrap_rows) == 3 * 8
+    assert len(null_rows) == 4
+    assert {
+        row["metric"] for row in bootstrap_rows if row["high_label"] == "exogenous_high"
+    } >= {
+        "queue_depth_per_created_task",
+        "queue_blind_transition_entropy",
+        "queue_blind_task_generation_dwell_share",
+    }
+    assert "label-count-preserving baseline-lobe shuffles" in summary
+    assert "queue-blind labels use agent_tasks_created_tick" in summary
+
+
+def test_a2_exogenous_arrival_control_analysis_headers_match_declared_fields(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source"
+    out_dir = tmp_path / "controls"
+    run_exogenous_arrival_comparison(seeds=(1,), out_dir=source)
+
+    run_exogenous_arrival_control_analysis(
+        exogenous_arrival_dir=source,
+        out_dir=out_dir,
+        bootstrap_reps=3,
+        null_reps=2,
+    )
+
+    with (out_dir / "exogenous_arrival_control_metrics.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(EXOGENOUS_CONTROL_METRIC_FIELDS)
+    with (out_dir / "exogenous_arrival_control_bootstrap.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS)
+    with (out_dir / "exogenous_arrival_control_nulls.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(EXOGENOUS_CONTROL_NULL_FIELDS)
+
+
+def test_a2_exogenous_arrival_control_analysis_is_reproducible(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    run_exogenous_arrival_comparison(seeds=(1, 2), out_dir=source)
+
+    run_exogenous_arrival_control_analysis(
+        exogenous_arrival_dir=source,
+        out_dir=first,
+        bootstrap_reps=7,
+        null_reps=5,
+        random_seed=19,
+    )
+    run_exogenous_arrival_control_analysis(
+        exogenous_arrival_dir=source,
+        out_dir=second,
+        bootstrap_reps=7,
+        null_reps=5,
+        random_seed=19,
+    )
+
+    for name in (
+        "exogenous_arrival_control_metrics.csv",
+        "exogenous_arrival_control_bootstrap.csv",
+        "exogenous_arrival_control_nulls.csv",
+        "summary.md",
+    ):
+        assert (first / name).read_text() == (second / name).read_text()
 
 
 def test_a2_attention_cli_reproduces_metrics_across_same_seed(tmp_path: Path) -> None:

@@ -1,0 +1,5 @@
+condition,rate_per_tick,seed_count,run_count,queue_depth_per_created_task_mean,queued_task_age_mean_final_mean,baseline_transition_entropy_mean,baseline_transition_entropy_normalized_mean,baseline_dwell_length_max_mean,baseline_backlog_growth_dwell_share_mean,queue_blind_transition_entropy_mean,queue_blind_transition_entropy_normalized_mean,queue_blind_dwell_length_max_mean,queue_blind_task_generation_dwell_share_mean,queue_blind_execution_dwell_share_mean
+endogenous_control,0.0,30,30,0.50777,3.338109,2.141011,0.961042,3.233333,0.513889,2.35307,0.962738,2.8,0.194444,0.280555
+exogenous_low,1.0,30,30,0.60027,3.636119,2.151228,0.961884,3.2,0.516667,2.349544,0.961747,2.833333,0.194444,0.297222
+exogenous_medium,2.0,30,30,0.682632,4.009054,2.1187,0.961399,3.233333,0.513889,2.303605,0.955038,2.666667,0.191667,0.325
+exogenous_high,3.0,30,30,0.749526,4.184749,2.11643,0.964669,3.233333,0.513889,2.254402,0.955353,2.966667,0.191667,0.316667

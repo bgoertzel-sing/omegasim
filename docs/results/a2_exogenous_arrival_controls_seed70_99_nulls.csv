@@ -1,0 +1,5 @@
+condition,rate_per_tick,null_reps,run_count,transition_count_observed_mean,transition_count_null_mean,transition_count_observed_minus_null,transition_entropy_observed_mean,transition_entropy_null_mean,transition_entropy_observed_minus_null,transition_entropy_normalized_observed_mean,transition_entropy_normalized_null_mean,transition_entropy_normalized_observed_minus_null,dwell_length_max_observed_mean,dwell_length_max_null_mean,dwell_length_max_observed_minus_null
+endogenous_control,0.0,100,30,7.133333,7.117,0.016333,2.141011,2.107011,0.034,0.961042,0.960674,0.000368,3.233333,3.244,-0.010667
+exogenous_low,1.0,100,30,7.2,7.055667,0.144333,2.151228,2.084591,0.066637,0.961884,0.958292,0.003592,3.2,3.255333,-0.055333
+exogenous_medium,2.0,100,30,7.2,7.083,0.117,2.1187,2.071498,0.047202,0.961399,0.956168,0.005231,3.233333,3.180333,0.053
+exogenous_high,3.0,100,30,7.066667,7.026,0.040667,2.11643,2.097221,0.019209,0.964669,0.959041,0.005628,3.233333,3.253667,-0.020334
