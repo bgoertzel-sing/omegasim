@@ -54,6 +54,10 @@ from ohdyn.compare_service_capacity import (
     SERVICE_CAPACITY_EFFECT_FIELDS,
     run_service_capacity_comparison,
 )
+from ohdyn.synthesize_service_capacity_decision import (
+    DECISION_SYNTHESIS_FIELDS,
+    run_service_capacity_decision_synthesis,
+)
 from ohdyn.run import run_experiment
 
 
@@ -1242,6 +1246,41 @@ def test_a2_service_capacity_trajectory_analysis_is_reproducible(
         second / "service_capacity_trajectory_nulls.csv"
     ).read_text()
     assert (first / "summary.md").read_text() == (second / "summary.md").read_text()
+
+
+def test_a2_service_capacity_decision_synthesis_adds_action_accounting_panel(
+    tmp_path: Path,
+) -> None:
+    service_dir = tmp_path / "a2_service_capacity_compare"
+    trajectory_dir = tmp_path / "a2_service_capacity_trajectory"
+    out_md = tmp_path / "decision_synthesis.md"
+    out_csv = tmp_path / "decision_synthesis.csv"
+
+    run_service_capacity_comparison(seeds=(1, 2), out_dir=service_dir)
+    run_service_capacity_trajectory_analysis(
+        service_capacity_dir=service_dir,
+        out_dir=trajectory_dir,
+    )
+    rows = run_service_capacity_decision_synthesis(
+        service_capacity_dir=service_dir,
+        trajectory_dir=trajectory_dir,
+        out_md=out_md,
+        out_csv=out_csv,
+    )
+
+    assert len(rows) == 5
+    with out_csv.open() as handle:
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames == list(DECISION_SYNTHESIS_FIELDS)
+    summary = out_md.read_text()
+
+    assert "# A2 service-capacity decision synthesis" in summary
+    assert "## Load/action accounting panel" in summary
+    assert "| normal_pressure | low_service |" in summary
+    assert "Create actions" in summary
+    assert "Work events" in summary
+    assert "paired bootstrap rows: 30" in summary
+    assert "strongest observed-minus-null dwell locking" in summary
 
 
 def test_a2_attention_high_pressure_comparison_runner_is_reproducible(
