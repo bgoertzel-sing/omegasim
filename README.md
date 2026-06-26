@@ -26,6 +26,26 @@ events.csv
 summary.md
 ```
 
+## A5 Anticipatory Predictive-Control Smoke
+
+A5 is preregistered in `docs/a5_anticipatory_predictive_control_preregistration.md`.
+The first scaffold is intentionally single-hive and deterministic. It keeps the
+existing action set and artifact contract, adds a hidden periodic demand-share
+signal over the four attention classes, and lets an opt-in predictive controller
+shift work-task class priority from forecasted future pressure.
+
+The checked-in low-budget linear smoke fixture is:
+
+```bash
+python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out runs/a5_predictive_linear_seed5
+```
+
+For A5 configs, `metrics.csv`, `manifest.yaml`, and `summary.md` add forecast
+budget, demand-share, forecast-share, forecast-error, forecast-skill, and
+work-allocation alignment fields. Task-arrival totals, service capacity, action
+opportunity, and work budget remain governed by the existing baseline knobs so
+pilot comparisons can stay matched across preregistered predictor conditions.
+
 ## Current A0/A1 Baseline
 
 The baseline runner loads one YAML config, creates 15 static OmegaHive-like agents, connects them through one NetworkX bus graph, advances one in-memory task queue for the configured tick count, and writes deterministic artifacts for the supplied seed. The only supported baseline actions are `idle`, `message`, `create_task`, and `work_task`.

@@ -32,6 +32,7 @@ from ohdyn.sim import (
     SimulationResult,
     attention_policy_metric_fields,
     metrics_fieldnames,
+    predictive_control_metric_fields,
     role_action_metric_fields,
 )
 
@@ -139,6 +140,15 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "classes": list(ATTENTION_CLASSES),
             "selection_strategy": result.config.attention_policy.selection_strategy,
             "fields": list(attention_policy_metric_fields()),
+        }
+    if result.config.predictive_control is not None:
+        manifest["model"]["predictive_control"] = {
+            "condition": result.config.predictive_control.condition,
+            "prediction_budget": result.config.predictive_control.prediction_budget,
+            "lead_ticks": result.config.predictive_control.lead_ticks,
+            "single_hive_only": True,
+            "demand_stream": "deterministic periodic class-pressure shares",
+            "fields": list(predictive_control_metric_fields()),
         }
     if _exogenous_arrivals_enabled(result) and result.config.exogenous_arrivals is not None:
         assert result.config.exogenous_arrivals is not None
@@ -262,6 +272,7 @@ def _metrics_fieldnames(result: SimulationResult) -> tuple[str, ...]:
         result.config.model.actions,
         include_attention_policy=result.config.attention_policy is not None,
         include_exogenous_arrivals=_exogenous_arrivals_enabled(result),
+        include_predictive_control=result.config.predictive_control is not None,
     )
     if _multi_hive_enabled(result):
         return (*fields, *MULTI_HIVE_QUEUE_FLOW_METRIC_FIELDS)
@@ -404,6 +415,15 @@ def _summary(result: SimulationResult) -> str:
                 *_attention_policy_summary(result),
             ]
         )
+    if result.config.predictive_control is not None:
+        lines.extend(
+            [
+                "",
+                "## A5 predictive control",
+                "",
+                *_predictive_control_summary(result),
+            ]
+        )
     if _exogenous_arrivals_enabled(result) and result.config.exogenous_arrivals is not None:
         lines.extend(
             [
@@ -487,6 +507,11 @@ def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
         *(
             [f"- attention policy fields: {len(attention_policy_metric_fields())}"]
             if result.config.attention_policy is not None
+            else []
+        ),
+        *(
+            [f"- A5 predictive-control fields: {len(predictive_control_metric_fields())}"]
+            if result.config.predictive_control is not None
             else []
         ),
         *(
@@ -593,6 +618,26 @@ def _attention_policy_summary(result: SimulationResult) -> list[str]:
         f"{last.get('attention_value_per_work_event_total', 0)}"
     )
     return lines
+
+
+def _predictive_control_summary(result: SimulationResult) -> list[str]:
+    last = result.metrics[-1] if result.metrics else {}
+    assert result.config.predictive_control is not None
+    return [
+        f"- condition: {result.config.predictive_control.condition}",
+        f"- prediction budget: {result.config.predictive_control.prediction_budget}",
+        f"- lead ticks: {result.config.predictive_control.lead_ticks}",
+        f"- signal period: {result.config.predictive_control.signal_period}",
+        f"- signal amplitude: {result.config.predictive_control.signal_amplitude}",
+        f"- final forecast absolute error: {last.get('a5_forecast_abs_error_tick', 0)}",
+        f"- final forecast skill: {last.get('a5_forecast_skill_tick', 0)}",
+        "- final forecast skill per budget: "
+        f"{last.get('a5_forecast_skill_per_budget_tick', 0)}",
+        "- final work forecast alignment: "
+        f"{last.get('a5_work_forecast_alignment_tick', 0)}",
+        "- final work future-demand alignment: "
+        f"{last.get('a5_work_future_demand_alignment_tick', 0)}",
+    ]
 
 
 def _exogenous_arrival_summary(result: SimulationResult) -> list[str]:

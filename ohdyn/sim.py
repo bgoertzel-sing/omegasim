@@ -146,6 +146,7 @@ def metrics_fieldnames(
     *,
     include_attention_policy: bool = False,
     include_exogenous_arrivals: bool = False,
+    include_predictive_control: bool = False,
 ) -> tuple[str, ...]:
     return (
         "tick",
@@ -169,6 +170,7 @@ def metrics_fieldnames(
         *QUEUE_PRESSURE_METRIC_FIELDS,
         *QUEUED_TASK_AGE_METRIC_FIELDS,
         *(attention_policy_metric_fields() if include_attention_policy else ()),
+        *(predictive_control_metric_fields() if include_predictive_control else ()),
         "idle_tick",
         *role_action_metric_fields(actions),
         "mean_agent_bias",
@@ -207,6 +209,32 @@ def attention_policy_metric_fields() -> tuple[str, ...]:
         "attention_value_per_completed_task_total",
         "attention_value_per_work_event_tick",
         "attention_value_per_work_event_total",
+    )
+
+
+def predictive_control_metric_fields() -> tuple[str, ...]:
+    return (
+        "a5_predictive_condition",
+        "a5_prediction_budget",
+        "a5_prediction_budget_spent_tick",
+        "a5_prediction_lead_ticks",
+        *(
+            field
+            for class_name in ATTENTION_CLASSES
+            for field in (
+                f"a5_{class_name}_demand_share_tick",
+                f"a5_{class_name}_future_demand_share_tick",
+                f"a5_{class_name}_forecast_share_tick",
+                f"a5_{class_name}_forecast_error_tick",
+                f"a5_{class_name}_work_share_tick",
+                f"a5_{class_name}_allocation_future_residual_tick",
+            )
+        ),
+        "a5_forecast_abs_error_tick",
+        "a5_forecast_skill_tick",
+        "a5_forecast_skill_per_budget_tick",
+        "a5_work_forecast_alignment_tick",
+        "a5_work_future_demand_alignment_tick",
     )
 
 
@@ -335,7 +363,11 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                     created_by="exogenous",
                     created_tick=tick,
                     remaining_work=work_units,
-                    task_class=_choose_exogenous_task_class(config, exogenous_rng),
+                    task_class=_choose_exogenous_task_class(
+                        config,
+                        exogenous_rng,
+                        tick,
+                    ),
                 )
                 task_queue.append(task)
                 events.append(
@@ -381,7 +413,7 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                     created_by=agent.agent_id,
                     created_tick=tick,
                     remaining_work=work_units,
-                    task_class=_choose_task_class(config, rng),
+                    task_class=_choose_task_class(config, rng, tick),
                 )
                 task_queue.append(task)
                 events.append(
@@ -397,7 +429,12 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
             elif action == "work_task":
                 selected_task_index: int | None = None
                 desired_attention_class = (
-                    _desired_attention_class(task_queue, config, attention_work_counts)
+                    _desired_work_task_class(
+                        task_queue,
+                        config,
+                        attention_work_counts,
+                        tick,
+                    )
                     if config.attention_policy is not None
                     else ""
                 )
@@ -478,6 +515,11 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
             completed_this_tick=completed_this_tick,
             completed_total=completed_tasks,
         )
+        predictive_metrics = _predictive_control_metrics(
+            config=config,
+            tick=tick,
+            work_counts_tick=attention_work_counts_tick,
+        )
         baseline_lobe_label = _baseline_lobe_label(
             action_counts=action_counts,
             queue_depth_start=queue_depth_start,
@@ -532,6 +574,7 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                 "backlog_pressure_tick": queue_depth_end,
                 **queue_age_metrics,
                 **attention_metrics,
+                **predictive_metrics,
                 "idle_tick": action_counts["idle"],
                 **_role_action_metrics(config.model.actions, role_action_counts),
                 "mean_agent_bias": round(float(np.mean([agent.bias for agent in agents])), 6),
@@ -718,7 +761,11 @@ def _advance_hive_runtime_tick(
                 created_by="exogenous",
                 created_tick=tick,
                 remaining_work=work_units,
-                task_class=_choose_exogenous_task_class(config, runtime.exogenous_rng),
+                task_class=_choose_exogenous_task_class(
+                    config,
+                    runtime.exogenous_rng,
+                    tick,
+                ),
             )
             runtime.events.append(
                 _event(
@@ -778,7 +825,7 @@ def _advance_hive_runtime_tick(
                 created_by=agent.agent_id,
                 created_tick=tick,
                 remaining_work=work_units,
-                task_class=_choose_task_class(config, runtime.rng),
+                task_class=_choose_task_class(config, runtime.rng, tick),
             )
             runtime.events.append(
                 _event(
@@ -809,10 +856,11 @@ def _advance_hive_runtime_tick(
             assert runtime.attention_completed_counts is not None
             assert runtime.attention_completed_counts_tick is not None
             desired_attention_class = (
-                _desired_attention_class(
+                _desired_work_task_class(
                     runtime.task_queue,
                     config,
                     runtime.attention_work_counts,
+                    tick,
                 )
                 if config.attention_policy is not None
                 else ""
@@ -1018,6 +1066,11 @@ def _finish_hive_tick(runtime: _HiveRuntime, tick: int) -> None:
         completed_this_tick=runtime.completed_this_tick,
         completed_total=runtime.completed_tasks,
     )
+    predictive_metrics = _predictive_control_metrics(
+        config=config,
+        tick=tick,
+        work_counts_tick=runtime.attention_work_counts_tick,
+    )
     baseline_lobe_label = _baseline_lobe_label(
         action_counts=runtime.action_counts_tick,
         queue_depth_start=runtime.queue_depth_start_tick,
@@ -1083,6 +1136,7 @@ def _finish_hive_tick(runtime: _HiveRuntime, tick: int) -> None:
             "backlog_pressure_tick": queue_depth_end,
             **queue_age_metrics,
             **attention_metrics,
+            **predictive_metrics,
             "idle_tick": runtime.action_counts_tick["idle"],
             **_role_action_metrics(config.model.actions, runtime.role_action_counts_tick),
             "mean_agent_bias": round(
@@ -1404,10 +1458,10 @@ def _queue_age_metrics(task_queue: deque[Task], tick: int) -> dict[str, float | 
     }
 
 
-def _choose_task_class(config: OmegaConfig, rng: np.random.Generator) -> str:
+def _choose_task_class(config: OmegaConfig, rng: np.random.Generator, tick: int) -> str:
     if config.attention_policy is None:
         return ""
-    shares = config.attention_policy.shares()
+    shares = _a5_demand_shares(config, tick)
     probabilities = np.array([shares[class_name] for class_name in ATTENTION_CLASSES], dtype=float)
     return str(rng.choice(ATTENTION_CLASSES, p=probabilities))
 
@@ -1419,9 +1473,16 @@ def _exogenous_arrivals_enabled(config: OmegaConfig) -> bool:
     )
 
 
-def _choose_exogenous_task_class(config: OmegaConfig, rng: np.random.Generator) -> str:
+def _choose_exogenous_task_class(
+    config: OmegaConfig,
+    rng: np.random.Generator,
+    tick: int,
+) -> str:
     assert config.exogenous_arrivals is not None
-    shares = config.exogenous_arrivals.task_class_shares()
+    if config.predictive_control is not None and config.attention_policy is not None:
+        shares = _a5_demand_shares(config, tick)
+    else:
+        shares = config.exogenous_arrivals.task_class_shares()
     probabilities = np.array([shares[class_name] for class_name in ATTENTION_CLASSES], dtype=float)
     return str(rng.choice(ATTENTION_CLASSES, p=probabilities))
 
@@ -1469,6 +1530,46 @@ def _pop_work_task(
     return task_queue.popleft()
 
 
+def _desired_work_task_class(
+    task_queue: deque[Task],
+    config: OmegaConfig,
+    attention_work_counts: Counter[str],
+    tick: int,
+) -> str:
+    if config.predictive_control is not None:
+        return _desired_predictive_attention_class(
+            task_queue,
+            config,
+            attention_work_counts,
+            tick,
+        )
+    return _desired_attention_class(task_queue, config, attention_work_counts)
+
+
+def _desired_predictive_attention_class(
+    task_queue: deque[Task],
+    config: OmegaConfig,
+    attention_work_counts: Counter[str],
+    tick: int,
+) -> str:
+    assert config.attention_policy is not None
+    available_classes = {task.task_class for task in task_queue}
+    if not available_classes:
+        return ""
+
+    forecast = _a5_forecast_shares(config, tick)
+    total_work = sum(attention_work_counts.values())
+
+    def priority(class_name: str) -> tuple[float, int]:
+        actual_share = attention_work_counts[class_name] / total_work if total_work else 0.0
+        return forecast[class_name] - actual_share, -ATTENTION_CLASSES.index(class_name)
+
+    return max(
+        (class_name for class_name in ATTENTION_CLASSES if class_name in available_classes),
+        key=priority,
+    )
+
+
 def _desired_attention_class(
     task_queue: deque[Task],
     config: OmegaConfig,
@@ -1487,6 +1588,79 @@ def _desired_attention_class(
         (class_name for class_name in ATTENTION_CLASSES if class_name in available_classes),
         key=priority,
     )
+
+
+def _a5_demand_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
+    assert config.attention_policy is not None
+    if config.predictive_control is None:
+        return config.attention_policy.shares()
+
+    control = config.predictive_control
+    base_shares = config.attention_policy.shares()
+    raw: dict[str, float] = {}
+    for index, class_name in enumerate(ATTENTION_CLASSES):
+        phase = 2.0 * np.pi * ((tick / control.signal_period) + (index / len(ATTENTION_CLASSES)))
+        raw[class_name] = max(
+            base_shares[class_name] * (1.0 + control.signal_amplitude * float(np.sin(phase))),
+            1e-9,
+        )
+    return _normalize_shares(raw)
+
+
+def _a5_forecast_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
+    assert config.predictive_control is not None
+    control = config.predictive_control
+    lead_tick = tick + control.lead_ticks
+
+    if control.condition == "oracle":
+        return _a5_demand_shares(config, lead_tick)
+    if control.condition == "shuffled":
+        return _a5_demand_shares(config, tick + control.phase_shift_ticks)
+    if control.condition == "reactive":
+        return _a5_demand_shares(config, tick)
+    if control.condition == "linear":
+        return _a5_linear_forecast_shares(config, tick)
+    if control.condition == "nonlinear":
+        return _a5_nonlinear_forecast_shares(config, tick)
+    raise ValueError(f"Unsupported predictive_control.condition: {control.condition}")
+
+
+def _a5_linear_forecast_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
+    assert config.predictive_control is not None
+    current = _a5_demand_shares(config, tick)
+    previous = _a5_demand_shares(config, max(0, tick - 1))
+    raw = {
+        class_name: current[class_name]
+        + config.predictive_control.lead_ticks * (current[class_name] - previous[class_name])
+        for class_name in ATTENTION_CLASSES
+    }
+    return _normalize_shares(raw)
+
+
+def _a5_nonlinear_forecast_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
+    assert config.predictive_control is not None
+    current = _a5_demand_shares(config, tick)
+    previous = _a5_demand_shares(config, max(0, tick - 1))
+    previous_2 = _a5_demand_shares(config, max(0, tick - 2))
+    lead = config.predictive_control.lead_ticks
+    raw = {}
+    for class_name in ATTENTION_CLASSES:
+        velocity = current[class_name] - previous[class_name]
+        curvature = current[class_name] - 2.0 * previous[class_name] + previous_2[class_name]
+        raw[class_name] = current[class_name] + lead * velocity + 0.5 * (lead**2) * curvature
+    return _normalize_shares(raw)
+
+
+def _normalize_shares(raw: dict[str, float]) -> dict[str, float]:
+    clipped = {
+        class_name: max(float(raw[class_name]), 1e-9)
+        for class_name in ATTENTION_CLASSES
+    }
+    total = sum(clipped.values())
+    return {
+        class_name: clipped[class_name] / total
+        for class_name in ATTENTION_CLASSES
+    }
 
 
 def _attention_policy_metrics(
@@ -1564,6 +1738,91 @@ def _attention_policy_metrics(
         round(value_weighted_completed_total / total_work, 6)
         if total_work
         else 0.0
+    )
+    return metrics
+
+
+def _predictive_control_metrics(
+    *,
+    config: OmegaConfig,
+    tick: int,
+    work_counts_tick: Counter[str],
+) -> dict[str, int | float | str]:
+    if config.predictive_control is None:
+        return {}
+
+    control = config.predictive_control
+    demand = _a5_demand_shares(config, tick)
+    future_demand = _a5_demand_shares(config, tick + control.lead_ticks)
+    forecast = _a5_forecast_shares(config, tick)
+    total_work_tick = sum(work_counts_tick.values())
+    work_shares = {
+        class_name: (
+            work_counts_tick[class_name] / total_work_tick
+            if total_work_tick
+            else 0.0
+        )
+        for class_name in ATTENTION_CLASSES
+    }
+    forecast_abs_error = 0.5 * sum(
+        abs(forecast[class_name] - future_demand[class_name])
+        for class_name in ATTENTION_CLASSES
+    )
+    forecast_skill = max(0.0, 1.0 - forecast_abs_error)
+    forecast_skill_per_budget = (
+        forecast_skill / control.prediction_budget
+        if control.prediction_budget > 0.0
+        else 0.0
+    )
+    metrics: dict[str, int | float | str] = {
+        "a5_predictive_condition": control.condition,
+        "a5_prediction_budget": control.prediction_budget,
+        "a5_prediction_budget_spent_tick": control.prediction_budget,
+        "a5_prediction_lead_ticks": control.lead_ticks,
+    }
+    for class_name in ATTENTION_CLASSES:
+        metrics.update(
+            {
+                f"a5_{class_name}_demand_share_tick": round(demand[class_name], 6),
+                f"a5_{class_name}_future_demand_share_tick": round(
+                    future_demand[class_name],
+                    6,
+                ),
+                f"a5_{class_name}_forecast_share_tick": round(forecast[class_name], 6),
+                f"a5_{class_name}_forecast_error_tick": round(
+                    forecast[class_name] - future_demand[class_name],
+                    6,
+                ),
+                f"a5_{class_name}_work_share_tick": round(work_shares[class_name], 6),
+                f"a5_{class_name}_allocation_future_residual_tick": round(
+                    work_shares[class_name] - future_demand[class_name],
+                    6,
+                ),
+            }
+        )
+    metrics.update(
+        {
+            "a5_forecast_abs_error_tick": round(float(forecast_abs_error), 6),
+            "a5_forecast_skill_tick": round(float(forecast_skill), 6),
+            "a5_forecast_skill_per_budget_tick": round(
+                float(forecast_skill_per_budget),
+                6,
+            ),
+            "a5_work_forecast_alignment_tick": round(
+                sum(
+                    work_shares[class_name] * forecast[class_name]
+                    for class_name in ATTENTION_CLASSES
+                ),
+                6,
+            ),
+            "a5_work_future_demand_alignment_tick": round(
+                sum(
+                    work_shares[class_name] * future_demand[class_name]
+                    for class_name in ATTENTION_CLASSES
+                ),
+                6,
+            ),
+        }
     )
     return metrics
 

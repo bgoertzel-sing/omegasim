@@ -23,6 +23,7 @@ from ohdyn.sim import (
     SimulationResult,
     attention_policy_metric_fields,
     metrics_fieldnames,
+    predictive_control_metric_fields,
     role_action_metric_fields,
     simulate,
 )
@@ -171,6 +172,7 @@ A4_TWO_HIVE_NONE_HOLDOUT = Path("configs/a4_two_hive_none_holdout.yaml")
 A4_TWO_HIVE_DIRECT_HOLDOUT = Path("configs/a4_two_hive_direct_holdout.yaml")
 A4_TWO_HIVE_DELAYED_HOLDOUT = Path("configs/a4_two_hive_delayed_holdout.yaml")
 A4_TWO_HIVE_SHUFFLED_HOLDOUT = Path("configs/a4_two_hive_shuffled_holdout.yaml")
+A5_PREDICTIVE_LINEAR = Path("configs/a5_predictive_linear_smoke.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -277,6 +279,7 @@ OUTPUT_FIXTURE_ARTIFACTS = {
         "hive_events.csv",
         "coupling_events.csv",
     ],
+    A5_PREDICTIVE_LINEAR: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -1889,6 +1892,67 @@ def test_a2_attention_run_records_policy_metrics_and_summary(tmp_path: Path) -> 
     assert capture_events[0]["attention_pressure_class"] in ATTENTION_CLASSES
     assert float(capture_events[0]["attention_capture_pressure"]) > 0.0
     assert "- max capture pressure: 0.188889" in summary
+
+
+def test_a5_predictive_control_smoke_records_forecast_metrics(
+    tmp_path: Path,
+) -> None:
+    first = run_experiment(
+        A5_PREDICTIVE_LINEAR,
+        seed=5,
+        out_dir=tmp_path / "first",
+    )
+    second = run_experiment(
+        A5_PREDICTIVE_LINEAR,
+        seed=5,
+        out_dir=tmp_path / "second",
+    )
+
+    assert first.config.predictive_control is not None
+    assert first.config.predictive_control.condition == "linear"
+    assert not first.config.hives
+    assert len(first.metrics) == 18
+    with (tmp_path / "first" / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    manifest = yaml.safe_load((tmp_path / "first" / "manifest.yaml").read_text())
+    summary = (tmp_path / "first" / "summary.md").read_text()
+
+    assert (tmp_path / "first" / "metrics.csv").read_text() == (
+        tmp_path / "second" / "metrics.csv"
+    ).read_text()
+    assert first.metrics == second.metrics
+    assert set(predictive_control_metric_fields()) <= set(rows[0])
+    assert manifest["config"]["predictive_control"] == {
+        "condition": "linear",
+        "lead_ticks": 2,
+        "memory_window": 3,
+        "phase_shift_ticks": 5,
+        "prediction_budget": 0.35,
+        "signal_amplitude": 0.35,
+        "signal_period": 12,
+    }
+    assert manifest["model"]["predictive_control"] == {
+        "condition": "linear",
+        "prediction_budget": 0.35,
+        "lead_ticks": 2,
+        "single_hive_only": True,
+        "demand_stream": "deterministic periodic class-pressure shares",
+        "fields": list(predictive_control_metric_fields()),
+    }
+    assert "- A5 predictive-control fields: " in summary
+    assert "## A5 predictive control" in summary
+    assert "- condition: linear" in summary
+    assert "- prediction budget: 0.35" in summary
+    assert rows[-1]["a5_predictive_condition"] == "linear"
+    assert rows[-1]["a5_prediction_budget"] == "0.35"
+    assert float(rows[-1]["a5_forecast_skill_tick"]) > 0.0
+    assert float(rows[-1]["a5_forecast_skill_per_budget_tick"]) > 0.0
+    assert float(rows[-1]["a5_work_future_demand_alignment_tick"]) >= 0.0
+    for class_name in ATTENTION_CLASSES:
+        assert f"a5_{class_name}_demand_share_tick" in rows[0]
+        assert f"a5_{class_name}_future_demand_share_tick" in rows[0]
+        assert f"a5_{class_name}_forecast_share_tick" in rows[0]
+        assert f"a5_{class_name}_allocation_future_residual_tick" in rows[0]
 
 
 def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(

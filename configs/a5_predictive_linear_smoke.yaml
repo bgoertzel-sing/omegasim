@@ -1,0 +1,44 @@
+run:
+  experiment_id: a5_predictive_linear_smoke
+  ticks: 18
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+  task_creation_pressure: 1.0
+  work_service_capacity: 1.0
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+attention_policy:
+  near_term_external: 0.45
+  long_term_research: 0.25
+  internal_improvement: 0.20
+  housekeeping: 0.10
+  selection_strategy: quota_balance
+
+exogenous_arrivals:
+  enabled: true
+  rate_per_tick: 1.0
+  task_class_shares:
+    near_term_external: 0.45
+    long_term_research: 0.25
+    internal_improvement: 0.20
+    housekeeping: 0.10
+
+predictive_control:
+  condition: linear
+  prediction_budget: 0.35
+  lead_ticks: 2
+  signal_period: 12
+  signal_amplitude: 0.35
+  memory_window: 3
+  phase_shift_ticks: 5

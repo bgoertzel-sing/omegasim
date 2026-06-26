@@ -28,6 +28,14 @@ COUPLING_MODES = (
     "shuffled",
 )
 
+PREDICTIVE_CONTROL_CONDITIONS = (
+    "reactive",
+    "linear",
+    "nonlinear",
+    "oracle",
+    "shuffled",
+)
+
 
 @dataclass(frozen=True)
 class RunConfig:
@@ -83,6 +91,17 @@ class ExogenousArrivalsConfig:
 
 
 @dataclass(frozen=True)
+class PredictiveControlConfig:
+    condition: str
+    prediction_budget: float
+    lead_ticks: int = 2
+    signal_period: int = 12
+    signal_amplitude: float = 0.25
+    memory_window: int = 3
+    phase_shift_ticks: int = 3
+
+
+@dataclass(frozen=True)
 class HiveConfig:
     hive_id: str
     seed_offset: int
@@ -105,6 +124,7 @@ class OmegaConfig:
     outputs: OutputsConfig = field(default_factory=OutputsConfig)
     attention_policy: AttentionPolicyConfig | None = None
     exogenous_arrivals: ExogenousArrivalsConfig | None = None
+    predictive_control: PredictiveControlConfig | None = None
     hives: tuple[HiveConfig, ...] = ()
     coupling: CouplingConfig | None = None
 
@@ -121,6 +141,8 @@ class OmegaConfig:
                 class_name: arrivals.pop(class_name)
                 for class_name in ATTENTION_CLASSES
             }
+        if self.predictive_control is None:
+            data.pop("predictive_control")
         if not self.hives:
             data.pop("hives")
             data.pop("coupling")
@@ -144,6 +166,7 @@ def load_config(path: str | Path) -> OmegaConfig:
     outputs = _expect_mapping(outputs, "outputs")
     attention_policy = _optional_attention_policy(raw.get("attention_policy"))
     exogenous_arrivals = _optional_exogenous_arrivals(raw.get("exogenous_arrivals"))
+    predictive_control = _optional_predictive_control(raw.get("predictive_control"))
     hives = _optional_hives(raw.get("hives"))
     coupling = _optional_coupling(raw.get("coupling"), hives)
 
@@ -173,10 +196,12 @@ def load_config(path: str | Path) -> OmegaConfig:
         ),
         attention_policy=attention_policy,
         exogenous_arrivals=exogenous_arrivals,
+        predictive_control=predictive_control,
         hives=hives,
         coupling=coupling,
     )
     _validate_actions(cfg.model.actions)
+    _validate_predictive_control_scope(cfg)
     _validate_hive_seed_streams(cfg.hives, cfg.coupling)
     return cfg
 
@@ -297,6 +322,57 @@ def _optional_exogenous_arrivals(value: Any) -> ExogenousArrivalsConfig | None:
         enabled=enabled,
         rate_per_tick=rate_per_tick,
         **shares,
+    )
+
+
+def _optional_predictive_control(value: Any) -> PredictiveControlConfig | None:
+    if value is None:
+        return None
+    control = _expect_mapping(value, "predictive_control")
+    supported_keys = {
+        "condition",
+        "prediction_budget",
+        "lead_ticks",
+        "signal_period",
+        "signal_amplitude",
+        "memory_window",
+        "phase_shift_ticks",
+    }
+    unknown = set(control) - supported_keys
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"predictive_control contains unsupported keys: {names}")
+
+    condition = _predictive_control_condition(
+        control.get("condition"),
+        "predictive_control.condition",
+    )
+    return PredictiveControlConfig(
+        condition=condition,
+        prediction_budget=_nonnegative_float(
+            control.get("prediction_budget", 0.0),
+            "predictive_control.prediction_budget",
+        ),
+        lead_ticks=_nonnegative_int(
+            control.get("lead_ticks", 2),
+            "predictive_control.lead_ticks",
+        ),
+        signal_period=_positive_int(
+            control.get("signal_period", 12),
+            "predictive_control.signal_period",
+        ),
+        signal_amplitude=_probability(
+            control.get("signal_amplitude", 0.25),
+            "predictive_control.signal_amplitude",
+        ),
+        memory_window=_positive_int(
+            control.get("memory_window", 3),
+            "predictive_control.memory_window",
+        ),
+        phase_shift_ticks=_nonnegative_int(
+            control.get("phase_shift_ticks", 3),
+            "predictive_control.phase_shift_ticks",
+        ),
     )
 
 
@@ -424,6 +500,15 @@ def _coupling_mode(value: Any, name: str) -> str:
     return value
 
 
+def _predictive_control_condition(value: Any, name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"Config value {name!r} must be a string.")
+    if value not in PREDICTIVE_CONTROL_CONDITIONS:
+        names = ", ".join(PREDICTIVE_CONTROL_CONDITIONS)
+        raise ValueError(f"Config value {name!r} must be one of: {names}.")
+    return value
+
+
 def _validate_coupling(coupling: CouplingConfig) -> None:
     if coupling.mode == "none":
         if coupling.transfer_probability != 0.0:
@@ -435,6 +520,15 @@ def _validate_coupling(coupling: CouplingConfig) -> None:
             raise ValueError("coupling.mode 'direct' requires delay_ticks 0.")
     elif coupling.mode == "delayed" and coupling.delay_ticks <= 0:
         raise ValueError("coupling.mode 'delayed' requires delay_ticks > 0.")
+
+
+def _validate_predictive_control_scope(config: OmegaConfig) -> None:
+    if config.predictive_control is None:
+        return
+    if config.attention_policy is None:
+        raise ValueError("predictive_control requires an attention_policy section.")
+    if config.hives:
+        raise ValueError("predictive_control is currently preregistered for single-hive A5 runs only.")
 
 
 def _validate_hive_seed_streams(
