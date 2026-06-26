@@ -82,6 +82,7 @@ from ohdyn.analyze_exogenous_arrival_controls import (
     EXOGENOUS_CONTROL_NULL_FIELDS,
     run_exogenous_arrival_control_analysis,
 )
+from ohdyn.automation_guard import read_automation_state
 from ohdyn.calibrate_exogenous_arrivals import (
     EXOGENOUS_CALIBRATION_FIELDS,
     run_exogenous_arrival_calibration,
@@ -532,6 +533,60 @@ def test_loads_a0_smoke_config() -> None:
     assert set(config.model.actions) == {"idle", "message", "create_task", "work_task"}
     assert config.hives == ()
     assert config.coupling is None
+
+
+def test_automation_guard_reports_closed_state_from_status_and_review(tmp_path: Path) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "- Next step: leave OmegaSim closed at the current A4 boundary unless "
+                "a concrete artifact bug is found.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: false",
+                "recommended_next_action: Put OmegaSim into an explicit "
+                "no-op/awaiting-preregistration state.",
+                "",
+                "Do not run new simulations or analyzers now.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["strategic_change_level"] == "minor"
+    assert state["notify_ben"] is False
+    assert state["closed_reasons"] == [
+        "automation_status_next_step_closed",
+        "automation_status_a4_closed",
+        "strategy_review_noop_awaiting_preregistration",
+        "strategy_review_stop_new_work",
+    ]
+
+
+def test_automation_guard_reports_open_without_closed_status(tmp_path: Path) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    status_path.write_text("# OmegaSim Automation Status\n\n- Next step: run A0 smoke.\n")
+    review_path.write_text("strategic_change_level: minor\nnotify_ben: true\n")
+
+    state = read_automation_state(status_path, review_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["closed_reasons"] == []
+    assert state["notify_ben"] is True
 
 
 def _write_config(path: Path, overrides: dict[str, object]) -> Path:
