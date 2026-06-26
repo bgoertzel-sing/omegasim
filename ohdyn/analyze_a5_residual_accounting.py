@@ -35,6 +35,13 @@ A5_TIMING_BROKEN_NULL_BY_CONDITION = {
     "linear": "shuffled",
     "nonlinear": "nonlinear_shuffled",
 }
+A5_CONFIRMATORY_GUARDRAIL_TOLERANCES = {
+    "completion_fraction_final": 0.01,
+    "queue_depth_final": 1.0,
+    "queued_age_final": 0.5,
+    "attention_completed_total": 1.0,
+    "capture_pressure_peak": 0.05,
+}
 A5_CONTROL_LEVELS: tuple[tuple[str, tuple[str, ...], str], ...] = (
     ("raw", (), "uncontrolled observed trajectories"),
     (
@@ -149,12 +156,13 @@ A5_RESIDUAL_ACCOUNTING_MANIFEST_FIELDS = (
     "seed_count",
 )
 _A5_GUARDRAIL_POLICY = (
-    "Preregistered zero-tolerance guardrails: final backlog and queued age "
-    "must not increase, and completion fraction must not decrease versus "
-    "reactive under matched seeds; starvation is a final-state attention "
-    "class with queued work and zero completed tasks. Fresh confirmatory A5 "
-    "runs must compare each predictor against a timing-broken null with the "
-    "same prediction budget."
+    "Preregistered confirmatory guardrails versus reactive under matched "
+    "seeds: completion fraction may not drop by more than 0.01, final queue "
+    "depth may not rise by more than 1.0 task, final queued mean age may not "
+    "rise by more than 0.5 tick, no attention class may lose more than one "
+    "completed task, and peak capture pressure may not rise by more than "
+    "0.05. Fresh confirmatory A5 runs must compare each predictor against a "
+    "timing-broken null with the same prediction budget."
 )
 _OUTPUT_NAMES = (
     "a5_residual_accounting_metrics.csv",
@@ -381,6 +389,13 @@ def _endpoint_rows(
             "queued_age_final": _series(metrics, "queued_task_age_mean_tick")[-1],
             "attention_starvation_count_final": _starvation_count_final(metrics),
             "capture_pressure_peak": max(_series(metrics, "attention_capture_pressure_max_tick")),
+            **{
+                f"attention_{class_name}_completed_final": _series(
+                    metrics,
+                    f"attention_{class_name}_completed_total",
+                )[-1]
+                for class_name in ATTENTION_CLASSES
+            },
         }
         for endpoint, value in endpoints.items():
             rows.append(
@@ -848,24 +863,40 @@ def _guardrails_ok(
         "full_accounting",
         "completion_fraction_final",
     )
-    starvation_delta = _effect_delta(
+    capture_delta = _effect_delta(
         rows_by_endpoint,
         contrast,
         "full_accounting",
-        "attention_starvation_count_final",
+        "capture_pressure_peak",
     )
     if (
         queue_delta is None
         or age_delta is None
         or completion_delta is None
-        or starvation_delta is None
+        or capture_delta is None
     ):
         return False
+    class_completion_ok = True
+    for class_name in ATTENTION_CLASSES:
+        class_delta = _effect_delta(
+            rows_by_endpoint,
+            contrast,
+            "full_accounting",
+            f"attention_{class_name}_completed_final",
+        )
+        if class_delta is None or class_delta < -A5_CONFIRMATORY_GUARDRAIL_TOLERANCES[
+            "attention_completed_total"
+        ]:
+            class_completion_ok = False
+            break
     return (
-        queue_delta <= 0.0
-        and age_delta <= 0.0
-        and completion_delta >= 0.0
-        and starvation_delta <= 0.0
+        queue_delta <= A5_CONFIRMATORY_GUARDRAIL_TOLERANCES["queue_depth_final"]
+        and age_delta <= A5_CONFIRMATORY_GUARDRAIL_TOLERANCES["queued_age_final"]
+        and completion_delta >= -A5_CONFIRMATORY_GUARDRAIL_TOLERANCES[
+            "completion_fraction_final"
+        ]
+        and capture_delta <= A5_CONFIRMATORY_GUARDRAIL_TOLERANCES["capture_pressure_peak"]
+        and class_completion_ok
     )
 
 

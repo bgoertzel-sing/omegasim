@@ -2070,7 +2070,11 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
     )
     assert "- scope: read-only single-hive A5 diagnostics" in summary
     assert "## Promotion Rule Audit" in summary
-    assert "Preregistered zero-tolerance guardrails" in summary
+    assert "Preregistered confirmatory guardrails" in summary
+    assert any(
+        row["endpoint"] == "attention_near_term_external_completed_final"
+        for row in metric_rows
+    )
     assert "promotion_satisfied=" in summary
 
 

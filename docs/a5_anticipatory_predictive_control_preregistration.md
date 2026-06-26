@@ -61,6 +61,14 @@ The key experimental axis is prediction budget, measured by the model class,
 memory window, fitted parameters, update frequency, or an explicit normalized
 budget score.
 
+The follow-up confirmatory addendum freezes the next single-hive larger-run
+rules, including budget-matched timing-broken nulls and prospective practical
+guardrail tolerances:
+
+```text
+docs/a5_confirmatory_addendum.md
+```
+
 ## Primary Endpoints
 
 Fail closed unless the result survives the following accounting controls and
