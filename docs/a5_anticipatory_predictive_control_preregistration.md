@@ -95,6 +95,17 @@ nontrivial than the oracle condition. A plausible positive pattern is:
 If all apparent structure is explained by backlog, service capacity, work
 opportunity, or demand volume, close A5 as another accounting result.
 
+For promotion from the single-hive pilot, guardrails use explicit zero
+tolerance relative to the reactive baseline under matched seeds: final backlog
+must not increase, final queued age must not increase, completion fraction must
+not decrease, and no attention class may show a new starvation pattern.
+Starvation is operationalized as a final-state attention class with queued work
+remaining and zero completed tasks. This is intentionally strict because the
+first A5 question is whether resource-bounded prediction adds residual
+structure without buying it through worse queueing or work allocation. Any
+later numeric tolerance for a larger holdout must be preregistered before that
+holdout runs.
+
 ## Downstream Multi-Hive Stage
 
 Three-hive delayed anticipatory coupling is downstream, not the first

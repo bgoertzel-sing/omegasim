@@ -108,7 +108,11 @@ all of the following under paired seeds:
 - residual structure remains nontrivial relative to oracle rather than simply
   becoming perfectly smoothed;
 - guardrails do not show worse backlog, queued age, completion fraction, or
-  starvation than reactive by a preregistered tolerance.
+  starvation than reactive. For the single-hive pilot this tolerance is zero:
+  final backlog and queued age must not increase, completion fraction must not
+  decrease, and no attention class may show a new starvation pattern under
+  matched seeds. Starvation is counted as a final-state attention class with
+  queued work remaining and zero completed tasks.
 
 If these conditions do not hold, record A5 as unsupported or accounting
 explained. Do not add multi-hive coupling or richer simulator mechanics to

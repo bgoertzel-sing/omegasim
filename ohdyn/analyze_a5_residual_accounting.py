@@ -137,6 +137,12 @@ A5_RESIDUAL_ACCOUNTING_MANIFEST_FIELDS = (
     "condition_count",
     "seed_count",
 )
+_A5_GUARDRAIL_POLICY = (
+    "Preregistered zero-tolerance guardrails: final backlog and queued age "
+    "must not increase, and completion fraction must not decrease versus "
+    "reactive under matched seeds; starvation is a final-state attention "
+    "class with queued work and zero completed tasks."
+)
 _OUTPUT_NAMES = (
     "a5_residual_accounting_metrics.csv",
     "a5_residual_accounting_effects.csv",
@@ -360,6 +366,7 @@ def _endpoint_rows(
             "completion_fraction_final": _series(metrics, "completion_fraction_tick")[-1],
             "queue_depth_final": _series(metrics, "queue_depth")[-1],
             "queued_age_final": _series(metrics, "queued_task_age_mean_tick")[-1],
+            "attention_starvation_count_final": _starvation_count_final(metrics),
             "capture_pressure_peak": max(_series(metrics, "attention_capture_pressure_max_tick")),
         }
         for endpoint, value in endpoints.items():
@@ -406,6 +413,17 @@ def _mean_abs_residual_group(
         )
         values.append(np.abs(residual))
     return float(np.mean(np.column_stack(values))) if values else 0.0
+
+
+def _starvation_count_final(metrics: list[dict[str, float | str]]) -> float:
+    final = metrics[-1]
+    count = 0
+    for class_name in ATTENTION_CLASSES:
+        queued = _float(final.get(f"attention_{class_name}_queued_tick", "0"))
+        completed = _float(final.get(f"attention_{class_name}_completed_total", "0"))
+        if queued > 0.0 and completed <= 0.0:
+            count += 1
+    return float(count)
 
 
 def _residualize(
@@ -684,10 +702,7 @@ def _summary(
             "",
             "## Promotion Rule Audit",
             "",
-            (
-                "Zero tolerance is applied to guardrail degradation because no broader "
-                "A5 tolerance has been preregistered yet."
-            ),
+            _A5_GUARDRAIL_POLICY,
             "",
         ]
     )
@@ -816,9 +831,25 @@ def _guardrails_ok(
         "full_accounting",
         "completion_fraction_final",
     )
-    if queue_delta is None or age_delta is None or completion_delta is None:
+    starvation_delta = _effect_delta(
+        rows_by_endpoint,
+        contrast,
+        "full_accounting",
+        "attention_starvation_count_final",
+    )
+    if (
+        queue_delta is None
+        or age_delta is None
+        or completion_delta is None
+        or starvation_delta is None
+    ):
         return False
-    return queue_delta <= 0.0 and age_delta <= 0.0 and completion_delta >= 0.0
+    return (
+        queue_delta <= 0.0
+        and age_delta <= 0.0
+        and completion_delta >= 0.0
+        and starvation_delta <= 0.0
+    )
 
 
 def _effect_positive(

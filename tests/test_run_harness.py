@@ -2043,6 +2043,7 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
         "residual_state_lag2_autocorr",
         "residual_state_return_time_mean",
         "residual_state_return_time_entropy",
+        "attention_starvation_count_final",
     } <= {row["endpoint"] for row in metric_rows}
     assert any(
         row["contrast"] == "linear_minus_reactive"
@@ -2058,6 +2059,7 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
     )
     assert "- scope: read-only single-hive A5 diagnostics" in summary
     assert "## Promotion Rule Audit" in summary
+    assert "Preregistered zero-tolerance guardrails" in summary
     assert "promotion_satisfied=" in summary
 
 
