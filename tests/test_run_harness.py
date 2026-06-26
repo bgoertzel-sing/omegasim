@@ -66,6 +66,11 @@ from ohdyn.analyze_lagged_service_sync import (
 )
 from ohdyn.analyze_a4_smoke_contract import run_a4_smoke_contract_preflight
 from ohdyn.analyze_a4_holdout import A4_EFFECT_FIELDS, run_a4_holdout_analysis
+from ohdyn.analyze_a4_delayed_null import (
+    A4_DELAYED_NULL_EFFECT_FIELDS,
+    A4_DELAYED_NULL_ENDPOINT_FIELDS,
+    run_a4_delayed_null_analysis,
+)
 from ohdyn.analyze_exogenous_arrival_controls import (
     EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS,
     EXOGENOUS_CONTROL_METRIC_FIELDS,
@@ -1084,6 +1089,106 @@ def test_a4_holdout_analyzer_refuses_missing_artifacts(tmp_path: Path) -> None:
 
     with pytest.raises(FileNotFoundError, match="missing artifacts"):
         run_a4_holdout_analysis(holdout_dir=source, out_dir=tmp_path / "out", seeds=(31,))
+
+
+def test_a4_delayed_null_analyzer_builds_deterministic_shift_controls(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "a4_existing_artifacts"
+    configs_by_mode = {
+        "none": A4_TWO_HIVE_NONE,
+        "direct": A4_TWO_HIVE_DIRECT,
+        "delayed": A4_TWO_HIVE_DELAYED,
+        "shuffled": A4_TWO_HIVE_SHUFFLED,
+    }
+    seeds = (31, 32)
+    for seed in seeds:
+        for mode, config_path in configs_by_mode.items():
+            run_experiment(config_path, seed, source / f"{mode}_seed{seed}")
+    out_dir = tmp_path / "a4_delayed_null"
+    doc_out = tmp_path / "a4_delayed_null.md"
+
+    result = run_a4_delayed_null_analysis(
+        holdout_dir=source,
+        out_dir=out_dir,
+        doc_out=doc_out,
+        seeds=seeds,
+        block_sizes=(2, 3),
+    )
+
+    assert result["seed_count"] == 2
+    assert result["null_endpoint_rows"] > 0
+    assert result["null_effect_rows"] == 24
+    assert (out_dir / "a4_delayed_null_endpoints.csv").exists()
+    assert (out_dir / "a4_delayed_null_effects.csv").exists()
+    assert (out_dir / "a4_delayed_null_manifest.csv").exists()
+    assert (out_dir / "summary.md").exists()
+    assert doc_out.exists()
+
+    with (out_dir / "a4_delayed_null_endpoints.csv").open() as handle:
+        endpoint_rows = list(csv.DictReader(handle))
+    assert list(endpoint_rows[0]) == list(A4_DELAYED_NULL_ENDPOINT_FIELDS)
+    delayed_offsets = {
+        int(row["offset"])
+        for row in endpoint_rows
+        if row["mode"] == "delayed"
+    }
+    assert 0 not in delayed_offsets
+    assert 2 not in delayed_offsets
+
+    with (out_dir / "a4_delayed_null_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    assert list(effect_rows[0]) == list(A4_DELAYED_NULL_EFFECT_FIELDS)
+    delayed_load_row = next(
+        row
+        for row in effect_rows
+        if row["comparison"] == "delayed_minus_none"
+        and row["endpoint"] == "load_backlog_corr_lag0"
+    )
+    assert delayed_load_row["paired_seed_count"] == "2"
+    assert int(delayed_load_row["null_replicate_count"]) > 0
+    summary = (out_dir / "summary.md").read_text()
+    assert "# A4 Delayed-Coupling Temporal Null Analysis" in summary
+    assert "read-only" in summary
+
+    with pytest.raises(FileExistsError, match="delayed-null artifacts"):
+        run_a4_delayed_null_analysis(
+            holdout_dir=source,
+            out_dir=out_dir,
+            doc_out=doc_out,
+            seeds=seeds,
+            block_sizes=(2, 3),
+        )
+
+    second_out = tmp_path / "a4_delayed_null_second"
+    second_doc = tmp_path / "a4_delayed_null_second.md"
+    run_a4_delayed_null_analysis(
+        holdout_dir=source,
+        out_dir=second_out,
+        doc_out=second_doc,
+        seeds=seeds,
+        block_sizes=(2, 3),
+    )
+    for artifact in (
+        "a4_delayed_null_endpoints.csv",
+        "a4_delayed_null_effects.csv",
+        "a4_delayed_null_manifest.csv",
+        "summary.md",
+    ):
+        assert (out_dir / artifact).read_bytes() == (second_out / artifact).read_bytes()
+
+
+def test_a4_delayed_null_analyzer_refuses_missing_artifacts(tmp_path: Path) -> None:
+    source = tmp_path / "a4_incomplete"
+    source.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="missing artifacts"):
+        run_a4_delayed_null_analysis(
+            holdout_dir=source,
+            out_dir=tmp_path / "out",
+            doc_out=None,
+            seeds=(31,),
+        )
 
 
 def test_loads_a0_default_outputs_fixture() -> None:

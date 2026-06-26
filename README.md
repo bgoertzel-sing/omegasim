@@ -466,6 +466,26 @@ The analyzer writes `a4_holdout_hive_endpoints.csv`,
 `delayed-minus-none`, `shuffled-minus-none`, and `direct-minus-shuffled`; the
 last contrast keeps the documented two-hive shuffled caveat.
 
+The preregistered A4 delayed-coupling temporal null analyzer reads the same
+existing holdout artifacts and constructs deterministic circular block shifts
+of one hive trajectory relative to the other. It does not run simulations or
+rewrite holdout artifacts:
+
+```bash
+python -m ohdyn.analyze_a4_delayed_null \
+  --holdout-dir runs/a4_two_hive_holdout_seed100_129 \
+  --out-dir runs/a4_delayed_coupling_null_seed100_129 \
+  --doc-out docs/results/a4_delayed_coupling_null_seed100_129.md \
+  --seeds 100..129
+```
+
+The analyzer writes `a4_delayed_null_endpoints.csv`,
+`a4_delayed_null_effects.csv`, `a4_delayed_null_manifest.csv`, and
+`summary.md`. The default circular-shift block sizes are `5`, `10`, and `20`
+ticks; offsets exclude `0` and the configured causal delay. Treat surviving
+null-centered delayed endpoints as follow-up synchronization diagnostics only,
+not as independent lobe-grammar or multi-hive phase-control evidence.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
