@@ -652,6 +652,51 @@ def test_automation_guard_opens_when_a5_preregistration_exists(tmp_path: Path) -
     assert state["a5_preregistration_active"] is True
 
 
+def test_automation_guard_closes_after_a5_closure_despite_preregistration(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = tmp_path / "docs" / "a5_anticipatory_predictive_control_preregistration.md"
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "The current A5 anticipatory predictive-control loop is closed.",
+                "",
+                "- Status: A5 closure note, 2026-06-26.",
+                "- Result: Do not reopen A5 for more mechanics or larger seed sweeps "
+                "from this result alone.",
+                "- Recommended next step: remain in no-op/awaiting-preregistration "
+                "state unless a concrete artifact/analyzer bug is found or Ben "
+                "explicitly requests a new preregistered OmegaSim design.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: false",
+                "recommended_next_action: Preregister guardrails before fresh A5.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["closed_reasons"] == [
+        "automation_status_next_step_noop",
+        "automation_status_a5_closed",
+    ]
+    assert state["a5_preregistration_active"] is True
+
+
 def _write_config(path: Path, overrides: dict[str, object]) -> Path:
     data = {
         "run": {"experiment_id": "a4_config_validation", "ticks": 3},

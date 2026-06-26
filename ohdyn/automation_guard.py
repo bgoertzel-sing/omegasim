@@ -26,11 +26,9 @@ def read_automation_state(
     review = _read_optional_text(Path(review_path))
     review_header = _parse_review_header(review)
     a5_preregistration_active = Path(a5_preregistration_path).is_file()
-    closed_reasons = (
-        []
-        if a5_preregistration_active
-        else _closed_reasons(status=status, review=review)
-    )
+    closed_reasons = _closed_reasons(status=status, review=review)
+    if a5_preregistration_active and not _status_closes_active_a5(status):
+        closed_reasons = []
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
     return {
@@ -83,12 +81,29 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         and "should_noop: true" in normalized_status
     ):
         reasons.append("automation_status_noop_guard")
+    if "recommended next step: remain in no-op/awaiting-preregistration state" in normalized_status:
+        reasons.append("automation_status_next_step_noop")
+    if "do not reopen a5" in normalized_status:
+        reasons.append("automation_status_a5_closed")
     if "explicit no-op/awaiting-preregistration state" in normalized_review:
         reasons.append("strategy_review_noop_awaiting_preregistration")
     if "do not run new simulations or analyzers now" in normalized_review:
         reasons.append("strategy_review_stop_new_work")
 
     return reasons
+
+
+def _status_closes_active_a5(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "current a5" in normalized_status
+        and "closed" in normalized_status
+        and (
+            "recommended next step: remain in no-op/awaiting-preregistration state"
+            in normalized_status
+            or "do not reopen a5" in normalized_status
+        )
+    )
 
 
 def _normalize(text: str) -> str:
