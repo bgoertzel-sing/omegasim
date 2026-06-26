@@ -59,6 +59,11 @@ work-allocation alignment fields. Task-arrival totals, service capacity, action
 opportunity, and work budget remain governed by the existing baseline knobs so
 pilot comparisons can stay matched across preregistered predictor conditions.
 
+Before any broader A5 seed sweep, use
+`docs/a5_residual_accounting_diagnostic_design.md` as the minimum read-only
+diagnostic design for residual structure, accounting controls, surrogate nulls,
+and promotion/closure rules.
+
 ## Current A0/A1 Baseline
 
 The baseline runner loads one YAML config, creates 15 static OmegaHive-like agents, connects them through one NetworkX bus graph, advances one in-memory task queue for the configured tick count, and writes deterministic artifacts for the supplied seed. The only supported baseline actions are `idle`, `message`, `create_task`, and `work_task`.
