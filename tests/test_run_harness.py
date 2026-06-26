@@ -77,6 +77,11 @@ from ohdyn.analyze_a4_accounting_controls import (
     A4_ACCOUNTING_CONTROL_ENDPOINT_FIELDS,
     run_a4_accounting_control_analysis,
 )
+from ohdyn.analyze_a5_residual_accounting import (
+    A5_RESIDUAL_ACCOUNTING_EFFECT_FIELDS,
+    A5_RESIDUAL_ACCOUNTING_METRIC_FIELDS,
+    run_a5_residual_accounting_analysis,
+)
 from ohdyn.analyze_exogenous_arrival_controls import (
     EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS,
     EXOGENOUS_CONTROL_METRIC_FIELDS,
@@ -2002,6 +2007,45 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert "- scope: single-hive matched-demand pilot" in summary
     assert "## Condition Means" in summary
     assert "oracle minus reactive" in summary
+
+
+def test_a5_residual_accounting_analyzes_existing_comparison(
+    tmp_path: Path,
+) -> None:
+    run_predictive_control_comparison(
+        seeds=(5, 6),
+        out_dir=tmp_path / "compare",
+    )
+    result = run_a5_residual_accounting_analysis(
+        compare_dir=tmp_path / "compare",
+        out_dir=tmp_path / "analysis",
+    )
+
+    assert result["condition_count"] == 5
+    assert result["seed_count"] == 2
+    assert result["metric_rows"] > 0
+    assert result["effect_rows"] > 0
+
+    with (tmp_path / "analysis" / "a5_residual_accounting_metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (tmp_path / "analysis" / "a5_residual_accounting_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    summary = (tmp_path / "analysis" / "summary.md").read_text()
+
+    assert set(metric_rows[0]) == set(A5_RESIDUAL_ACCOUNTING_METRIC_FIELDS)
+    assert set(effect_rows[0]) == set(A5_RESIDUAL_ACCOUNTING_EFFECT_FIELDS)
+    assert {
+        row["control_level"]
+        for row in metric_rows
+        if row["endpoint"] == "residual_state_predictability_r2"
+    } == {"raw", "clock_demand", "load_opportunity", "full_accounting"}
+    assert any(
+        row["contrast"] == "linear_minus_reactive"
+        and row["control_level"] == "full_accounting"
+        and row["endpoint"] == "residual_state_predictability_r2"
+        for row in effect_rows
+    )
+    assert "- scope: read-only single-hive A5 diagnostics" in summary
 
 
 def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(

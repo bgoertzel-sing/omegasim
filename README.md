@@ -64,6 +64,13 @@ Before any broader A5 seed sweep, use
 diagnostic design for residual structure, accounting controls, surrogate nulls,
 and promotion/closure rules.
 
+The matching read-only analyzer consumes an existing comparison directory
+without rerunning simulations:
+
+```bash
+python -m ohdyn.analyze_a5_residual_accounting --compare-dir runs/a5_predictive_control_compare --out runs/a5_residual_accounting
+```
+
 ## Current A0/A1 Baseline
 
 The baseline runner loads one YAML config, creates 15 static OmegaHive-like agents, connects them through one NetworkX bus graph, advances one in-memory task queue for the configured tick count, and writes deterministic artifacts for the supplied seed. The only supported baseline actions are `idle`, `message`, `create_task`, and `work_task`.
