@@ -31,6 +31,13 @@ def read_automation_state(
         closed_reasons = []
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
+    status_next_action = _status_next_action(status)
+    recommended_next_action = (
+        status_next_action
+        if closed_reasons and status_next_action
+        else review_header.get("recommended_next_action", "")
+    )
+
     return {
         "state": state,
         "should_noop": bool(closed_reasons),
@@ -38,7 +45,10 @@ def read_automation_state(
         "a5_preregistration_active": a5_preregistration_active,
         "strategic_change_level": review_header.get("strategic_change_level", ""),
         "notify_ben": _parse_bool(review_header.get("notify_ben", "")),
-        "recommended_next_action": review_header.get("recommended_next_action", ""),
+        "recommended_next_action": recommended_next_action,
+        "review_recommended_next_action": review_header.get(
+            "recommended_next_action", ""
+        ),
     }
 
 
@@ -104,6 +114,21 @@ def _status_closes_active_a5(status: str) -> bool:
             or "do not reopen a5" in normalized_status
         )
     )
+
+
+def _status_next_action(status: str) -> str:
+    for line in status.splitlines():
+        stripped = line.strip()
+        normalized = stripped.lower()
+        for prefix in (
+            "- recommended next step:",
+            "recommended next step:",
+            "- next step:",
+            "next step:",
+        ):
+            if normalized.startswith(prefix):
+                return stripped.split(":", 1)[1].strip()
+    return ""
 
 
 def _normalize(text: str) -> str:

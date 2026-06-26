@@ -586,6 +586,15 @@ def test_automation_guard_reports_closed_state_from_status_and_review(tmp_path: 
         "strategy_review_noop_awaiting_preregistration",
         "strategy_review_stop_new_work",
     ]
+    assert (
+        state["recommended_next_action"]
+        == "leave OmegaSim closed at the current A4 boundary unless a concrete "
+        "artifact bug is found."
+    )
+    assert (
+        state["review_recommended_next_action"]
+        == "Put OmegaSim into an explicit no-op/awaiting-preregistration state."
+    )
 
 
 def test_automation_guard_reports_open_without_closed_status(tmp_path: Path) -> None:
@@ -600,6 +609,8 @@ def test_automation_guard_reports_open_without_closed_status(tmp_path: Path) -> 
     assert state["should_noop"] is False
     assert state["closed_reasons"] == []
     assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == ""
+    assert state["review_recommended_next_action"] == ""
 
 
 def test_automation_guard_requires_explicit_noop_marker(tmp_path: Path) -> None:
@@ -695,6 +706,14 @@ def test_automation_guard_closes_after_a5_closure_despite_preregistration(
         "automation_status_a5_closed",
     ]
     assert state["a5_preregistration_active"] is True
+    assert state["recommended_next_action"] == (
+        "remain in no-op/awaiting-preregistration state unless a concrete "
+        "artifact/analyzer bug is found or Ben explicitly requests a new "
+        "preregistered OmegaSim design."
+    )
+    assert state["review_recommended_next_action"] == (
+        "Preregister guardrails before fresh A5."
+    )
 
 
 def _write_config(path: Path, overrides: dict[str, object]) -> Path:
