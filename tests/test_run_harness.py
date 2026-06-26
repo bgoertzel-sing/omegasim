@@ -71,6 +71,11 @@ from ohdyn.analyze_a4_delayed_null import (
     A4_DELAYED_NULL_ENDPOINT_FIELDS,
     run_a4_delayed_null_analysis,
 )
+from ohdyn.analyze_a4_accounting_controls import (
+    A4_ACCOUNTING_CONTROL_EFFECT_FIELDS,
+    A4_ACCOUNTING_CONTROL_ENDPOINT_FIELDS,
+    run_a4_accounting_control_analysis,
+)
 from ohdyn.analyze_exogenous_arrival_controls import (
     EXOGENOUS_CONTROL_BOOTSTRAP_FIELDS,
     EXOGENOUS_CONTROL_METRIC_FIELDS,
@@ -1184,6 +1189,130 @@ def test_a4_delayed_null_analyzer_refuses_missing_artifacts(tmp_path: Path) -> N
 
     with pytest.raises(FileNotFoundError, match="missing artifacts"):
         run_a4_delayed_null_analysis(
+            holdout_dir=source,
+            out_dir=tmp_path / "out",
+            doc_out=None,
+            seeds=(31,),
+        )
+
+
+def test_a4_accounting_control_analyzer_residualizes_completion_shift_controls(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "a4_existing_artifacts"
+    configs_by_mode = {
+        "none": A4_TWO_HIVE_NONE,
+        "direct": A4_TWO_HIVE_DIRECT,
+        "delayed": A4_TWO_HIVE_DELAYED,
+        "shuffled": A4_TWO_HIVE_SHUFFLED,
+    }
+    seeds = (31, 32)
+    for seed in seeds:
+        for mode, config_path in configs_by_mode.items():
+            run_experiment(config_path, seed, source / f"{mode}_seed{seed}")
+    out_dir = tmp_path / "a4_accounting_controls"
+    doc_out = tmp_path / "a4_accounting_controls.md"
+
+    result = run_a4_accounting_control_analysis(
+        holdout_dir=source,
+        out_dir=out_dir,
+        doc_out=doc_out,
+        seeds=seeds,
+        block_sizes=(2, 3),
+    )
+
+    assert result["seed_count"] == 2
+    assert "combined_non_tautological" in result["control_groups"]
+    assert "identity_inclusive" in result["control_groups"]
+    assert result["observed_endpoint_rows"] == 48
+    assert result["null_endpoint_rows"] > 0
+    assert result["effect_rows"] == 48
+    assert (out_dir / "a4_accounting_control_endpoints.csv").exists()
+    assert (out_dir / "a4_accounting_control_effects.csv").exists()
+    assert (out_dir / "a4_accounting_control_manifest.csv").exists()
+    assert (out_dir / "summary.md").exists()
+    assert doc_out.exists()
+
+    with (out_dir / "a4_accounting_control_endpoints.csv").open() as handle:
+        endpoint_rows = list(csv.DictReader(handle))
+    assert list(endpoint_rows[0]) == list(A4_ACCOUNTING_CONTROL_ENDPOINT_FIELDS)
+    delayed_null_offsets = {
+        int(row["offset"])
+        for row in endpoint_rows
+        if row["mode"] == "delayed" and int(row["block_size"]) > 0
+    }
+    assert 0 not in delayed_null_offsets
+    assert 2 not in delayed_null_offsets
+
+    raw_observed = next(
+        row
+        for row in endpoint_rows
+        if row["mode"] == "delayed"
+        and row["control_group"] == "raw"
+        and row["block_size"] == "0"
+    )
+    clock_observed = next(
+        row
+        for row in endpoint_rows
+        if row["mode"] == "delayed"
+        and row["control_group"] == "clock_trend"
+        and row["block_size"] == "0"
+    )
+    assert raw_observed["completion_fraction_corr_lag0"] != "NA"
+    assert clock_observed["completion_fraction_corr_lag0"] != "NA"
+
+    with (out_dir / "a4_accounting_control_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    assert list(effect_rows[0]) == list(A4_ACCOUNTING_CONTROL_EFFECT_FIELDS)
+    delayed_clock = next(
+        row
+        for row in effect_rows
+        if row["comparison"] == "delayed_minus_none"
+        and row["control_group"] == "clock_trend"
+        and row["endpoint"] == "completion_fraction_corr_lag0"
+    )
+    assert delayed_clock["paired_seed_count"] == "2"
+    assert int(delayed_clock["null_replicate_count"]) > 0
+    summary = (out_dir / "summary.md").read_text()
+    assert "# A4 Accounting-Control Completion Synchrony Analysis" in summary
+    assert "read-only" in summary
+    assert "identity_inclusive" in summary
+
+    with pytest.raises(FileExistsError, match="accounting-control artifacts"):
+        run_a4_accounting_control_analysis(
+            holdout_dir=source,
+            out_dir=out_dir,
+            doc_out=doc_out,
+            seeds=seeds,
+            block_sizes=(2, 3),
+        )
+
+    second_out = tmp_path / "a4_accounting_controls_second"
+    second_doc = tmp_path / "a4_accounting_controls_second.md"
+    run_a4_accounting_control_analysis(
+        holdout_dir=source,
+        out_dir=second_out,
+        doc_out=second_doc,
+        seeds=seeds,
+        block_sizes=(2, 3),
+    )
+    for artifact in (
+        "a4_accounting_control_endpoints.csv",
+        "a4_accounting_control_effects.csv",
+        "a4_accounting_control_manifest.csv",
+        "summary.md",
+    ):
+        assert (out_dir / artifact).read_bytes() == (second_out / artifact).read_bytes()
+
+
+def test_a4_accounting_control_analyzer_refuses_missing_artifacts(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "a4_incomplete"
+    source.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="missing artifacts"):
+        run_a4_accounting_control_analysis(
             holdout_dir=source,
             out_dir=tmp_path / "out",
             doc_out=None,

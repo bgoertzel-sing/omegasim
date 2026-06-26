@@ -486,6 +486,29 @@ ticks; offsets exclude `0` and the configured causal delay. Treat surviving
 null-centered delayed endpoints as follow-up synchronization diagnostics only,
 not as independent lobe-grammar or multi-hive phase-control evidence.
 
+The read-only A4 accounting-control analyzer tests that delayed completion
+synchrony diagnostic without new simulator runs. It residualizes per-hive
+completion-fraction trajectories by preregistered clock, opportunity/load,
+transfer-timing, combined non-tautological, and identity-inclusive covariate
+groups, then recomputes the same circular-shift temporal null:
+
+```bash
+python -m ohdyn.analyze_a4_accounting_controls \
+  --holdout-dir runs/a4_two_hive_holdout_seed100_129 \
+  --out-dir runs/a4_accounting_control_seed100_129 \
+  --doc-out docs/results/a4_accounting_control_seed100_129.md \
+  --seeds 100..129
+```
+
+The analyzer writes `a4_accounting_control_endpoints.csv`,
+`a4_accounting_control_effects.csv`, `a4_accounting_control_manifest.csv`, and
+`summary.md`. The committed seed `100..129` summary closes the delayed
+completion-fraction residual conservatively: the raw and clock-only endpoints
+survive the temporal null, but the opportunity/load and combined
+non-tautological controls move both lag endpoints inside the residualized null,
+so A4 should remain a queue-flow/service and action-opportunity accounting
+result plus a documented delayed synchronization diagnostic.
+
 `pressure_comparison_metrics.csv` has one row per fixed policy and records high-pressure minus normal-pressure deltas:
 
 - `policy`, the fixed policy being compared across pressure conditions.
