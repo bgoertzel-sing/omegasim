@@ -746,6 +746,57 @@ def test_automation_guard_closes_after_a5_closure_despite_preregistration(
     )
 
 
+def test_automation_guard_closes_for_current_a5_status_wording(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = tmp_path / "docs" / "a5_anticipatory_predictive_control_preregistration.md"
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "The current A5 anticipatory predictive-control loop is closed "
+                "against the fresh seed `7..16` confirmatory evidence.",
+                "",
+                "- Status: A5 preregistration/scaffold refresh completed, "
+                "2026-06-26T22:59Z.",
+                "- Result: A5 remains frozen against the seed `7..16` "
+                "confirmatory evidence.",
+                "- Recommended next step: have Ben decide whether A5 should stay "
+                "closed or receive a new preregistered post-closure design target.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: none",
+                "notify_ben: false",
+                "recommended_next_action: Remain in no-op/awaiting-preregistration "
+                "state and do not run new simulations or analyzers unless Ben "
+                "requests a new preregistered design or a concrete "
+                "artifact/analyzer bug is found.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["closed_reasons"] == [
+        "automation_status_a5_loop_closed",
+    ]
+    assert state["recommended_next_action"] == (
+        "have Ben decide whether A5 should stay closed or receive a new "
+        "preregistered post-closure design target."
+    )
+
+
 def _write_config(path: Path, overrides: dict[str, object]) -> Path:
     data = {
         "run": {"experiment_id": "a4_config_validation", "ticks": 3},

@@ -95,6 +95,12 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         status_reasons.append("automation_status_next_step_noop")
     if "do not reopen a5" in normalized_status:
         status_reasons.append("automation_status_a5_closed")
+    if (
+        not status_reasons
+        and "the current a5 anticipatory predictive-control loop is closed"
+        in normalized_status
+    ):
+        status_reasons.append("automation_status_a5_loop_closed")
 
     reasons = list(status_reasons)
     if not status_reasons:
@@ -111,10 +117,15 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
 def _status_closes_active_a5(status: str) -> bool:
     normalized_status = _normalize(status)
     return (
-        "current a5" in normalized_status
+        (
+            "current a5" in normalized_status
+            or "the current a5 anticipatory predictive-control loop" in normalized_status
+        )
         and "closed" in normalized_status
         and (
             "recommended next step: remain in no-op/awaiting-preregistration state"
+            in normalized_status
+            or "recommended next step: have ben decide whether a5 should stay closed"
             in normalized_status
             or "do not reopen a5" in normalized_status
         )
