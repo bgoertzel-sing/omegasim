@@ -613,6 +613,36 @@ def test_automation_guard_reports_open_without_closed_status(tmp_path: Path) -> 
     assert state["review_recommended_next_action"] == ""
 
 
+def test_automation_guard_does_not_close_from_stale_review_only(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    status_path.write_text("# OmegaSim Automation Status\n\n- Next step: run A0 smoke.\n")
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: false",
+                "recommended_next_action: Put OmegaSim into an explicit "
+                "no-op/awaiting-preregistration state.",
+                "",
+                "Do not run new simulations or analyzers now.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, tmp_path / "missing-a5.md")
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["closed_reasons"] == []
+    assert (
+        state["review_recommended_next_action"]
+        == "Put OmegaSim into an explicit no-op/awaiting-preregistration state."
+    )
+
+
 def test_automation_guard_requires_explicit_noop_marker(tmp_path: Path) -> None:
     status_path = tmp_path / "AUTOMATION_STATUS.md"
     review_path = tmp_path / "latest-review.md"

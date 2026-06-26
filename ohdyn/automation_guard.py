@@ -78,23 +78,28 @@ def _parse_bool(value: str) -> bool:
 
 
 def _closed_reasons(*, status: str, review: str) -> list[str]:
-    reasons = []
+    status_reasons = []
     normalized_status = _normalize(status)
     normalized_review = _normalize(review)
 
     if "next step: leave omegasim closed" in normalized_status:
-        reasons.append("automation_status_next_step_closed")
+        status_reasons.append("automation_status_next_step_closed")
     if "closed at the current a4 boundary" in normalized_status:
-        reasons.append("automation_status_a4_closed")
+        status_reasons.append("automation_status_a4_closed")
     if (
         "state: closed_awaiting_preregistration" in normalized_status
         and "should_noop: true" in normalized_status
     ):
-        reasons.append("automation_status_noop_guard")
+        status_reasons.append("automation_status_noop_guard")
     if "recommended next step: remain in no-op/awaiting-preregistration state" in normalized_status:
-        reasons.append("automation_status_next_step_noop")
+        status_reasons.append("automation_status_next_step_noop")
     if "do not reopen a5" in normalized_status:
-        reasons.append("automation_status_a5_closed")
+        status_reasons.append("automation_status_a5_closed")
+
+    reasons = list(status_reasons)
+    if not status_reasons:
+        return reasons
+
     if "explicit no-op/awaiting-preregistration state" in normalized_review:
         reasons.append("strategy_review_noop_awaiting_preregistration")
     if "do not run new simulations or analyzers now" in normalized_review:
