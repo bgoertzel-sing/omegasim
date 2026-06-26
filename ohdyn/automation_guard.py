@@ -70,7 +70,6 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         reasons.append("automation_status_a4_closed")
     if (
         "state: closed_awaiting_preregistration" in normalized_status
-        or "closed_awaiting_preregistration" in normalized_status
         and "should_noop: true" in normalized_status
     ):
         reasons.append("automation_status_noop_guard")

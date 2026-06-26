@@ -589,6 +589,23 @@ def test_automation_guard_reports_open_without_closed_status(tmp_path: Path) -> 
     assert state["notify_ben"] is True
 
 
+def test_automation_guard_requires_explicit_noop_marker(tmp_path: Path) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    status_path.write_text(
+        "# OmegaSim Automation Status\n\n"
+        "- Prior guard state observed: closed_awaiting_preregistration.\n"
+        "- Next step: run A0 smoke.\n"
+    )
+    review_path.write_text("strategic_change_level: minor\nnotify_ben: false\n")
+
+    state = read_automation_state(status_path, review_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["closed_reasons"] == []
+
+
 def _write_config(path: Path, overrides: dict[str, object]) -> Path:
     data = {
         "run": {"experiment_id": "a4_config_validation", "ticks": 3},
