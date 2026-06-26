@@ -561,7 +561,7 @@ def test_automation_guard_reports_closed_state_from_status_and_review(tmp_path: 
         )
     )
 
-    state = read_automation_state(status_path, review_path)
+    state = read_automation_state(status_path, review_path, tmp_path / "missing-a5.md")
 
     assert state["state"] == "closed_awaiting_preregistration"
     assert state["should_noop"] is True
@@ -581,7 +581,7 @@ def test_automation_guard_reports_open_without_closed_status(tmp_path: Path) -> 
     status_path.write_text("# OmegaSim Automation Status\n\n- Next step: run A0 smoke.\n")
     review_path.write_text("strategic_change_level: minor\nnotify_ben: true\n")
 
-    state = read_automation_state(status_path, review_path)
+    state = read_automation_state(status_path, review_path, tmp_path / "missing-a5.md")
 
     assert state["state"] == "open"
     assert state["should_noop"] is False
@@ -599,11 +599,44 @@ def test_automation_guard_requires_explicit_noop_marker(tmp_path: Path) -> None:
     )
     review_path.write_text("strategic_change_level: minor\nnotify_ben: false\n")
 
-    state = read_automation_state(status_path, review_path)
+    state = read_automation_state(status_path, review_path, tmp_path / "missing-a5.md")
 
     assert state["state"] == "open"
     assert state["should_noop"] is False
     assert state["closed_reasons"] == []
+
+
+def test_automation_guard_opens_when_a5_preregistration_exists(tmp_path: Path) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = tmp_path / "docs" / "a5_anticipatory_predictive_control_preregistration.md"
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "# OmegaSim Automation Status\n\n"
+        "- Next step: leave OmegaSim closed at the current A4 boundary unless "
+        "a concrete artifact bug is found.\n"
+        "- Result: state: closed_awaiting_preregistration and should_noop: true.\n"
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: none",
+                "notify_ben: false",
+                "recommended_next_action: Keep OmegaSim in an explicit "
+                "no-op/awaiting-preregistration state.",
+                "",
+                "Do not run new simulations or analyzers now.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["closed_reasons"] == []
+    assert state["a5_preregistration_active"] is True
 
 
 def _write_config(path: Path, overrides: dict[str, object]) -> Path:

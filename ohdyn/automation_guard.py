@@ -10,24 +10,34 @@ from typing import Any
 
 DEFAULT_STATUS_PATH = Path("AUTOMATION_STATUS.md")
 DEFAULT_REVIEW_PATH = Path("../outputs/strategy-reviews/omegasim/latest-review.md")
+DEFAULT_A5_PREREGISTRATION_PATH = Path(
+    "docs/a5_anticipatory_predictive_control_preregistration.md"
+)
 
 
 def read_automation_state(
     status_path: str | Path = DEFAULT_STATUS_PATH,
     review_path: str | Path = DEFAULT_REVIEW_PATH,
+    a5_preregistration_path: str | Path = DEFAULT_A5_PREREGISTRATION_PATH,
 ) -> dict[str, Any]:
     """Return the current automation state from local status/review artifacts."""
 
     status = _read_optional_text(Path(status_path))
     review = _read_optional_text(Path(review_path))
     review_header = _parse_review_header(review)
-    closed_reasons = _closed_reasons(status=status, review=review)
+    a5_preregistration_active = Path(a5_preregistration_path).is_file()
+    closed_reasons = (
+        []
+        if a5_preregistration_active
+        else _closed_reasons(status=status, review=review)
+    )
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
     return {
         "state": state,
         "should_noop": bool(closed_reasons),
         "closed_reasons": closed_reasons,
+        "a5_preregistration_active": a5_preregistration_active,
         "strategic_change_level": review_header.get("strategic_change_level", ""),
         "notify_ben": _parse_bool(review_header.get("notify_ben", "")),
         "recommended_next_action": review_header.get("recommended_next_action", ""),
@@ -99,13 +109,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(DEFAULT_REVIEW_PATH),
         help="Path to the latest external strategy review.",
     )
+    parser.add_argument(
+        "--a5-preregistration",
+        default=str(DEFAULT_A5_PREREGISTRATION_PATH),
+        help="Path to an explicit A5 preregistration that reopens the loop.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    state = read_automation_state(args.status, args.review)
+    state = read_automation_state(args.status, args.review, args.a5_preregistration)
     print(json.dumps(state, sort_keys=True))
     return 0
 
