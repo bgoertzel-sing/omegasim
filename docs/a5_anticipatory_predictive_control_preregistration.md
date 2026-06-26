@@ -24,6 +24,14 @@ resource-saving compromise: the group develops simpler high-level regularities
 that are cheaply predictable even when detailed inter-agent prediction is too
 expensive.
 
+Prediction effort is itself a scarce managed resource. In richer OmegaHive-like
+systems, inter-agent or inter-role prediction competes with ordinary work,
+coordination, cleanup, and research attention. A5 therefore treats prediction
+budget as a manipulated experimental axis, not as a free analytic oracle. The
+primary question is whether intermediate prediction budgets create richer but
+still partly predictable residual collective dynamics than either zero-budget
+reactivity or high-budget/oracle smoothing.
+
 ## First Experiment Family
 
 Start with one hive before adding multi-hive coupling. The single-hive scaffold
@@ -59,7 +67,18 @@ Use paired seeds and matched demand streams across:
 
 The key experimental axis is prediction budget, measured by the model class,
 memory window, fitted parameters, update frequency, or an explicit normalized
-budget score.
+budget score:
+
+- none/reactive: no forecast expenditure;
+- low budget: linear or short-memory prediction;
+- medium budget: deterministic nonlinear prediction with limited memory;
+- high budget: larger deterministic nonlinear prediction, still bounded;
+- oracle: future demand known, interpreted as a smoothing positive control.
+
+Every contrast must keep task-arrival totals, service capacity, action
+opportunity, work budget, and deterministic demand stream matched. Prediction
+budget may change forecast timing and service-priority allocation; it must not
+silently change the amount of work available or the amount of demand injected.
 
 The follow-up confirmatory addendum freezes the next single-hive larger-run
 rules, including budget-matched timing-broken nulls and prospective practical
