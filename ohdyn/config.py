@@ -34,6 +34,7 @@ PREDICTIVE_CONTROL_CONDITIONS = (
     "nonlinear",
     "oracle",
     "shuffled",
+    "nonlinear_shuffled",
 )
 
 

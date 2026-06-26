@@ -53,8 +53,9 @@ Use paired seeds and matched demand streams across:
 4. High-budget nonlinear predictor: larger deterministic nonlinear model or
    longer memory, still bounded.
 5. Oracle predictor: future demand known, positive control for coordination.
-6. Shuffled or phase-randomized predictor: null preserving marginal forecast
-   structure while breaking useful timing.
+6. Budget-matched shuffled or phase-randomized predictors: nulls preserving
+   each predictor's budget and marginal forecast structure while breaking
+   useful timing.
 
 The key experimental axis is prediction budget, measured by the model class,
 memory window, fitted parameters, update frequency, or an explicit normalized

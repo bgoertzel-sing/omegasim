@@ -1984,10 +1984,14 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         "nonlinear",
         "oracle",
         "shuffled",
+        "nonlinear_shuffled",
     ]
     assert {row["run_count"] for row in first_rows} == {2}
     assert (tmp_path / "first" / "reactive_seed5" / "metrics.csv").is_file()
     assert (tmp_path / "first" / "configs" / "a5_predictive_oracle.yaml").is_file()
+    assert (
+        tmp_path / "first" / "configs" / "a5_predictive_nonlinear_shuffled.yaml"
+    ).is_file()
 
     with (tmp_path / "first" / "predictive_control_comparison_metrics.csv").open() as handle:
         comparison_rows = list(csv.DictReader(handle))
@@ -2000,13 +2004,14 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
 
     assert set(comparison_rows[0]) == set(A5_PREDICTIVE_COMPARISON_FIELDS)
     assert set(effect_rows[0]) == set(A5_PREDICTIVE_EFFECT_FIELDS)
-    assert len(comparison_rows) == 5
+    assert len(comparison_rows) == 6
     assert len(effect_rows) == 6
     assert oracle_config["predictive_control"]["condition"] == "oracle"
     assert oracle_config["predictive_control"]["prediction_budget"] == 1.0
     assert "- scope: single-hive matched-demand pilot" in summary
     assert "## Condition Means" in summary
     assert "oracle minus reactive" in summary
+    assert "nonlinear_shuffled" in summary
 
 
 def test_a5_residual_accounting_analyzes_existing_comparison(
@@ -2021,7 +2026,7 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
         out_dir=tmp_path / "analysis",
     )
 
-    assert result["condition_count"] == 5
+    assert result["condition_count"] == 6
     assert result["seed_count"] == 2
     assert result["metric_rows"] > 0
     assert result["effect_rows"] > 0
@@ -2053,6 +2058,12 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
     )
     assert any(
         row["contrast"] == "oracle_minus_linear"
+        and row["control_level"] == "full_accounting"
+        and row["endpoint"] == "residual_state_predictability_r2"
+        for row in effect_rows
+    )
+    assert any(
+        row["contrast"] == "nonlinear_minus_nonlinear_shuffled"
         and row["control_level"] == "full_accounting"
         and row["endpoint"] == "residual_state_predictability_r2"
         for row in effect_rows

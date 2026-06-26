@@ -1614,7 +1614,7 @@ def _a5_forecast_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
 
     if control.condition == "oracle":
         return _a5_demand_shares(config, lead_tick)
-    if control.condition == "shuffled":
+    if control.condition in {"shuffled", "nonlinear_shuffled"}:
         return _a5_demand_shares(config, tick + control.phase_shift_ticks)
     if control.condition == "reactive":
         return _a5_demand_shares(config, tick)

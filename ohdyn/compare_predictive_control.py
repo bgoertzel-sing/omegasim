@@ -23,6 +23,7 @@ A5_PREDICTIVE_CONDITIONS = (
     ("nonlinear", 0.65),
     ("oracle", 1.0),
     ("shuffled", 0.35),
+    ("nonlinear_shuffled", 0.65),
 )
 
 A5_PREDICTIVE_COMPARISON_FIELDS = (
@@ -228,7 +229,7 @@ def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         ("condition_vs_reactive", "reactive", "nonlinear"),
         ("condition_vs_reactive", "reactive", "oracle"),
         ("condition_vs_shuffled", "shuffled", "linear"),
-        ("condition_vs_shuffled", "shuffled", "nonlinear"),
+        ("condition_vs_budget_matched_shuffled", "nonlinear_shuffled", "nonlinear"),
         ("oracle_vs_nonlinear", "nonlinear", "oracle"),
     )
     return [
@@ -319,7 +320,9 @@ def _summary(
             (
                 "This pilot compares forecast modes under matched task-arrival, action, "
                 "service, and deterministic demand-signal settings. Treat throughput and "
-                "queue changes as guardrails, not as evidence for structured dynamics."
+                "queue changes as guardrails, not as evidence for structured dynamics. "
+                "`shuffled` is the linear-budget timing-broken null; "
+                "`nonlinear_shuffled` is the nonlinear-budget timing-broken null."
             ),
         ]
     )

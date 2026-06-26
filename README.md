@@ -41,8 +41,8 @@ python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --
 ```
 
 A bounded paired-seed pilot comparison derives matched single-hive configs for
-reactive, linear, nonlinear, oracle, and shuffled predictors from the smoke
-fixture:
+reactive, linear, nonlinear, oracle, linear-budget shuffled, and
+nonlinear-budget shuffled predictors from the smoke fixture:
 
 ```bash
 python -m ohdyn.compare_predictive_control --seeds 5 6 --out runs/a5_predictive_control_compare
@@ -63,6 +63,9 @@ Before any broader A5 seed sweep, use
 `docs/a5_residual_accounting_diagnostic_design.md` as the minimum read-only
 diagnostic design for residual structure, accounting controls, surrogate nulls,
 and promotion/closure rules.
+`docs/a5_confirmatory_addendum.md` freezes prospective confirmatory guardrail
+tolerances and budget-matched timing-broken null requirements for any fresh
+larger paired-seed run.
 
 The matching read-only analyzer consumes an existing comparison directory
 without rerunning simulations:

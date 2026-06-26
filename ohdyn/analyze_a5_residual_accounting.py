@@ -22,8 +22,19 @@ DEFAULT_A5_COMPARE_DIR = Path("runs/a5_predictive_control_compare")
 DEFAULT_A5_RESIDUAL_OUT_DIR = Path("runs/a5_residual_accounting")
 DEFAULT_A5_PERMUTATION_REPS = 512
 DEFAULT_A5_PERMUTATION_SEED = 5505
-A5_REQUIRED_CONDITIONS = ("reactive", "linear", "nonlinear", "oracle", "shuffled")
+A5_REQUIRED_CONDITIONS = (
+    "reactive",
+    "linear",
+    "nonlinear",
+    "oracle",
+    "shuffled",
+    "nonlinear_shuffled",
+)
 A5_INTERMEDIATE_CONDITIONS = ("linear", "nonlinear")
+A5_TIMING_BROKEN_NULL_BY_CONDITION = {
+    "linear": "shuffled",
+    "nonlinear": "nonlinear_shuffled",
+}
 A5_CONTROL_LEVELS: tuple[tuple[str, tuple[str, ...], str], ...] = (
     ("raw", (), "uncontrolled observed trajectories"),
     (
@@ -141,7 +152,9 @@ _A5_GUARDRAIL_POLICY = (
     "Preregistered zero-tolerance guardrails: final backlog and queued age "
     "must not increase, and completion fraction must not decrease versus "
     "reactive under matched seeds; starvation is a final-state attention "
-    "class with queued work and zero completed tasks."
+    "class with queued work and zero completed tasks. Fresh confirmatory A5 "
+    "runs must compare each predictor against a timing-broken null with the "
+    "same prediction budget."
 )
 _OUTPUT_NAMES = (
     "a5_residual_accounting_metrics.csv",
@@ -563,7 +576,11 @@ def _effect_rows(
             for condition in A5_INTERMEDIATE_CONDITIONS
         ),
         *(
-            (f"{condition}_minus_shuffled", condition, "shuffled")
+            (
+                f"{condition}_minus_{A5_TIMING_BROKEN_NULL_BY_CONDITION[condition]}",
+                condition,
+                A5_TIMING_BROKEN_NULL_BY_CONDITION[condition],
+            )
             for condition in A5_INTERMEDIATE_CONDITIONS
         ),
         ("oracle_minus_linear", "oracle", "linear"),
@@ -683,7 +700,7 @@ def _summary(
         "",
     ]
     for condition in A5_INTERMEDIATE_CONDITIONS:
-        for baseline in ("reactive", "shuffled"):
+        for baseline in ("reactive", A5_TIMING_BROKEN_NULL_BY_CONDITION[condition]):
             contrast = f"{condition}_minus_{baseline}"
             row = rows_by_endpoint.get(
                 (contrast, "full_accounting", "residual_state_predictability_r2")
@@ -759,7 +776,7 @@ def _promotion_rule_rows(
         )
         skill_vs_shuffled = _effect_positive(
             rows_by_endpoint,
-            f"{condition}_minus_shuffled",
+            f"{condition}_minus_{A5_TIMING_BROKEN_NULL_BY_CONDITION[condition]}",
             "full_accounting",
             "forecast_skill_mean",
         )
@@ -771,7 +788,7 @@ def _promotion_rule_rows(
         )
         residual_vs_shuffled = _effect_positive_outside_null(
             rows_by_endpoint,
-            f"{condition}_minus_shuffled",
+            f"{condition}_minus_{A5_TIMING_BROKEN_NULL_BY_CONDITION[condition]}",
             "full_accounting",
             "residual_state_predictability_r2",
         )

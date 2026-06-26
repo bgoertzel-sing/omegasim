@@ -24,7 +24,7 @@ directory containing:
 
 It should fail closed if any run is missing required A5 fields, if seeds are not
 paired across all conditions, or if the condition set lacks `reactive`,
-`linear`, `nonlinear`, `oracle`, and `shuffled`.
+`linear`, `nonlinear`, `oracle`, `shuffled`, and `nonlinear_shuffled`.
 
 ## Primary Variables
 
@@ -89,20 +89,21 @@ Use deterministic surrogate nulls that preserve the relevant marginals:
 
 - paired condition-label permutation within seed;
 - circular shift of residual trajectories within seed;
-- shuffled predictor condition as the timing-breaking experimental null;
+- shuffled predictor conditions as timing-breaking experimental nulls;
 - label-count-preserving lobe transition null only for descriptive lobe
   summaries.
 
 The two important contrasts are intermediate predictor minus reactive and
-intermediate predictor minus shuffled. Oracle is a positive-control ceiling, not
-the desired winner.
+intermediate predictor minus its budget-matched shuffled/phase-randomized null:
+`linear` versus `shuffled`, and `nonlinear` versus `nonlinear_shuffled`.
+Oracle is a positive-control ceiling, not the desired winner.
 
 ## Decision Rule
 
 Promote A5 beyond smoke only if the same intermediate-budget condition satisfies
 all of the following under paired seeds:
 
-- forecast skill improves over reactive and shuffled;
+- forecast skill improves over reactive and the budget-matched shuffled null;
 - residual structure increases over reactive and shuffled after full accounting
   controls;
 - residual structure remains nontrivial relative to oracle rather than simply
