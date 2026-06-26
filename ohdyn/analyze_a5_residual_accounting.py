@@ -351,7 +351,10 @@ def _endpoint_rows(
                 covariates,
             ),
             "residual_state_lag1_autocorr": _lag1_autocorr(state),
+            "residual_state_lag2_autocorr": _lag_autocorr(state, lag=2),
             "residual_state_return_distance_mean": _return_distance_mean(state),
+            "residual_state_return_time_mean": _return_time_mean(state),
+            "residual_state_return_time_entropy": _return_time_entropy(state),
             "residual_state_predictability_r2": _lag1_predictability_r2(state),
             "residual_state_compression_ratio": _compression_ratio(state),
             "completion_fraction_final": _series(metrics, "completion_fraction_tick")[-1],
@@ -439,31 +442,68 @@ def _standardize_columns(matrix: np.ndarray) -> np.ndarray:
 
 
 def _lag1_autocorr(state: np.ndarray) -> float:
+    return _lag_autocorr(state, lag=1)
+
+
+def _lag_autocorr(state: np.ndarray, *, lag: int) -> float:
+    if lag <= 0:
+        raise ValueError("lag must be positive.")
     if state.shape[0] < 3:
+        return 0.0
+    if state.shape[0] <= lag + 1:
         return 0.0
     values = []
     for index in range(state.shape[1]):
-        left = state[:-1, index]
-        right = state[1:, index]
+        left = state[:-lag, index]
+        right = state[lag:, index]
         if np.std(left) == 0.0 or np.std(right) == 0.0:
             continue
         values.append(float(np.corrcoef(left, right)[0, 1]))
     return _mean(values)
 
 
-def _return_distance_mean(state: np.ndarray) -> float:
+def _nearest_return_distances_and_times(state: np.ndarray) -> tuple[list[float], list[int]]:
     if state.shape[0] < 4:
-        return 0.0
+        return [], []
     distances = []
+    return_times = []
     for index in range(state.shape[0]):
-        candidates = [
-            float(np.linalg.norm(state[index] - state[other]))
+        candidates = sorted(
+            (
+                float(np.linalg.norm(state[index] - state[other])),
+                abs(index - other),
+            )
             for other in range(state.shape[0])
             if abs(index - other) > 1
-        ]
+        )
         if candidates:
-            distances.append(min(candidates))
+            distance, return_time = candidates[0]
+            distances.append(distance)
+            return_times.append(return_time)
+    return distances, return_times
+
+
+def _return_distance_mean(state: np.ndarray) -> float:
+    distances, _return_times = _nearest_return_distances_and_times(state)
     return _mean(distances)
+
+
+def _return_time_mean(state: np.ndarray) -> float:
+    _distances, return_times = _nearest_return_distances_and_times(state)
+    return _mean([float(value) for value in return_times])
+
+
+def _return_time_entropy(state: np.ndarray) -> float:
+    _distances, return_times = _nearest_return_distances_and_times(state)
+    if not return_times:
+        return 0.0
+    counts: dict[int, int] = defaultdict(int)
+    for value in return_times:
+        counts[value] += 1
+    total = float(sum(counts.values()))
+    return float(
+        -sum((count / total) * math.log2(count / total) for count in counts.values())
+    )
 
 
 def _lag1_predictability_r2(state: np.ndarray) -> float:
@@ -508,6 +548,7 @@ def _effect_rows(
             (f"{condition}_minus_shuffled", condition, "shuffled")
             for condition in A5_INTERMEDIATE_CONDITIONS
         ),
+        ("oracle_minus_linear", "oracle", "linear"),
         ("oracle_minus_nonlinear", "oracle", "nonlinear"),
     ]
     rows = []
@@ -611,6 +652,7 @@ def _summary(
         (row["contrast"], row["control_level"], row["endpoint"]): row
         for row in effect_rows
     }
+    promotion_rows = _promotion_rule_rows(rows_by_endpoint)
     lines = [
         "# A5 Residual Accounting Analysis",
         "",
@@ -640,6 +682,42 @@ def _summary(
     lines.extend(
         [
             "",
+            "## Promotion Rule Audit",
+            "",
+            (
+                "Zero tolerance is applied to guardrail degradation because no broader "
+                "A5 tolerance has been preregistered yet."
+            ),
+            "",
+        ]
+    )
+    for row in promotion_rows:
+        lines.append(
+            "- "
+            f"{row['condition']}: "
+            f"skill_vs_reactive={row['skill_vs_reactive']}, "
+            f"skill_vs_shuffled={row['skill_vs_shuffled']}, "
+            f"residual_vs_reactive={row['residual_vs_reactive']}, "
+            f"residual_vs_shuffled={row['residual_vs_shuffled']}, "
+            f"nontrivial_vs_oracle={row['nontrivial_vs_oracle']}, "
+            f"guardrails_ok={row['guardrails_ok']}; "
+            f"promotion_satisfied={row['promotion_satisfied']}"
+        )
+    if not any(row["promotion_satisfied"] for row in promotion_rows):
+        lines.append("")
+        lines.append(
+            "Promotion decision: fail closed; no intermediate-budget condition "
+            "satisfies all preregistered criteria."
+        )
+    else:
+        promoted = ", ".join(
+            str(row["condition"]) for row in promotion_rows if row["promotion_satisfied"]
+        )
+        lines.append("")
+        lines.append(f"Promotion decision: candidate condition(s) requiring review: {promoted}.")
+    lines.extend(
+        [
+            "",
             "## Conservative Use",
             "",
             (
@@ -651,6 +729,128 @@ def _summary(
         ]
     )
     return "\n".join(lines) + "\n"
+
+
+def _promotion_rule_rows(
+    rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows = []
+    for condition in A5_INTERMEDIATE_CONDITIONS:
+        skill_vs_reactive = _effect_positive(
+            rows_by_endpoint,
+            f"{condition}_minus_reactive",
+            "full_accounting",
+            "forecast_skill_mean",
+        )
+        skill_vs_shuffled = _effect_positive(
+            rows_by_endpoint,
+            f"{condition}_minus_shuffled",
+            "full_accounting",
+            "forecast_skill_mean",
+        )
+        residual_vs_reactive = _effect_positive_outside_null(
+            rows_by_endpoint,
+            f"{condition}_minus_reactive",
+            "full_accounting",
+            "residual_state_predictability_r2",
+        )
+        residual_vs_shuffled = _effect_positive_outside_null(
+            rows_by_endpoint,
+            f"{condition}_minus_shuffled",
+            "full_accounting",
+            "residual_state_predictability_r2",
+        )
+        oracle_delta = _effect_delta(
+            rows_by_endpoint,
+            f"oracle_minus_{condition}",
+            "full_accounting",
+            "residual_state_predictability_r2",
+        )
+        nontrivial_vs_oracle = oracle_delta is not None and oracle_delta < 0.0
+        guardrails_ok = _guardrails_ok(rows_by_endpoint, condition)
+        promotion_satisfied = all(
+            (
+                skill_vs_reactive,
+                skill_vs_shuffled,
+                residual_vs_reactive,
+                residual_vs_shuffled,
+                nontrivial_vs_oracle,
+                guardrails_ok,
+            )
+        )
+        rows.append(
+            {
+                "condition": condition,
+                "skill_vs_reactive": skill_vs_reactive,
+                "skill_vs_shuffled": skill_vs_shuffled,
+                "residual_vs_reactive": residual_vs_reactive,
+                "residual_vs_shuffled": residual_vs_shuffled,
+                "nontrivial_vs_oracle": nontrivial_vs_oracle,
+                "guardrails_ok": guardrails_ok,
+                "promotion_satisfied": promotion_satisfied,
+            }
+        )
+    return rows
+
+
+def _guardrails_ok(
+    rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
+    condition: str,
+) -> bool:
+    contrast = f"{condition}_minus_reactive"
+    queue_delta = _effect_delta(
+        rows_by_endpoint,
+        contrast,
+        "full_accounting",
+        "queue_depth_final",
+    )
+    age_delta = _effect_delta(
+        rows_by_endpoint,
+        contrast,
+        "full_accounting",
+        "queued_age_final",
+    )
+    completion_delta = _effect_delta(
+        rows_by_endpoint,
+        contrast,
+        "full_accounting",
+        "completion_fraction_final",
+    )
+    if queue_delta is None or age_delta is None or completion_delta is None:
+        return False
+    return queue_delta <= 0.0 and age_delta <= 0.0 and completion_delta >= 0.0
+
+
+def _effect_positive(
+    rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
+    contrast: str,
+    control_level: str,
+    endpoint: str,
+) -> bool:
+    delta = _effect_delta(rows_by_endpoint, contrast, control_level, endpoint)
+    return delta is not None and delta > 0.0
+
+
+def _effect_positive_outside_null(
+    rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
+    contrast: str,
+    control_level: str,
+    endpoint: str,
+) -> bool:
+    row = rows_by_endpoint.get((contrast, control_level, endpoint))
+    if row is None:
+        return False
+    return float(row["mean_delta"]) > 0.0 and bool(row["outside_label_permutation_ci"])
+
+
+def _effect_delta(
+    rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
+    contrast: str,
+    control_level: str,
+    endpoint: str,
+) -> float | None:
+    row = rows_by_endpoint.get((contrast, control_level, endpoint))
+    return None if row is None else float(row["mean_delta"])
 
 
 def _series(metrics: list[dict[str, float | str]], field: str) -> list[float]:

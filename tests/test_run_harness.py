@@ -2039,13 +2039,26 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
         for row in metric_rows
         if row["endpoint"] == "residual_state_predictability_r2"
     } == {"raw", "clock_demand", "load_opportunity", "full_accounting"}
+    assert {
+        "residual_state_lag2_autocorr",
+        "residual_state_return_time_mean",
+        "residual_state_return_time_entropy",
+    } <= {row["endpoint"] for row in metric_rows}
     assert any(
         row["contrast"] == "linear_minus_reactive"
         and row["control_level"] == "full_accounting"
         and row["endpoint"] == "residual_state_predictability_r2"
         for row in effect_rows
     )
+    assert any(
+        row["contrast"] == "oracle_minus_linear"
+        and row["control_level"] == "full_accounting"
+        and row["endpoint"] == "residual_state_predictability_r2"
+        for row in effect_rows
+    )
     assert "- scope: read-only single-hive A5 diagnostics" in summary
+    assert "## Promotion Rule Audit" in summary
+    assert "promotion_satisfied=" in summary
 
 
 def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(
