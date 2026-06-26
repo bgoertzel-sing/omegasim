@@ -40,6 +40,19 @@ The checked-in low-budget linear smoke fixture is:
 python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out runs/a5_predictive_linear_seed5
 ```
 
+A bounded paired-seed pilot comparison derives matched single-hive configs for
+reactive, linear, nonlinear, oracle, and shuffled predictors from the smoke
+fixture:
+
+```bash
+python -m ohdyn.compare_predictive_control --seeds 5 6 --out runs/a5_predictive_control_compare
+```
+
+The comparison directory contains one generated config per condition under
+`configs/`, normal run artifact directories for each condition/seed,
+`predictive_control_comparison_metrics.csv`, `predictive_control_effects.csv`,
+and an aggregate `summary.md`.
+
 For A5 configs, `metrics.csv`, `manifest.yaml`, and `summary.md` add forecast
 budget, demand-share, forecast-share, forecast-error, forecast-skill, and
 work-allocation alignment fields. Task-arrival totals, service capacity, action

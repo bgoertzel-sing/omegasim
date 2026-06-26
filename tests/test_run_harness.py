@@ -93,6 +93,11 @@ from ohdyn.compare_exogenous_arrivals import (
     EXOGENOUS_EFFECT_FIELDS,
     run_exogenous_arrival_comparison,
 )
+from ohdyn.compare_predictive_control import (
+    A5_PREDICTIVE_COMPARISON_FIELDS,
+    A5_PREDICTIVE_EFFECT_FIELDS,
+    run_predictive_control_comparison,
+)
 from ohdyn.compare_attention import run_comparison
 from ohdyn.compare_pressure import (
     PRESSURE_COMPARISON_FIELDS,
@@ -1953,6 +1958,50 @@ def test_a5_predictive_control_smoke_records_forecast_metrics(
         assert f"a5_{class_name}_future_demand_share_tick" in rows[0]
         assert f"a5_{class_name}_forecast_share_tick" in rows[0]
         assert f"a5_{class_name}_allocation_future_residual_tick" in rows[0]
+
+
+def test_a5_predictive_control_comparison_runs_matched_conditions(
+    tmp_path: Path,
+) -> None:
+    first_rows = run_predictive_control_comparison(
+        seeds=(5, 6),
+        out_dir=tmp_path / "first",
+    )
+    second_rows = run_predictive_control_comparison(
+        seeds=(5, 6),
+        out_dir=tmp_path / "second",
+    )
+
+    assert first_rows == second_rows
+    assert [row["condition"] for row in first_rows] == [
+        "reactive",
+        "linear",
+        "nonlinear",
+        "oracle",
+        "shuffled",
+    ]
+    assert {row["run_count"] for row in first_rows} == {2}
+    assert (tmp_path / "first" / "reactive_seed5" / "metrics.csv").is_file()
+    assert (tmp_path / "first" / "configs" / "a5_predictive_oracle.yaml").is_file()
+
+    with (tmp_path / "first" / "predictive_control_comparison_metrics.csv").open() as handle:
+        comparison_rows = list(csv.DictReader(handle))
+    with (tmp_path / "first" / "predictive_control_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    summary = (tmp_path / "first" / "summary.md").read_text()
+    oracle_config = yaml.safe_load(
+        (tmp_path / "first" / "configs" / "a5_predictive_oracle.yaml").read_text()
+    )
+
+    assert set(comparison_rows[0]) == set(A5_PREDICTIVE_COMPARISON_FIELDS)
+    assert set(effect_rows[0]) == set(A5_PREDICTIVE_EFFECT_FIELDS)
+    assert len(comparison_rows) == 5
+    assert len(effect_rows) == 6
+    assert oracle_config["predictive_control"]["condition"] == "oracle"
+    assert oracle_config["predictive_control"]["prediction_budget"] == 1.0
+    assert "- scope: single-hive matched-demand pilot" in summary
+    assert "## Condition Means" in summary
+    assert "oracle minus reactive" in summary
 
 
 def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(
