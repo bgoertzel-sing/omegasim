@@ -33,6 +33,7 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_ANALYSIS_ENDPOINT_FIELDS,
     A6_ANALYSIS_MANIFEST_FIELDS,
     A6_CONTROL_DELTA_FIELDS,
+    A6_RESIDUAL_PREFLIGHT_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
 from ohdyn.compare_a6_logistic_appraisal import (
@@ -15016,6 +15017,8 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
         assert next(csv.reader(handle)) == list(A6_ANALYSIS_MANIFEST_FIELDS)
     with (out_dir / "a6_logistic_appraisal_control_deltas.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_CONTROL_DELTA_FIELDS)
+    with (out_dir / "a6_logistic_appraisal_residual_preflight.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
     summary = (out_dir / "summary.md").read_text()
     assert "- reran simulations: no" in summary
     assert "## Control Levels" in summary
@@ -15055,6 +15058,67 @@ def test_a6_read_only_analysis_writes_paired_control_deltas(
     summary = (out_dir / "summary.md").read_text()
     assert "- paired control delta rows: 3" in summary
     assert "- missing required fields: none" in summary
+
+
+def test_a6_read_only_analysis_writes_residual_preflight(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "compare"
+    for config_path in (
+        A6_LOGISTIC_APPRAISAL,
+        A6_LINEAR_APPRAISAL,
+        A6_THRESHOLD_SHUFFLED,
+        A6_PHASE_SHUFFLED,
+    ):
+        run_experiment(config_path, seed=4, out_dir=compare_dir / config_path.stem)
+
+    out_dir = tmp_path / "analysis"
+    result = run_a6_logistic_appraisal_analysis(compare_dir, out_dir)
+
+    assert result["residual_preflight_count"] == 56
+    with (out_dir / "a6_logistic_appraisal_residual_preflight.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert list(rows[0]) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
+    assert {row["condition"] for row in rows} == {
+        "logistic",
+        "linear",
+        "phase_shuffled",
+        "threshold_shuffled",
+    }
+    assert {
+        row["outcome_field"] for row in rows if row["condition"] == "logistic"
+    } == {
+        "a6_latent_activation_mean_tick",
+        "a6_latent_focus_mean_tick",
+        "a6_latent_fatigue_mean_tick",
+        "a6_latent_prediction_error_mean_tick",
+        "a6_artifact_novelty_tick",
+        "a6_artifact_coherence_tick",
+        "a6_artifact_actionability_tick",
+        "a6_artifact_provenance_debt_tick",
+        "a6_artifact_risk_tick",
+        "a6_artifact_contradiction_tick",
+        "a6_artifact_readiness_tick",
+        "a6_artifact_implementation_maturity_tick",
+        "a6_artifact_communication_maturity_tick",
+        "a6_artifact_utility_tick",
+    }
+    assert {row["row_count"] for row in rows} == {"16"}
+    assert {row["missing_control_fields"] for row in rows} == {""}
+    assert {row["status"] for row in rows} == {"underdetermined_smoke_scale"}
+    logistic_utility = next(
+        row
+        for row in rows
+        if row["condition"] == "logistic"
+        and row["outcome_field"] == "a6_artifact_utility_tick"
+    )
+    assert logistic_utility["raw_variance"] != ""
+    assert logistic_utility["residual_variance"] != ""
+    assert "action_predict_tick" in logistic_utility["control_fields_used"]
+    summary = (out_dir / "summary.md").read_text()
+    assert "- residual preflight rows: 56" in summary
+    assert "underdetermined smoke-scale rows are not recurrence evidence" in summary
 
 
 def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(

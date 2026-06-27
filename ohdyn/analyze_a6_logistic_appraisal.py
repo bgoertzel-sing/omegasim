@@ -89,10 +89,26 @@ A6_CONTROL_DELTA_FIELDS = (
         if field not in {"condition", "seed"}
     ),
 )
+A6_RESIDUAL_PREFLIGHT_FIELDS = (
+    "condition",
+    "seed",
+    "outcome_field",
+    "row_count",
+    "control_count",
+    "degrees_of_freedom",
+    "status",
+    "missing_control_fields",
+    "control_fields_used",
+    "raw_variance",
+    "residual_variance",
+    "raw_lag1_autocorrelation",
+    "residual_lag1_autocorrelation",
+)
 _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
     "a6_logistic_appraisal_control_deltas.csv",
+    "a6_logistic_appraisal_residual_preflight.csv",
     "summary.md",
 )
 _A6_CONTROL_PAIRS = (
@@ -117,6 +133,32 @@ _A6_REQUIRED_CONTROL_FIELDS = (
     "a6_handoff_attempts_tick",
     "a6_handoff_successes_tick",
     "a6_handoff_failures_tick",
+)
+_A6_RESIDUAL_OUTCOME_FIELDS = (
+    "a6_latent_activation_mean_tick",
+    "a6_latent_focus_mean_tick",
+    "a6_latent_fatigue_mean_tick",
+    "a6_latent_prediction_error_mean_tick",
+    "a6_artifact_novelty_tick",
+    "a6_artifact_coherence_tick",
+    "a6_artifact_actionability_tick",
+    "a6_artifact_provenance_debt_tick",
+    "a6_artifact_risk_tick",
+    "a6_artifact_contradiction_tick",
+    "a6_artifact_readiness_tick",
+    "a6_artifact_implementation_maturity_tick",
+    "a6_artifact_communication_maturity_tick",
+    "a6_artifact_utility_tick",
+)
+_A6_RESIDUAL_BASE_CONTROL_FIELDS = (
+    "tick",
+    "queue_depth",
+    "queue_delta_tick",
+    "tasks_created_total",
+    "tasks_completed_total",
+    "tasks_worked_tick",
+    "messages_sent_tick",
+    "a6_prediction_budget_spent_tick",
 )
 _A6_ACTIONS = (
     "idle",
@@ -144,13 +186,19 @@ def run_a6_logistic_appraisal_analysis(
     conditions = sorted({str(run["condition"]) for run in runs})
     seeds = sorted({int(run["seed"]) for run in runs})
     control_delta_rows = _control_delta_rows(runs, missing_required_fields)
+    residual_preflight_rows = _residual_preflight_rows(compare_path)
     manifest_rows = [
         {
             "control_level": control_level,
             "compare_dir": str(compare_path),
             "condition_count": len(conditions),
             "seed_count": len(seeds),
-            "status": _control_level_status(control_level, control_delta_rows, missing_required_fields),
+            "status": _control_level_status(
+                control_level,
+                control_delta_rows,
+                missing_required_fields,
+                residual_preflight_rows,
+            ),
         }
         for control_level in A6_ANALYSIS_CONTROL_LEVELS
     ]
@@ -171,8 +219,20 @@ def run_a6_logistic_appraisal_analysis(
         control_delta_rows,
         A6_CONTROL_DELTA_FIELDS,
     )
+    _write_csv(
+        output_path / "a6_logistic_appraisal_residual_preflight.csv",
+        residual_preflight_rows,
+        A6_RESIDUAL_PREFLIGHT_FIELDS,
+    )
     (output_path / "summary.md").write_text(
-        _summary(compare_path, runs, manifest_rows, control_delta_rows, missing_required_fields)
+        _summary(
+            compare_path,
+            runs,
+            manifest_rows,
+            control_delta_rows,
+            residual_preflight_rows,
+            missing_required_fields,
+        )
     )
     return {
         "compare_dir": str(compare_path),
@@ -181,6 +241,7 @@ def run_a6_logistic_appraisal_analysis(
         "seed_count": len(seeds),
         "run_count": len(runs),
         "control_delta_count": len(control_delta_rows),
+        "residual_preflight_count": len(residual_preflight_rows),
         "missing_required_fields": sorted(missing_required_fields),
     }
 
@@ -312,6 +373,7 @@ def _control_level_status(
     control_level: str,
     control_delta_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
+    residual_preflight_rows: list[dict[str, Any]],
 ) -> str:
     complete_pairs = [row for row in control_delta_rows if row["paired"] == "true"]
     if missing_required_fields:
@@ -327,7 +389,14 @@ def _control_level_status(
     }:
         return "paired_delta_preflight_complete"
     if control_level == "clock_queue_residualized":
-        return "residualization_not_yet_computed"
+        statuses = {str(row["status"]) for row in residual_preflight_rows}
+        if not residual_preflight_rows:
+            return "residualization_not_yet_computed"
+        if any(status.startswith("missing_controls") for status in statuses):
+            return "residual_preflight_missing_controls"
+        if any(status.startswith("underdetermined") for status in statuses):
+            return "residual_preflight_underdetermined_smoke_scale"
+        return "residual_preflight_computed"
     return "promotion_not_evaluated"
 
 
@@ -387,11 +456,204 @@ def _action_total(metrics: list[dict[str, str]], action: str) -> float:
     )
 
 
+def _residual_preflight_rows(compare_path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for run_dir in sorted(path for path in compare_path.iterdir() if path.is_dir()):
+        config_path = run_dir / "config.yaml"
+        metrics_path = run_dir / "metrics.csv"
+        manifest_path = run_dir / "manifest.yaml"
+        if not config_path.exists() or not metrics_path.exists() or not manifest_path.exists():
+            continue
+        config = yaml.safe_load(config_path.read_text()) or {}
+        logistic_appraisal = config.get("logistic_appraisal")
+        if not isinstance(logistic_appraisal, dict):
+            continue
+        metrics = _read_csv(metrics_path)
+        if not metrics:
+            continue
+        condition = str(logistic_appraisal.get("condition", ""))
+        seed = int((yaml.safe_load(manifest_path.read_text()) or {}).get("seed", -1))
+        enriched_metrics = [_with_a6_derived_fields(row) for row in metrics]
+        available_fields = set(enriched_metrics[0])
+        action_control_fields = tuple(f"action_{action}_tick" for action in _A6_ACTIONS)
+        control_fields = (*_A6_RESIDUAL_BASE_CONTROL_FIELDS, *action_control_fields)
+        missing_control_fields = tuple(
+            field for field in control_fields if field not in available_fields
+        )
+        usable_control_fields = tuple(
+            field for field in control_fields if field in available_fields
+        )
+        for outcome_field in _A6_RESIDUAL_OUTCOME_FIELDS:
+            if outcome_field not in available_fields:
+                rows.append(
+                    _empty_residual_row(
+                        condition,
+                        seed,
+                        outcome_field,
+                        len(enriched_metrics),
+                        usable_control_fields,
+                        (*missing_control_fields, outcome_field),
+                    )
+                )
+                continue
+            values = [_number(row, outcome_field) for row in enriched_metrics]
+            controls = [
+                [_number(row, field) for field in usable_control_fields]
+                for row in enriched_metrics
+            ]
+            residuals = _ridge_residuals(values, controls)
+            row_count = len(values)
+            control_count = len(usable_control_fields)
+            degrees_of_freedom = row_count - control_count - 1
+            status = (
+                "missing_controls_preflight"
+                if missing_control_fields
+                else "underdetermined_smoke_scale"
+                if degrees_of_freedom <= 0
+                else "computed"
+            )
+            rows.append(
+                {
+                    "condition": condition,
+                    "seed": seed,
+                    "outcome_field": outcome_field,
+                    "row_count": row_count,
+                    "control_count": control_count,
+                    "degrees_of_freedom": degrees_of_freedom,
+                    "status": status,
+                    "missing_control_fields": "|".join(missing_control_fields),
+                    "control_fields_used": "|".join(usable_control_fields),
+                    "raw_variance": round(_variance(values), 6),
+                    "residual_variance": round(_variance(residuals), 6),
+                    "raw_lag1_autocorrelation": round(_lag1_autocorrelation(values), 6),
+                    "residual_lag1_autocorrelation": round(
+                        _lag1_autocorrelation(residuals), 6
+                    ),
+                }
+            )
+    return rows
+
+
+def _with_a6_derived_fields(row: dict[str, str]) -> dict[str, str]:
+    enriched = dict(row)
+    enriched["a6_artifact_utility_tick"] = str(_artifact_utility(row))
+    for action in _A6_ACTIONS:
+        enriched[f"action_{action}_tick"] = str(_action_tick(row, action))
+    return enriched
+
+
+def _action_tick(row: dict[str, str], action: str) -> float:
+    suffix = f"_{action}_tick"
+    return sum(
+        _number(row, field)
+        for field in row
+        if field.startswith("role_") and field.endswith(suffix)
+    )
+
+
+def _empty_residual_row(
+    condition: str,
+    seed: int,
+    outcome_field: str,
+    row_count: int,
+    control_fields: tuple[str, ...],
+    missing_fields: tuple[str, ...],
+) -> dict[str, Any]:
+    return {
+        "condition": condition,
+        "seed": seed,
+        "outcome_field": outcome_field,
+        "row_count": row_count,
+        "control_count": len(control_fields),
+        "degrees_of_freedom": row_count - len(control_fields) - 1,
+        "status": "missing_controls_or_outcome_preflight",
+        "missing_control_fields": "|".join(missing_fields),
+        "control_fields_used": "|".join(control_fields),
+        "raw_variance": "",
+        "residual_variance": "",
+        "raw_lag1_autocorrelation": "",
+        "residual_lag1_autocorrelation": "",
+    }
+
+
+def _ridge_residuals(values: list[float], controls: list[list[float]]) -> list[float]:
+    if not values:
+        return []
+    design = [[1.0, *row] for row in controls]
+    if not design or not design[0]:
+        mean_value = sum(values) / len(values)
+        return [value - mean_value for value in values]
+    coefficient_count = len(design[0])
+    xtx = [
+        [
+            sum(design[row][left] * design[row][right] for row in range(len(design)))
+            for right in range(coefficient_count)
+        ]
+        for left in range(coefficient_count)
+    ]
+    xty = [
+        sum(design[row][column] * values[row] for row in range(len(design)))
+        for column in range(coefficient_count)
+    ]
+    for index in range(1, coefficient_count):
+        xtx[index][index] += 1e-9
+    coefficients = _solve_linear_system(xtx, xty)
+    return [
+        value - sum(coefficients[column] * design[row_index][column] for column in range(coefficient_count))
+        for row_index, value in enumerate(values)
+    ]
+
+
+def _solve_linear_system(matrix: list[list[float]], values: list[float]) -> list[float]:
+    size = len(values)
+    augmented = [list(matrix[row]) + [values[row]] for row in range(size)]
+    for column in range(size):
+        pivot = max(range(column, size), key=lambda row: abs(augmented[row][column]))
+        if abs(augmented[pivot][column]) < 1e-12:
+            augmented[column][column] += 1e-9
+            pivot = column
+        augmented[column], augmented[pivot] = augmented[pivot], augmented[column]
+        divisor = augmented[column][column]
+        if abs(divisor) < 1e-12:
+            continue
+        augmented[column] = [value / divisor for value in augmented[column]]
+        for row in range(size):
+            if row == column:
+                continue
+            factor = augmented[row][column]
+            if factor:
+                augmented[row] = [
+                    augmented[row][col] - factor * augmented[column][col]
+                    for col in range(size + 1)
+                ]
+    return [augmented[row][-1] for row in range(size)]
+
+
+def _variance(values: list[float]) -> float:
+    if not values:
+        return 0.0
+    mean_value = sum(values) / len(values)
+    return sum((value - mean_value) ** 2 for value in values) / len(values)
+
+
+def _lag1_autocorrelation(values: list[float]) -> float:
+    if len(values) < 2:
+        return 0.0
+    mean_value = sum(values) / len(values)
+    numerator = sum(
+        (values[index] - mean_value) * (values[index - 1] - mean_value)
+        for index in range(1, len(values))
+    )
+    denominator = sum((value - mean_value) ** 2 for value in values)
+    return numerator / denominator if denominator else 0.0
+
+
 def _summary(
     compare_path: Path,
     runs: list[dict[str, Any]],
     manifest_rows: list[dict[str, Any]],
     control_delta_rows: list[dict[str, Any]],
+    residual_preflight_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -405,7 +667,8 @@ def _summary(
         f"- seeds observed: {', '.join(str(seed) for seed in seeds)}",
         "- reran simulations: no",
         f"- paired control delta rows: {len(control_delta_rows)}",
-        "- status: read-only control-delta preflight; not promotion evidence",
+        f"- residual preflight rows: {len(residual_preflight_rows)}",
+        "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
         "",
@@ -421,6 +684,7 @@ def _summary(
             "",
             "- Do not promote A6 from smoke artifacts alone.",
             "- Paired deltas are logistic minus the named control within the same seed.",
+            "- Residual preflight uses existing per-tick smoke metrics only; underdetermined smoke-scale rows are not recurrence evidence.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",
