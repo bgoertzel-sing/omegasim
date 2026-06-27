@@ -115,6 +115,10 @@ A5_CONTROL_LEVELS: tuple[tuple[str, tuple[str, ...], str], ...] = (
             "agent_tasks_created_tick",
             "tasks_worked_tick",
             "attention_capture_pressure_max_tick",
+            "a5_prediction_work_charge_target_tick",
+            "a5_prediction_work_charged_tick",
+            "a5_work_opportunity_before_prediction_tick",
+            "a5_work_budget_remaining_tick",
             *(
                 f"attention_{class_name}_completed_total"
                 for class_name in ATTENTION_CLASSES
@@ -124,7 +128,7 @@ A5_CONTROL_LEVELS: tuple[tuple[str, tuple[str, ...], str], ...] = (
                 for class_name in ATTENTION_CLASSES
             ),
         ),
-        "clock, demand, load, action opportunity, capture pressure, and class work accounting",
+        "clock, demand, load, action opportunity, prediction spend, capture pressure, and class work accounting",
     ),
 )
 A5_RESIDUAL_ACCOUNTING_METRIC_FIELDS = (

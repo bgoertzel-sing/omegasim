@@ -123,6 +123,7 @@ class PredictiveControlConfig:
     signal_amplitude: float = 0.25
     memory_window: int = 3
     phase_shift_ticks: int = 3
+    charge_prediction_to_work: bool = False
 
 
 @dataclass(frozen=True)
@@ -198,6 +199,8 @@ class OmegaConfig:
             }
         if self.predictive_control is None:
             data.pop("predictive_control")
+        elif not self.predictive_control.charge_prediction_to_work:
+            data["predictive_control"].pop("charge_prediction_to_work")
         if self.logistic_appraisal is None:
             data.pop("logistic_appraisal")
         if self.semantic_field is None:
@@ -405,6 +408,7 @@ def _optional_predictive_control(value: Any) -> PredictiveControlConfig | None:
         "signal_amplitude",
         "memory_window",
         "phase_shift_ticks",
+        "charge_prediction_to_work",
     }
     unknown = set(control) - supported_keys
     if unknown:
@@ -440,6 +444,10 @@ def _optional_predictive_control(value: Any) -> PredictiveControlConfig | None:
         phase_shift_ticks=_nonnegative_int(
             control.get("phase_shift_ticks", 3),
             "predictive_control.phase_shift_ticks",
+        ),
+        charge_prediction_to_work=_bool(
+            control.get("charge_prediction_to_work", False),
+            "predictive_control.charge_prediction_to_work",
         ),
     )
 

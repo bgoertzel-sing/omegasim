@@ -40,6 +40,8 @@ A5_PREDICTIVE_COMPARISON_FIELDS = (
     "forecast_abs_error_final_mean",
     "forecast_skill_final_mean",
     "forecast_skill_per_budget_final_mean",
+    "prediction_work_charged_final_mean",
+    "work_budget_remaining_final_mean",
     "work_forecast_alignment_final_mean",
     "work_future_demand_alignment_final_mean",
     "allocation_future_residual_abs_final_mean",
@@ -57,6 +59,8 @@ A5_PREDICTIVE_EFFECT_FIELDS = (
     "high_label",
     "forecast_skill_final_mean_delta",
     "forecast_skill_per_budget_final_mean_delta",
+    "prediction_work_charged_final_mean_delta",
+    "work_budget_remaining_final_mean_delta",
     "work_future_demand_alignment_final_mean_delta",
     "allocation_future_residual_abs_final_mean_delta",
     "completion_fraction_mean_delta",
@@ -199,6 +203,14 @@ def _aggregate_row(
             last_rows,
             "a5_forecast_skill_per_budget_tick",
         ),
+        "prediction_work_charged_final_mean": _mean_metric(
+            last_rows,
+            "a5_prediction_work_charged_tick",
+        ),
+        "work_budget_remaining_final_mean": _mean_metric(
+            last_rows,
+            "a5_work_budget_remaining_tick",
+        ),
         "work_forecast_alignment_final_mean": _mean_metric(
             last_rows,
             "a5_work_forecast_alignment_tick",
@@ -307,6 +319,8 @@ def _summary(
             f"{row['condition']}: budget={_format_number(row['prediction_budget'])}, "
             f"forecast_skill={_format_number(row['forecast_skill_final_mean'])}, "
             f"skill_per_budget={_format_number(row['forecast_skill_per_budget_final_mean'])}, "
+            f"prediction_work_charged={_format_number(row['prediction_work_charged_final_mean'])}, "
+            f"work_budget_remaining={_format_number(row['work_budget_remaining_final_mean'])}, "
             f"future_alignment={_format_number(row['work_future_demand_alignment_final_mean'])}, "
             f"residual_abs={_format_number(row['allocation_future_residual_abs_final_mean'])}, "
             f"completion_fraction={_format_number(row['completion_fraction_mean'])}, "

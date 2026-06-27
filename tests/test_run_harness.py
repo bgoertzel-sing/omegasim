@@ -249,6 +249,7 @@ A4_TWO_HIVE_DIRECT_HOLDOUT = Path("configs/a4_two_hive_direct_holdout.yaml")
 A4_TWO_HIVE_DELAYED_HOLDOUT = Path("configs/a4_two_hive_delayed_holdout.yaml")
 A4_TWO_HIVE_SHUFFLED_HOLDOUT = Path("configs/a4_two_hive_shuffled_holdout.yaml")
 A5_PREDICTIVE_LINEAR = Path("configs/a5_predictive_linear_smoke.yaml")
+A5_1_PREDICTION_SPEND_LINEAR = Path("configs/a5_1_prediction_spend_linear_smoke.yaml")
 A6_LOGISTIC_APPRAISAL = Path("configs/a6_logistic_appraisal_smoke.yaml")
 A6_LINEAR_APPRAISAL = Path("configs/a6_linear_appraisal_smoke.yaml")
 A6_THRESHOLD_SHUFFLED = Path("configs/a6_threshold_shuffled_smoke.yaml")
@@ -2639,6 +2640,42 @@ def test_a5_predictive_control_smoke_records_forecast_metrics(
         assert f"a5_{class_name}_future_demand_share_tick" in rows[0]
         assert f"a5_{class_name}_forecast_share_tick" in rows[0]
         assert f"a5_{class_name}_allocation_future_residual_tick" in rows[0]
+
+
+def test_a5_1_prediction_spend_smoke_charges_work_budget(
+    tmp_path: Path,
+) -> None:
+    result = run_experiment(
+        A5_1_PREDICTION_SPEND_LINEAR,
+        seed=5,
+        out_dir=tmp_path / "a5_1",
+    )
+
+    assert result.config.predictive_control is not None
+    assert result.config.predictive_control.charge_prediction_to_work is True
+    with (tmp_path / "a5_1" / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    with (tmp_path / "a5_1" / "events.csv").open() as handle:
+        event_rows = list(csv.DictReader(handle))
+    manifest = yaml.safe_load((tmp_path / "a5_1" / "manifest.yaml").read_text())
+    summary = (tmp_path / "a5_1" / "summary.md").read_text()
+
+    assert rows[-1]["a5_prediction_charged_to_work"] == "true"
+    assert float(rows[-1]["a5_prediction_work_charge_target_tick"]) == 5.25
+    assert int(rows[-1]["a5_prediction_work_charged_tick"]) >= 0
+    assert int(rows[-1]["a5_work_budget_remaining_tick"]) <= 15
+    assert manifest["config"]["predictive_control"]["charge_prediction_to_work"] is True
+    assert manifest["model"]["predictive_control"]["charge_prediction_to_work"] is True
+    assert "a5_prediction_spent" in manifest["model"]["events"]["types"]
+    assert "- charge prediction to work: True" in summary
+    assert "- final prediction work charged: " in summary
+    spend_events = [
+        row for row in event_rows
+        if row["event_type"] == "a5_prediction_spent"
+    ]
+    assert spend_events
+    assert {row["action"] for row in spend_events} == {"idle"}
+    assert {row["a5_prediction_spend_charged"] for row in spend_events} == {"1"}
 
 
 def test_a5_predictive_control_comparison_runs_matched_conditions(

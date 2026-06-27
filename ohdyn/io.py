@@ -20,6 +20,7 @@ from ohdyn.a7_semantic_field_contract import (
     a7_required_metric_fields,
 )
 from ohdyn.sim import (
+    A5_EVENT_TYPES,
     A6_ARTIFACT_FIELDS,
     A6_ARTIFACT_UPDATE_SOURCE_FIELDS,
     A6_EVENT_TYPES,
@@ -153,7 +154,7 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "fields": list(attention_policy_metric_fields()),
         }
     if result.config.predictive_control is not None:
-        manifest["model"]["predictive_control"] = {
+        predictive_control_model = {
             "condition": result.config.predictive_control.condition,
             "prediction_budget": result.config.predictive_control.prediction_budget,
             "lead_ticks": result.config.predictive_control.lead_ticks,
@@ -161,6 +162,9 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "demand_stream": "deterministic periodic class-pressure shares",
             "fields": list(predictive_control_metric_fields()),
         }
+        if result.config.predictive_control.charge_prediction_to_work:
+            predictive_control_model["charge_prediction_to_work"] = True
+        manifest["model"]["predictive_control"] = predictive_control_model
     if result.config.logistic_appraisal is not None:
         manifest["model"]["logistic_appraisal"] = {
             "condition": result.config.logistic_appraisal.condition,
@@ -334,6 +338,11 @@ def _event_types(result: SimulationResult) -> tuple[str, ...]:
     event_types = list(BASELINE_EVENT_TYPES)
     if result.config.attention_policy is not None:
         event_types.extend(ATTENTION_EVENT_TYPES)
+    if (
+        result.config.predictive_control is not None
+        and result.config.predictive_control.charge_prediction_to_work
+    ):
+        event_types.extend(A5_EVENT_TYPES)
     if _exogenous_arrivals_enabled(result):
         event_types.extend(EXOGENOUS_ARRIVAL_EVENT_TYPES)
     if result.config.logistic_appraisal is not None:
@@ -700,6 +709,8 @@ def _predictive_control_summary(result: SimulationResult) -> list[str]:
     return [
         f"- condition: {result.config.predictive_control.condition}",
         f"- prediction budget: {result.config.predictive_control.prediction_budget}",
+        "- charge prediction to work: "
+        f"{result.config.predictive_control.charge_prediction_to_work}",
         f"- lead ticks: {result.config.predictive_control.lead_ticks}",
         f"- signal period: {result.config.predictive_control.signal_period}",
         f"- signal amplitude: {result.config.predictive_control.signal_amplitude}",
@@ -707,6 +718,10 @@ def _predictive_control_summary(result: SimulationResult) -> list[str]:
         f"- final forecast skill: {last.get('a5_forecast_skill_tick', 0)}",
         "- final forecast skill per budget: "
         f"{last.get('a5_forecast_skill_per_budget_tick', 0)}",
+        "- final prediction work charged: "
+        f"{last.get('a5_prediction_work_charged_tick', 0)}",
+        "- final work budget remaining: "
+        f"{last.get('a5_work_budget_remaining_tick', 0)}",
         "- final work forecast alignment: "
         f"{last.get('a5_work_forecast_alignment_tick', 0)}",
         "- final work future-demand alignment: "

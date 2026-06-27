@@ -56,6 +56,10 @@ BASELINE_EVENT_TYPES = (
     "task_worked",
 )
 
+A5_EVENT_TYPES = (
+    "a5_prediction_spent",
+)
+
 ATTENTION_EVENT_TYPES = (
     "attention_capture_pressure",
 )
@@ -104,6 +108,8 @@ EVENT_FIELDS = (
     "attention_selected_class",
     "attention_pressure_class",
     "attention_capture_pressure",
+    "a5_prediction_spend_charged",
+    "a5_prediction_work_budget_remaining",
     *A6_ARTIFACT_UPDATE_SOURCE_FIELDS,
     *tuple(field for field in A7_EVENT_FIELDS if field not in {"tick", "agent_id", "event_type"}),
 )
@@ -258,6 +264,11 @@ def predictive_control_metric_fields() -> tuple[str, ...]:
         "a5_predictive_condition",
         "a5_prediction_budget",
         "a5_prediction_budget_spent_tick",
+        "a5_prediction_charged_to_work",
+        "a5_prediction_work_charge_target_tick",
+        "a5_prediction_work_charged_tick",
+        "a5_work_opportunity_before_prediction_tick",
+        "a5_work_budget_remaining_tick",
         "a5_prediction_lead_ticks",
         *(
             field
@@ -498,6 +509,7 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
     a7_shuffle_rng = _a7_stream_rng(config, seed, "semantic_control_shuffle_stream")
     a7_agent_state = _initial_a7_agent_state(agents, config, a7_update_rng)
     a7_field = _initial_a7_field(config)
+    a5_prediction_charge_bank = 0.0
 
     for tick in range(config.run.ticks):
         queue_depth_start = len(task_queue)
@@ -508,6 +520,13 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
         completed_this_tick = 0
         attention_value_weighted_completed_tick = 0
         exogenous_created_this_tick = 0
+        a5_prediction_work_charged_tick = 0
+        a5_prediction_work_charge_target_tick = _a5_prediction_work_charge_target(
+            config,
+            len(agents),
+        )
+        if _a5_prediction_charges_work(config):
+            a5_prediction_charge_bank += a5_prediction_work_charge_target_tick
         a6_tick = _A6TickState()
         a7_tick = _A7TickState()
         if config.logistic_appraisal is not None:
@@ -594,8 +613,33 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                     artifact=a6_artifact,
                     tick=tick,
                 )
+            charged_prediction_spend = (
+                action == "work_task"
+                and _a5_prediction_charges_work(config)
+                and a5_prediction_charge_bank >= 1.0
+            )
+            if charged_prediction_spend:
+                a5_prediction_charge_bank -= 1.0
+                a5_prediction_work_charged_tick += 1
+                action = "idle"
             action_counts[action] += 1
             role_action_counts[(agent.role, action)] += 1
+
+            if charged_prediction_spend:
+                events.append(
+                    _event(
+                        tick=tick,
+                        event_type="a5_prediction_spent",
+                        agent_id=agent.agent_id,
+                        action=action,
+                        a5_prediction_spend_charged=1,
+                        a5_prediction_work_budget_remaining=max(
+                            len(agents) - a5_prediction_work_charged_tick,
+                            0,
+                        ),
+                    )
+                )
+                continue
 
             if action == "message":
                 target = _choose_target(agent, agents, rng)
@@ -748,6 +792,9 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
             config=config,
             tick=tick,
             work_counts_tick=attention_work_counts_tick,
+            action_opportunity=len(agents),
+            prediction_work_charge_target_tick=a5_prediction_work_charge_target_tick,
+            prediction_work_charged_tick=a5_prediction_work_charged_tick,
         )
         a6_metrics = _logistic_appraisal_metrics(
             config=config,
@@ -1321,6 +1368,9 @@ def _finish_hive_tick(runtime: _HiveRuntime, tick: int) -> None:
         config=config,
         tick=tick,
         work_counts_tick=runtime.attention_work_counts_tick,
+        action_opportunity=config.model.agent_count,
+        prediction_work_charge_target_tick=0.0,
+        prediction_work_charged_tick=0,
     )
     baseline_lobe_label = _baseline_lobe_label(
         action_counts=runtime.action_counts_tick,
@@ -1841,6 +1891,21 @@ def _desired_attention_class(
     )
 
 
+def _a5_prediction_charges_work(config: OmegaConfig) -> bool:
+    return (
+        config.predictive_control is not None
+        and config.predictive_control.charge_prediction_to_work
+        and config.predictive_control.prediction_budget > 0.0
+    )
+
+
+def _a5_prediction_work_charge_target(config: OmegaConfig, action_opportunity: int) -> float:
+    if not _a5_prediction_charges_work(config):
+        return 0.0
+    assert config.predictive_control is not None
+    return max(config.predictive_control.prediction_budget * action_opportunity, 0.0)
+
+
 def _a5_demand_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
     assert config.attention_policy is not None
     if config.predictive_control is None:
@@ -2033,6 +2098,9 @@ def _predictive_control_metrics(
     config: OmegaConfig,
     tick: int,
     work_counts_tick: Counter[str],
+    action_opportunity: int,
+    prediction_work_charge_target_tick: float,
+    prediction_work_charged_tick: int,
 ) -> dict[str, int | float | str]:
     if config.predictive_control is None:
         return {}
@@ -2064,6 +2132,17 @@ def _predictive_control_metrics(
         "a5_predictive_condition": control.condition,
         "a5_prediction_budget": control.prediction_budget,
         "a5_prediction_budget_spent_tick": control.prediction_budget,
+        "a5_prediction_charged_to_work": str(control.charge_prediction_to_work).lower(),
+        "a5_prediction_work_charge_target_tick": round(
+            float(prediction_work_charge_target_tick),
+            6,
+        ),
+        "a5_prediction_work_charged_tick": prediction_work_charged_tick,
+        "a5_work_opportunity_before_prediction_tick": action_opportunity,
+        "a5_work_budget_remaining_tick": max(
+            action_opportunity - prediction_work_charged_tick,
+            0,
+        ),
         "a5_prediction_lead_ticks": control.lead_ticks,
     }
     for class_name in ATTENTION_CLASSES:
@@ -3341,6 +3420,8 @@ def _event(
     attention_selected_class: str = "",
     attention_pressure_class: str = "",
     attention_capture_pressure: float | str = "",
+    a5_prediction_spend_charged: int | str = "",
+    a5_prediction_work_budget_remaining: int | str = "",
     a6_artifact_update_source: str = "",
     a6_artifact_field: str = "",
     a6_artifact_delta_total: float | str = "",
@@ -3381,6 +3462,8 @@ def _event(
         "attention_selected_class": attention_selected_class,
         "attention_pressure_class": attention_pressure_class,
         "attention_capture_pressure": attention_capture_pressure,
+        "a5_prediction_spend_charged": a5_prediction_spend_charged,
+        "a5_prediction_work_budget_remaining": a5_prediction_work_budget_remaining,
         "a6_artifact_update_source": a6_artifact_update_source,
         "a6_artifact_field": a6_artifact_field,
         "a6_artifact_delta_total": a6_artifact_delta_total,

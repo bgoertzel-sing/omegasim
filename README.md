@@ -44,10 +44,27 @@ does not import A6/A7 mechanics or authorize broader A5 seed sweeps; it only
 permits the single-hive smoke/pilot scaffold and preregistered residual
 accounting checks unless a new A5 preregistration is written first.
 
+The next A5 follow-up gate is now preregistered in
+`docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 is still
+single-hive and deterministic, but asks the narrower resource-bounded question
+that the first A5 scaffold did not test directly: prediction spend must compete
+with work opportunity, with spend-matched timing-broken nulls and full
+accounting controls before any residual-structure or strange-attractor-like
+language is allowed.
+
 The checked-in low-budget linear smoke fixture is:
 
 ```bash
 python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out runs/a5_predictive_linear_seed5
+```
+
+The checked-in A5.1 prediction-spend smoke fixture enables direct charging of
+prediction spend against work opportunity:
+
+```bash
+python -m ohdyn.run --config configs/a5_1_prediction_spend_linear_smoke.yaml --seed 5 --out runs/a5_1_prediction_spend_linear_seed5
+python -m ohdyn.compare_predictive_control --base-config configs/a5_1_prediction_spend_linear_smoke.yaml --seeds 5 6 --out runs/a5_1_prediction_spend_compare_seed5_6
+python -m ohdyn.analyze_a5_residual_accounting --compare-dir runs/a5_1_prediction_spend_compare_seed5_6 --out runs/a5_1_prediction_spend_residual_accounting_seed5_6
 ```
 
 ## A6 Logistic-Appraisal Smoke
