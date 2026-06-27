@@ -33,6 +33,18 @@ downstream multi-hive coupling.
 
 ## Latest Changes
 
+- Added `docs/results/a7_long_horizon_residual_null_validation_seed1_2.md`
+  from the completed `/tmp/omegasim_a7_long_horizon_*_20260627` comparison and
+  analysis artifacts. The report records the preregistered 96-tick, six-
+  condition, paired-seed A7 validation as
+  `fail_closed_residual_null_gate`: schema/source reconstruction, field
+  variation, prediction/work-budget competition, and all residual rows
+  computed, but the logistic condition did not beat all controls with
+  paired-seed agreement and non-worse productivity.
+- During the documentation pass, the comparison helper was not rerun because
+  `/tmp/omegasim_a7_long_horizon_compare_20260627` already contained A7
+  artifacts and refused overwrite. The existing analyzer summary was read
+  directly.
 - Created the fixed 96-tick A7 long-horizon validation configs for all six
   preregistered conditions under `configs/a7_long_horizon_*.yaml`. They derive
   mechanically from the smoke fixtures: only `run.experiment_id` and
@@ -57,13 +69,29 @@ downstream multi-hive coupling.
 
 - `git status --short --branch` initially reported a clean worktree on
   `main...origin/main`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` reported state `open`,
+  `strategic_change_level: major`, `notify_ben: true`, and recommended writing
+  the A7 long-horizon validation report from the completed `/tmp` artifacts.
+- `.venv-conda/bin/python -m ohdyn.compare_a7_long_horizon --seeds 1 2 --out
+  /tmp/omegasim_a7_long_horizon_compare_20260627` was attempted for artifact
+  verification and stopped before rerun with the expected refusal: the output
+  path already contained A7 comparison artifacts.
+- Read `/tmp/omegasim_a7_long_horizon_analysis_20260627/summary.md` and the
+  analyzer CSVs. Summary status remained `fail_closed_residual_null_gate` with
+  `12` runs inspected, source reconstruction pass rows `12`, field variation
+  pass rows `12`, prediction/work-budget competition pass rows `12`, residual
+  row status `computed=72`, and null-contrast gate status
+  `eligible_for_cross_seed_direction_check=13`,
+  `fail_closed_no_nonlinear_forecastability_advantage=7`,
+  `fail_closed_no_residual_autocorrelation_advantage=22`,
+  `fail_closed_productivity_degrades=18`.
 - `.venv-conda/bin/python -m py_compile ohdyn/compare_a7_semantic_field.py
   ohdyn/compare_a7_long_horizon.py ohdyn/analyze_a7_semantic_field.py
-  ohdyn/a7_semantic_field_contract.py` passed after adding the A7 long-horizon
-  comparison helper.
+  ohdyn/a7_semantic_field_contract.py` passed after adding the A7 validation
+  report.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'a7 or automation_guard'` passed after adding the A7 long-horizon comparison
-  helper: `21 passed, 596 deselected`.
+  'a7 or automation_guard'` passed after adding the A7 validation report:
+  `21 passed, 596 deselected`.
 - `.venv-conda/bin/python -m ohdyn.compare_a7_long_horizon --seeds 1 2 --out
   /tmp/omegasim_a7_long_horizon_compare_20260627` passed and wrote 12 normal
   run artifact directories with 96 metric rows each.
@@ -88,7 +116,7 @@ blocker.
 
 ## Recommended Next Step
 
-Write `docs/results/a7_long_horizon_residual_null_validation_seed1_2.md` from
-the completed `/tmp/omegasim_a7_long_horizon_*_20260627` comparison and
-analysis artifacts, preserving the fail-closed interpretation and without
-rerunning or broadening the experiment.
+Notify Ben that A5 remains closed/accounting-explained, A7 is now documented
+as `fail_closed_residual_null_gate` for the preregistered seed `1..2`
+long-horizon validation, and a new preregistration is required before any A7
+redesign, seed broadening, or downstream multi-hive coupling.
