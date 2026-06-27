@@ -10,6 +10,8 @@ import pytest
 import yaml
 
 from ohdyn.sim import (
+    A6_ARTIFACT_FIELDS,
+    A6_ARTIFACT_UPDATE_SOURCE_FIELDS,
     A6_EVENT_TYPES,
     ATTENTION_EVENT_TYPES,
     BASELINE_EVENT_TYPES,
@@ -22,6 +24,7 @@ from ohdyn.sim import (
     QUEUE_PRESSURE_METRIC_FIELDS,
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
+    _initial_a6_artifact,
     attention_policy_metric_fields,
     logistic_appraisal_metric_fields,
     metrics_fieldnames,
@@ -14961,6 +14964,71 @@ def test_a6_smoke_run_is_deterministic_and_emits_schema(tmp_path: Path) -> None:
     assert "## A6 logistic appraisal" in summary
     assert "- total handoff attempts:" in summary
     assert "- final artifact readiness:" in summary
+
+
+def test_a6_artifact_update_source_schema_reconstructs_smoke_fixture(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a6_source_schema"
+    result = run_experiment(A6_LOGISTIC_APPRAISAL, seed=6, out_dir=out_dir)
+
+    with (out_dir / "events.csv").open() as handle:
+        reader = csv.DictReader(handle)
+        assert set(A6_ARTIFACT_UPDATE_SOURCE_FIELDS) <= set(reader.fieldnames or [])
+        source_rows = [
+            row
+            for row in reader
+            if row["event_type"] == "a6_artifact_update"
+            and row["a6_artifact_update_source"]
+        ]
+    assert source_rows
+
+    source_delta_fields = (
+        "a6_artifact_delta_ambient",
+        "a6_artifact_delta_handoff_attempt",
+        "a6_artifact_delta_handoff_success",
+        "a6_artifact_delta_handoff_failure",
+        "a6_artifact_delta_prediction_expenditure",
+        "a6_artifact_delta_prediction_error",
+        "a6_artifact_delta_queue_work_accounting",
+        "a6_artifact_delta_noise",
+    )
+    for row in source_rows:
+        source_sum = round(sum(float(row[field] or 0.0) for field in source_delta_fields), 6)
+        assert float(row["a6_artifact_delta_unclipped"]) == source_sum
+        reconstructed_total = round(
+            source_sum + float(row["a6_artifact_delta_clip_residual"] or 0.0),
+            6,
+        )
+        assert float(row["a6_artifact_delta_total"]) == reconstructed_total
+
+    artifact_deltas: Counter[str] = Counter()
+    for row in source_rows:
+        artifact_deltas[row["a6_artifact_field"]] += float(row["a6_artifact_delta_total"])
+
+    initial_artifact = _initial_a6_artifact(result.config)
+    final_metrics = result.metrics[-1]
+    for field in A6_ARTIFACT_FIELDS:
+        reconstructed = round(initial_artifact[field] + artifact_deltas[field], 6)
+        assert reconstructed == final_metrics[f"a6_{field}_tick"]
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+    for field in (
+        "a6_prediction_budget_available_tick",
+        "a6_prediction_actions_tick",
+        "a6_prediction_error_mean_tick",
+        "a6_queue_depth_tick",
+        "a6_work_actions_tick",
+        "a6_action_opportunity_tick",
+        "a6_service_capacity_tick",
+    ):
+        assert field in metrics_header
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["model"]["logistic_appraisal"]["artifact_update_source_fields"] == list(
+        A6_ARTIFACT_UPDATE_SOURCE_FIELDS
+    )
 
 
 def test_a6_non_a6_configs_preserve_existing_a0_schema(tmp_path: Path) -> None:

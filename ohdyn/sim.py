@@ -66,6 +66,22 @@ A6_EVENT_TYPES = (
     "a6_threshold_adapted",
 )
 
+A6_ARTIFACT_UPDATE_SOURCE_FIELDS = (
+    "a6_artifact_update_source",
+    "a6_artifact_field",
+    "a6_artifact_delta_total",
+    "a6_artifact_delta_ambient",
+    "a6_artifact_delta_handoff_attempt",
+    "a6_artifact_delta_handoff_success",
+    "a6_artifact_delta_handoff_failure",
+    "a6_artifact_delta_prediction_expenditure",
+    "a6_artifact_delta_prediction_error",
+    "a6_artifact_delta_queue_work_accounting",
+    "a6_artifact_delta_noise",
+    "a6_artifact_delta_unclipped",
+    "a6_artifact_delta_clip_residual",
+)
+
 EVENT_FIELDS = (
     "tick",
     "event_type",
@@ -80,6 +96,7 @@ EVENT_FIELDS = (
     "attention_selected_class",
     "attention_pressure_class",
     "attention_capture_pressure",
+    *A6_ARTIFACT_UPDATE_SOURCE_FIELDS,
 )
 
 HIVE_EVENT_FIELDS = ("hive_id", *EVENT_FIELDS)
@@ -263,6 +280,17 @@ A6_ARTIFACT_FIELDS = (
     "artifact_communication_maturity",
 )
 
+_A6_ARTIFACT_DELTA_SOURCE_FIELDS = (
+    "ambient_artifact_drift",
+    "handoff_attempt_effect",
+    "handoff_success_effect",
+    "handoff_failure_effect",
+    "prediction_expenditure_effect",
+    "prediction_error_effect",
+    "queue_work_accounting_effect",
+    "noise_effect",
+)
+
 A6_LATENT_FIELDS = (
     "activation",
     "focus",
@@ -280,7 +308,10 @@ def logistic_appraisal_metric_fields() -> tuple[str, ...]:
         "a6_appraisal_gain",
         "a6_sigmoid_slope",
         "a6_prediction_budget",
+        "a6_prediction_budget_available_tick",
         "a6_prediction_budget_spent_tick",
+        "a6_prediction_actions_tick",
+        "a6_prediction_error_mean_tick",
         "a6_latent_activation_mean_tick",
         "a6_latent_focus_mean_tick",
         "a6_latent_fatigue_mean_tick",
@@ -297,6 +328,10 @@ def logistic_appraisal_metric_fields() -> tuple[str, ...]:
         "a6_handoff_attempts_tick",
         "a6_handoff_successes_tick",
         "a6_handoff_failures_tick",
+        "a6_queue_depth_tick",
+        "a6_work_actions_tick",
+        "a6_action_opportunity_tick",
+        "a6_service_capacity_tick",
     )
 
 
@@ -319,6 +354,7 @@ class Task:
 @dataclass
 class _A6TickState:
     prediction_budget_spent: float = 0.0
+    prediction_actions: int = 0
     handoff_attempts: int = 0
     handoff_successes: int = 0
     handoff_failures: int = 0
@@ -636,6 +672,9 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
             latent=a6_latent,
             artifact=a6_artifact,
             a6_tick=a6_tick,
+            queue_depth=queue_depth_end,
+            work_actions=action_counts["work_task"],
+            action_opportunity=len(agents),
         )
         baseline_lobe_label = _baseline_lobe_label(
             action_counts=action_counts,
@@ -2020,15 +2059,38 @@ def _advance_a6_background_state(
     if appraisal.condition == "phase_shuffled":
         phase_tick += appraisal.phase_shift_ticks
     phase = np.sin((phase_tick + 1) / 3.0)
-    novelty_drift = 0.018 * phase + float(
-        artifact_rng.normal(0.0, appraisal.artifact_noise)
+    novelty_ambient = 0.018 * phase
+    novelty_noise = float(artifact_rng.normal(0.0, appraisal.artifact_noise))
+    _apply_a6_artifact_delta(
+        artifact=artifact,
+        field="artifact_novelty",
+        tick=tick,
+        source="ambient_artifact_drift",
+        agent_id="",
+        action="artifact_update",
+        events=events,
+        ambient_artifact_drift=novelty_ambient,
+        noise_effect=novelty_noise,
     )
-    artifact["artifact_novelty"] = _clamp01(artifact["artifact_novelty"] + novelty_drift)
-    artifact["artifact_contradiction"] = _clamp01(
-        artifact["artifact_contradiction"]
-        + 0.012 * max(0.0, artifact["artifact_novelty"] - artifact["artifact_coherence"])
+    _apply_a6_artifact_delta(
+        artifact=artifact,
+        field="artifact_contradiction",
+        tick=tick,
+        source="ambient_artifact_drift",
+        agent_id="",
+        action="artifact_update",
+        events=events,
+        ambient_artifact_drift=0.012
+        * max(0.0, artifact["artifact_novelty"] - artifact["artifact_coherence"]),
     )
-    _update_a6_readiness(artifact)
+    _update_a6_readiness(
+        artifact,
+        tick=tick,
+        source="ambient_artifact_drift",
+        agent_id="",
+        action="artifact_update",
+        events=events,
+    )
 
     for agent_id, state in latent.items():
         noise = float(appraisal_rng.normal(0.0, appraisal.appraisal_noise))
@@ -2071,14 +2133,6 @@ def _advance_a6_background_state(
                     action="threshold_adapted",
                 )
             )
-    events.append(
-        _event(
-            tick=tick,
-            event_type="a6_artifact_update",
-            agent_id="",
-            action="artifact_update",
-        )
-    )
 
 
 def _choose_logistic_appraisal_action(
@@ -2234,6 +2288,7 @@ def _apply_logistic_appraisal_action(
     if action == "predict":
         spent = appraisal.prediction_budget / max(config.model.agent_count, 1)
         a6_tick.prediction_budget_spent += spent
+        a6_tick.prediction_actions += 1
         prediction_error = float(prediction_rng.normal(0.0, 0.18))
         latent["prediction_error"] = _clamp(prediction_error, -1.0, 1.0)
         latent["fatigue"] = _clamp01(latent["fatigue"] + 0.025 + spent)
@@ -2261,16 +2316,48 @@ def _apply_logistic_appraisal_action(
         success = _a6_handoff_success(action, latent, artifact, appraisal.overload_threshold)
         if success:
             a6_tick.handoff_successes += 1
-            _a6_apply_successful_handoff(action, latent, artifact)
+            _a6_apply_successful_handoff(
+                action,
+                latent,
+                artifact,
+                tick=tick,
+                agent_id=agent.agent_id,
+                events=events,
+            )
             event_type = "a6_handoff_succeeded"
         else:
             a6_tick.handoff_failures += 1
-            artifact["artifact_contradiction"] = _clamp01(artifact["artifact_contradiction"] + 0.025)
-            artifact["artifact_provenance_debt"] = _clamp01(artifact["artifact_provenance_debt"] + 0.02)
+            _apply_a6_artifact_delta(
+                artifact=artifact,
+                field="artifact_contradiction",
+                tick=tick,
+                source="handoff_failure_effect",
+                agent_id=agent.agent_id,
+                action=action,
+                events=events,
+                handoff_failure_effect=0.025,
+            )
+            _apply_a6_artifact_delta(
+                artifact=artifact,
+                field="artifact_provenance_debt",
+                tick=tick,
+                source="handoff_failure_effect",
+                agent_id=agent.agent_id,
+                action=action,
+                events=events,
+                handoff_failure_effect=0.02,
+            )
             latent["fatigue"] = _clamp01(latent["fatigue"] + 0.02)
             latent["prediction_error"] = _clamp(latent["prediction_error"] + 0.05, -1.0, 1.0)
             event_type = "a6_handoff_failed"
-        _update_a6_readiness(artifact)
+        _update_a6_readiness(
+            artifact,
+            tick=tick,
+            source="handoff_success_effect" if success else "handoff_failure_effect",
+            agent_id=agent.agent_id,
+            action=action,
+            events=events,
+        )
         events.append(
             _event(
                 tick=tick,
@@ -2323,35 +2410,127 @@ def _a6_apply_successful_handoff(
     action: str,
     latent: dict[str, float],
     artifact: dict[str, float],
+    *,
+    tick: int,
+    agent_id: str,
+    events: list[dict[str, Any]],
 ) -> None:
     if action == "synthesize":
-        artifact["artifact_coherence"] = _clamp01(artifact["artifact_coherence"] + 0.08)
-        artifact["artifact_actionability"] = _clamp01(artifact["artifact_actionability"] + 0.04)
-        artifact["artifact_novelty"] = _clamp01(artifact["artifact_novelty"] - 0.03)
+        field_deltas = {
+            "artifact_coherence": 0.08,
+            "artifact_actionability": 0.04,
+            "artifact_novelty": -0.03,
+        }
     elif action == "review":
-        artifact["artifact_risk"] = _clamp01(artifact["artifact_risk"] - 0.05)
-        artifact["artifact_contradiction"] = _clamp01(artifact["artifact_contradiction"] - 0.06)
-        artifact["artifact_provenance_debt"] = _clamp01(artifact["artifact_provenance_debt"] - 0.04)
+        field_deltas = {
+            "artifact_risk": -0.05,
+            "artifact_contradiction": -0.06,
+            "artifact_provenance_debt": -0.04,
+        }
     elif action == "formalize":
-        artifact["artifact_implementation_maturity"] = _clamp01(
-            artifact["artifact_implementation_maturity"] + 0.08
-        )
-        artifact["artifact_provenance_debt"] = _clamp01(artifact["artifact_provenance_debt"] - 0.03)
+        field_deltas = {
+            "artifact_implementation_maturity": 0.08,
+            "artifact_provenance_debt": -0.03,
+        }
     elif action == "communicate":
-        artifact["artifact_communication_maturity"] = _clamp01(
-            artifact["artifact_communication_maturity"] + 0.09
-        )
-        artifact["artifact_risk"] = _clamp01(artifact["artifact_risk"] + 0.01)
+        field_deltas = {
+            "artifact_communication_maturity": 0.09,
+            "artifact_risk": 0.01,
+        }
     elif action == "maintain":
-        artifact["artifact_provenance_debt"] = _clamp01(artifact["artifact_provenance_debt"] - 0.06)
-        artifact["artifact_contradiction"] = _clamp01(artifact["artifact_contradiction"] - 0.04)
-        artifact["artifact_risk"] = _clamp01(artifact["artifact_risk"] - 0.03)
+        field_deltas = {
+            "artifact_provenance_debt": -0.06,
+            "artifact_contradiction": -0.04,
+            "artifact_risk": -0.03,
+        }
         latent["fatigue"] = _clamp01(latent["fatigue"] - 0.05)
+    else:
+        field_deltas = {}
+    for field, delta in field_deltas.items():
+        _apply_a6_artifact_delta(
+            artifact=artifact,
+            field=field,
+            tick=tick,
+            source="handoff_success_effect",
+            agent_id=agent_id,
+            action=action,
+            events=events,
+            handoff_success_effect=delta,
+        )
     latent["fatigue"] = _clamp01(latent["fatigue"] + 0.015)
     latent["prediction_error"] = _clamp(latent["prediction_error"] * 0.85, -1.0, 1.0)
 
 
-def _update_a6_readiness(artifact: dict[str, float]) -> None:
+def _apply_a6_artifact_delta(
+    *,
+    artifact: dict[str, float],
+    field: str,
+    tick: int,
+    source: str,
+    agent_id: str,
+    action: str,
+    events: list[dict[str, Any]],
+    ambient_artifact_drift: float = 0.0,
+    handoff_attempt_effect: float = 0.0,
+    handoff_success_effect: float = 0.0,
+    handoff_failure_effect: float = 0.0,
+    prediction_expenditure_effect: float = 0.0,
+    prediction_error_effect: float = 0.0,
+    queue_work_accounting_effect: float = 0.0,
+    noise_effect: float = 0.0,
+) -> None:
+    deltas = {
+        "ambient_artifact_drift": round(float(ambient_artifact_drift), 6),
+        "handoff_attempt_effect": round(float(handoff_attempt_effect), 6),
+        "handoff_success_effect": round(float(handoff_success_effect), 6),
+        "handoff_failure_effect": round(float(handoff_failure_effect), 6),
+        "prediction_expenditure_effect": round(float(prediction_expenditure_effect), 6),
+        "prediction_error_effect": round(float(prediction_error_effect), 6),
+        "queue_work_accounting_effect": round(float(queue_work_accounting_effect), 6),
+        "noise_effect": round(float(noise_effect), 6),
+    }
+    unclipped_delta = round(float(sum(deltas.values())), 6)
+    before = artifact[field]
+    after = _clamp01(before + unclipped_delta)
+    total_delta = round(float(after - before), 6)
+    clip_residual = round(float(total_delta - unclipped_delta), 6)
+    artifact[field] = after
+    events.append(
+        _event(
+            tick=tick,
+            event_type="a6_artifact_update",
+            agent_id=agent_id,
+            action=action,
+            a6_artifact_update_source=source,
+            a6_artifact_field=field,
+            a6_artifact_delta_total=total_delta,
+            a6_artifact_delta_ambient=deltas["ambient_artifact_drift"],
+            a6_artifact_delta_handoff_attempt=deltas["handoff_attempt_effect"],
+            a6_artifact_delta_handoff_success=deltas["handoff_success_effect"],
+            a6_artifact_delta_handoff_failure=deltas["handoff_failure_effect"],
+            a6_artifact_delta_prediction_expenditure=deltas[
+                "prediction_expenditure_effect"
+            ],
+            a6_artifact_delta_prediction_error=deltas["prediction_error_effect"],
+            a6_artifact_delta_queue_work_accounting=deltas[
+                "queue_work_accounting_effect"
+            ],
+            a6_artifact_delta_noise=deltas["noise_effect"],
+            a6_artifact_delta_unclipped=unclipped_delta,
+            a6_artifact_delta_clip_residual=clip_residual,
+        )
+    )
+
+
+def _update_a6_readiness(
+    artifact: dict[str, float],
+    *,
+    tick: int | None = None,
+    source: str = "",
+    agent_id: str = "",
+    action: str = "",
+    events: list[dict[str, Any]] | None = None,
+) -> None:
     readiness = (
         0.25 * artifact["artifact_novelty"]
         + 0.30 * artifact["artifact_coherence"]
@@ -2359,7 +2538,21 @@ def _update_a6_readiness(artifact: dict[str, float]) -> None:
         - 0.12 * artifact["artifact_provenance_debt"]
         - 0.08 * artifact["artifact_risk"]
     )
-    artifact["artifact_readiness"] = _clamp01(readiness)
+    delta = _clamp01(readiness) - artifact["artifact_readiness"]
+    if events is None or tick is None or round(float(delta), 6) == 0.0:
+        artifact["artifact_readiness"] = _clamp01(readiness)
+        return
+    source_deltas = {source: delta} if source in _A6_ARTIFACT_DELTA_SOURCE_FIELDS else {}
+    _apply_a6_artifact_delta(
+        artifact=artifact,
+        field="artifact_readiness",
+        tick=tick,
+        source=source,
+        agent_id=agent_id,
+        action=action,
+        events=events,
+        **source_deltas,
+    )
 
 
 def _logistic_appraisal_metrics(
@@ -2368,6 +2561,9 @@ def _logistic_appraisal_metrics(
     latent: dict[str, dict[str, float]],
     artifact: dict[str, float],
     a6_tick: _A6TickState,
+    queue_depth: int,
+    work_actions: int,
+    action_opportunity: int,
 ) -> dict[str, int | float | str]:
     if config.logistic_appraisal is None:
         return {}
@@ -2377,7 +2573,13 @@ def _logistic_appraisal_metrics(
         "a6_appraisal_gain": appraisal.appraisal_gain,
         "a6_sigmoid_slope": appraisal.sigmoid_slope,
         "a6_prediction_budget": appraisal.prediction_budget,
+        "a6_prediction_budget_available_tick": round(
+            float(max(appraisal.prediction_budget - a6_tick.prediction_budget_spent, 0.0)),
+            6,
+        ),
         "a6_prediction_budget_spent_tick": round(float(a6_tick.prediction_budget_spent), 6),
+        "a6_prediction_actions_tick": a6_tick.prediction_actions,
+        "a6_prediction_error_mean_tick": _a6_latent_mean(latent, "prediction_error"),
         "a6_latent_activation_mean_tick": _a6_latent_mean(latent, "activation"),
         "a6_latent_focus_mean_tick": _a6_latent_mean(latent, "focus"),
         "a6_latent_fatigue_mean_tick": _a6_latent_mean(latent, "fatigue"),
@@ -2400,6 +2602,10 @@ def _logistic_appraisal_metrics(
         "a6_handoff_attempts_tick": a6_tick.handoff_attempts,
         "a6_handoff_successes_tick": a6_tick.handoff_successes,
         "a6_handoff_failures_tick": a6_tick.handoff_failures,
+        "a6_queue_depth_tick": queue_depth,
+        "a6_work_actions_tick": work_actions,
+        "a6_action_opportunity_tick": action_opportunity,
+        "a6_service_capacity_tick": config.model.work_service_capacity,
     }
 
 
@@ -2568,6 +2774,19 @@ def _event(
     attention_selected_class: str = "",
     attention_pressure_class: str = "",
     attention_capture_pressure: float | str = "",
+    a6_artifact_update_source: str = "",
+    a6_artifact_field: str = "",
+    a6_artifact_delta_total: float | str = "",
+    a6_artifact_delta_ambient: float | str = "",
+    a6_artifact_delta_handoff_attempt: float | str = "",
+    a6_artifact_delta_handoff_success: float | str = "",
+    a6_artifact_delta_handoff_failure: float | str = "",
+    a6_artifact_delta_prediction_expenditure: float | str = "",
+    a6_artifact_delta_prediction_error: float | str = "",
+    a6_artifact_delta_queue_work_accounting: float | str = "",
+    a6_artifact_delta_noise: float | str = "",
+    a6_artifact_delta_unclipped: float | str = "",
+    a6_artifact_delta_clip_residual: float | str = "",
 ) -> dict[str, Any]:
     return {
         "tick": tick,
@@ -2583,4 +2802,17 @@ def _event(
         "attention_selected_class": attention_selected_class,
         "attention_pressure_class": attention_pressure_class,
         "attention_capture_pressure": attention_capture_pressure,
+        "a6_artifact_update_source": a6_artifact_update_source,
+        "a6_artifact_field": a6_artifact_field,
+        "a6_artifact_delta_total": a6_artifact_delta_total,
+        "a6_artifact_delta_ambient": a6_artifact_delta_ambient,
+        "a6_artifact_delta_handoff_attempt": a6_artifact_delta_handoff_attempt,
+        "a6_artifact_delta_handoff_success": a6_artifact_delta_handoff_success,
+        "a6_artifact_delta_handoff_failure": a6_artifact_delta_handoff_failure,
+        "a6_artifact_delta_prediction_expenditure": a6_artifact_delta_prediction_expenditure,
+        "a6_artifact_delta_prediction_error": a6_artifact_delta_prediction_error,
+        "a6_artifact_delta_queue_work_accounting": a6_artifact_delta_queue_work_accounting,
+        "a6_artifact_delta_noise": a6_artifact_delta_noise,
+        "a6_artifact_delta_unclipped": a6_artifact_delta_unclipped,
+        "a6_artifact_delta_clip_residual": a6_artifact_delta_clip_residual,
     }

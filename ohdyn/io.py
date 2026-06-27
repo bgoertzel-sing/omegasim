@@ -16,6 +16,7 @@ import yaml
 from ohdyn.config import ATTENTION_CLASSES
 from ohdyn.sim import (
     A6_ARTIFACT_FIELDS,
+    A6_ARTIFACT_UPDATE_SOURCE_FIELDS,
     A6_EVENT_TYPES,
     A6_LATENT_FIELDS,
     ATTENTION_EVENT_TYPES,
@@ -162,6 +163,7 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "latent_fields": list(A6_LATENT_FIELDS),
             "artifact_fields": list(A6_ARTIFACT_FIELDS),
             "event_types": list(A6_EVENT_TYPES),
+            "artifact_update_source_fields": list(A6_ARTIFACT_UPDATE_SOURCE_FIELDS),
             "fields": list(logistic_appraisal_metric_fields()),
             "rng_streams": {
                 "baseline_action_stream": "numpy.default_rng(seed)",
