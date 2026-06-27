@@ -144,6 +144,8 @@ from ohdyn.a7_semantic_field_contract import (
 from ohdyn.analyze_a7_semantic_field import (
     A7_ANALYZER_COMPLETENESS_FIELDS,
     A7_ANALYZER_MANIFEST_FIELDS,
+    A7_ANALYZER_NULL_CONTRAST_FIELDS,
+    A7_ANALYZER_RESIDUAL_FIELDS,
     run_a7_semantic_field_analysis,
 )
 from ohdyn.compare_a7_semantic_field import (
@@ -909,7 +911,7 @@ def test_a7_analyzer_fails_closed_on_missing_schema(tmp_path: Path) -> None:
     assert "a7_semantic_novelty_tick" in completeness_rows[0]["missing_required_fields"]
     assert "a7_delta_total" in completeness_rows[0]["missing_required_fields"]
     assert manifest_rows[0]["status"] == "fail_closed_missing_conditions"
-    assert "scientific interpretation remain fail-closed" in (
+    assert "Positive interpretation remains blocked" in (
         out_dir / "summary.md"
     ).read_text()
 
@@ -978,6 +980,12 @@ def test_a7_placeholder_comparison_still_fails_closed_in_analyzer(
     smoke_rows = list(
         csv.DictReader((analysis_dir / "a7_semantic_field_smoke_report.csv").open())
     )
+    residual_rows = list(
+        csv.DictReader((analysis_dir / "a7_semantic_field_residual_metrics.csv").open())
+    )
+    contrast_rows = list(
+        csv.DictReader((analysis_dir / "a7_semantic_field_null_contrasts.csv").open())
+    )
     assert len(smoke_rows) == len(A7_CONDITIONS)
     assert {row["field_variation_status"] for row in smoke_rows} == {
         "no_field_variation"
@@ -985,6 +993,12 @@ def test_a7_placeholder_comparison_still_fails_closed_in_analyzer(
     assert {row["scientific_interpretation_status"] for row in smoke_rows} == {
         "fail_closed_residual_recurrence_and_null_contrasts_not_implemented"
     }
+    assert len(residual_rows) == len(A7_CONDITIONS) * len(A7_FIELD_VALUES)
+    assert list(residual_rows[0]) == list(A7_ANALYZER_RESIDUAL_FIELDS)
+    assert {row["status"] for row in residual_rows} == {"missing_required_fields"}
+    assert len(contrast_rows) == len(A7_NULL_CONDITIONS) * len(A7_FIELD_VALUES)
+    assert list(contrast_rows[0]) == list(A7_ANALYZER_NULL_CONTRAST_FIELDS)
+    assert {row["gate_status"] for row in contrast_rows} == {"missing_required_fields"}
 
 
 def test_a7_logistic_semantic_field_run_emits_schema_and_source_ledger(
@@ -1053,9 +1067,15 @@ def test_a7_analyzer_reports_seed1_six_condition_smoke_without_interpretation(
 
     result = run_a7_semantic_field_analysis(compare_dir, analysis_dir)
 
-    assert result["status"] == "schema_present_analysis_not_implemented"
+    assert result["status"] == "fail_closed_insufficient_horizon"
     smoke_rows = list(
         csv.DictReader((analysis_dir / "a7_semantic_field_smoke_report.csv").open())
+    )
+    residual_rows = list(
+        csv.DictReader((analysis_dir / "a7_semantic_field_residual_metrics.csv").open())
+    )
+    contrast_rows = list(
+        csv.DictReader((analysis_dir / "a7_semantic_field_null_contrasts.csv").open())
     )
     assert list(smoke_rows[0]) == list(A7_ANALYZER_SMOKE_REPORT_FIELDS)
     assert len(smoke_rows) == len(A7_CONDITIONS)
@@ -1072,9 +1092,16 @@ def test_a7_analyzer_reports_seed1_six_condition_smoke_without_interpretation(
     assert {row["scientific_interpretation_status"] for row in smoke_rows} == {
         "fail_closed_residual_recurrence_and_null_contrasts_not_implemented"
     }
+    assert list(residual_rows[0]) == list(A7_ANALYZER_RESIDUAL_FIELDS)
+    assert len(residual_rows) == len(A7_CONDITIONS) * len(A7_FIELD_VALUES)
+    assert {row["status"] for row in residual_rows} == {"insufficient_horizon"}
+    assert all(row["control_fields_used"] for row in residual_rows)
+    assert list(contrast_rows[0]) == list(A7_ANALYZER_NULL_CONTRAST_FIELDS)
+    assert len(contrast_rows) == len(A7_NULL_CONDITIONS) * len(A7_FIELD_VALUES)
+    assert {row["gate_status"] for row in contrast_rows} == {"insufficient_horizon"}
     summary = (analysis_dir / "summary.md").read_text()
     assert "Prediction/work-budget competition pass rows" in summary
-    assert "residual" in summary
+    assert "Null-contrast gate status" in summary
 
 
 def test_automation_guard_closes_after_a5_closure_despite_preregistration(

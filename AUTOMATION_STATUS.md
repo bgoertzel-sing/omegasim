@@ -33,6 +33,14 @@ semantic-dynamics claims from A7 smoke artifacts.
 
 ## Latest Changes
 
+- Implemented the first read-only A7 residual/null analyzer over the existing
+  six preregistered A7 conditions. `ohdyn.analyze_a7_semantic_field` now writes
+  deterministic residual metric rows and paired positive-vs-null contrast rows
+  in addition to the prior completeness, manifest, and smoke-report artifacts.
+- The new A7 residual/null gate remains conservative: seed-1 smoke artifacts
+  with complete schema/source reconstruction still fail closed as
+  `fail_closed_insufficient_horizon`, with no semantic-dynamics, attractor,
+  lobe, synchrony, or promotion claim.
 - Reconciled `AUTOMATION_STATUS.md` and `README.md` with the closed A5
   evidence and the accepted A7 roadmap. The stale A5-active wording has been
   replaced with A5-closed/A7-active wording.
@@ -63,10 +71,19 @@ semantic-dynamics claims from A7 smoke artifacts.
   --trigger "urgent in-run confusion or novelty" --urgent` passed and wrote a
   major/notify-Ben review.
 - `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
-  ohdyn/analyze_a5_residual_accounting.py ohdyn/analyze_a7_semantic_field.py`
+  ohdyn/analyze_a7_semantic_field.py ohdyn/a7_semantic_field_contract.py`
   passed.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'a7 or automation_guard'` passed: `18 passed, 596 deselected`.
+- Generated deterministic seed-1 A7 smoke artifacts for all six preregistered
+  conditions under `/tmp/omegasim_a7_seed1_smoke_20260627_residual` and ran
+  `.venv-conda/bin/python -m ohdyn.analyze_a7_semantic_field --compare-dir
+  /tmp/omegasim_a7_seed1_smoke_20260627_residual --out
+  /tmp/omegasim_a7_seed1_analysis_20260627_residual`. The analyzer passed and
+  reported `Status: fail_closed_insufficient_horizon`, source reconstruction
+  pass rows `6`, field variation pass rows `6`, prediction/work-budget
+  competition pass rows `6`, residual row status `insufficient_horizon=36`,
+  and null-contrast gate status `insufficient_horizon=30`.
 - `git diff --check` passed.
 
 ## Blockers
@@ -77,6 +94,7 @@ the active gated smoke. There is no code or local environment blocker.
 
 ## Recommended Next Step
 
-Implement the first read-only A7 residual/null analyzer over the existing six
-preregistered A7 conditions, keeping seed-1 smoke rows and all null contrasts
-fail-closed unless preregistered A7 decision criteria are fully satisfied.
+Preregister the smallest A7 long-horizon residual/null validation gate before
+running any longer A7 paired seeds, including minimum horizon, promotion/closure
+criteria, productivity safeguard, null completeness requirements, and
+cross-seed direction agreement rules.

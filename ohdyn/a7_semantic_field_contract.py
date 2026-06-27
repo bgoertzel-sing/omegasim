@@ -130,6 +130,39 @@ A7_ANALYZER_SMOKE_REPORT_FIELDS = (
     "source_reconstruction_status",
     "scientific_interpretation_status",
 )
+A7_ANALYZER_RESIDUAL_FIELDS = (
+    "condition",
+    "seed",
+    "target_field",
+    "row_count",
+    "residualization_status",
+    "missing_required_fields",
+    "control_fields_used",
+    "residual_variance",
+    "lag1_autocorrelation",
+    "linear_ar_forecast_mae",
+    "nearest_neighbor_forecast_mae",
+    "backlog_adjusted_productivity",
+    "status",
+    "interpretation",
+)
+A7_ANALYZER_NULL_CONTRAST_FIELDS = (
+    "contrast",
+    "seed",
+    "control_condition",
+    "target_field",
+    "paired",
+    "status",
+    "positive_status",
+    "control_status",
+    "residual_variance_delta",
+    "lag1_autocorrelation_delta",
+    "linear_ar_forecast_mae_delta",
+    "nearest_neighbor_forecast_mae_delta",
+    "backlog_adjusted_productivity_delta",
+    "gate_status",
+    "interpretation",
+)
 
 
 def a7_required_metric_fields() -> tuple[str, ...]:
