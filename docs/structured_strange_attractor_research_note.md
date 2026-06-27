@@ -7,6 +7,14 @@ toward attractor-oriented simulations. It is not approval to interrupt the
 current A4 sequence, add broad simulator mechanics, or reopen A2/A3 lobe-grammar
 searches.
 
+Update 2026-06-27: Ben supplied a more concrete post-A5 direction centered on
+logistic response as bounded thresholded cognitive appraisal, latent
+motivational/artifact state, costly endogenous prediction, hysteresis, adaptive
+thresholds, and thresholded artifact handoff. The active candidate design note
+is `docs/a6_logistic_appraisal_attractor_preregistration.md`. Treat that A6
+document as the concrete successor to this high-level note; this note remains
+background motivation only.
+
 ## Core Intuition
 
 The envisioned structured strange-attractor scenario is unlikely to arise from
