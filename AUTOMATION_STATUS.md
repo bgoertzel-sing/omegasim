@@ -5,8 +5,9 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-This run reconciled the repository status against the accepted 2026-06-27 A6
-roadmap, the completed A6/A6.1 reports, and the external strategy review in
+This run completed the short post-A6.1 closure addendum requested by the
+previous status file, using the accepted 2026-06-27 A6 roadmap, the completed
+A6/A6.1 reports, and the external strategy review in
 `../outputs/strategy-reviews/omegasim/latest-review.md`.
 
 The current scientific boundary is conservative: A6/A6.1 remain useful
@@ -19,9 +20,10 @@ smoke: logistic readiness/utility advantages are removed by the preregistered
 nulls, and residual rows remain smoke-scale and underdetermined.
 
 The GPT-5.5-Pro recommendation was incorporated. Its requested A6 analyzer
-audit was already present in tracked result reports, so this run did not rerun
-or broaden simulations. The review header reported `strategic_change_level:
-minor` and `notify_ben: false`; no Ben notification is required.
+audit was already present in tracked result reports before this run, so this
+run did not rerun or broaden simulations. The review header reported
+`strategic_change_level: minor` and `notify_ben: false`; no Ben notification is
+required. No recommendation was rejected.
 
 Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
@@ -30,7 +32,13 @@ without a new preregistered design gate.
 
 ## Latest Changes
 
-- Status reconciliation completed, 2026-06-27.
+- Post-A6.1 closure addendum completed, 2026-06-27:
+  `docs/results/a6_1_closure_addendum_seed1_2.md`.
+- The addendum freezes A6/A6.1 as schema/analyzer scaffolding only, records
+  conservative closure for the source-preserving null gate, and requires any
+  future A6.2 residual-recurrence reopening to start with a new
+  preregistration before implementation.
+- Status reconciliation completed earlier, 2026-06-27.
 - Confirmed guard state: `.venv-conda/bin/python -m ohdyn.automation_guard`
   reported `state: open`, `should_noop: false`, `strategic_change_level:
   minor`, `notify_ben: false`, and recommended auditing the expanded A6
@@ -52,14 +60,15 @@ without a new preregistered design gate.
   `docs/results/a6_1_pilot_null_gate_seed1_2.md` reports all eight pilot-null
   gate rows as `null_removes_endpoint_advantage`; this is conservative closure
   for the current A6.1 smoke gate, not promotion.
-- Repository changes in this run: updated this status file only.
+- Repository changes in this run: added the A6.1 closure addendum and updated
+  this status file only.
 
 ## Verification
 
 - `git status --short --branch` initially reported a clean worktree on
   `main...origin/main`.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed and returned an
-  open guard state with the A6 audit recommendation.
+  open guard state with the older A6 audit recommendation.
 - Read and checked:
   `README.md`,
   `AUTOMATION_STATUS.md`,
@@ -68,7 +77,8 @@ without a new preregistered design gate.
   `docs/a6_1_pilot_null_preregistration.md`,
   `docs/results/a6_analysis_gate_seed1_2.md`,
   `docs/results/a6_1_source_accounting_audit_seed1_2.md`,
-  `docs/results/a6_1_pilot_null_gate_seed1_2.md`, and the external strategy
+  `docs/results/a6_1_pilot_null_gate_seed1_2.md`,
+  `docs/results/a6_1_closure_addendum_seed1_2.md`, and the external strategy
   review.
 - Confirmed the A6 analysis gate artifact directory contains the expected CSVs
   and row counts:
@@ -78,6 +88,9 @@ without a new preregistered design gate.
   comparison_consistency `4`, effects_consistency `3`,
   artifact_provenance `80`, and source_accounting `80`.
 - No code changed in this run, so no pytest or py_compile command was required.
+- `git status --short` after edits showed only
+  `AUTOMATION_STATUS.md` modified and
+  `docs/results/a6_1_closure_addendum_seed1_2.md` added before commit.
 
 ## Blockers
 
@@ -85,6 +98,6 @@ None.
 
 ## Recommended Next Step
 
-Write a short preregistered post-A6.1 closure/addendum that freezes the
-conservative A6.1 interpretation and requires any future A6.2 residual-
-recurrence reopening to start with a new preregistration before implementation.
+Draft a new A6.2 residual-recurrence preregistration only if the project chooses
+to reopen single-hive A6 after this conservative closure; do not implement code
+or run new simulations before that preregistration exists.
