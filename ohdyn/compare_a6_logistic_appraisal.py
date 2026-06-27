@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,34 @@ A6_SMOKE_CONFIGS = (
     ("linear", Path("configs/a6_linear_appraisal_smoke.yaml")),
     ("threshold_shuffled", Path("configs/a6_threshold_shuffled_smoke.yaml")),
     ("phase_shuffled", Path("configs/a6_phase_shuffled_smoke.yaml")),
+)
+A6_1_SOURCE_NULL_CONDITIONS = (
+    "source_label_shuffled_within_tick",
+    "handoff_success_timing_broken_matched_counts",
+)
+_A6_ARTIFACT_EVENT_FIELDS = (
+    "artifact_novelty",
+    "artifact_coherence",
+    "artifact_actionability",
+    "artifact_provenance_debt",
+    "artifact_risk",
+    "artifact_contradiction",
+    "artifact_readiness",
+    "artifact_implementation_maturity",
+    "artifact_communication_maturity",
+)
+_A6_ARTIFACT_METRIC_FIELDS = {
+    field: f"a6_{field}_tick" for field in _A6_ARTIFACT_EVENT_FIELDS
+}
+_A6_SOURCE_DELTA_COLUMNS = (
+    "a6_artifact_delta_ambient",
+    "a6_artifact_delta_handoff_attempt",
+    "a6_artifact_delta_handoff_success",
+    "a6_artifact_delta_handoff_failure",
+    "a6_artifact_delta_prediction_expenditure",
+    "a6_artifact_delta_prediction_error",
+    "a6_artifact_delta_queue_work_accounting",
+    "a6_artifact_delta_noise",
 )
 
 A6_COMPARISON_FIELDS = (
@@ -79,6 +108,7 @@ def run_a6_logistic_appraisal_comparison(
     *,
     seeds: tuple[int, ...] = DEFAULT_A6_SEEDS,
     out_dir: str | Path = DEFAULT_A6_COMPARE_DIR,
+    include_a6_1_nulls: bool = False,
 ) -> list[dict[str, Any]]:
     _validate_seeds(seeds)
     output_path = Path(out_dir)
@@ -87,12 +117,46 @@ def run_a6_logistic_appraisal_comparison(
     output_path.mkdir(parents=True, exist_ok=True)
 
     rows: list[dict[str, Any]] = []
+    logistic_results_by_seed: dict[int, SimulationResult] = {}
     for condition, config_path in A6_SMOKE_CONFIGS:
         results: list[SimulationResult] = []
         for seed in seeds:
             run_dir = output_path / f"{condition}_seed{seed}"
             results.append(run_experiment(config_path, seed=seed, out_dir=run_dir))
+            if condition == "logistic":
+                logistic_results_by_seed[seed] = results[-1]
         rows.append(_aggregate_row(condition, config_path, results))
+
+    if include_a6_1_nulls:
+        for null_condition in A6_1_SOURCE_NULL_CONDITIONS:
+            results = []
+            for seed in seeds:
+                source_dir = output_path / f"logistic_seed{seed}"
+                run_dir = output_path / f"{null_condition}_seed{seed}"
+                _write_a6_1_null_run(
+                    source_dir=source_dir,
+                    out_dir=run_dir,
+                    condition=null_condition,
+                    seed=seed,
+                )
+                base_result = logistic_results_by_seed[seed]
+                results.append(
+                    SimulationResult(
+                        config=base_result.config,
+                        seed=base_result.seed,
+                        bus_graph=base_result.bus_graph,
+                        agents=base_result.agents,
+                        metrics=_read_csv(run_dir / "metrics.csv"),
+                        events=_read_csv(run_dir / "events.csv"),
+                    )
+                )
+            rows.append(
+                _aggregate_row(
+                    null_condition,
+                    Path(f"derived:{null_condition}:configs/a6_logistic_appraisal_smoke.yaml"),
+                    results,
+                )
+            )
 
     effect_rows = _effect_rows(rows)
     _write_csv(
@@ -234,11 +298,14 @@ def _artifact_utility(row: dict[str, Any]) -> float:
 
 def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_condition = {str(row["condition"]): row for row in rows}
-    pairs = (
+    pairs = [
         ("logistic_vs_linear", "linear", "logistic"),
         ("logistic_vs_phase_shuffled", "phase_shuffled", "logistic"),
         ("logistic_vs_threshold_shuffled", "threshold_shuffled", "logistic"),
-    )
+    ]
+    for null_condition in A6_1_SOURCE_NULL_CONDITIONS:
+        if null_condition in by_condition:
+            pairs.append((f"logistic_vs_{null_condition}", null_condition, "logistic"))
     return [
         _effect_row(effect_axis, by_condition[low_label], by_condition[high_label])
         for effect_axis, low_label, high_label in pairs
@@ -281,6 +348,163 @@ def _write_csv(path: Path, fields: tuple[str, ...], rows: list[dict[str, Any]]) 
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _write_a6_1_null_run(
+    *,
+    source_dir: Path,
+    out_dir: Path,
+    condition: str,
+    seed: int,
+) -> None:
+    if out_dir.exists():
+        raise FileExistsError(f"Output path {out_dir} already exists.")
+    shutil.copytree(source_dir, out_dir)
+    _rewrite_null_config(out_dir / "config.yaml", condition)
+    events = _read_csv(out_dir / "events.csv")
+    metrics = _read_csv(out_dir / "metrics.csv")
+    if condition == "source_label_shuffled_within_tick":
+        events = _source_label_shuffled_events(events, seed)
+    elif condition == "handoff_success_timing_broken_matched_counts":
+        events = _handoff_success_timing_broken_events(events, seed)
+        metrics = _metrics_with_transformed_artifacts(
+            metrics=metrics,
+            original_events=_read_csv(source_dir / "events.csv"),
+            transformed_events=events,
+        )
+    else:
+        raise ValueError(f"Unknown A6.1 null condition: {condition}")
+    _write_dict_csv(out_dir / "events.csv", events)
+    _write_dict_csv(out_dir / "metrics.csv", metrics)
+    summary_path = out_dir / "summary.md"
+    summary_path.write_text(
+        summary_path.read_text()
+        + "\n\n"
+        + "## A6.1 Source-Preserving Null\n\n"
+        + f"- derived_condition: {condition}\n"
+        + "- source_run: logistic with the same deterministic seed\n"
+        + "- scientific status: read-only null artifact; not a simulator mechanism\n"
+    )
+
+
+def _rewrite_null_config(path: Path, condition: str) -> None:
+    config = yaml.safe_load(path.read_text()) or {}
+    logistic_appraisal = config.setdefault("logistic_appraisal", {})
+    logistic_appraisal["condition"] = condition
+    path.write_text(yaml.safe_dump(config, sort_keys=False))
+
+
+def _read_csv(path: Path) -> list[dict[str, str]]:
+    with path.open(newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _write_dict_csv(path: Path, rows: list[dict[str, Any]]) -> None:
+    if not rows:
+        return
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _source_label_shuffled_events(
+    events: list[dict[str, str]],
+    seed: int,
+) -> list[dict[str, str]]:
+    rows = [dict(row) for row in events]
+    for row in rows:
+        if row.get("event_type") != "a6_artifact_update":
+            continue
+        tick = int(float(row["tick"]))
+        shift = 1 + ((seed + tick) % (len(_A6_SOURCE_DELTA_COLUMNS) - 1))
+        values = [row.get(column, "") for column in _A6_SOURCE_DELTA_COLUMNS]
+        rotated = values[-shift:] + values[:-shift]
+        for column, value in zip(_A6_SOURCE_DELTA_COLUMNS, rotated, strict=True):
+            row[column] = value
+        row["a6_artifact_update_source"] = "source_label_shuffled_within_tick"
+    return rows
+
+
+def _handoff_success_timing_broken_events(
+    events: list[dict[str, str]],
+    seed: int,
+) -> list[dict[str, str]]:
+    rows = [dict(row) for row in events]
+    by_field: dict[str, list[dict[str, str]]] = {}
+    for row in rows:
+        if row.get("event_type") == "a6_artifact_update":
+            by_field.setdefault(str(row.get("a6_artifact_field", "")), []).append(row)
+    for field, field_rows in by_field.items():
+        success_values = [
+            row.get("a6_artifact_delta_handoff_success", "") for row in field_rows
+        ]
+        nonzero = [value for value in success_values if _float(value) != 0.0]
+        if len(nonzero) < 2:
+            continue
+        shift = 1 + ((seed + len(field)) % (len(field_rows) - 1))
+        rotated = success_values[-shift:] + success_values[:-shift]
+        for row, value in zip(field_rows, rotated, strict=True):
+            row["a6_artifact_delta_handoff_success"] = value
+            _refresh_event_total(row)
+    return rows
+
+
+def _refresh_event_total(row: dict[str, str]) -> None:
+    unclipped = round(sum(_float(row.get(column, "")) for column in _A6_SOURCE_DELTA_COLUMNS), 6)
+    row["a6_artifact_delta_unclipped"] = str(unclipped)
+    row["a6_artifact_delta_clip_residual"] = "0.0"
+    row["a6_artifact_delta_total"] = str(unclipped)
+
+
+def _metrics_with_transformed_artifacts(
+    *,
+    metrics: list[dict[str, str]],
+    original_events: list[dict[str, str]],
+    transformed_events: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    rows = [dict(row) for row in metrics]
+    if not rows:
+        return rows
+    original_by_tick_field = _event_deltas_by_tick_field(original_events)
+    transformed_by_tick_field = _event_deltas_by_tick_field(transformed_events)
+    values: dict[str, float] = {}
+    first_tick = int(float(rows[0]["tick"]))
+    for event_field, metric_field in _A6_ARTIFACT_METRIC_FIELDS.items():
+        values[metric_field] = _float(rows[0].get(metric_field, "")) - original_by_tick_field.get(
+            (first_tick, event_field),
+            0.0,
+        )
+    for row in rows:
+        tick = int(float(row["tick"]))
+        for event_field, metric_field in _A6_ARTIFACT_METRIC_FIELDS.items():
+            values[metric_field] = _clamp01(
+                values[metric_field]
+                + transformed_by_tick_field.get((tick, event_field), 0.0)
+            )
+            row[metric_field] = str(round(values[metric_field], 6))
+    return rows
+
+
+def _event_deltas_by_tick_field(events: list[dict[str, str]]) -> dict[tuple[int, str], float]:
+    deltas: dict[tuple[int, str], float] = {}
+    for row in events:
+        if row.get("event_type") != "a6_artifact_update":
+            continue
+        key = (int(float(row["tick"])), str(row.get("a6_artifact_field", "")))
+        deltas[key] = deltas.get(key, 0.0) + _float(row.get("a6_artifact_delta_total", ""))
+    return deltas
+
+
+def _float(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _clamp01(value: float) -> float:
+    return min(1.0, max(0.0, value))
 
 
 def _summary(
@@ -369,6 +593,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(DEFAULT_A6_COMPARE_DIR),
         help="Output directory for A6 smoke comparison artifacts.",
     )
+    parser.add_argument(
+        "--include-a6-1-nulls",
+        action="store_true",
+        help="Also derive the preregistered A6.1 source-preserving null artifact directories.",
+    )
     return parser
 
 
@@ -379,6 +608,7 @@ def main(argv: list[str] | None = None) -> int:
         run_a6_logistic_appraisal_comparison(
             seeds=tuple(args.seeds),
             out_dir=args.out,
+            include_a6_1_nulls=args.include_a6_1_nulls,
         )
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))

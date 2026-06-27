@@ -33,6 +33,7 @@ from ohdyn.sim import (
     simulate,
 )
 from ohdyn.analyze_a6_logistic_appraisal import (
+    A6_1_PILOT_NULL_GATE_FIELDS,
     A6_ANALYSIS_ENDPOINT_FIELDS,
     A6_ANALYSIS_MANIFEST_FIELDS,
     A6_ARTIFACT_PROVENANCE_FIELDS,
@@ -15518,33 +15519,95 @@ def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
     assert "- scope: four checked-in single-hive smoke fixtures only; no broad sweep" in summary
     assert "- scientific status: smoke artifact comparison, not promotion evidence" in summary
 
-    analysis_dir = tmp_path / "a6_analysis"
-    analysis = run_a6_logistic_appraisal_analysis(out_dir, analysis_dir)
-    assert analysis["run_count"] == 8
-    assert analysis["comparison_consistency_count"] == 4
-    with (analysis_dir / "a6_logistic_appraisal_comparison_consistency.csv").open() as handle:
-        consistency_rows = list(csv.DictReader(handle))
-    with (analysis_dir / "a6_logistic_appraisal_effects_consistency.csv").open() as handle:
-        effect_consistency_rows = list(csv.DictReader(handle))
-    assert list(consistency_rows[0]) == list(A6_COMPARISON_CONSISTENCY_FIELDS)
-    assert list(effect_consistency_rows[0]) == list(A6_EFFECTS_CONSISTENCY_FIELDS)
-    assert {row["condition"] for row in consistency_rows} == {
+
+def test_a6_1_comparison_derives_source_preserving_nulls_and_gate(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a6_1_compare"
+
+    rows = run_a6_logistic_appraisal_comparison(
+        seeds=(1, 2),
+        out_dir=compare_dir,
+        include_a6_1_nulls=True,
+    )
+
+    assert [row["condition"] for row in rows] == [
         "logistic",
         "linear",
         "threshold_shuffled",
         "phase_shuffled",
+        "source_label_shuffled_within_tick",
+        "handoff_success_timing_broken_matched_counts",
+    ]
+    for condition in (
+        "source_label_shuffled_within_tick",
+        "handoff_success_timing_broken_matched_counts",
+    ):
+        for seed in (1, 2):
+            run_dir = compare_dir / f"{condition}_seed{seed}"
+            config = yaml.safe_load((run_dir / "config.yaml").read_text())
+            assert config["logistic_appraisal"]["condition"] == condition
+            _assert_artifacts_match_output_directory(run_dir, A0_FULL_ARTIFACTS)
+
+    source_events = list(
+        csv.DictReader(
+            (compare_dir / "source_label_shuffled_within_tick_seed1" / "events.csv").open()
+        )
+    )
+    source_update = next(
+        row for row in source_events if row["event_type"] == "a6_artifact_update"
+    )
+    assert source_update["a6_artifact_update_source"] == "source_label_shuffled_within_tick"
+    assert source_update["a6_artifact_delta_total"] != ""
+
+    timing_metrics = list(
+        csv.DictReader(
+            (
+                compare_dir
+                / "handoff_success_timing_broken_matched_counts_seed1"
+                / "metrics.csv"
+            ).open()
+        )
+    )
+    logistic_metrics = list(
+        csv.DictReader((compare_dir / "logistic_seed1" / "metrics.csv").open())
+    )
+    assert [
+        row["a6_artifact_readiness_tick"] for row in timing_metrics
+    ] != [
+        row["a6_artifact_readiness_tick"] for row in logistic_metrics
+    ]
+
+    analysis_dir = tmp_path / "a6_1_analysis"
+    result = run_a6_logistic_appraisal_analysis(compare_dir, analysis_dir)
+
+    assert result["condition_count"] == 6
+    assert result["control_delta_count"] == 10
+    assert result["a6_1_pilot_null_gate_count"] == 8
+    with (analysis_dir / "a6_1_pilot_null_gate.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_1_PILOT_NULL_GATE_FIELDS)
+        gate_rows = list(csv.DictReader(handle, fieldnames=A6_1_PILOT_NULL_GATE_FIELDS))
+    assert {row["paired"] for row in gate_rows} == {"true"}
+    assert {row["endpoint"] for row in gate_rows} == {
+        "final_artifact_readiness",
+        "final_artifact_utility",
     }
-    assert {row["status"] for row in consistency_rows} == {"consistent"}
-    assert {row["observed_seed_count"] for row in consistency_rows} == {"2"}
-    assert {row["observed_run_count"] for row in consistency_rows} == {"2"}
-    assert all(row["max_abs_difference"] != "" for row in consistency_rows)
-    assert {row["effect_axis"] for row in effect_consistency_rows} == {
-        "logistic_vs_linear",
-        "logistic_vs_phase_shuffled",
-        "logistic_vs_threshold_shuffled",
+    assert {
+        row["contrast"]
+        for row in gate_rows
+    } == {
+        "logistic_vs_source_label_shuffled_within_tick",
+        "logistic_vs_handoff_success_timing_broken_matched_counts",
     }
-    assert {row["status"] for row in effect_consistency_rows} == {"consistent"}
-    assert all(row["max_abs_difference"] != "" for row in effect_consistency_rows)
+    assert {row["logistic_required_field_status"] for row in gate_rows} == {
+        "schema_pass"
+    }
+    assert {row["control_reconstruction_status"] for row in gate_rows} == {
+        "schema_pass"
+    }
+    summary = (analysis_dir / "summary.md").read_text()
+    assert "- A6.1 pilot null gate rows: 8" in summary
+    assert "backlog-adjusted productivity" in summary
 
 
 def test_a6_smoke_comparison_cli(tmp_path: Path) -> None:

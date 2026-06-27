@@ -24,6 +24,8 @@ A6_ANALYSIS_CONTROL_LEVELS = (
     "amplitude_matched_linear",
     "phase_shuffled",
     "threshold_shuffled",
+    "source_label_shuffled_within_tick",
+    "handoff_success_timing_broken_matched_counts",
     "paired_seed_uncertainty",
     "promotion_closure_rules",
 )
@@ -274,6 +276,27 @@ A6_SOURCE_ACCOUNTING_FIELDS = (
     "status",
     "interpretation",
 )
+A6_1_PILOT_NULL_GATE_FIELDS = (
+    "contrast",
+    "seed",
+    "endpoint",
+    "paired",
+    "logistic_value",
+    "control_value",
+    "logistic_minus_control_delta",
+    "logistic_backlog_adjusted_productivity",
+    "control_backlog_adjusted_productivity",
+    "backlog_adjusted_productivity_delta",
+    "logistic_required_field_status",
+    "control_required_field_status",
+    "logistic_reconstruction_status",
+    "control_reconstruction_status",
+    "logistic_handoff_success_alias_share",
+    "control_handoff_success_alias_share",
+    "residual_status",
+    "gate_status",
+    "interpretation",
+)
 _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
@@ -287,12 +310,26 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_effects_consistency.csv",
     "a6_logistic_appraisal_artifact_provenance.csv",
     "a6_logistic_appraisal_source_accounting.csv",
+    "a6_1_pilot_null_gate.csv",
     "summary.md",
 )
 _A6_CONTROL_PAIRS = (
     ("logistic_vs_linear", "linear"),
     ("logistic_vs_phase_shuffled", "phase_shuffled"),
     ("logistic_vs_threshold_shuffled", "threshold_shuffled"),
+    ("logistic_vs_source_label_shuffled_within_tick", "source_label_shuffled_within_tick"),
+    (
+        "logistic_vs_handoff_success_timing_broken_matched_counts",
+        "handoff_success_timing_broken_matched_counts",
+    ),
+)
+_A6_1_SOURCE_NULL_CONDITIONS = (
+    "source_label_shuffled_within_tick",
+    "handoff_success_timing_broken_matched_counts",
+)
+_A6_1_PILOT_ENDPOINTS = (
+    ("final_artifact_readiness", "a6_artifact_readiness_tick"),
+    ("final_artifact_utility", "a6_artifact_utility_tick"),
 )
 _A6_REQUIRED_CONTROL_FIELDS = (
     "tick",
@@ -492,6 +529,11 @@ def run_a6_logistic_appraisal_analysis(
     effects_consistency_rows = _effects_consistency_rows(compare_path)
     artifact_provenance_rows = _artifact_provenance_rows(compare_path)
     source_accounting_rows = _source_accounting_rows(compare_path)
+    pilot_null_gate_rows = _a6_1_pilot_null_gate_rows(
+        runs,
+        source_accounting_rows,
+        residual_contrast_rollup_rows,
+    )
     manifest_rows = [
         {
             "control_level": control_level,
@@ -570,6 +612,11 @@ def run_a6_logistic_appraisal_analysis(
         source_accounting_rows,
         A6_SOURCE_ACCOUNTING_FIELDS,
     )
+    _write_csv(
+        output_path / "a6_1_pilot_null_gate.csv",
+        pilot_null_gate_rows,
+        A6_1_PILOT_NULL_GATE_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             compare_path,
@@ -585,6 +632,7 @@ def run_a6_logistic_appraisal_analysis(
             effects_consistency_rows,
             artifact_provenance_rows,
             source_accounting_rows,
+            pilot_null_gate_rows,
             missing_required_fields,
         )
     )
@@ -604,6 +652,7 @@ def run_a6_logistic_appraisal_analysis(
         "effects_consistency_count": len(effects_consistency_rows),
         "artifact_provenance_count": len(artifact_provenance_rows),
         "source_accounting_count": len(source_accounting_rows),
+        "a6_1_pilot_null_gate_count": len(pilot_null_gate_rows),
         "missing_required_fields": sorted(missing_required_fields),
     }
 
@@ -712,6 +761,10 @@ def _control_delta_rows(
         logistic = by_condition_seed.get(("logistic", seed))
         for contrast, control_condition in _A6_CONTROL_PAIRS:
             control = by_condition_seed.get((control_condition, seed))
+            if logistic is None and control is None:
+                continue
+            if control is None and control_condition in _A6_1_SOURCE_NULL_CONDITIONS:
+                continue
             row: dict[str, Any] = {
                 "contrast": contrast,
                 "seed": seed,
@@ -751,6 +804,11 @@ def _control_level_status(
         "paired_seed_uncertainty",
     }:
         return "paired_delta_preflight_complete"
+    if control_level in _A6_1_SOURCE_NULL_CONDITIONS:
+        expected_contrast = f"logistic_vs_{control_level}"
+        if any(row["contrast"] == expected_contrast for row in complete_pairs):
+            return "a6_1_source_preserving_null_delta_complete"
+        return "a6_1_source_preserving_null_not_present"
     if control_level == "clock_queue_residualized":
         statuses = {str(row["status"]) for row in residual_preflight_rows}
         if not residual_preflight_rows:
@@ -1499,6 +1557,155 @@ def _source_accounting_interpretation(status: str) -> str:
     return "source accounting passes schema reconstruction at smoke scale only; not promotion evidence"
 
 
+def _a6_1_pilot_null_gate_rows(
+    runs: list[dict[str, Any]],
+    source_accounting_rows: list[dict[str, Any]],
+    residual_contrast_rollup_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    by_condition_seed = {
+        (str(row["condition"]), int(row["seed"])): row for row in runs
+    }
+    source_by_condition_seed_field = {
+        (str(row["condition"]), int(row["seed"]), str(row["artifact_field"])): row
+        for row in source_accounting_rows
+    }
+    residual_by_contrast_endpoint = {
+        (str(row["contrast"]), str(row["outcome_field"])): str(row["status"])
+        for row in residual_contrast_rollup_rows
+    }
+    rows: list[dict[str, Any]] = []
+    seeds = sorted({seed for condition, seed in by_condition_seed if condition == "logistic"})
+    for seed in seeds:
+        logistic = by_condition_seed.get(("logistic", seed))
+        if logistic is None:
+            continue
+        for null_condition in _A6_1_SOURCE_NULL_CONDITIONS:
+            control = by_condition_seed.get((null_condition, seed))
+            if control is None:
+                continue
+            contrast = f"logistic_vs_{null_condition}"
+            for endpoint, artifact_field in _A6_1_PILOT_ENDPOINTS:
+                logistic_source = source_by_condition_seed_field.get(
+                    ("logistic", seed, artifact_field),
+                    {},
+                )
+                control_source = source_by_condition_seed_field.get(
+                    (null_condition, seed, artifact_field),
+                    {},
+                )
+                residual_status = residual_by_contrast_endpoint.get(
+                    (contrast, artifact_field),
+                    "underdetermined_smoke_scale",
+                )
+                delta = round(float(logistic[endpoint]) - float(control[endpoint]), 6)
+                productivity_delta = round(
+                    _backlog_adjusted_productivity(logistic)
+                    - _backlog_adjusted_productivity(control),
+                    6,
+                )
+                gate_status = _a6_1_gate_status(
+                    logistic_source=logistic_source,
+                    control_source=control_source,
+                    delta=delta,
+                    productivity_delta=productivity_delta,
+                    residual_status=residual_status,
+                )
+                rows.append(
+                    {
+                        "contrast": contrast,
+                        "seed": seed,
+                        "endpoint": endpoint,
+                        "paired": "true",
+                        "logistic_value": logistic[endpoint],
+                        "control_value": control[endpoint],
+                        "logistic_minus_control_delta": delta,
+                        "logistic_backlog_adjusted_productivity": _backlog_adjusted_productivity(
+                            logistic
+                        ),
+                        "control_backlog_adjusted_productivity": _backlog_adjusted_productivity(
+                            control
+                        ),
+                        "backlog_adjusted_productivity_delta": productivity_delta,
+                        "logistic_required_field_status": logistic_source.get(
+                            "required_field_status",
+                            "missing_required_fields",
+                        ),
+                        "control_required_field_status": control_source.get(
+                            "required_field_status",
+                            "missing_required_fields",
+                        ),
+                        "logistic_reconstruction_status": logistic_source.get(
+                            "reconstruction_status",
+                            "missing_required_fields",
+                        ),
+                        "control_reconstruction_status": control_source.get(
+                            "reconstruction_status",
+                            "missing_required_fields",
+                        ),
+                        "logistic_handoff_success_alias_share": logistic_source.get(
+                            "handoff_success_alias_share",
+                            "",
+                        ),
+                        "control_handoff_success_alias_share": control_source.get(
+                            "handoff_success_alias_share",
+                            "",
+                        ),
+                        "residual_status": residual_status,
+                        "gate_status": gate_status,
+                        "interpretation": _a6_1_gate_interpretation(gate_status),
+                    }
+                )
+    return rows
+
+
+def _backlog_adjusted_productivity(row: dict[str, Any]) -> float:
+    denominator = max(
+        1.0,
+        float(row["queue_depth"]) + float(row["tasks_created_total"]),
+    )
+    return round(float(row["tasks_completed_total"]) / denominator, 6)
+
+
+def _a6_1_gate_status(
+    *,
+    logistic_source: dict[str, Any],
+    control_source: dict[str, Any],
+    delta: float,
+    productivity_delta: float,
+    residual_status: str,
+) -> str:
+    source_rows = (logistic_source, control_source)
+    if any(row.get("required_field_status") != "schema_pass" for row in source_rows):
+        return "missing_required_fields"
+    if any(row.get("reconstruction_status") != "schema_pass" for row in source_rows):
+        return "reconstruction_failed"
+    if any(str(row.get("status", "")).startswith("high_handoff") for row in source_rows):
+        return "high_handoff_alias_risk"
+    if productivity_delta < 0.0:
+        return "backlog_adjusted_productivity_degrades"
+    if delta <= 0.0:
+        return "null_removes_endpoint_advantage"
+    if residual_status == "underdetermined_smoke_scale":
+        return "underdetermined_smoke_scale"
+    return "eligible_for_a6_2_preregistration_only"
+
+
+def _a6_1_gate_interpretation(status: str) -> str:
+    if status == "missing_required_fields":
+        return "required A6.1 source fields are missing; pilot gate cannot interpret"
+    if status == "reconstruction_failed":
+        return "artifact source deltas fail reconstruction; pilot gate cannot interpret"
+    if status == "high_handoff_alias_risk":
+        return "handoff-success source share remains dominant; treat endpoint as action-coupled"
+    if status == "backlog_adjusted_productivity_degrades":
+        return "logistic endpoint is not accepted because backlog-adjusted productivity degrades"
+    if status == "null_removes_endpoint_advantage":
+        return "source-preserving null removes or matches the logistic endpoint advantage"
+    if status == "underdetermined_smoke_scale":
+        return "paired null delta exists, but residual rows remain smoke-scale; no promotion"
+    return "eligible only for writing a later A6.2 preregistered residual-recurrence pilot"
+
+
 def _dominant(values: dict[str, float]) -> tuple[str, float]:
     if not values:
         return "", 0.0
@@ -1742,6 +1949,10 @@ def _residual_contrast_summary_rows(
     outcomes = sorted({outcome for _, _, outcome in by_condition_seed_outcome})
     rows: list[dict[str, Any]] = []
     for contrast, control_condition in _A6_CONTROL_PAIRS:
+        if control_condition in _A6_1_SOURCE_NULL_CONDITIONS and not any(
+            condition == control_condition for condition, _, _ in by_condition_seed_outcome
+        ):
+            continue
         for seed in seeds:
             for outcome in outcomes:
                 logistic_rows = by_condition_seed_outcome.get(("logistic", seed, outcome), [])
@@ -2089,6 +2300,8 @@ def _control_summary_rows(
             for row in control_delta_rows
             if row["contrast"] == contrast and row["paired"] == "true"
         ]
+        if control_condition in _A6_1_SOURCE_NULL_CONDITIONS and not endpoint_rows:
+            continue
         paired_seeds = sorted(int(row["seed"]) for row in endpoint_rows)
         endpoint_means = {
             field: _mean_available([row.get(field, "") for row in endpoint_rows])
@@ -2353,6 +2566,7 @@ def _summary(
     effects_consistency_rows: list[dict[str, Any]],
     artifact_provenance_rows: list[dict[str, Any]],
     source_accounting_rows: list[dict[str, Any]],
+    pilot_null_gate_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -2375,6 +2589,7 @@ def _summary(
         f"- effects consistency rows: {len(effects_consistency_rows)}",
         f"- artifact provenance rows: {len(artifact_provenance_rows)}",
         f"- source accounting rows: {len(source_accounting_rows)}",
+        f"- A6.1 pilot null gate rows: {len(pilot_null_gate_rows)}",
         "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
@@ -2399,6 +2614,7 @@ def _summary(
             "- Effects consistency preflight checks aggregate effect deltas against comparison CSV condition means only.",
             "- Artifact provenance rows attribute same-tick artifact field deltas to recorded A6 events/actions for alias-risk audit only.",
             "- Source accounting rows audit A6.1 required fields, artifact-delta reconstruction, and per-source shares for schema/control eligibility only.",
+            "- A6.1 pilot null gate rows compare logistic endpoints to source-preserving nulls with backlog-adjusted productivity; they are smoke-scale gate diagnostics only.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",
