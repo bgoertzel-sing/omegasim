@@ -121,6 +121,18 @@ A6_RESIDUAL_PREFLIGHT_FIELDS = (
     "raw_lag1_autocorrelation",
     "residual_lag1_autocorrelation",
 )
+A6_RESIDUAL_TIMESERIES_FIELDS = (
+    "condition",
+    "seed",
+    "tick",
+    "outcome_field",
+    "status",
+    "missing_control_fields",
+    "control_fields_used",
+    "raw_value",
+    "fitted_value",
+    "residual_value",
+)
 A6_COMPARISON_CONSISTENCY_FIELDS = (
     "condition",
     "comparison_csv_path",
@@ -154,6 +166,7 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_control_deltas.csv",
     "a6_logistic_appraisal_control_summary.csv",
     "a6_logistic_appraisal_residual_preflight.csv",
+    "a6_logistic_appraisal_residual_timeseries.csv",
     "a6_logistic_appraisal_comparison_consistency.csv",
     "a6_logistic_appraisal_effects_consistency.csv",
     "summary.md",
@@ -267,6 +280,7 @@ def run_a6_logistic_appraisal_analysis(
     seeds = sorted({int(run["seed"]) for run in runs})
     control_delta_rows = _control_delta_rows(runs, missing_required_fields)
     residual_preflight_rows = _residual_preflight_rows(compare_path)
+    residual_timeseries_rows = _residual_timeseries_rows(compare_path)
     control_summary_rows = _control_summary_rows(
         control_delta_rows,
         residual_preflight_rows,
@@ -318,6 +332,11 @@ def run_a6_logistic_appraisal_analysis(
         A6_RESIDUAL_PREFLIGHT_FIELDS,
     )
     _write_csv(
+        output_path / "a6_logistic_appraisal_residual_timeseries.csv",
+        residual_timeseries_rows,
+        A6_RESIDUAL_TIMESERIES_FIELDS,
+    )
+    _write_csv(
         output_path / "a6_logistic_appraisal_comparison_consistency.csv",
         comparison_consistency_rows,
         A6_COMPARISON_CONSISTENCY_FIELDS,
@@ -334,6 +353,7 @@ def run_a6_logistic_appraisal_analysis(
             manifest_rows,
             control_delta_rows,
             residual_preflight_rows,
+            residual_timeseries_rows,
             control_summary_rows,
             comparison_consistency_rows,
             effects_consistency_rows,
@@ -349,6 +369,7 @@ def run_a6_logistic_appraisal_analysis(
         "control_delta_count": len(control_delta_rows),
         "control_summary_count": len(control_summary_rows),
         "residual_preflight_count": len(residual_preflight_rows),
+        "residual_timeseries_count": len(residual_timeseries_rows),
         "comparison_consistency_count": len(comparison_consistency_rows),
         "effects_consistency_count": len(effects_consistency_rows),
         "missing_required_fields": sorted(missing_required_fields),
@@ -859,39 +880,23 @@ def _action_total(metrics: list[dict[str, str]], action: str) -> float:
 
 def _residual_preflight_rows(compare_path: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for run_dir in sorted(path for path in compare_path.iterdir() if path.is_dir()):
-        config_path = run_dir / "config.yaml"
-        metrics_path = run_dir / "metrics.csv"
-        manifest_path = run_dir / "manifest.yaml"
-        if not config_path.exists() or not metrics_path.exists() or not manifest_path.exists():
-            continue
-        config = yaml.safe_load(config_path.read_text()) or {}
-        logistic_appraisal = config.get("logistic_appraisal")
-        if not isinstance(logistic_appraisal, dict):
-            continue
-        metrics = _read_csv(metrics_path)
-        if not metrics:
-            continue
-        condition = str(logistic_appraisal.get("condition", ""))
-        seed = int((yaml.safe_load(manifest_path.read_text()) or {}).get("seed", -1))
-        enriched_metrics = [_with_a6_derived_fields(row) for row in metrics]
+    for (
+        condition,
+        seed,
+        enriched_metrics,
+        missing_control_fields,
+        usable_control_fields,
+    ) in _residual_run_contexts(compare_path):
         available_fields = set(enriched_metrics[0])
-        action_control_fields = tuple(f"action_{action}_tick" for action in _A6_ACTIONS)
-        control_fields = (*_A6_RESIDUAL_BASE_CONTROL_FIELDS, *action_control_fields)
-        missing_control_fields = tuple(
-            field for field in control_fields if field not in available_fields
-        )
-        usable_control_fields = tuple(
-            field for field in control_fields if field in available_fields
-        )
         for outcome_field in _A6_RESIDUAL_OUTCOME_FIELDS:
+            row_count = len(enriched_metrics)
             if outcome_field not in available_fields:
                 rows.append(
                     _empty_residual_row(
                         condition,
                         seed,
                         outcome_field,
-                        len(enriched_metrics),
+                        row_count,
                         usable_control_fields,
                         (*missing_control_fields, outcome_field),
                     )
@@ -902,8 +907,7 @@ def _residual_preflight_rows(compare_path: Path) -> list[dict[str, Any]]:
                 [_number(row, field) for field in usable_control_fields]
                 for row in enriched_metrics
             ]
-            residuals = _ridge_residuals(values, controls)
-            row_count = len(values)
+            residuals = _ridge_fit(values, controls)["residuals"]
             control_count = len(usable_control_fields)
             degrees_of_freedom = row_count - control_count - 1
             status = (
@@ -933,6 +937,100 @@ def _residual_preflight_rows(compare_path: Path) -> list[dict[str, Any]]:
                 }
             )
     return rows
+
+
+def _residual_timeseries_rows(compare_path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for (
+        condition,
+        seed,
+        enriched_metrics,
+        missing_control_fields,
+        usable_control_fields,
+    ) in _residual_run_contexts(compare_path):
+        available_fields = set(enriched_metrics[0])
+        for outcome_field in _A6_RESIDUAL_OUTCOME_FIELDS:
+            if outcome_field not in available_fields:
+                continue
+            values = [_number(row, outcome_field) for row in enriched_metrics]
+            controls = [
+                [_number(row, field) for field in usable_control_fields]
+                for row in enriched_metrics
+            ]
+            fit = _ridge_fit(values, controls)
+            degrees_of_freedom = len(values) - len(usable_control_fields) - 1
+            status = (
+                "missing_controls_preflight"
+                if missing_control_fields
+                else "underdetermined_smoke_scale"
+                if degrees_of_freedom <= 0
+                else "computed"
+            )
+            for metric_row, raw_value, fitted_value, residual_value in zip(
+                enriched_metrics,
+                values,
+                fit["fitted"],
+                fit["residuals"],
+                strict=True,
+            ):
+                rows.append(
+                    {
+                        "condition": condition,
+                        "seed": seed,
+                        "tick": metric_row.get("tick", ""),
+                        "outcome_field": outcome_field,
+                        "status": status,
+                        "missing_control_fields": "|".join(missing_control_fields),
+                        "control_fields_used": "|".join(usable_control_fields),
+                        "raw_value": round(raw_value, 6),
+                        "fitted_value": round(fitted_value, 6),
+                        "residual_value": round(residual_value, 6),
+                    }
+                )
+    return rows
+
+
+def _residual_run_contexts(
+    compare_path: Path,
+) -> list[tuple[str, int, list[dict[str, str]], tuple[str, ...], tuple[str, ...]]]:
+    contexts: list[
+        tuple[str, int, list[dict[str, str]], tuple[str, ...], tuple[str, ...]]
+    ] = []
+    for run_dir in sorted(path for path in compare_path.iterdir() if path.is_dir()):
+        config_path = run_dir / "config.yaml"
+        metrics_path = run_dir / "metrics.csv"
+        manifest_path = run_dir / "manifest.yaml"
+        if not config_path.exists() or not metrics_path.exists() or not manifest_path.exists():
+            continue
+        config = yaml.safe_load(config_path.read_text()) or {}
+        logistic_appraisal = config.get("logistic_appraisal")
+        if not isinstance(logistic_appraisal, dict):
+            continue
+        metrics = _read_csv(metrics_path)
+        if not metrics:
+            continue
+        condition = str(logistic_appraisal.get("condition", ""))
+        seed = int((yaml.safe_load(manifest_path.read_text()) or {}).get("seed", -1))
+        enriched_metrics = [_with_a6_derived_fields(row) for row in metrics]
+        available_fields = set(enriched_metrics[0])
+        action_control_fields = tuple(f"action_{action}_tick" for action in _A6_ACTIONS)
+        control_fields = (*_A6_RESIDUAL_BASE_CONTROL_FIELDS, *action_control_fields)
+        missing_control_fields = tuple(
+            field for field in control_fields if field not in available_fields
+        )
+        usable_control_fields = tuple(
+            field for field in control_fields if field in available_fields
+        )
+        contexts.append(
+            (
+                condition,
+                seed,
+                enriched_metrics,
+                missing_control_fields,
+                usable_control_fields,
+            )
+        )
+    return contexts
 
 
 def _control_summary_rows(
@@ -1118,12 +1216,20 @@ def _empty_residual_row(
 
 
 def _ridge_residuals(values: list[float], controls: list[list[float]]) -> list[float]:
+    return _ridge_fit(values, controls)["residuals"]
+
+
+def _ridge_fit(values: list[float], controls: list[list[float]]) -> dict[str, list[float]]:
     if not values:
-        return []
+        return {"fitted": [], "residuals": []}
     design = [[1.0, *row] for row in controls]
     if not design or not design[0]:
         mean_value = sum(values) / len(values)
-        return [value - mean_value for value in values]
+        fitted = [mean_value for _ in values]
+        return {
+            "fitted": fitted,
+            "residuals": [value - mean_value for value in values],
+        }
     coefficient_count = len(design[0])
     xtx = [
         [
@@ -1139,10 +1245,19 @@ def _ridge_residuals(values: list[float], controls: list[list[float]]) -> list[f
     for index in range(1, coefficient_count):
         xtx[index][index] += 1e-9
     coefficients = _solve_linear_system(xtx, xty)
-    return [
-        value - sum(coefficients[column] * design[row_index][column] for column in range(coefficient_count))
-        for row_index, value in enumerate(values)
+    fitted = [
+        sum(
+            coefficients[column] * design[row_index][column]
+            for column in range(coefficient_count)
+        )
+        for row_index, _ in enumerate(values)
     ]
+    return {
+        "fitted": fitted,
+        "residuals": [
+            value - fitted_value for value, fitted_value in zip(values, fitted, strict=True)
+        ],
+    }
 
 
 def _solve_linear_system(matrix: list[list[float]], values: list[float]) -> list[float]:
@@ -1195,6 +1310,7 @@ def _summary(
     manifest_rows: list[dict[str, Any]],
     control_delta_rows: list[dict[str, Any]],
     residual_preflight_rows: list[dict[str, Any]],
+    residual_timeseries_rows: list[dict[str, Any]],
     control_summary_rows: list[dict[str, Any]],
     comparison_consistency_rows: list[dict[str, Any]],
     effects_consistency_rows: list[dict[str, Any]],
@@ -1212,6 +1328,7 @@ def _summary(
         "- reran simulations: no",
         f"- paired control delta rows: {len(control_delta_rows)}",
         f"- residual preflight rows: {len(residual_preflight_rows)}",
+        f"- residual timeseries rows: {len(residual_timeseries_rows)}",
         f"- control summary rows: {len(control_summary_rows)}",
         f"- comparison consistency rows: {len(comparison_consistency_rows)}",
         f"- effects consistency rows: {len(effects_consistency_rows)}",
@@ -1232,6 +1349,7 @@ def _summary(
             "- Do not promote A6 from smoke artifacts alone.",
             "- Paired deltas are logistic minus the named control within the same seed.",
             "- Residual preflight uses existing per-tick smoke metrics only; underdetermined smoke-scale rows are not recurrence evidence.",
+            "- Residual timeseries rows expose fitted and residual values for audit only, not as a recurrence claim.",
             "- Comparison consistency preflight checks aggregate CSV arithmetic against existing run artifacts only.",
             "- Effects consistency preflight checks aggregate effect deltas against comparison CSV condition means only.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",

@@ -37,6 +37,7 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_CONTROL_SUMMARY_FIELDS,
     A6_EFFECTS_CONSISTENCY_FIELDS,
     A6_RESIDUAL_PREFLIGHT_FIELDS,
+    A6_RESIDUAL_TIMESERIES_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
 from ohdyn.compare_a6_logistic_appraisal import (
@@ -15024,6 +15025,8 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
         assert next(csv.reader(handle)) == list(A6_CONTROL_SUMMARY_FIELDS)
     with (out_dir / "a6_logistic_appraisal_residual_preflight.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
+    with (out_dir / "a6_logistic_appraisal_residual_timeseries.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_RESIDUAL_TIMESERIES_FIELDS)
     with (out_dir / "a6_logistic_appraisal_comparison_consistency.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_COMPARISON_CONSISTENCY_FIELDS)
         consistency_rows = list(csv.DictReader(handle, fieldnames=A6_COMPARISON_CONSISTENCY_FIELDS))
@@ -15093,13 +15096,17 @@ def test_a6_read_only_analysis_writes_residual_preflight(
     result = run_a6_logistic_appraisal_analysis(compare_dir, out_dir)
 
     assert result["residual_preflight_count"] == 56
+    assert result["residual_timeseries_count"] == 896
     assert result["control_summary_count"] == 42
     with (out_dir / "a6_logistic_appraisal_residual_preflight.csv").open() as handle:
         rows = list(csv.DictReader(handle))
+    with (out_dir / "a6_logistic_appraisal_residual_timeseries.csv").open() as handle:
+        timeseries_rows = list(csv.DictReader(handle))
     with (out_dir / "a6_logistic_appraisal_control_summary.csv").open() as handle:
         summary_rows = list(csv.DictReader(handle))
 
     assert list(rows[0]) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
+    assert list(timeseries_rows[0]) == list(A6_RESIDUAL_TIMESERIES_FIELDS)
     assert list(summary_rows[0]) == list(A6_CONTROL_SUMMARY_FIELDS)
     assert {row["condition"] for row in rows} == {
         "logistic",
@@ -15137,6 +15144,20 @@ def test_a6_read_only_analysis_writes_residual_preflight(
     assert logistic_utility["raw_variance"] != ""
     assert logistic_utility["residual_variance"] != ""
     assert "action_predict_tick" in logistic_utility["control_fields_used"]
+    logistic_utility_trace = [
+        row
+        for row in timeseries_rows
+        if row["condition"] == "logistic"
+        and row["outcome_field"] == "a6_artifact_utility_tick"
+    ]
+    assert len(logistic_utility_trace) == 16
+    assert {row["status"] for row in logistic_utility_trace} == {
+        "underdetermined_smoke_scale"
+    }
+    assert all(row["raw_value"] != "" for row in logistic_utility_trace)
+    assert all(row["fitted_value"] != "" for row in logistic_utility_trace)
+    assert all(row["residual_value"] != "" for row in logistic_utility_trace)
+    assert all("action_predict_tick" in row["control_fields_used"] for row in logistic_utility_trace)
     logistic_linear_utility_summary = next(
         row
         for row in summary_rows
@@ -15153,8 +15174,10 @@ def test_a6_read_only_analysis_writes_residual_preflight(
     )
     summary = (out_dir / "summary.md").read_text()
     assert "- residual preflight rows: 56" in summary
+    assert "- residual timeseries rows: 896" in summary
     assert "- control summary rows: 42" in summary
     assert "underdetermined smoke-scale rows are not recurrence evidence" in summary
+    assert "fitted and residual values for audit only" in summary
 
 
 def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
