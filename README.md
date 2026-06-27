@@ -38,6 +38,12 @@ classes, and lets an opt-in predictive controller shift work-task class
 priority from forecasted future pressure. Do not reopen A5 for broader seeds,
 new mechanics, or residual-structure claims without a new preregistration.
 
+When Ben explicitly requests an A5 anticipatory predictive-control pass, the
+existing A5 preregistration is the active gate for bounded verification. That
+does not import A6/A7 mechanics or authorize broader A5 seed sweeps; it only
+permits the single-hive smoke/pilot scaffold and preregistered residual
+accounting checks unless a new A5 preregistration is written first.
+
 The checked-in low-budget linear smoke fixture is:
 
 ```bash
