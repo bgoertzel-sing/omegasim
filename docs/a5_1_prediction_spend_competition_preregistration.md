@@ -65,6 +65,57 @@ smallest deterministic scaffold needed for one smoke/pilot:
 - work-budget-remaining and prediction-spend fields sufficient for accounting;
 - generated paired condition configs derived from the existing A5 smoke fixture.
 
+## A5.1a Cost-Calibration Addendum
+
+The first charged-spend smoke/pilot showed that forecast skill can improve while
+direct prediction charges sharply degrade work-completion guardrails. A5.1a is
+therefore the next preregistered step. It is a cost-calibration and null-control
+gate, not a broader A5.1 seed sweep and not a new dynamics claim.
+
+A5.1a freezes the following mechanism additions before the next run:
+
+- `prediction_cost_scale`: a per-condition multiplier applied to the existing
+  prediction budget before work opportunity is charged.
+- `max_prediction_work_fraction_per_tick`: a per-tick cap on the fraction of
+  pre-charge work opportunity that prediction spend may consume.
+- Spend accounting fields must continue to report pre-charge work opportunity,
+  charged prediction work units, and remaining work budget.
+
+The preregistered calibration grid is deliberately small:
+
+1. Current harsh-cost rule: `prediction_cost_scale=1.0`, uncapped except by
+   available pre-charge work opportunity.
+2. Gentler cost rule: `prediction_cost_scale=0.5`,
+   `max_prediction_work_fraction_per_tick=0.25`.
+3. Capped diagnostic rule: `prediction_cost_scale=1.0`,
+   `max_prediction_work_fraction_per_tick=0.25`.
+4. No-cost predictor diagnostic: identical forecast mechanics with
+   `charge_prediction_to_work=false`; this can diagnose forecast/allocation
+   effects but cannot be used for promotion.
+
+A5.1a must also add a spend-only replay null for every charged positive
+condition before any promotion language is allowed. The replay null deducts the
+same prediction work units on the same ticks as the matched positive condition,
+but removes useful forecast timing by using reactive, shuffled, or
+phase-broken forecast shares. This null asks whether apparent residual
+structure is caused by lost work/backlog timing rather than prediction content.
+
+Promotion beyond A5.1a is impossible unless the same intermediate condition:
+
+- improves forecast skill per charged work unit;
+- satisfies completion, backlog, queued-age, starvation, and volatility
+  guardrails under a preregistered cost rule;
+- leads future demand after controlling current backlog, task arrivals, service
+  opportunity, pre-charge work budget, charged spend, and remaining work
+  budget;
+- beats its spend-only replay null and timing-broken budget-matched null on the
+  same residual endpoint.
+
+If the spend-only replay null explains the apparent residual structure, A5.1
+closes conservatively. The next design discussion should then move to a
+separate preregistered delayed semantic/logistic or multi-hive design rather
+than broadening A5.1 seeds.
+
 ## Conditions
 
 Use paired seeds and matched demand streams across:

@@ -5,26 +5,36 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-A5.1 is the current bounded A5 follow-up gate for Ben's resource-bounded
+A5.1a is the current bounded A5 follow-up gate for Ben's resource-bounded
 prediction question. The prior A5 seed `7..16` result remains a conservative
 forecast-skill/accounting result: deterministic predictors improved forecast
 skill under matched single-hive demand streams, but residual structure did not
 survive full accounting controls and budget-matched timing-broken nulls.
 
-The newly preregistered A5.1 question is whether prediction expenditure that
-competes directly with work opportunity creates richer but still partially
+The newly preregistered A5.1 question remains whether prediction expenditure
+that competes directly with work opportunity creates richer but still partially
 predictable residual collective dynamics at intermediate budgets than either
-zero-spend reactivity or oracle-like smoothing.
+zero-spend reactivity or oracle-like smoothing. The active A5.1a subgate is
+narrower: calibrate charged prediction cost and add a spend-only replay null
+before any broader A5.1 run.
 
-A5.1 remains single-hive, deterministic, and abstract/numeric. It does not
+A5.1a remains single-hive, deterministic, and abstract/numeric. It does not
 authorize real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics,
 downstream multi-hive coupling, or promotion language before the preregistered
 accounting/null gates pass.
 
-The first A5.1 paired-seed smoke/pilot is a scaffold check only. It verifies
+The first A5.1 paired-seed smoke/pilot is complete and fail-closed. It verified
 that prediction spend can be charged against work opportunity and analyzed with
-full accounting controls; it does not support structured-dynamics promotion.
+full accounting controls, but it degraded work-completion guardrails and does
+not support structured-dynamics promotion.
+
+External GPT-5.5-Pro strategy review on 2026-06-27 marked this as
+`strategic_change_level: major` and `notify_ben: true`. This run accepts the
+scientifically sensible part of that recommendation: do not broaden A5.1; first
+preregister an A5.1a cost-calibration/spend-only-null patch. Ben should be
+notified that the active direction has shifted from the older A7 roadmap wording
+back to a narrow A5.1 accounting gate.
 
 ## Latest Changes
 
@@ -62,6 +72,13 @@ full accounting controls; it does not support structured-dynamics promotion.
   intermediate predictors, but charged prediction spend sharply reduced work
   completion and the residual-accounting promotion audit failed closed with
   guardrails not satisfied.
+- Added the A5.1a cost-calibration addendum to
+  `docs/a5_1_prediction_spend_competition_preregistration.md`. It freezes
+  `prediction_cost_scale`, `max_prediction_work_fraction_per_tick`, and a
+  spend-only replay null as prerequisites before any larger A5.1
+  prediction-spend run.
+- Updated `README.md` to make A5.1a the current bounded cost-calibration
+  subgate and clarify that it is not A5.1 seed broadening.
 - No dashboards, real integrations, broad seed sweeps, A6/A7 imports, or
   multi-hive mechanics were added.
 
@@ -106,15 +123,32 @@ full accounting controls; it does not support structured-dynamics promotion.
   passed. The analyzer reported fail-closed promotion status; all intermediate
   predictors failed the residual/null and guardrail gates.
 - `git diff --check` passed.
+- `git status --short --branch` passed at the start of this run and reported
+  `main...origin/main` with no uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed at the start of
+  this run. It reported state `open`, `should_noop: false`,
+  `strategic_change_level: major`, `notify_ben: true`, and recommended the
+  A5.1a cost-calibration/spend-only-null patch.
+- `git diff --check` passed after the A5.1a preregistration/status patch.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_1 or automation_guard'` passed after the A5.1a patch: `10 passed, 608
+  deselected`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the A5.1a
+  patch. It reported state `open`, `should_noop: false`,
+  `strategic_change_level: major`, `notify_ben: true`, and the exact next step
+  to implement the A5.1a cost-calibration/spend-only replay-null scaffold.
 
 ## Blockers
 
 There is no local environment blocker. The scientific blocker is that the first
 A5.1 smoke/pilot is intentionally fail-closed: prediction spend is now charged
 against work opportunity, but the paired-seed smoke degrades guardrails and does
-not support residual structured-dynamics claims.
+not support residual structured-dynamics claims. The external review also
+marked the direction shift as major and said Ben should be notified.
 
 ## Recommended Next Step
 
-Review the A5.1 charged-spend pilot and preregister a gentler cost-scaling rule
-before any broader prediction-spend run.
+Implement the A5.1a cost-calibration/spend-only replay-null scaffold:
+`prediction_cost_scale`, `max_prediction_work_fraction_per_tick`, and a replay
+null that deducts matched prediction work units at matched ticks while breaking
+useful forecast timing.

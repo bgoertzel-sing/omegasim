@@ -52,6 +52,12 @@ with work opportunity, with spend-matched timing-broken nulls and full
 accounting controls before any residual-structure or strange-attractor-like
 language is allowed.
 
+The current bounded A5.1a subgate is cost calibration, not seed broadening.
+Before any larger prediction-spend run, the preregistration requires explicit
+prediction-cost scale/cap knobs plus a spend-only replay null that deducts the
+same work opportunities at the same ticks while removing useful forecast
+timing.
+
 The checked-in low-budget linear smoke fixture is:
 
 ```bash
