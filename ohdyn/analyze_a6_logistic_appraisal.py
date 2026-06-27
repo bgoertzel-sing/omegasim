@@ -121,12 +121,27 @@ A6_RESIDUAL_PREFLIGHT_FIELDS = (
     "raw_lag1_autocorrelation",
     "residual_lag1_autocorrelation",
 )
+A6_COMPARISON_CONSISTENCY_FIELDS = (
+    "condition",
+    "comparison_csv_path",
+    "status",
+    "expected_seed_count",
+    "observed_seed_count",
+    "expected_run_count",
+    "observed_run_count",
+    "fields_checked",
+    "max_abs_difference",
+    "mismatched_fields",
+    "missing_comparison_fields",
+    "interpretation",
+)
 _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
     "a6_logistic_appraisal_control_deltas.csv",
     "a6_logistic_appraisal_control_summary.csv",
     "a6_logistic_appraisal_residual_preflight.csv",
+    "a6_logistic_appraisal_comparison_consistency.csv",
     "summary.md",
 )
 _A6_CONTROL_PAIRS = (
@@ -191,6 +206,25 @@ _A6_ACTIONS = (
     "communicate",
     "pause",
 )
+_A6_COMPARISON_METRICS_NAME = "a6_logistic_appraisal_comparison_metrics.csv"
+_A6_COMPARISON_MEAN_FIELD_MAP = {
+    "final_latent_activation_mean": "final_latent_activation_mean",
+    "final_latent_focus_mean": "final_latent_focus_mean",
+    "final_latent_fatigue_mean": "final_latent_fatigue_mean",
+    "final_latent_prediction_error_abs_mean": "final_latent_prediction_error_abs_mean",
+    "final_artifact_readiness_mean": "final_artifact_readiness",
+    "final_artifact_utility_mean": "final_artifact_utility",
+    "handoff_attempts_total_mean": "handoff_attempts_total",
+    "handoff_successes_total_mean": "handoff_successes_total",
+    "handoff_failures_total_mean": "handoff_failures_total",
+    "prediction_budget_spent_total_mean": "prediction_budget_spent_total",
+    "tasks_created_mean": "tasks_created_total",
+    "tasks_completed_mean": "tasks_completed_total",
+    "completion_fraction_mean": "completion_fraction",
+    "queue_depth_mean": "queue_depth",
+    "queued_task_age_mean_final_mean": "queued_task_age_mean_final",
+}
+_A6_COMPARISON_CONSISTENCY_TOLERANCE = 1e-6
 
 
 def run_a6_logistic_appraisal_analysis(
@@ -210,6 +244,7 @@ def run_a6_logistic_appraisal_analysis(
         residual_preflight_rows,
         missing_required_fields,
     )
+    comparison_consistency_rows = _comparison_consistency_rows(compare_path, runs)
     manifest_rows = [
         {
             "control_level": control_level,
@@ -253,6 +288,11 @@ def run_a6_logistic_appraisal_analysis(
         residual_preflight_rows,
         A6_RESIDUAL_PREFLIGHT_FIELDS,
     )
+    _write_csv(
+        output_path / "a6_logistic_appraisal_comparison_consistency.csv",
+        comparison_consistency_rows,
+        A6_COMPARISON_CONSISTENCY_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             compare_path,
@@ -261,6 +301,7 @@ def run_a6_logistic_appraisal_analysis(
             control_delta_rows,
             residual_preflight_rows,
             control_summary_rows,
+            comparison_consistency_rows,
             missing_required_fields,
         )
     )
@@ -273,6 +314,7 @@ def run_a6_logistic_appraisal_analysis(
         "control_delta_count": len(control_delta_rows),
         "control_summary_count": len(control_summary_rows),
         "residual_preflight_count": len(residual_preflight_rows),
+        "comparison_consistency_count": len(comparison_consistency_rows),
         "missing_required_fields": sorted(missing_required_fields),
     }
 
@@ -432,6 +474,129 @@ def _control_level_status(
     if control_level == "promotion_closure_rules" and control_summary_rows:
         return "promotion_not_evaluated_control_summary_written"
     return "promotion_not_evaluated"
+
+
+def _comparison_consistency_rows(
+    compare_path: Path,
+    runs: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    comparison_path = compare_path / _A6_COMPARISON_METRICS_NAME
+    conditions = sorted({str(row["condition"]) for row in runs})
+    derived_by_condition = {
+        condition: [row for row in runs if str(row["condition"]) == condition]
+        for condition in conditions
+    }
+    if not comparison_path.exists():
+        return [
+            {
+                "condition": condition,
+                "comparison_csv_path": str(comparison_path),
+                "status": "missing_comparison_csv",
+                "expected_seed_count": "",
+                "observed_seed_count": len({int(row["seed"]) for row in condition_runs}),
+                "expected_run_count": "",
+                "observed_run_count": len(condition_runs),
+                "fields_checked": "",
+                "max_abs_difference": "",
+                "mismatched_fields": "",
+                "missing_comparison_fields": "",
+                "interpretation": "aggregate comparison CSV absent; consistency preflight not applicable",
+            }
+            for condition, condition_runs in derived_by_condition.items()
+        ]
+
+    comparison_rows = _read_csv(comparison_path)
+    comparison_by_condition = {str(row.get("condition", "")): row for row in comparison_rows}
+    rows: list[dict[str, Any]] = []
+    for condition, condition_runs in derived_by_condition.items():
+        comparison_row = comparison_by_condition.get(condition)
+        observed_seed_count = len({int(row["seed"]) for row in condition_runs})
+        observed_run_count = len(condition_runs)
+        if comparison_row is None:
+            rows.append(
+                {
+                    "condition": condition,
+                    "comparison_csv_path": str(comparison_path),
+                    "status": "missing_condition",
+                    "expected_seed_count": "",
+                    "observed_seed_count": observed_seed_count,
+                    "expected_run_count": "",
+                    "observed_run_count": observed_run_count,
+                    "fields_checked": "",
+                    "max_abs_difference": "",
+                    "mismatched_fields": "",
+                    "missing_comparison_fields": "",
+                    "interpretation": "condition missing from aggregate comparison CSV; consistency blocked",
+                }
+            )
+            continue
+
+        missing_fields = [
+            field for field in _A6_COMPARISON_MEAN_FIELD_MAP if field not in comparison_row
+        ]
+        mismatched_fields: list[str] = []
+        differences: list[float] = []
+        for comparison_field, endpoint_field in _A6_COMPARISON_MEAN_FIELD_MAP.items():
+            if comparison_field not in comparison_row:
+                continue
+            expected_value = _number(comparison_row, comparison_field)
+            observed_value = _mean_available(
+                [row.get(endpoint_field, "") for row in condition_runs]
+            )
+            if observed_value == "":
+                continue
+            difference = abs(expected_value - float(observed_value))
+            differences.append(difference)
+            if difference > _A6_COMPARISON_CONSISTENCY_TOLERANCE:
+                mismatched_fields.append(comparison_field)
+        expected_seed_count = comparison_row.get("seed_count", "")
+        expected_run_count = comparison_row.get("run_count", "")
+        count_mismatches = []
+        if expected_seed_count not in {"", None} and int(float(expected_seed_count)) != observed_seed_count:
+            count_mismatches.append("seed_count")
+        if expected_run_count not in {"", None} and int(float(expected_run_count)) != observed_run_count:
+            count_mismatches.append("run_count")
+        mismatched_fields.extend(count_mismatches)
+        status = (
+            "missing_comparison_fields"
+            if missing_fields
+            else "mismatch"
+            if mismatched_fields
+            else "consistent"
+        )
+        rows.append(
+            {
+                "condition": condition,
+                "comparison_csv_path": str(comparison_path),
+                "status": status,
+                "expected_seed_count": expected_seed_count,
+                "observed_seed_count": observed_seed_count,
+                "expected_run_count": expected_run_count,
+                "observed_run_count": observed_run_count,
+                "fields_checked": "|".join(
+                    field
+                    for field in _A6_COMPARISON_MEAN_FIELD_MAP
+                    if field not in missing_fields
+                ),
+                "max_abs_difference": _rounded_mean([max(differences)]) if differences else "",
+                "mismatched_fields": "|".join(mismatched_fields),
+                "missing_comparison_fields": "|".join(missing_fields),
+                "interpretation": _comparison_consistency_interpretation(status),
+            }
+        )
+    return rows
+
+
+def _comparison_consistency_interpretation(status: str) -> str:
+    if status == "consistent":
+        return "aggregate comparison CSV agrees with run-directory-derived endpoint means"
+    if status == "missing_comparison_csv":
+        return "aggregate comparison CSV absent; consistency preflight not applicable"
+    if status == "missing_comparison_fields":
+        return "aggregate comparison CSV is missing fields required for consistency check"
+    if status == "missing_condition":
+        return "condition missing from aggregate comparison CSV; consistency blocked"
+    return "aggregate comparison CSV differs from run-directory-derived endpoint means"
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -829,6 +994,7 @@ def _summary(
     control_delta_rows: list[dict[str, Any]],
     residual_preflight_rows: list[dict[str, Any]],
     control_summary_rows: list[dict[str, Any]],
+    comparison_consistency_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -844,6 +1010,7 @@ def _summary(
         f"- paired control delta rows: {len(control_delta_rows)}",
         f"- residual preflight rows: {len(residual_preflight_rows)}",
         f"- control summary rows: {len(control_summary_rows)}",
+        f"- comparison consistency rows: {len(comparison_consistency_rows)}",
         "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
@@ -861,6 +1028,7 @@ def _summary(
             "- Do not promote A6 from smoke artifacts alone.",
             "- Paired deltas are logistic minus the named control within the same seed.",
             "- Residual preflight uses existing per-tick smoke metrics only; underdetermined smoke-scale rows are not recurrence evidence.",
+            "- Comparison consistency preflight checks aggregate CSV arithmetic against existing run artifacts only.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",

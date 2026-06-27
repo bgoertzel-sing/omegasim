@@ -32,6 +32,7 @@ from ohdyn.sim import (
 from ohdyn.analyze_a6_logistic_appraisal import (
     A6_ANALYSIS_ENDPOINT_FIELDS,
     A6_ANALYSIS_MANIFEST_FIELDS,
+    A6_COMPARISON_CONSISTENCY_FIELDS,
     A6_CONTROL_DELTA_FIELDS,
     A6_CONTROL_SUMMARY_FIELDS,
     A6_RESIDUAL_PREFLIGHT_FIELDS,
@@ -15022,9 +15023,15 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
         assert next(csv.reader(handle)) == list(A6_CONTROL_SUMMARY_FIELDS)
     with (out_dir / "a6_logistic_appraisal_residual_preflight.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
+    with (out_dir / "a6_logistic_appraisal_comparison_consistency.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_COMPARISON_CONSISTENCY_FIELDS)
+        consistency_rows = list(csv.DictReader(handle, fieldnames=A6_COMPARISON_CONSISTENCY_FIELDS))
+    assert {row["status"] for row in consistency_rows} == {"missing_comparison_csv"}
+    assert result["comparison_consistency_count"] == 2
     summary = (out_dir / "summary.md").read_text()
     assert "- reran simulations: no" in summary
     assert "## Control Levels" in summary
+    assert "- comparison consistency rows: 2" in summary
 
 
 def test_a6_read_only_analysis_writes_paired_control_deltas(
@@ -15176,6 +15183,20 @@ def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
     analysis_dir = tmp_path / "a6_analysis"
     analysis = run_a6_logistic_appraisal_analysis(out_dir, analysis_dir)
     assert analysis["run_count"] == 8
+    assert analysis["comparison_consistency_count"] == 4
+    with (analysis_dir / "a6_logistic_appraisal_comparison_consistency.csv").open() as handle:
+        consistency_rows = list(csv.DictReader(handle))
+    assert list(consistency_rows[0]) == list(A6_COMPARISON_CONSISTENCY_FIELDS)
+    assert {row["condition"] for row in consistency_rows} == {
+        "logistic",
+        "linear",
+        "threshold_shuffled",
+        "phase_shuffled",
+    }
+    assert {row["status"] for row in consistency_rows} == {"consistent"}
+    assert {row["observed_seed_count"] for row in consistency_rows} == {"2"}
+    assert {row["observed_run_count"] for row in consistency_rows} == {"2"}
+    assert all(row["max_abs_difference"] != "" for row in consistency_rows)
 
 
 def test_a6_smoke_comparison_cli(tmp_path: Path) -> None:
