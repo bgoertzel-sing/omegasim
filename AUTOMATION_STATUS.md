@@ -39,13 +39,21 @@ accounting, null semantics, schemas, and tests.
 - Updated `docs/omegasim_provisional_experiment_roadmap.md`, `README.md`, and
   this status file so automation treats A7 as the next preregistered direction
   rather than reopening A6.2.
-- No simulator code, configs, tests, analyzers, dashboards, integrations, seed
-  scope, or multi-hive mechanics were changed.
+- Updated `ohdyn.automation_guard` so a Markdown `Recommended Next Step`
+  section in this file overrides stale strategy-review next-action text.
+- No simulator code, configs, analyzers, dashboards, integrations, seed scope,
+  or multi-hive mechanics were changed.
 
 ## Verification
 
 - Documentation-only update.
 - `git diff --check` passed.
+- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard'` passed: `8 passed, 596 deselected`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed with
+  `state=open`, `should_noop=false`, and recommended next action set to the A7
+  implementation gate.
 
 ## Blockers
 

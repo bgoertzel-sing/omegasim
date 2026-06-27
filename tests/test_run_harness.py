@@ -685,6 +685,46 @@ def test_automation_guard_does_not_close_from_stale_review_only(
     )
 
 
+def test_automation_guard_prefers_recommended_next_step_section(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "The current focus is A7.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "Create the A7 implementation gate: freeze the semantic/artifact",
+                "state vector before changing simulator mechanics.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: false",
+                "recommended_next_action: Audit the old A6 analyzer.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, tmp_path / "missing-a5.md")
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["recommended_next_action"] == (
+        "Create the A7 implementation gate: freeze the semantic/artifact "
+        "state vector before changing simulator mechanics."
+    )
+    assert state["review_recommended_next_action"] == "Audit the old A6 analyzer."
+
+
 def test_automation_guard_requires_explicit_noop_marker(tmp_path: Path) -> None:
     status_path = tmp_path / "AUTOMATION_STATUS.md"
     review_path = tmp_path / "latest-review.md"

@@ -142,7 +142,26 @@ def _status_next_action(status: str) -> str:
         ):
             if normalized.startswith(prefix):
                 return stripped.split(":", 1)[1].strip()
-    return ""
+    return _status_section_text(status, "Recommended Next Step")
+
+
+def _status_section_text(status: str, title: str) -> str:
+    in_section = False
+    lines: list[str] = []
+    target = f"## {title}".lower()
+
+    for line in status.splitlines():
+        stripped = line.strip()
+        normalized = stripped.lower()
+        if normalized == target:
+            in_section = True
+            continue
+        if in_section and normalized.startswith("## "):
+            break
+        if in_section and stripped:
+            lines.append(stripped.removeprefix("- ").strip())
+
+    return " ".join(lines)
 
 
 def _normalize(text: str) -> str:
