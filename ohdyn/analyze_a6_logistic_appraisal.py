@@ -135,6 +135,19 @@ A6_COMPARISON_CONSISTENCY_FIELDS = (
     "missing_comparison_fields",
     "interpretation",
 )
+A6_EFFECTS_CONSISTENCY_FIELDS = (
+    "effect_axis",
+    "effects_csv_path",
+    "status",
+    "low_label",
+    "high_label",
+    "fields_checked",
+    "max_abs_difference",
+    "mismatched_fields",
+    "missing_effect_fields",
+    "missing_comparison_conditions",
+    "interpretation",
+)
 _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
@@ -142,6 +155,7 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_control_summary.csv",
     "a6_logistic_appraisal_residual_preflight.csv",
     "a6_logistic_appraisal_comparison_consistency.csv",
+    "a6_logistic_appraisal_effects_consistency.csv",
     "summary.md",
 )
 _A6_CONTROL_PAIRS = (
@@ -207,6 +221,7 @@ _A6_ACTIONS = (
     "pause",
 )
 _A6_COMPARISON_METRICS_NAME = "a6_logistic_appraisal_comparison_metrics.csv"
+_A6_EFFECTS_NAME = "a6_logistic_appraisal_effects.csv"
 _A6_COMPARISON_MEAN_FIELD_MAP = {
     "final_latent_activation_mean": "final_latent_activation_mean",
     "final_latent_focus_mean": "final_latent_focus_mean",
@@ -224,6 +239,19 @@ _A6_COMPARISON_MEAN_FIELD_MAP = {
     "queue_depth_mean": "queue_depth",
     "queued_task_age_mean_final_mean": "queued_task_age_mean_final",
 }
+_A6_EFFECT_DELTA_FIELDS = (
+    "final_latent_activation_mean_delta",
+    "final_latent_fatigue_mean_delta",
+    "final_latent_prediction_error_abs_mean_delta",
+    "final_artifact_readiness_mean_delta",
+    "final_artifact_utility_mean_delta",
+    "handoff_successes_total_mean_delta",
+    "handoff_failures_total_mean_delta",
+    "prediction_budget_spent_total_mean_delta",
+    "completion_fraction_mean_delta",
+    "queue_depth_mean_delta",
+    "queued_task_age_mean_final_mean_delta",
+)
 _A6_COMPARISON_CONSISTENCY_TOLERANCE = 1e-6
 
 
@@ -245,6 +273,7 @@ def run_a6_logistic_appraisal_analysis(
         missing_required_fields,
     )
     comparison_consistency_rows = _comparison_consistency_rows(compare_path, runs)
+    effects_consistency_rows = _effects_consistency_rows(compare_path)
     manifest_rows = [
         {
             "control_level": control_level,
@@ -293,6 +322,11 @@ def run_a6_logistic_appraisal_analysis(
         comparison_consistency_rows,
         A6_COMPARISON_CONSISTENCY_FIELDS,
     )
+    _write_csv(
+        output_path / "a6_logistic_appraisal_effects_consistency.csv",
+        effects_consistency_rows,
+        A6_EFFECTS_CONSISTENCY_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             compare_path,
@@ -302,6 +336,7 @@ def run_a6_logistic_appraisal_analysis(
             residual_preflight_rows,
             control_summary_rows,
             comparison_consistency_rows,
+            effects_consistency_rows,
             missing_required_fields,
         )
     )
@@ -315,6 +350,7 @@ def run_a6_logistic_appraisal_analysis(
         "control_summary_count": len(control_summary_rows),
         "residual_preflight_count": len(residual_preflight_rows),
         "comparison_consistency_count": len(comparison_consistency_rows),
+        "effects_consistency_count": len(effects_consistency_rows),
         "missing_required_fields": sorted(missing_required_fields),
     }
 
@@ -597,6 +633,172 @@ def _comparison_consistency_interpretation(status: str) -> str:
     if status == "missing_condition":
         return "condition missing from aggregate comparison CSV; consistency blocked"
     return "aggregate comparison CSV differs from run-directory-derived endpoint means"
+
+
+def _effects_consistency_rows(compare_path: Path) -> list[dict[str, Any]]:
+    effects_path = compare_path / _A6_EFFECTS_NAME
+    comparison_path = compare_path / _A6_COMPARISON_METRICS_NAME
+    expected_pairs = (
+        ("logistic_vs_linear", "linear", "logistic"),
+        ("logistic_vs_phase_shuffled", "phase_shuffled", "logistic"),
+        ("logistic_vs_threshold_shuffled", "threshold_shuffled", "logistic"),
+    )
+    if not effects_path.exists():
+        return [
+            _missing_effects_row(effect_axis, effects_path, low_label, high_label)
+            for effect_axis, low_label, high_label in expected_pairs
+        ]
+    if not comparison_path.exists():
+        return [
+            {
+                "effect_axis": effect_axis,
+                "effects_csv_path": str(effects_path),
+                "status": "missing_comparison_csv",
+                "low_label": low_label,
+                "high_label": high_label,
+                "fields_checked": "",
+                "max_abs_difference": "",
+                "mismatched_fields": "",
+                "missing_effect_fields": "",
+                "missing_comparison_conditions": "",
+                "interpretation": _effects_consistency_interpretation(
+                    "missing_comparison_csv"
+                ),
+            }
+            for effect_axis, low_label, high_label in expected_pairs
+        ]
+
+    effect_rows = _read_csv(effects_path)
+    comparison_rows = _read_csv(comparison_path)
+    effects_by_axis = {str(row.get("effect_axis", "")): row for row in effect_rows}
+    comparison_by_condition = {
+        str(row.get("condition", "")): row for row in comparison_rows
+    }
+    rows: list[dict[str, Any]] = []
+    for effect_axis, low_label, high_label in expected_pairs:
+        effect_row = effects_by_axis.get(effect_axis)
+        if effect_row is None:
+            rows.append(_missing_effect_axis_row(effect_axis, effects_path, low_label, high_label))
+            continue
+
+        missing_effect_fields = [
+            field for field in _A6_EFFECT_DELTA_FIELDS if field not in effect_row
+        ]
+        missing_comparison_conditions = [
+            label
+            for label in (low_label, high_label)
+            if label not in comparison_by_condition
+        ]
+        mismatched_fields: list[str] = []
+        differences: list[float] = []
+        if not missing_comparison_conditions:
+            low = comparison_by_condition[low_label]
+            high = comparison_by_condition[high_label]
+            for field in _A6_EFFECT_DELTA_FIELDS:
+                if field not in effect_row:
+                    continue
+                base_field = field.removesuffix("_delta")
+                if base_field not in low or base_field not in high:
+                    missing_effect_fields.append(field)
+                    continue
+                expected_value = _number(effect_row, field)
+                observed_value = _number(high, base_field) - _number(low, base_field)
+                difference = abs(expected_value - observed_value)
+                differences.append(difference)
+                if difference > _A6_COMPARISON_CONSISTENCY_TOLERANCE:
+                    mismatched_fields.append(field)
+
+        status = (
+            "missing_comparison_conditions"
+            if missing_comparison_conditions
+            else "missing_effect_fields"
+            if missing_effect_fields
+            else "mismatch"
+            if mismatched_fields
+            else "consistent"
+        )
+        rows.append(
+            {
+                "effect_axis": effect_axis,
+                "effects_csv_path": str(effects_path),
+                "status": status,
+                "low_label": effect_row.get("low_label", ""),
+                "high_label": effect_row.get("high_label", ""),
+                "fields_checked": "|".join(
+                    field
+                    for field in _A6_EFFECT_DELTA_FIELDS
+                    if field not in missing_effect_fields
+                ),
+                "max_abs_difference": _rounded_mean([max(differences)])
+                if differences
+                else "",
+                "mismatched_fields": "|".join(mismatched_fields),
+                "missing_effect_fields": "|".join(sorted(set(missing_effect_fields))),
+                "missing_comparison_conditions": "|".join(
+                    missing_comparison_conditions
+                ),
+                "interpretation": _effects_consistency_interpretation(status),
+            }
+        )
+    return rows
+
+
+def _missing_effects_row(
+    effect_axis: str,
+    effects_path: Path,
+    low_label: str,
+    high_label: str,
+) -> dict[str, Any]:
+    return {
+        "effect_axis": effect_axis,
+        "effects_csv_path": str(effects_path),
+        "status": "missing_effects_csv",
+        "low_label": low_label,
+        "high_label": high_label,
+        "fields_checked": "",
+        "max_abs_difference": "",
+        "mismatched_fields": "",
+        "missing_effect_fields": "",
+        "missing_comparison_conditions": "",
+        "interpretation": _effects_consistency_interpretation("missing_effects_csv"),
+    }
+
+
+def _missing_effect_axis_row(
+    effect_axis: str,
+    effects_path: Path,
+    low_label: str,
+    high_label: str,
+) -> dict[str, Any]:
+    return {
+        "effect_axis": effect_axis,
+        "effects_csv_path": str(effects_path),
+        "status": "missing_effect_axis",
+        "low_label": low_label,
+        "high_label": high_label,
+        "fields_checked": "",
+        "max_abs_difference": "",
+        "mismatched_fields": "",
+        "missing_effect_fields": "",
+        "missing_comparison_conditions": "",
+        "interpretation": _effects_consistency_interpretation("missing_effect_axis"),
+    }
+
+
+def _effects_consistency_interpretation(status: str) -> str:
+    if status == "consistent":
+        return "effects CSV deltas agree with aggregate comparison CSV condition means"
+    if status == "missing_effects_csv":
+        return "effects CSV absent; consistency preflight not applicable"
+    if status == "missing_comparison_csv":
+        return "aggregate comparison CSV absent; effects consistency blocked"
+    if status == "missing_effect_axis":
+        return "expected effect axis missing from effects CSV; consistency blocked"
+    if status == "missing_effect_fields":
+        return "effects CSV is missing delta fields required for consistency check"
+    if status == "missing_comparison_conditions":
+        return "aggregate comparison CSV lacks one or more conditions for this effect"
+    return "effects CSV deltas differ from aggregate comparison CSV condition means"
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -995,6 +1197,7 @@ def _summary(
     residual_preflight_rows: list[dict[str, Any]],
     control_summary_rows: list[dict[str, Any]],
     comparison_consistency_rows: list[dict[str, Any]],
+    effects_consistency_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -1011,6 +1214,7 @@ def _summary(
         f"- residual preflight rows: {len(residual_preflight_rows)}",
         f"- control summary rows: {len(control_summary_rows)}",
         f"- comparison consistency rows: {len(comparison_consistency_rows)}",
+        f"- effects consistency rows: {len(effects_consistency_rows)}",
         "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
@@ -1029,6 +1233,7 @@ def _summary(
             "- Paired deltas are logistic minus the named control within the same seed.",
             "- Residual preflight uses existing per-tick smoke metrics only; underdetermined smoke-scale rows are not recurrence evidence.",
             "- Comparison consistency preflight checks aggregate CSV arithmetic against existing run artifacts only.",
+            "- Effects consistency preflight checks aggregate effect deltas against comparison CSV condition means only.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",

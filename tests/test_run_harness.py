@@ -35,6 +35,7 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_COMPARISON_CONSISTENCY_FIELDS,
     A6_CONTROL_DELTA_FIELDS,
     A6_CONTROL_SUMMARY_FIELDS,
+    A6_EFFECTS_CONSISTENCY_FIELDS,
     A6_RESIDUAL_PREFLIGHT_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
@@ -15026,12 +15027,18 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     with (out_dir / "a6_logistic_appraisal_comparison_consistency.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_COMPARISON_CONSISTENCY_FIELDS)
         consistency_rows = list(csv.DictReader(handle, fieldnames=A6_COMPARISON_CONSISTENCY_FIELDS))
+    with (out_dir / "a6_logistic_appraisal_effects_consistency.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_EFFECTS_CONSISTENCY_FIELDS)
+        effects_rows = list(csv.DictReader(handle, fieldnames=A6_EFFECTS_CONSISTENCY_FIELDS))
     assert {row["status"] for row in consistency_rows} == {"missing_comparison_csv"}
+    assert {row["status"] for row in effects_rows} == {"missing_effects_csv"}
     assert result["comparison_consistency_count"] == 2
+    assert result["effects_consistency_count"] == 3
     summary = (out_dir / "summary.md").read_text()
     assert "- reran simulations: no" in summary
     assert "## Control Levels" in summary
     assert "- comparison consistency rows: 2" in summary
+    assert "- effects consistency rows: 3" in summary
 
 
 def test_a6_read_only_analysis_writes_paired_control_deltas(
@@ -15186,7 +15193,10 @@ def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
     assert analysis["comparison_consistency_count"] == 4
     with (analysis_dir / "a6_logistic_appraisal_comparison_consistency.csv").open() as handle:
         consistency_rows = list(csv.DictReader(handle))
+    with (analysis_dir / "a6_logistic_appraisal_effects_consistency.csv").open() as handle:
+        effect_consistency_rows = list(csv.DictReader(handle))
     assert list(consistency_rows[0]) == list(A6_COMPARISON_CONSISTENCY_FIELDS)
+    assert list(effect_consistency_rows[0]) == list(A6_EFFECTS_CONSISTENCY_FIELDS)
     assert {row["condition"] for row in consistency_rows} == {
         "logistic",
         "linear",
@@ -15197,6 +15207,13 @@ def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
     assert {row["observed_seed_count"] for row in consistency_rows} == {"2"}
     assert {row["observed_run_count"] for row in consistency_rows} == {"2"}
     assert all(row["max_abs_difference"] != "" for row in consistency_rows)
+    assert {row["effect_axis"] for row in effect_consistency_rows} == {
+        "logistic_vs_linear",
+        "logistic_vs_phase_shuffled",
+        "logistic_vs_threshold_shuffled",
+    }
+    assert {row["status"] for row in effect_consistency_rows} == {"consistent"}
+    assert all(row["max_abs_difference"] != "" for row in effect_consistency_rows)
 
 
 def test_a6_smoke_comparison_cli(tmp_path: Path) -> None:
