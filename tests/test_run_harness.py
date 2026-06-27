@@ -33,6 +33,7 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_ANALYSIS_ENDPOINT_FIELDS,
     A6_ANALYSIS_MANIFEST_FIELDS,
     A6_CONTROL_DELTA_FIELDS,
+    A6_CONTROL_SUMMARY_FIELDS,
     A6_RESIDUAL_PREFLIGHT_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
@@ -15017,6 +15018,8 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
         assert next(csv.reader(handle)) == list(A6_ANALYSIS_MANIFEST_FIELDS)
     with (out_dir / "a6_logistic_appraisal_control_deltas.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_CONTROL_DELTA_FIELDS)
+    with (out_dir / "a6_logistic_appraisal_control_summary.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_CONTROL_SUMMARY_FIELDS)
     with (out_dir / "a6_logistic_appraisal_residual_preflight.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
     summary = (out_dir / "summary.md").read_text()
@@ -15076,10 +15079,14 @@ def test_a6_read_only_analysis_writes_residual_preflight(
     result = run_a6_logistic_appraisal_analysis(compare_dir, out_dir)
 
     assert result["residual_preflight_count"] == 56
+    assert result["control_summary_count"] == 42
     with (out_dir / "a6_logistic_appraisal_residual_preflight.csv").open() as handle:
         rows = list(csv.DictReader(handle))
+    with (out_dir / "a6_logistic_appraisal_control_summary.csv").open() as handle:
+        summary_rows = list(csv.DictReader(handle))
 
     assert list(rows[0]) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
+    assert list(summary_rows[0]) == list(A6_CONTROL_SUMMARY_FIELDS)
     assert {row["condition"] for row in rows} == {
         "logistic",
         "linear",
@@ -15116,8 +15123,23 @@ def test_a6_read_only_analysis_writes_residual_preflight(
     assert logistic_utility["raw_variance"] != ""
     assert logistic_utility["residual_variance"] != ""
     assert "action_predict_tick" in logistic_utility["control_fields_used"]
+    logistic_linear_utility_summary = next(
+        row
+        for row in summary_rows
+        if row["contrast"] == "logistic_vs_linear"
+        and row["outcome_field"] == "a6_artifact_utility_tick"
+    )
+    assert logistic_linear_utility_summary["paired_seed_count"] == "1"
+    assert logistic_linear_utility_summary["residual_status"] == "underdetermined_smoke_scale"
+    assert logistic_linear_utility_summary["mean_residual_variance_delta"] != ""
+    assert logistic_linear_utility_summary["mean_residual_lag1_autocorrelation_delta"] != ""
+    assert (
+        logistic_linear_utility_summary["interpretation"]
+        == "smoke-scale residual contrast only; not recurrence or promotion evidence"
+    )
     summary = (out_dir / "summary.md").read_text()
     assert "- residual preflight rows: 56" in summary
+    assert "- control summary rows: 42" in summary
     assert "underdetermined smoke-scale rows are not recurrence evidence" in summary
 
 

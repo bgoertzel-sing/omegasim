@@ -89,6 +89,23 @@ A6_CONTROL_DELTA_FIELDS = (
         if field not in {"condition", "seed"}
     ),
 )
+A6_CONTROL_SUMMARY_FIELDS = (
+    "contrast",
+    "control_condition",
+    "outcome_field",
+    "paired_seed_count",
+    "missing_required_fields",
+    "residual_status",
+    "mean_raw_variance_delta",
+    "mean_residual_variance_delta",
+    "mean_raw_lag1_autocorrelation_delta",
+    "mean_residual_lag1_autocorrelation_delta",
+    "mean_final_artifact_utility_delta",
+    "mean_queue_depth_delta",
+    "mean_action_opportunity_total_delta",
+    "mean_completion_fraction_delta",
+    "interpretation",
+)
 A6_RESIDUAL_PREFLIGHT_FIELDS = (
     "condition",
     "seed",
@@ -108,6 +125,7 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
     "a6_logistic_appraisal_control_deltas.csv",
+    "a6_logistic_appraisal_control_summary.csv",
     "a6_logistic_appraisal_residual_preflight.csv",
     "summary.md",
 )
@@ -187,6 +205,11 @@ def run_a6_logistic_appraisal_analysis(
     seeds = sorted({int(run["seed"]) for run in runs})
     control_delta_rows = _control_delta_rows(runs, missing_required_fields)
     residual_preflight_rows = _residual_preflight_rows(compare_path)
+    control_summary_rows = _control_summary_rows(
+        control_delta_rows,
+        residual_preflight_rows,
+        missing_required_fields,
+    )
     manifest_rows = [
         {
             "control_level": control_level,
@@ -198,6 +221,7 @@ def run_a6_logistic_appraisal_analysis(
                 control_delta_rows,
                 missing_required_fields,
                 residual_preflight_rows,
+                control_summary_rows,
             ),
         }
         for control_level in A6_ANALYSIS_CONTROL_LEVELS
@@ -220,6 +244,11 @@ def run_a6_logistic_appraisal_analysis(
         A6_CONTROL_DELTA_FIELDS,
     )
     _write_csv(
+        output_path / "a6_logistic_appraisal_control_summary.csv",
+        control_summary_rows,
+        A6_CONTROL_SUMMARY_FIELDS,
+    )
+    _write_csv(
         output_path / "a6_logistic_appraisal_residual_preflight.csv",
         residual_preflight_rows,
         A6_RESIDUAL_PREFLIGHT_FIELDS,
@@ -231,6 +260,7 @@ def run_a6_logistic_appraisal_analysis(
             manifest_rows,
             control_delta_rows,
             residual_preflight_rows,
+            control_summary_rows,
             missing_required_fields,
         )
     )
@@ -241,6 +271,7 @@ def run_a6_logistic_appraisal_analysis(
         "seed_count": len(seeds),
         "run_count": len(runs),
         "control_delta_count": len(control_delta_rows),
+        "control_summary_count": len(control_summary_rows),
         "residual_preflight_count": len(residual_preflight_rows),
         "missing_required_fields": sorted(missing_required_fields),
     }
@@ -374,6 +405,7 @@ def _control_level_status(
     control_delta_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
     residual_preflight_rows: list[dict[str, Any]],
+    control_summary_rows: list[dict[str, Any]],
 ) -> str:
     complete_pairs = [row for row in control_delta_rows if row["paired"] == "true"]
     if missing_required_fields:
@@ -397,6 +429,8 @@ def _control_level_status(
         if any(status.startswith("underdetermined") for status in statuses):
             return "residual_preflight_underdetermined_smoke_scale"
         return "residual_preflight_computed"
+    if control_level == "promotion_closure_rules" and control_summary_rows:
+        return "promotion_not_evaluated_control_summary_written"
     return "promotion_not_evaluated"
 
 
@@ -534,6 +568,146 @@ def _residual_preflight_rows(compare_path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _control_summary_rows(
+    control_delta_rows: list[dict[str, Any]],
+    residual_preflight_rows: list[dict[str, Any]],
+    missing_required_fields: set[str],
+) -> list[dict[str, Any]]:
+    residual_by_condition_seed_outcome = {
+        (
+            str(row["condition"]),
+            int(row["seed"]),
+            str(row["outcome_field"]),
+        ): row
+        for row in residual_preflight_rows
+    }
+    outcomes = sorted({str(row["outcome_field"]) for row in residual_preflight_rows})
+    rows: list[dict[str, Any]] = []
+    for contrast, control_condition in _A6_CONTROL_PAIRS:
+        endpoint_rows = [
+            row
+            for row in control_delta_rows
+            if row["contrast"] == contrast and row["paired"] == "true"
+        ]
+        paired_seeds = sorted(int(row["seed"]) for row in endpoint_rows)
+        endpoint_means = {
+            field: _mean_available([row.get(field, "") for row in endpoint_rows])
+            for field in (
+                "final_artifact_utility_delta",
+                "queue_depth_delta",
+                "action_opportunity_total_delta",
+                "completion_fraction_delta",
+            )
+        }
+        for outcome in outcomes:
+            raw_variance_deltas: list[float] = []
+            residual_variance_deltas: list[float] = []
+            raw_autocorrelation_deltas: list[float] = []
+            residual_autocorrelation_deltas: list[float] = []
+            statuses: set[str] = set()
+            for seed in paired_seeds:
+                logistic = residual_by_condition_seed_outcome.get(("logistic", seed, outcome))
+                control = residual_by_condition_seed_outcome.get(
+                    (control_condition, seed, outcome)
+                )
+                if logistic is None or control is None:
+                    statuses.add("missing_residual_pair")
+                    continue
+                statuses.update({str(logistic["status"]), str(control["status"])})
+                _append_delta(
+                    raw_variance_deltas,
+                    logistic.get("raw_variance", ""),
+                    control.get("raw_variance", ""),
+                )
+                _append_delta(
+                    residual_variance_deltas,
+                    logistic.get("residual_variance", ""),
+                    control.get("residual_variance", ""),
+                )
+                _append_delta(
+                    raw_autocorrelation_deltas,
+                    logistic.get("raw_lag1_autocorrelation", ""),
+                    control.get("raw_lag1_autocorrelation", ""),
+                )
+                _append_delta(
+                    residual_autocorrelation_deltas,
+                    logistic.get("residual_lag1_autocorrelation", ""),
+                    control.get("residual_lag1_autocorrelation", ""),
+                )
+            residual_status = _summary_residual_status(statuses, missing_required_fields)
+            rows.append(
+                {
+                    "contrast": contrast,
+                    "control_condition": control_condition,
+                    "outcome_field": outcome,
+                    "paired_seed_count": len(paired_seeds),
+                    "missing_required_fields": "|".join(sorted(missing_required_fields)),
+                    "residual_status": residual_status,
+                    "mean_raw_variance_delta": _rounded_mean(raw_variance_deltas),
+                    "mean_residual_variance_delta": _rounded_mean(residual_variance_deltas),
+                    "mean_raw_lag1_autocorrelation_delta": _rounded_mean(
+                        raw_autocorrelation_deltas
+                    ),
+                    "mean_residual_lag1_autocorrelation_delta": _rounded_mean(
+                        residual_autocorrelation_deltas
+                    ),
+                    "mean_final_artifact_utility_delta": endpoint_means[
+                        "final_artifact_utility_delta"
+                    ],
+                    "mean_queue_depth_delta": endpoint_means["queue_depth_delta"],
+                    "mean_action_opportunity_total_delta": endpoint_means[
+                        "action_opportunity_total_delta"
+                    ],
+                    "mean_completion_fraction_delta": endpoint_means[
+                        "completion_fraction_delta"
+                    ],
+                    "interpretation": _control_summary_interpretation(residual_status),
+                }
+            )
+    return rows
+
+
+def _append_delta(target: list[float], high: Any, low: Any) -> None:
+    if high in {"", None} or low in {"", None}:
+        return
+    target.append(float(high) - float(low))
+
+
+def _mean_available(values: list[Any]) -> str:
+    numeric = [float(value) for value in values if value not in {"", None}]
+    return _rounded_mean(numeric)
+
+
+def _rounded_mean(values: list[float]) -> str:
+    if not values:
+        return ""
+    return str(round(sum(values) / len(values), 6))
+
+
+def _summary_residual_status(statuses: set[str], missing_required_fields: set[str]) -> str:
+    if missing_required_fields:
+        return "missing_required_fields"
+    if not statuses:
+        return "missing_residual_pair"
+    if any(status.startswith("missing") for status in statuses):
+        return "missing_residual_pair"
+    if any(status.startswith("underdetermined") for status in statuses):
+        return "underdetermined_smoke_scale"
+    if statuses == {"computed"}:
+        return "computed"
+    return "|".join(sorted(statuses))
+
+
+def _control_summary_interpretation(residual_status: str) -> str:
+    if residual_status == "computed":
+        return "read-only residual contrast computed; still requires preregistered promotion gate"
+    if residual_status == "underdetermined_smoke_scale":
+        return "smoke-scale residual contrast only; not recurrence or promotion evidence"
+    if residual_status == "missing_required_fields":
+        return "required accounting fields missing; control interpretation blocked"
+    return "residual contrast incomplete; do not interpret as mechanism evidence"
+
+
 def _with_a6_derived_fields(row: dict[str, str]) -> dict[str, str]:
     enriched = dict(row)
     enriched["a6_artifact_utility_tick"] = str(_artifact_utility(row))
@@ -654,6 +828,7 @@ def _summary(
     manifest_rows: list[dict[str, Any]],
     control_delta_rows: list[dict[str, Any]],
     residual_preflight_rows: list[dict[str, Any]],
+    control_summary_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -668,6 +843,7 @@ def _summary(
         "- reran simulations: no",
         f"- paired control delta rows: {len(control_delta_rows)}",
         f"- residual preflight rows: {len(residual_preflight_rows)}",
+        f"- control summary rows: {len(control_summary_rows)}",
         "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
