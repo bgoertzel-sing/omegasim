@@ -17,6 +17,12 @@ dependence. A minimal opt-in A7 simulator path now exists behind
 semantic dynamics, lobe structure, attractors, synchrony, or downstream
 multi-hive coupling.
 
+The current bounded step extends the read-only A7 analyzer to publish a
+schema-level smoke report for existing seed-1 artifacts. This report summarizes
+source reconstruction, field variation, prediction/work-budget competition, and
+near-threshold occupancy while keeping residual recurrence, null contrasts, and
+scientific interpretation fail-closed.
+
 The latest external strategic review in
 `../outputs/strategy-reviews/omegasim/latest-review.md` recommended a minimal
 opt-in A7 delayed semantic-field mechanic with source ledger, costly
@@ -50,6 +56,14 @@ semantic-dynamics claims from A7 placeholders.
   emitted the required schema and passed source reconstruction. The analyzer
   still reports `schema_present_analysis_not_implemented`, so no A7 scientific
   interpretation is allowed.
+- Added `a7_semantic_field_smoke_report.csv` to the read-only A7 analyzer. The
+  report records per-condition seed, field-variation status/count/range,
+  prediction spend ticks, work-budget reduction ticks, total prediction spend,
+  near-threshold occupancy summary, source reconstruction status, and an
+  explicit fail-closed scientific interpretation status.
+- Added a six-condition seed-1 analyzer test that runs the frozen A7 fixtures
+  into a temporary compare directory and verifies the smoke report without
+  allowing residual recurrence or null-contrast interpretation.
 - No real integrations, dashboards, LLM calls, seed sweeps, broad three-hive
   mechanics, or downstream multi-hive coupling were added.
 
@@ -96,17 +110,34 @@ semantic-dynamics claims from A7 placeholders.
   `status: schema_present_analysis_not_implemented`, `condition_count: 6`,
   `seed_count: 1`, `run_count: 6`, and per-condition
   `source_reconstruction_status: pass`.
+- `.venv-conda/bin/python -m py_compile ohdyn/a7_semantic_field_contract.py
+  ohdyn/analyze_a7_semantic_field.py tests/test_run_harness.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a7 or automation_guard'` passed: `18 passed, 596 deselected`.
+- `.venv-conda/bin/ruff check ohdyn/a7_semantic_field_contract.py
+  ohdyn/analyze_a7_semantic_field.py tests/test_run_harness.py` passed.
+- `git diff --check` passed.
+- Six direct A7 seed-1 simulator runs passed into
+  `/tmp/omegasim_a7_seed1_smoke_report_20260627`, followed by
+  `.venv-conda/bin/python -m ohdyn.analyze_a7_semantic_field --compare-dir
+  /tmp/omegasim_a7_seed1_smoke_report_20260627 --out
+  /tmp/omegasim_a7_seed1_smoke_report_analysis_20260627`. The analyzer passed
+  with `status: schema_present_analysis_not_implemented`; the smoke report had
+  6/6 source reconstruction pass rows, 6/6 field variation pass rows, and 6/6
+  prediction/work-budget competition pass rows. Scientific interpretation
+  remains fail-closed.
 
 ## Blockers
 
-None for this bounded A7 schema/mechanics smoke. Scientifically, A7 still has
-no residual recurrence analysis, no null contrasts, and no positive evidence;
-the new simulator path only proves that the frozen schema and source ledgers can
-be emitted and reconstructed for seed 1.
+None for this bounded A7 schema/mechanics smoke report. Scientifically, A7
+still has no residual recurrence analysis, no null contrasts, and no positive
+evidence; the simulator path and analyzer report only show that the frozen
+schema, source ledgers, field variation, prediction/work-budget competition,
+and near-threshold occupancy can be emitted and summarized for seed 1.
 
 ## Recommended Next Step
 
-Implement a read-only A7 seed-1 smoke report/analyzer extension that summarizes
-source reconstruction, field variation, prediction/work-budget competition, and
-near-threshold occupancy for the six existing A7 artifacts, while continuing to
-fail closed on residual recurrence and scientific interpretation.
+Implement a read-only A7 residual-preflight artifact that consumes the same
+seed-1 six-condition outputs and reports which residualization inputs are
+present, which target semantic fields are eligible, and why residual recurrence
+and null-contrast interpretation still fail closed.

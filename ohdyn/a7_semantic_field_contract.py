@@ -114,6 +114,22 @@ A7_ANALYZER_MANIFEST_FIELDS = (
     "run_count",
     "status",
 )
+A7_ANALYZER_SMOKE_REPORT_FIELDS = (
+    "condition",
+    "seed",
+    "field_variation_status",
+    "varying_field_count",
+    "max_field_range",
+    "prediction_work_budget_competition_status",
+    "prediction_spend_ticks",
+    "work_budget_reduction_ticks",
+    "total_prediction_budget_spent",
+    "near_threshold_occupancy_status",
+    "mean_near_threshold_occupancy",
+    "max_near_threshold_occupancy",
+    "source_reconstruction_status",
+    "scientific_interpretation_status",
+)
 
 
 def a7_required_metric_fields() -> tuple[str, ...]:

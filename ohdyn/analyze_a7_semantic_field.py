@@ -17,7 +17,9 @@ import yaml
 from ohdyn.a7_semantic_field_contract import (
     A7_ANALYZER_COMPLETENESS_FIELDS,
     A7_ANALYZER_MANIFEST_FIELDS,
+    A7_ANALYZER_SMOKE_REPORT_FIELDS,
     A7_CONDITIONS,
+    A7_FIELD_VALUES,
     A7_SOURCE_COMPONENTS,
     a7_required_event_fields,
     a7_required_metric_fields,
@@ -30,6 +32,7 @@ DEFAULT_A7_OUT_DIR = Path("runs/a7_semantic_field_analysis")
 _A7_OUTPUT_NAMES = (
     "a7_semantic_field_completeness.csv",
     "a7_semantic_field_manifest.csv",
+    "a7_semantic_field_smoke_report.csv",
     "summary.md",
 )
 
@@ -45,6 +48,10 @@ def run_a7_semantic_field_analysis(
     _ensure_output_paths_available(output_path)
     runs = _read_runs(compare_path)
     completeness_rows = [_completeness_row(run) for run in runs]
+    smoke_rows = [
+        _smoke_report_row(run, completeness_row)
+        for run, completeness_row in zip(runs, completeness_rows, strict=True)
+    ]
     conditions = sorted({str(run["condition"]) for run in runs})
     seeds = sorted({int(run["seed"]) for run in runs})
     status = _overall_status(completeness_rows, conditions)
@@ -69,8 +76,13 @@ def run_a7_semantic_field_analysis(
         manifest_rows,
         A7_ANALYZER_MANIFEST_FIELDS,
     )
+    _write_csv(
+        output_path / "a7_semantic_field_smoke_report.csv",
+        smoke_rows,
+        A7_ANALYZER_SMOKE_REPORT_FIELDS,
+    )
     (output_path / "summary.md").write_text(
-        _summary(compare_path, completeness_rows, manifest_rows[0])
+        _summary(compare_path, completeness_rows, smoke_rows, manifest_rows[0])
     )
     return {
         "compare_dir": str(compare_path),
@@ -190,6 +202,84 @@ def _source_reconstruction_status(path: Path) -> str:
     return "pass" if checked else "no_a7_update_events"
 
 
+def _smoke_report_row(
+    run: dict[str, Any],
+    completeness_row: dict[str, str | int],
+) -> dict[str, str | int | float]:
+    metrics_path = Path(run["metrics_path"])
+    metric_rows = _read_csv_rows(metrics_path)
+    field_ranges = _field_ranges(metric_rows)
+    varying_field_count = sum(1 for value in field_ranges.values() if value > 0.0)
+    max_field_range = max(field_ranges.values(), default=0.0)
+    prediction_spend_ticks = sum(
+        1
+        for row in metric_rows
+        if _float_cell(row.get("a7_prediction_budget_spent_tick")) > 0.0
+    )
+    work_budget_reduction_ticks = sum(
+        1
+        for row in metric_rows
+        if _float_cell(row.get("a7_work_budget_tick"))
+        < _float_cell(row.get("a7_action_opportunity_tick"))
+    )
+    total_prediction_budget_spent = round(
+        sum(_float_cell(row.get("a7_prediction_budget_spent_tick")) for row in metric_rows),
+        6,
+    )
+    near_threshold_values = [
+        _float_cell(row.get("a7_near_threshold_occupancy_tick")) for row in metric_rows
+    ]
+    mean_near_threshold = round(
+        sum(near_threshold_values) / len(near_threshold_values),
+        6,
+    ) if near_threshold_values else 0.0
+    max_near_threshold = round(max(near_threshold_values), 6) if near_threshold_values else 0.0
+    competition_status = (
+        "pass"
+        if prediction_spend_ticks > 0 and work_budget_reduction_ticks > 0
+        else "no_prediction_spend"
+        if prediction_spend_ticks == 0
+        else "no_work_budget_reduction"
+    )
+    return {
+        "condition": str(run["condition"]),
+        "seed": int(run["seed"]),
+        "field_variation_status": "pass" if varying_field_count else "no_field_variation",
+        "varying_field_count": varying_field_count,
+        "max_field_range": round(max_field_range, 6),
+        "prediction_work_budget_competition_status": competition_status,
+        "prediction_spend_ticks": prediction_spend_ticks,
+        "work_budget_reduction_ticks": work_budget_reduction_ticks,
+        "total_prediction_budget_spent": total_prediction_budget_spent,
+        "near_threshold_occupancy_status": (
+            "measured" if near_threshold_values else "missing"
+        ),
+        "mean_near_threshold_occupancy": mean_near_threshold,
+        "max_near_threshold_occupancy": max_near_threshold,
+        "source_reconstruction_status": completeness_row["source_reconstruction_status"],
+        "scientific_interpretation_status": (
+            "fail_closed_residual_recurrence_and_null_contrasts_not_implemented"
+        ),
+    }
+
+
+def _read_csv_rows(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+    with path.open(newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _field_ranges(rows: list[dict[str, str]]) -> dict[str, float]:
+    ranges: dict[str, float] = {}
+    for field_name in A7_FIELD_VALUES:
+        metric_name = f"a7_{field_name}_tick"
+        values = [_float_cell(row.get(metric_name)) for row in rows if metric_name in row]
+        if values:
+            ranges[field_name] = round(max(values) - min(values), 6)
+    return ranges
+
+
 def _float_cell(value: str | None) -> float:
     if value in {None, ""}:
         return 0.0
@@ -230,9 +320,21 @@ def _write_csv(
 def _summary(
     compare_path: Path,
     rows: list[dict[str, str | int]],
+    smoke_rows: list[dict[str, str | int | float]],
     manifest: dict[str, str | int],
 ) -> str:
     fail_closed = sum(1 for row in rows if row["status"] == "fail_closed")
+    source_pass = sum(
+        1 for row in smoke_rows if row["source_reconstruction_status"] == "pass"
+    )
+    field_variation_pass = sum(
+        1 for row in smoke_rows if row["field_variation_status"] == "pass"
+    )
+    competition_pass = sum(
+        1
+        for row in smoke_rows
+        if row["prediction_work_budget_competition_status"] == "pass"
+    )
     return "\n".join(
         [
             "# A7 Semantic-Field Analysis Skeleton",
@@ -241,10 +343,14 @@ def _summary(
             f"- Runs inspected: {manifest['run_count']}",
             f"- Status: `{manifest['status']}`",
             f"- Fail-closed rows: {fail_closed}",
+            f"- Source reconstruction pass rows: {source_pass}",
+            f"- Field variation pass rows: {field_variation_pass}",
+            f"- Prediction/work-budget competition pass rows: {competition_pass}",
             "",
             "This analyzer is read-only and intentionally refuses positive interpretation",
             "until A7 artifacts expose the frozen schema and all preregistered nulls.",
-            "When required schema is missing, no semantic-field interpretation is allowed.",
+            "The smoke report summarizes schema-level mechanics only; residual",
+            "recurrence, null contrasts, and scientific interpretation remain fail-closed.",
             "",
         ]
     )

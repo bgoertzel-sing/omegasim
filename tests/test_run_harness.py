@@ -130,6 +130,7 @@ from ohdyn.a7_semantic_field_contract import (
     A7_CONTROL_FIELDS,
     A7_EVENT_FIELDS,
     A7_FIELD_VALUES,
+    A7_ANALYZER_SMOKE_REPORT_FIELDS,
     A7_NULL_CONDITIONS,
     A7_POSITIVE_CONDITION,
     A7_PREDICTION_FIELDS,
@@ -899,12 +900,16 @@ def test_a7_analyzer_fails_closed_on_missing_schema(tmp_path: Path) -> None:
     )
     assert list(completeness_rows[0]) == list(A7_ANALYZER_COMPLETENESS_FIELDS)
     assert list(manifest_rows[0]) == list(A7_ANALYZER_MANIFEST_FIELDS)
+    smoke_rows = list(
+        csv.DictReader((out_dir / "a7_semantic_field_smoke_report.csv").open())
+    )
+    assert list(smoke_rows[0]) == list(A7_ANALYZER_SMOKE_REPORT_FIELDS)
     assert completeness_rows[0]["status"] == "fail_closed"
     assert completeness_rows[0]["required_field_status"] == "missing_fields"
     assert "a7_semantic_novelty_tick" in completeness_rows[0]["missing_required_fields"]
     assert "a7_delta_total" in completeness_rows[0]["missing_required_fields"]
     assert manifest_rows[0]["status"] == "fail_closed_missing_conditions"
-    assert "no semantic-field interpretation is allowed" in (
+    assert "scientific interpretation remain fail-closed" in (
         out_dir / "summary.md"
     ).read_text()
 
@@ -970,6 +975,16 @@ def test_a7_placeholder_comparison_still_fails_closed_in_analyzer(
     assert len(completeness_rows) == len(A7_CONDITIONS)
     assert {row["status"] for row in completeness_rows} == {"fail_closed"}
     assert all(row["row_count"] == "0" for row in completeness_rows)
+    smoke_rows = list(
+        csv.DictReader((analysis_dir / "a7_semantic_field_smoke_report.csv").open())
+    )
+    assert len(smoke_rows) == len(A7_CONDITIONS)
+    assert {row["field_variation_status"] for row in smoke_rows} == {
+        "no_field_variation"
+    }
+    assert {row["scientific_interpretation_status"] for row in smoke_rows} == {
+        "fail_closed_residual_recurrence_and_null_contrasts_not_implemented"
+    }
 
 
 def test_a7_logistic_semantic_field_run_emits_schema_and_source_ledger(
@@ -1022,6 +1037,44 @@ def test_a7_logistic_semantic_field_run_emits_schema_and_source_ledger(
     assert manifest["model"]["semantic_field"]["scientific_status"] == (
         "schema_complete_smoke_only_no_semantic_dynamics_claim"
     )
+
+
+def test_a7_analyzer_reports_seed1_six_condition_smoke_without_interpretation(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_seed1_smoke"
+    analysis_dir = tmp_path / "a7_seed1_analysis"
+    for config_path, condition in zip(A7_SMOKE_FIXTURES, A7_CONDITIONS, strict=True):
+        run_experiment(
+            config_path,
+            seed=1,
+            out_dir=compare_dir / f"{condition}_seed1",
+        )
+
+    result = run_a7_semantic_field_analysis(compare_dir, analysis_dir)
+
+    assert result["status"] == "schema_present_analysis_not_implemented"
+    smoke_rows = list(
+        csv.DictReader((analysis_dir / "a7_semantic_field_smoke_report.csv").open())
+    )
+    assert list(smoke_rows[0]) == list(A7_ANALYZER_SMOKE_REPORT_FIELDS)
+    assert len(smoke_rows) == len(A7_CONDITIONS)
+    assert {row["condition"] for row in smoke_rows} == set(A7_CONDITIONS)
+    assert {row["source_reconstruction_status"] for row in smoke_rows} == {"pass"}
+    assert all(int(row["varying_field_count"]) > 0 for row in smoke_rows)
+    assert any(
+        row["prediction_work_budget_competition_status"] == "pass"
+        for row in smoke_rows
+    )
+    assert all(
+        row["near_threshold_occupancy_status"] == "measured" for row in smoke_rows
+    )
+    assert {row["scientific_interpretation_status"] for row in smoke_rows} == {
+        "fail_closed_residual_recurrence_and_null_contrasts_not_implemented"
+    }
+    summary = (analysis_dir / "summary.md").read_text()
+    assert "Prediction/work-budget competition pass rows" in summary
+    assert "residual" in summary
 
 
 def test_automation_guard_closes_after_a5_closure_despite_preregistration(
