@@ -1075,6 +1075,69 @@ def test_automation_guard_closes_for_current_a5_status_wording(
     )
 
 
+def test_automation_guard_reopens_when_accepted_roadmap_replaces_a5_noop(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    roadmap_path = tmp_path / "docs" / "omegasim_provisional_experiment_roadmap.md"
+    a5_path = tmp_path / "docs" / "a5_anticipatory_predictive_control_preregistration.md"
+    roadmap_path.parent.mkdir()
+    a5_path.write_text("# A5 Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "The current A5 anticipatory predictive-control loop is closed.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "Remain in no-op/awaiting-preregistration state for A5 unless Ben",
+                "explicitly requests a new preregistered A5 design.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: none",
+                "notify_ben: false",
+                "recommended_next_action: Verify guard/loop state, then create an "
+                "A7 implementation contract.",
+            ]
+        )
+    )
+    roadmap_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Provisional Experiment Roadmap",
+                "",
+                "Accepted by Ben on 2026-06-27.",
+                "",
+                "Update 2026-06-27: A6/A6.1/A6.2 are now closed conservatively. "
+                "Ben accepted proceeding to A7 as the next preregistered direction.",
+                "",
+                "This roadmap replaces the closed A5 no-op posture as the "
+                "provisional direction for OmegaSim experimentation.",
+                "",
+                "## Immediate Next Step",
+                "",
+                "Create an A7 implementation gate before any broad experiment.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path, roadmap_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["closed_reasons"] == []
+    assert state["recommended_next_action"] == (
+        "Verify guard/loop state, then create an A7 implementation contract."
+    )
+
+
 def _write_config(path: Path, overrides: dict[str, object]) -> Path:
     data = {
         "run": {"experiment_id": "a4_config_validation", "ticks": 3},

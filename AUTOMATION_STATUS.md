@@ -5,89 +5,72 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Ben explicitly requested reopening the next scientific stage as A5
-anticipatory predictive-control dynamics. That bounded reopening is now closed
-with the eight-condition seed `7..16` confirmatory result and closure update.
+Ben accepted proceeding to A7 on 2026-06-27, as recorded in
+`docs/omegasim_provisional_experiment_roadmap.md`. A5 and A6/A6.1/A6.2 remain
+closed under their preregistered decision rules and should not be broadened or
+rescued by additional seed sweeps.
 
-The closed A5 target was single-hive only: deterministic predictive/adaptive
-controllers allocated attention or service priority from forecasts of future
-task pressure while keeping task-arrival totals, service capacity, action
-opportunity, and work budget matched. Prediction budget was a manipulated
-scarce resource axis, not a free analytic overlay.
+A7 is the current preregistered direction: a single-hive semantic-field design
+gate for source-accounted semantic/artifact fields and logistic inter-agent
+dependence. The current A7 gate is intentionally pre-mechanics. It freezes
+field names, source ledgers, null conditions, utility/update-equation text,
+schemas, fixture stubs, a placeholder comparison envelope, and a read-only
+analyzer that fails closed until real A7 artifacts exist.
+
+The external strategic review in
+`../outputs/strategy-reviews/omegasim/latest-review.md` recommended verifying
+the guard state and creating the A7 implementation contract before simulator
+mechanics. That recommendation is incorporated. `notify_ben: false` and
+`strategic_change_level: none`; no Ben notification is required from the review
+header.
 
 Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
-downstream multi-hive coupling. Treat any strange-attractor/lobe-like language
-as secondary and fail-closed unless residual structure survives the
-preregistered accounting controls and timing-broken nulls. The external
-strategic review dated for this run recommended an A7 implementation gate, but
-that recommendation was deferred for this bounded run because this status file
-recorded Ben's newer explicit A5 reopening and the next required action was the
-A5 closure update.
+downstream multi-hive coupling. Do not make attractor, lobe, synchrony, or
+semantic-dynamics claims from A7 placeholders.
 
 ## Latest Changes
 
-- Added `docs/results/a5_eight_condition_closure_update_seed7_16.md`, which
-  supersedes the older six-condition closure note for current A5
-  interpretation without rerunning simulations or changing simulator mechanics.
-- Ran the preregistered eight-condition A5 confirmatory paired-seed set for
-  seeds `7..16` with no simulator mechanics changes:
-  `reactive`, `linear`, `nonlinear`, `nonlinear_high_budget`, `oracle`,
-  `shuffled`, `nonlinear_shuffled`, and
-  `nonlinear_high_budget_shuffled`.
-- Ran the read-only A5 residual accounting analyzer over that fresh
-  eight-condition comparison. The analyzer emitted `6400` metric rows and
-  `720` effect rows.
-- Recorded the result in
-  `docs/results/a5_eight_condition_confirmatory_seed7_16.md`. Forecast skill
-  improved for all predictor conditions versus reactive or their
-  budget-matched timing-broken nulls, including
-  `nonlinear_high_budget_minus_nonlinear_high_budget_shuffled = +0.106704`.
-- The promotion audit still failed closed: all primary full-accounting
-  residual-state predictability contrasts were inside paired
-  label-permutation intervals, and both nonlinear conditions failed practical
-  guardrails.
+- Updated `ohdyn.automation_guard` so the accepted A7 roadmap can reopen the
+  loop when stale A5 closure/status wording would otherwise force a no-op.
+  Temporary test status files do not read the repository roadmap unless a
+  matching roadmap path is passed explicitly.
+- Added a regression test for the exact transition: closed A5 status plus an
+  accepted roadmap stating that Ben accepted A7 and that the roadmap replaces
+  the closed A5 no-op posture.
+- Reconfirmed the existing A7 implementation gate remains pre-mechanics:
+  `ohdyn/a7_semantic_field_contract.py`,
+  `docs/a7_implementation_gate.md`,
+  `ohdyn/compare_a7_semantic_field.py`, and
+  `ohdyn/analyze_a7_semantic_field.py`.
+- No simulator mechanics, real integrations, dashboards, LLM calls, seed
+  sweeps, or downstream multi-hive coupling were added.
 
 ## Verification
 
-- `.venv-conda/bin/python -m ohdyn.automation_guard` passed before the closure
-  update with `state: open`, `a5_preregistration_active: true`, and recommended
-  this A5 closure update.
-- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the closure
-  update with `state: closed_awaiting_preregistration`, `should_noop: true`,
-  and `closed_reasons: ["automation_status_noop_guard",
-  "automation_status_a5_closed"]`.
-- `.venv-conda/bin/python -m ohdyn.automation_guard` passed with
-  `state: open`, `a5_preregistration_active: true`, and recommended the
-  eight-condition A5 confirmatory paired-seed set.
-- `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 7 8 9
-  10 11 12 13 14 15 16 --out
-  runs/a5_predictive_control_confirmatory_seed7_16_eight_condition_20260627`
-  passed and generated 80 deterministic runs across 8 matched conditions.
-- `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
-  --compare-dir
-  runs/a5_predictive_control_confirmatory_seed7_16_eight_condition_20260627
-  --out
-  runs/a5_residual_accounting_confirmatory_seed7_16_eight_condition_20260627`
-  passed. Promotion decision: fail closed; no intermediate-budget condition
-  satisfied all preregistered criteria.
-- `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py
-  ohdyn/analyze_a5_residual_accounting.py ohdyn/automation_guard.py` passed.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed with `state: open`,
+  `should_noop: false`, and `closed_reasons: []`.
+- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  ohdyn/a7_semantic_field_contract.py ohdyn/analyze_a7_semantic_field.py
+  ohdyn/compare_a7_semantic_field.py` passed.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'a5_predictive_control or a5_residual_accounting or automation_guard'`
-  passed: `11 passed, 600 deselected`.
-- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'automation_guard'` passed after the closure update: `8 passed, 603
-  deselected`.
-- `git diff --check` passed.
+  'a7 or automation_guard'` passed: `16 passed, 596 deselected`.
+- `.venv-conda/bin/python -m ohdyn.compare_a7_semantic_field --seeds 1 2
+  --out runs/a7_semantic_field_placeholder_smoke_20260627` passed and wrote
+  12 config/manifest-only placeholder runs for six frozen A7 conditions.
+- `.venv-conda/bin/python -m ohdyn.analyze_a7_semantic_field --compare-dir
+  runs/a7_semantic_field_placeholder_smoke_20260627 --out
+  runs/a7_semantic_field_analysis_smoke_20260627` passed with
+  `status: fail_closed_missing_schema`, `run_count: 12`,
+  `condition_count: 6`, and `seed_count: 2`.
 
 ## Blockers
 
-None for recording this bounded result. Scientifically, the eight-condition
-confirmatory set does not support an attractor-like or residual lobe-grammar
-claim. Do not reopen A5 without a new preregistration.
+None for this bounded guard/status repair. Scientifically, A7 still has no
+simulator mechanics or positive evidence; the placeholder comparison and
+fail-closed analyzer are schema/contract scaffolding only.
 
 ## Recommended Next Step
 
-Remain in no-op/awaiting-preregistration state for A5 unless Ben explicitly
-requests a new preregistered A5 design.
+Implement the smallest opt-in A7 simulator mechanics behind `semantic_field`,
+then run only a seed-1 schema smoke against the frozen six-condition gate.

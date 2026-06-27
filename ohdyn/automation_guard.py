@@ -13,28 +13,37 @@ DEFAULT_REVIEW_PATH = Path("../outputs/strategy-reviews/omegasim/latest-review.m
 DEFAULT_A5_PREREGISTRATION_PATH = Path(
     "docs/a5_anticipatory_predictive_control_preregistration.md"
 )
+DEFAULT_ROADMAP_PATH = Path("docs/omegasim_provisional_experiment_roadmap.md")
 
 
 def read_automation_state(
     status_path: str | Path = DEFAULT_STATUS_PATH,
     review_path: str | Path = DEFAULT_REVIEW_PATH,
     a5_preregistration_path: str | Path = DEFAULT_A5_PREREGISTRATION_PATH,
+    roadmap_path: str | Path = DEFAULT_ROADMAP_PATH,
 ) -> dict[str, Any]:
     """Return the current automation state from local status/review artifacts."""
 
     status = _read_optional_text(Path(status_path))
     review = _read_optional_text(Path(review_path))
+    roadmap = _read_scoped_roadmap_text(Path(status_path), Path(roadmap_path))
     review_header = _parse_review_header(review)
     a5_preregistration_active = Path(a5_preregistration_path).is_file()
     closed_reasons = _closed_reasons(status=status, review=review)
     if a5_preregistration_active and not _status_closes_active_a5(status):
         closed_reasons = []
+    roadmap_reopens_a7 = _roadmap_reopens_after_a5(roadmap)
+    if closed_reasons and roadmap_reopens_a7:
+        closed_reasons = []
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
     status_next_action = _status_next_action(status)
+    roadmap_next_action = _roadmap_next_action(roadmap) if roadmap_reopens_a7 else ""
+    if roadmap_reopens_a7 and _is_noop_next_action(status_next_action):
+        status_next_action = ""
     recommended_next_action = status_next_action or review_header.get(
         "recommended_next_action", ""
-    )
+    ) or roadmap_next_action
 
     return {
         "state": state,
@@ -55,6 +64,12 @@ def _read_optional_text(path: Path) -> str:
         return path.read_text()
     except FileNotFoundError:
         return ""
+
+
+def _read_scoped_roadmap_text(status_path: Path, roadmap_path: Path) -> str:
+    if roadmap_path == DEFAULT_ROADMAP_PATH and status_path != DEFAULT_STATUS_PATH:
+        return ""
+    return _read_optional_text(roadmap_path)
 
 
 def _parse_review_header(review: str) -> dict[str, str]:
@@ -145,6 +160,27 @@ def _status_next_action(status: str) -> str:
     return _status_section_text(status, "Recommended Next Step")
 
 
+def _roadmap_next_action(roadmap: str) -> str:
+    return _status_section_text(roadmap, "Immediate Next Step")
+
+
+def _roadmap_reopens_after_a5(roadmap: str) -> bool:
+    normalized_roadmap = _normalize(roadmap)
+    return (
+        "accepted by ben" in normalized_roadmap
+        and "ben accepted proceeding to a7" in normalized_roadmap
+        and "replaces the closed a5 no-op posture" in normalized_roadmap
+    )
+
+
+def _is_noop_next_action(next_action: str) -> bool:
+    normalized_next_action = _normalize(next_action)
+    return (
+        "remain in no-op/awaiting-preregistration state" in normalized_next_action
+        or "explicit no-op/awaiting-preregistration state" in normalized_next_action
+    )
+
+
 def _status_section_text(status: str, title: str) -> str:
     in_section = False
     lines: list[str] = []
@@ -187,13 +223,23 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(DEFAULT_A5_PREREGISTRATION_PATH),
         help="Path to an explicit A5 preregistration that reopens the loop.",
     )
+    parser.add_argument(
+        "--roadmap",
+        default=str(DEFAULT_ROADMAP_PATH),
+        help="Path to the current provisional experiment roadmap.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    state = read_automation_state(args.status, args.review, args.a5_preregistration)
+    state = read_automation_state(
+        args.status,
+        args.review,
+        args.a5_preregistration,
+        args.roadmap,
+    )
     print(json.dumps(state, sort_keys=True))
     return 0
 
