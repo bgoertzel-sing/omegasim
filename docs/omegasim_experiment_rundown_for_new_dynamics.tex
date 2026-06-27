@@ -1,0 +1,811 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{hyperref}
+
+\title{OmegaSim Experiment Rundown and Design Implications}
+\author{Prepared for Ben Goertzel}
+\date{2026-06-27}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This report summarizes the OmegaSim experiments run so far, the results
+obtained, and the lessons for designing new experiments aimed at eliciting
+more complex collective dynamics. The central historical lesson is
+conservative: many apparent lobe, synchrony, or attractor-like effects were
+explained by queue load, service capacity, action opportunity, transfer timing,
+or other accounting variables. The central forward-looking opportunity is to
+move from load-pressure and linear-prediction scaffolds toward explicitly
+nonlinear, delayed, bounded-resource dependencies among agents or hives. In
+particular, logistic-shaped dependence of one agent's activity on another
+agent's lagged activity is a plausible ingredient for structured recurrent
+dynamics, provided it is embedded in a system with thresholds, delays,
+imperfect prediction, resource costs, heterogeneity, and controls that separate
+true residual dynamics from queueing arithmetic.
+\end{abstract}
+
+\section{Purpose}
+
+This document is meant as a compact but detailed handoff to a strategic
+reviewer or collaborator. It records what OmegaSim has already tested, which
+claims survived controls, which claims failed, and what the existing evidence
+implies for future logistic-dependence experiments.
+
+The detailed source artifacts live primarily under:
+
+\begin{verbatim}
+docs/results/
+docs/a5_anticipatory_predictive_control_preregistration.md
+docs/structured_strange_attractor_research_note.md
+\end{verbatim}
+
+\section{Current Simulator Abstraction}
+
+OmegaSim is an abstract deterministic simulator for OmegaHive-like and
+Moltbook-like dynamics. It does not call real LLMs, Lean, Slack, browsers,
+Atomspace, live task boards, or external services. Those systems are
+represented numerically through queues, task classes, role policies, graph
+edges, events, and metrics.
+
+\subsection{A0/A1 Baseline}
+
+The baseline system contains:
+
+\begin{itemize}
+\item 15 static agents.
+\item Five roles, three agents per role: coordinator, researcher, architect,
+implementer, and reviewer.
+\item One NetworkX bus graph.
+\item One in-memory task queue in the single-hive case.
+\item Four baseline actions: idle, message, create\_task, and work\_task.
+\item Deterministic YAML configuration and seeded runs.
+\item Stable artifacts: config, manifest, metrics, events, and summary.
+\end{itemize}
+
+The baseline lobe labels are:
+
+\begin{verbatim}
+backlog_growth
+execution
+task_generation
+coordination
+low_activity
+\end{verbatim}
+
+These labels are derived from queue movement and dominant action counts. This
+was useful for early trajectory summaries, but later became an interpretive
+limitation: because the labels depend directly on queue and action fields, they
+are easily confounded with task inflow, service capacity, and action
+opportunity.
+
+\subsection{A2 Attention Classes}
+
+A2 added an opt-in attention policy over four task classes:
+
+\begin{verbatim}
+near_term_external
+long_term_research
+internal_improvement
+housekeeping
+\end{verbatim}
+
+The policy can use quota balancing or a seeded random-available scheduler. Runs
+report per-class queues, completions, queued age, attention shares,
+value-weighted completions, capture pressure, and effort-normalized value
+fields.
+
+\subsection{A4 Multi-Hive Scaffold}
+
+A4 introduced an opt-in multi-hive form with per-hive queues, events, metrics,
+and coupling modes:
+
+\begin{verbatim}
+none
+direct
+delayed
+shuffled
+\end{verbatim}
+
+Coupling events and cross-hive metrics track transfer attempts, completed
+transfers, inbound/outbound transfer counts, aggregate queue balance,
+queued-age divergence, and completion-fraction divergence or correlation.
+
+\subsection{A5 Predictive-Control Scaffold}
+
+A5 added a single-hive predictive-control scaffold. It keeps demand streams,
+task volume, action opportunity, service capacity, and work budget matched
+while varying prediction condition:
+
+\begin{verbatim}
+reactive
+linear
+nonlinear
+oracle
+linear-budget shuffled
+nonlinear-budget shuffled
+\end{verbatim}
+
+Forecast skill is treated as a manipulation check, not as evidence of emergent
+dynamics by itself.
+
+\section{Experiment Timeline and Results}
+
+\subsection{A0/A1: Deterministic Baseline Harness}
+
+\paragraph{Question.}
+Can the project produce deterministic OmegaHive-like run artifacts with stable
+schemas, reproducible seeds, and enough metrics for later dynamics experiments?
+
+\paragraph{Result.}
+Yes. A0/A1 established the deterministic runner, 15-agent hive, task queue, bus
+graph, event stream, metrics, summaries, and reproducibility tests. It did not
+make a scientific claim about complex dynamics.
+
+\paragraph{Lesson.}
+The artifact discipline is worth preserving. However, baseline lobe labels are
+too directly tied to queue and action variables to support a strange-attractor
+claim without stronger controls or new observables.
+
+\subsection{A2.1: Attention-Policy and Pressure Exploration}
+
+\paragraph{Question.}
+Do attention policies and task-creation pressure generate distinct trajectory
+regimes or lobe-like structure?
+
+\paragraph{Design.}
+A2 compared quota-balanced attention, research-heavy attention, and
+internal-improvement-heavy attention under normal, medium, high, and later
+extreme task-creation pressure. Early blocks used seeds 1--3; a larger pressure
+baseline used seeds 1--69.
+
+\paragraph{Main result.}
+The robust finding was pressure-amplified queue depth. In the extreme-pressure
+baseline over seeds 1--69, the strongest global response was final queue depth
+for the internal-improvement policy:
+
+\begin{center}
+\begin{tabular}{lrrrr}
+condition means & normal & medium & extreme & high-minus-normal \\
+\hline
+final queue depth & 19.681159 & 45.956522 & 56.057971 & 36.376812
+\end{tabular}
+\end{center}
+
+This is a real simulator effect, but it is primarily a pressure/load effect. It
+does not by itself demonstrate emergent lobe grammar.
+
+\paragraph{Secondary signals.}
+Capture-pressure and value-yield fields showed policy-dependent structure. For
+example, baseline peak long-term-research capture pressure declined from
+0.282358 to 0.133015 across normal to extreme pressure. These signals remained
+secondary and did not carry the main scientific claim.
+
+\paragraph{Interpretation.}
+Task-creation pressure is a strong stress knob. It changes backlog, queued age,
+completion fraction, dwell, and transition summaries. Pressure alone mostly
+produces queueing arithmetic rather than independent complex dynamics.
+
+\subsection{A2.2: Scheduler Ablation}
+
+\paragraph{Question.}
+Is the pressure-amplified backlog response caused by the quota-balancing
+scheduler?
+
+\paragraph{Design.}
+Quota balance was compared with seeded random-available selection. A pilot used
+seeds 1--3. A preregistered holdout used seeds 70--99.
+
+\paragraph{Holdout result.}
+Mean final queue depth rose strongly under both schedulers:
+
+\begin{center}
+\begin{tabular}{lrrr}
+scheduler & normal & medium & extreme \\
+\hline
+quota balance & 21.5 & 48.2 & 57.733333 \\
+random available & 21.6 & 45.5 & 56.166667
+\end{tabular}
+\end{center}
+
+The paired scheduler effect, random minus quota, was small compared with the
+pressure effect:
+
+\begin{center}
+\begin{tabular}{lrr}
+pressure level or contrast & mean delta & bootstrap interval \\
+\hline
+normal & 0.1 & [-2.233333, 2.066667] \\
+medium & -2.7 & [-4.833333, -0.766667] \\
+extreme & -1.566667 & [-4.3, 0.833333] \\
+extreme-minus-normal & -1.666667 & [-5.1, 1.633333]
+\end{tabular}
+\end{center}
+
+Load-normalized normal-to-extreme queue growth was nearly identical:
+
+\begin{center}
+\begin{tabular}{lrr}
+scheduler & queue growth per added created task & bootstrap interval \\
+\hline
+quota balance & 1.209774 & [1.154681, 1.249447] \\
+random available & 1.200961 & [1.145654, 1.259360]
+\end{tabular}
+\end{center}
+
+\paragraph{Interpretation.}
+The scheduler changes curve shape and secondary metrics, but it does not remove
+the main pressure response. This shifted the interpretation away from a
+scheduler-driven lobe mechanism and toward pressure plus finite service
+capacity as the dominant explanation.
+
+\subsection{A2.3: Exogenous Arrival Decoupling}
+
+\paragraph{Question.}
+Can backlog pressure be induced by external demand without increasing
+agent-created tasks?
+
+\paragraph{Design.}
+The exogenous-arrival holdout used seeds 70--99, fixed task-creation pressure
+at 1.0, quota balancing, baseline attention shares, and four exogenous arrival
+rates.
+
+\paragraph{Load result.}
+
+\begin{center}
+\begin{tabular}{lrrrr}
+condition & agent-created & exogenous-created & total-created & queue per created \\
+\hline
+endogenous control & 41.433333 & 0.000000 & 41.433333 & 0.507770 \\
+exogenous low & 40.966667 & 11.666667 & 52.633333 & 0.600270 \\
+exogenous medium & 40.500000 & 23.266667 & 63.766667 & 0.682632 \\
+exogenous high & 40.166667 & 38.100000 & 78.266667 & 0.749526
+\end{tabular}
+\end{center}
+
+High exogenous arrivals raised total created tasks from 41.433333 to 78.266667
+while agent-created tasks stayed near control.
+
+\paragraph{Trajectory result.}
+Queue-blind entropy declined only modestly at high exogenous demand:
+
+\begin{center}
+\begin{tabular}{lrr}
+condition & queue-blind entropy & delta vs control \\
+\hline
+endogenous control & 2.353070 & 0.000000 \\
+exogenous high & 2.254402 & -0.098668
+\end{tabular}
+\end{center}
+
+\paragraph{Interpretation.}
+Exogenous demand reproduces backlog pressure while decoupling the effect from
+agent create-task pressure. This supports a load/accounting interpretation. The
+residual queue-blind entropy signal is weak and descriptive, not a strong
+lobe-grammar finding.
+
+\subsection{A2.4: Demand versus Service Capacity}
+
+\paragraph{Question.}
+Does changing service capacity explain queue and trajectory effects that might
+otherwise look like lobe dynamics?
+
+\paragraph{Design.}
+Seeds 70--99 crossed creation pressure 1.0, 1.8, and 2.2 with work service
+capacity 0.7, 1.0, and 1.3.
+
+\paragraph{Fixed-pressure service-capacity effects.}
+Raising service capacity from 0.7 to 1.3 reduced backlog at every pressure:
+
+\begin{center}
+\begin{tabular}{lrrrr}
+fixed pressure & queue delta & queue/created delta & completion frac delta & age delta \\
+\hline
+normal & -16.433334 & -0.315145 & 0.315145 & -1.601838 \\
+high & -16.533334 & -0.168067 & 0.168067 & -0.760996 \\
+extreme & -16.900000 & -0.151263 & 0.151263 & -0.633885
+\end{tabular}
+\end{center}
+
+\paragraph{Fixed-service pressure effects.}
+Raising creation pressure from 1.0 to 2.2 increased backlog at every service
+level:
+
+\begin{center}
+\begin{tabular}{lrrrr}
+fixed service & queue delta & queue/created delta & completion frac delta & age delta \\
+\hline
+low & 34.900000 & 0.205410 & -0.205410 & 0.769206 \\
+baseline & 36.233333 & 0.298512 & -0.298512 & 1.165276 \\
+high & 34.433334 & 0.369292 & -0.369292 & 1.737159
+\end{tabular}
+\end{center}
+
+\paragraph{Queue-blind lobe robustness.}
+Queue-blind labels excluded queue depth and queue delta and used action fields
+such as tasks worked, tasks created, messages, and idle. Even then, pressure
+shifted the system toward task generation and longer dwell:
+
+\begin{center}
+\begin{tabular}{lrrr}
+fixed service & entropy delta & dwell max delta & task-generation share delta \\
+\hline
+low service & -0.556783 & 2.100000 & 0.472222 \\
+baseline service & -0.506507 & 2.066667 & 0.491667 \\
+high service & -0.176233 & 0.766667 & 0.472222
+\end{tabular}
+\end{center}
+
+\paragraph{Interpretation.}
+Service capacity explains much of the queue and lobe-like behavior. Under
+pressure, trajectories lock into fewer transitions and longer dwell; extra
+service partially offsets this. This is important, but still fits a
+queue-flow/service explanation better than a free-standing attractor claim.
+
+\subsection{A3: Queue-Flow and Service Synthesis}
+
+\paragraph{Question.}
+What is the cleanest single-hive interpretation after the A2 controls?
+
+\paragraph{Result.}
+A3 froze the single-hive interpretation as queue-flow/service accounting. The
+robust claims are:
+
+\begin{itemize}
+\item Demand pressure increases total inflow, load-normalized backlog, and
+queued-task age.
+\item Higher service capacity reduces backlog and improves completion fraction.
+\item Exogenous arrivals can induce backlog pressure without increasing
+agent-created tasks.
+\item Same-tick queue-balance correlations are artifact/accounting diagnostics,
+not synchronization evidence.
+\item Lagged service/completion and service/load-change correlations exist but
+are modest and not seed-stable enough for mechanism claims.
+\end{itemize}
+
+The strongest lagged service/completion condition-mean shift was 0.168460, with
+reported seed median 0.220475, bootstrap median interval [-0.063508, 0.447535],
+and sign stability 0.666667. This remained exploratory.
+
+\paragraph{Decision.}
+A2/A3 residual lobe grammar was closed under the current single-hive simulator
+and label scheme.
+
+\subsection{A4: Two-Hive Coupling}
+
+\paragraph{Question.}
+When two hives are coupled through a shared transfer layer, do service/load
+phase relations show coordination effects beyond queue-flow and accounting?
+
+\paragraph{Design.}
+The A4 holdout used seeds 100--129 and four preregistered modes: none, direct,
+delayed, and shuffled. The analyzer consumed 30 paired seeds, 240 per-hive
+endpoint rows, and 120 cross-hive endpoint rows.
+
+\paragraph{Transfer-volume result.}
+Direct, delayed, and shuffled all added full-transfer coupling versus none:
+
+\begin{center}
+\begin{tabular}{lrrr}
+comparison & transfer-volume delta & bootstrap interval & sign stability \\
+\hline
+direct minus none & 865.333333 & [857.700000, 873.533333] & 1.000000 \\
+delayed minus none & 865.900000 & [857.066667, 874.733333] & 1.000000 \\
+shuffled minus none & 865.333333 & [857.200000, 873.733333] & 1.000000 \\
+direct minus shuffled & 0.000000 & [0.000000, 0.000000] & 0.000000
+\end{tabular}
+\end{center}
+
+Direct minus shuffled was zero because with two hives each source has only one
+legal non-source target. Thus shuffled was a schema/source-opportunity check,
+not a meaningful phase-randomization null.
+
+\paragraph{Initial cross-hive endpoints.}
+Delayed minus none showed strong completion-fraction correlations:
+
+\begin{center}
+\begin{tabular}{lrrr}
+endpoint & mean delta & bootstrap interval & sign stability \\
+\hline
+completion-fraction corr lag 0 & 0.678330 & [0.494969, 0.857877] & 1.000000 \\
+completion-fraction corr lag 2 & 0.619752 & [0.416347, 0.802583] & 1.000000 \\
+load-backlog corr lag 0 & 0.325600 & [0.118204, 0.517629] & 0.999000
+\end{tabular}
+\end{center}
+
+This was interesting but still needed null and accounting controls.
+
+\paragraph{Temporal null.}
+The delayed-coupling temporal null found that completion-fraction correlations
+survived circular-shift controls:
+
+\begin{center}
+\begin{tabular}{lrrr}
+endpoint & observed minus null & outside null CI & positive rate \\
+\hline
+completion-fraction corr lag 0 & 0.719486 & true & 0.966667 \\
+completion-fraction corr lag 2 & 0.657053 & true & 0.900000 \\
+load-backlog corr lag 0 & 0.333787 & false & 0.700000 \\
+queued-age divergence final & -0.570895 & false & 0.433333
+\end{tabular}
+\end{center}
+
+\paragraph{Accounting-control analyzer.}
+The follow-up residualized completion-fraction trajectories by clock trend,
+opportunity/load, action mix, and transfer timing, then reran circular-shift
+nulls. Under combined non-tautological controls, the completion-fraction
+correlations were no longer outside the null:
+
+\begin{center}
+\begin{tabular}{lrrrr}
+endpoint & observed delta & null mean & null interval & outside CI \\
+\hline
+lag 0 & 0.156653 & -0.008884 & [-0.335280, 0.312277] & false \\
+lag 2 & 0.140351 & -0.002389 & [-0.362347, 0.311764] & false
+\end{tabular}
+\end{center}
+
+\paragraph{Decision.}
+A4 was closed as queue-flow/service and action-opportunity accounting plus a
+documented delayed synchronization diagnostic. It did not justify a three-hive
+implementation, independent lobe grammar, or a strange-attractor claim.
+
+\subsection{A5: Anticipatory Predictive Control}
+
+\paragraph{Question.}
+Can bounded prediction of future demand create richer residual collective
+dynamics than pure reactivity or oracle-like smoothing?
+
+\paragraph{Core hypothesis.}
+Perfect prediction may smooth dynamics; zero prediction may leave the system
+purely reactive. The interesting regime may be intermediate prediction budget,
+where agents predict enough to find high-level recurring patterns but not
+enough to eliminate errors. Those errors can create collective dynamics which
+then become something new to predict.
+
+\paragraph{Pilot, seeds 5--6.}
+The pilot used matched task arrival, service, action, and demand-signal
+settings. Mean final task creation was 78.5 tasks in every condition.
+
+\begin{center}
+\begin{tabular}{lrrrr}
+condition & budget & forecast skill & completion frac & queue depth \\
+\hline
+reactive & 0.00 & 0.877957 & 0.386416 & 48.0 \\
+linear & 0.35 & 0.911474 & 0.380463 & 48.5 \\
+nonlinear & 0.65 & 0.961990 & 0.380463 & 48.5 \\
+oracle & 1.00 & 1.000000 & 0.393265 & 47.5 \\
+shuffled & 0.35 & 0.866049 & 0.407861 & 46.5
+\end{tabular}
+\end{center}
+
+Intermediate predictors improved forecast skill, but primary residual-state
+predictability contrasts did not survive paired label-permutation intervals.
+The pilot failed closed for promotion.
+
+\paragraph{Confirmatory run, seeds 7--16.}
+The confirmatory run used 60 deterministic paired simulations across reactive,
+linear, nonlinear, oracle, linear-budget shuffled, and nonlinear-budget
+shuffled conditions. Mean final task creation was matched at 74.2 tasks in
+every condition.
+
+\begin{center}
+\begin{tabular}{lrrrrr}
+condition & budget & forecast skill & completion frac & queue depth & queued age \\
+\hline
+reactive & 0.00 & 0.877957 & 0.434071 & 42.7 & 5.725288 \\
+linear & 0.35 & 0.911474 & 0.428319 & 43.1 & 5.774823 \\
+nonlinear & 0.65 & 0.961990 & 0.420349 & 43.7 & 5.801917 \\
+oracle & 1.00 & 1.000000 & 0.426118 & 43.3 & 5.783507 \\
+shuffled & 0.35 & 0.866049 & 0.436788 & 42.6 & 5.681533 \\
+nonlinear shuffled & 0.65 & 0.866049 & 0.436788 & 42.6 & 5.681533
+\end{tabular}
+\end{center}
+
+Forecast skill improved:
+
+\begin{center}
+\begin{tabular}{lr}
+contrast & forecast-skill delta \\
+\hline
+linear minus reactive & 0.033517 \\
+linear minus shuffled & 0.045425 \\
+nonlinear minus reactive & 0.084033 \\
+nonlinear minus nonlinear-shuffled & 0.095941
+\end{tabular}
+\end{center}
+
+But primary full-accounting residual-state predictability contrasts did not
+pass:
+
+\begin{center}
+\begin{tabular}{lrrl}
+contrast & mean delta & positive rate & interpretation \\
+\hline
+linear minus reactive & 0.114949 & 0.5 & inside label-permutation interval \\
+linear minus shuffled & -0.053977 & 0.5 & inside label-permutation interval \\
+nonlinear minus reactive & 0.077593 & 0.7 & inside label-permutation interval \\
+nonlinear minus nonlinear-shuffled & -0.091333 & 0.3 & inside label-permutation interval
+\end{tabular}
+\end{center}
+
+\paragraph{Promotion audit.}
+The linear predictor passed forecast-skill and practical guardrails, but failed
+residual-structure and oracle-nontriviality criteria. The nonlinear predictor
+passed forecast-skill criteria, but failed practical guardrails and residual
+structure criteria.
+
+\paragraph{Decision.}
+A5 was closed as a forecast-skill manipulation that did not demonstrate
+promotion-worthy residual structured dynamics. The positive method result is
+that prediction budget and forecast timing can be manipulated under matched
+demand streams. The negative scientific result is that forecast improvement
+alone did not produce residual structure beyond load, service, action
+opportunity, task volume, and work-budget accounting.
+
+\section{Cross-Cutting Lessons}
+
+\subsection{Load and Service Variables Are Powerful Confounds}
+
+Across A2--A5, many apparent structural effects tracked task inflow, queue
+depth, service capacity, work opportunity, completion fraction, and action mix.
+Future experiments must avoid endpoints that are just renamed forms of those
+variables.
+
+\subsection{Lobe Labels Are Diagnostics, Not Primary Evidence}
+
+The existing lobe labels are built from queue and action fields. They can show
+trajectory regimes, dwell, and transitions, but they cannot by themselves prove
+independent collective structure. Future lobe-like observables should be less
+directly tied to manipulated queue and action counts.
+
+\subsection{Delay Matters, But Delay Alone Was Not Enough}
+
+A4 delayed coupling produced a real raw completion-fraction synchrony
+diagnostic. Once opportunity/load/action/transfer timing controls were applied,
+the residual was no longer outside the null. Future delay experiments need
+richer causal structure than transfer delay alone.
+
+\subsection{Prediction Skill Is Not Emergent Dynamics}
+
+A5 confirmed that bounded predictors can improve forecast skill under matched
+demand streams. Residual structured dynamics did not appear under the current
+scaffold. A future predictive experiment should make prediction a scarce
+resource that competes with other activity, not just a controller input.
+
+\subsection{The Missing Ingredient Is Nonlinear Mutual Dependence}
+
+The experiments so far mostly varied pressure, service, scheduling, transfer
+timing, and prediction budget. They did not yet implement strong nonlinear
+mutual dependence among agents or hives. Logistic-shaped dependence of one
+agent's activity on another directly targets this missing ingredient.
+
+\section{Implications for Logistic-Dependence Experiments}
+
+\subsection{Core Mechanism}
+
+A next-stage model could make the activity of agent or hive $i$ depend
+logistically on lagged activity of agent or hive $j$:
+
+\[
+a_i(t+1) =
+\sigma\left(
+  b_i
+  + k_{ij}(x_j(t-\tau_{ij}) - \theta_{ij})
+  + m_i(t)
+  - c_i p_i(t)
+\right)
+\]
+
+where:
+
+\begin{itemize}
+\item $a_i(t+1)$ is an activity probability, allocation share, or action bias.
+\item $x_j(t-\tau_{ij})$ is lagged activity, load, prediction expenditure, or
+state-burst intensity of another agent or hive.
+\item $\sigma(z)=1/(1+\exp(-z))$ is the logistic nonlinearity.
+\item $k_{ij}$ is the coupling slope.
+\item $\theta_{ij}$ is a threshold near the typical operating range.
+\item $\tau_{ij}$ is a delay.
+\item $m_i(t)$ is memory or hysteresis.
+\item $p_i(t)$ is prediction or modeling expenditure.
+\item $c_i$ is the opportunity cost of prediction.
+\end{itemize}
+
+The most interesting regime is probably not saturation, where $a_i$ is near 0
+or 1. It is the near-threshold regime where small changes in another agent's
+lagged activity cause large but bounded changes in response.
+
+\subsection{Why Logistic Dependence Is Different From Prior Knobs}
+
+Prior knobs mostly changed exogenous pressure, service capacity, transfer
+timing, or predictive control. Logistic dependence would introduce:
+
+\begin{itemize}
+\item threshold effects;
+\item saturation;
+\item nonlinear gain;
+\item sensitivity to delays;
+\item possible overcorrection;
+\item possible hysteretic switching if memory is included;
+\item bounded but sharp mutual influence among agents or hives.
+\end{itemize}
+
+Those ingredients are more plausible sources of structured recurrent dynamics
+than simply increasing task pressure.
+
+\subsection{Concrete Single-Hive Experiment Family}
+
+Before jumping to three hives, a single hive could contain subpopulations or
+roles whose activity depends logistically on each other.
+
+\paragraph{State variables.}
+For each role or task class, define coarse activity variables:
+
+\begin{verbatim}
+external_work_activity
+research_activity
+internal_improvement_activity
+housekeeping_activity
+prediction_activity
+coordination_activity
+\end{verbatim}
+
+\paragraph{Example logistic couplings.}
+
+\begin{itemize}
+\item High external-work backlog increases housekeeping or coordination only
+after a threshold.
+\item Research starvation increases internal-improvement after a delay.
+\item Too much internal-improvement suppresses external work after a threshold.
+\item Prediction expenditure increases when other roles become hard to
+forecast, but prediction expenditure reduces available work budget.
+\end{itemize}
+
+\paragraph{Suggested conditions.}
+
+\begin{enumerate}
+\item Reactive baseline with no logistic cross-role dependence.
+\item Linear cross-role dependence with matched marginal gain.
+\item Logistic same-tick dependence.
+\item Delayed logistic dependence.
+\item Delayed logistic dependence with hysteresis.
+\item Delayed logistic dependence with bounded prediction-cost feedback.
+\end{enumerate}
+
+\paragraph{Primary comparison.}
+The key contrast should not be throughput. It should be residual recurrent
+structure after accounting for load, service, action opportunity, and total
+work budget.
+
+\subsection{Concrete Multi-Hive Experiment Family}
+
+A three-hive ring is more suitable than a two-hive setup for meaningful target
+and phase nulls. With two hives, direct and shuffled target assignment can be
+equivalent because each hive has only one legal non-source target.
+
+\paragraph{Minimal three-hive ring.}
+
+\begin{verbatim}
+hive A predicts and services pressure from hive B
+hive B predicts and services pressure from hive C
+hive C predicts and services pressure from hive A
+\end{verbatim}
+
+Each hive has bounded prediction budget and logistic response to lagged
+activity from its neighbor:
+
+\[
+a_A(t+1)=\sigma(b_A+k_A(x_B(t-\tau)-\theta_A)-c_Ap_A(t))
+\]
+
+and similarly for B and C.
+
+\paragraph{Useful variants.}
+
+\begin{enumerate}
+\item No coupling.
+\item Linear ring coupling.
+\item Logistic ring coupling without delay.
+\item Logistic ring coupling with homogeneous delay.
+\item Logistic ring coupling with heterogeneous delays.
+\item Logistic coupling with prediction-cost feedback.
+\item Logistic coupling with adaptive thresholds.
+\end{enumerate}
+
+\paragraph{Important controls.}
+
+\begin{itemize}
+\item Match transfer volume and source opportunity.
+\item Use phase-shuffled coupling preserving marginal activity levels.
+\item Use amplitude-matched linear controls.
+\item Use threshold-shuffled controls preserving each hive's marginal
+activation rate.
+\item Use paired seeds and fixed exogenous demand streams.
+\item Include no-coupling and delayed-but-nonpredictive controls.
+\end{itemize}
+
+\subsection{Candidate Observables}
+
+Future observables should be chosen before implementation. Good candidates:
+
+\begin{itemize}
+\item Delay-embedded state vectors of role or hive activity after residualizing
+load and service variables.
+\item Recurrence plots over residual activity vectors.
+\item Return-map structure in threshold-crossing intervals.
+\item Motif counts over coarse macro-states not defined directly from queue
+depth.
+\item Divergence and reconvergence under tiny paired perturbations.
+\item Nonlinear forecastability of macro-state sequences versus linear
+forecastability.
+\item Compression of macro-state strings relative to shuffled and
+Markov-preserving nulls.
+\item Phase relations among hives at preregistered lags.
+\item Prediction expenditure bursts and their relation to later error,
+overload, and recovery.
+\end{itemize}
+
+\subsection{Suggested Promotion Rule}
+
+A logistic-dependence experiment should promote only if all of the following
+hold:
+
+\begin{enumerate}
+\item Logistic coupling creates more residual recurrent structure than
+amplitude-matched linear coupling.
+\item The effect survives load, service, action, transfer-volume, and work
+budget controls.
+\item The effect survives phase-shuffled or threshold-shuffled nulls.
+\item The effect is not merely worse queueing or longer backlog dwell.
+\item Intermediate coupling slope or prediction budget is richer than both
+zero coupling and saturated/oracle-like coupling.
+\item Macro-state structure is partly predictable or compressible without being
+trivially periodic.
+\end{enumerate}
+
+\section{Questions for a Strategic Reviewer}
+
+\begin{enumerate}
+\item Given the negative A2--A5 results, what is the smallest nonlinear
+mechanism that would be meaningfully different from load/service accounting?
+\item Should logistic dependence act on task creation, work allocation,
+prediction expenditure, transfer probability, or role activation?
+\item What observables are least confounded with queue depth and action count?
+\item What is the right null for logistic threshold effects: phase shuffle,
+threshold shuffle, amplitude-matched linear response, or Markov-preserving
+macro-state shuffle?
+\item Is a single-hive role-coupling model enough, or is a three-hive ring
+needed for nontrivial phase and target nulls?
+\item How should one distinguish structured strange-attractor-like recurrence
+from a noisy limit cycle or from queue saturation?
+\item What parameter ranges should be swept first: slope $k$, threshold
+$\theta$, delay $\tau$, memory strength, prediction cost, or service capacity?
+\item Can prediction budget be made an endogenous resource choice rather than
+a fixed condition?
+\end{enumerate}
+
+\section{Bottom Line}
+
+OmegaSim has so far taught a mostly negative but useful lesson. Pressure,
+service capacity, scheduling, transfer timing, and forecast skill all produce
+measurable effects, but apparent structure repeatedly collapses under
+accounting controls. The next serious attempt at complex dynamics should avoid
+another pressure or seed sweep. It should introduce a preregistered nonlinear
+mutual-dependence mechanism, with logistic threshold response, delays, bounded
+prediction cost, heterogeneity, and strong nulls.
+
+The most promising next direction is:
+
+\begin{quote}
+Design a bounded single-hive or three-hive experiment in which role or hive
+activity has logistic-shaped, delayed dependence on other role or hive
+activity, with prediction effort as a costly managed resource, and test whether
+intermediate slopes/budgets produce residual recurrent macro-structure beyond
+load, service, action, and transfer accounting.
+\end{quote}
+
+\end{document}
