@@ -153,6 +153,33 @@ A6_RESIDUAL_CONTRAST_SUMMARY_FIELDS = (
     "residual_sign_change_count_delta",
     "interpretation",
 )
+A6_RESIDUAL_CONTRAST_ROLLUP_FIELDS = (
+    "contrast",
+    "control_condition",
+    "outcome_field",
+    "paired_seed_count",
+    "complete_seed_count",
+    "incomplete_seed_count",
+    "status",
+    "statuses_observed",
+    "seeds_included",
+    "mean_residual_variance_delta",
+    "residual_variance_delta_positive_count",
+    "residual_variance_delta_negative_count",
+    "residual_variance_delta_zero_count",
+    "residual_variance_direction_agreement",
+    "mean_residual_lag1_autocorrelation_delta",
+    "residual_lag1_autocorrelation_delta_positive_count",
+    "residual_lag1_autocorrelation_delta_negative_count",
+    "residual_lag1_autocorrelation_delta_zero_count",
+    "residual_lag1_autocorrelation_direction_agreement",
+    "mean_residual_sign_change_count_delta",
+    "residual_sign_change_count_delta_positive_count",
+    "residual_sign_change_count_delta_negative_count",
+    "residual_sign_change_count_delta_zero_count",
+    "residual_sign_change_count_direction_agreement",
+    "interpretation",
+)
 A6_COMPARISON_CONSISTENCY_FIELDS = (
     "condition",
     "comparison_csv_path",
@@ -188,6 +215,7 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_residual_preflight.csv",
     "a6_logistic_appraisal_residual_timeseries.csv",
     "a6_logistic_appraisal_residual_contrast_summary.csv",
+    "a6_logistic_appraisal_residual_contrast_rollup.csv",
     "a6_logistic_appraisal_comparison_consistency.csv",
     "a6_logistic_appraisal_effects_consistency.csv",
     "summary.md",
@@ -305,6 +333,9 @@ def run_a6_logistic_appraisal_analysis(
     residual_contrast_summary_rows = _residual_contrast_summary_rows(
         residual_timeseries_rows
     )
+    residual_contrast_rollup_rows = _residual_contrast_rollup_rows(
+        residual_contrast_summary_rows
+    )
     control_summary_rows = _control_summary_rows(
         control_delta_rows,
         residual_preflight_rows,
@@ -366,6 +397,11 @@ def run_a6_logistic_appraisal_analysis(
         A6_RESIDUAL_CONTRAST_SUMMARY_FIELDS,
     )
     _write_csv(
+        output_path / "a6_logistic_appraisal_residual_contrast_rollup.csv",
+        residual_contrast_rollup_rows,
+        A6_RESIDUAL_CONTRAST_ROLLUP_FIELDS,
+    )
+    _write_csv(
         output_path / "a6_logistic_appraisal_comparison_consistency.csv",
         comparison_consistency_rows,
         A6_COMPARISON_CONSISTENCY_FIELDS,
@@ -384,6 +420,7 @@ def run_a6_logistic_appraisal_analysis(
             residual_preflight_rows,
             residual_timeseries_rows,
             residual_contrast_summary_rows,
+            residual_contrast_rollup_rows,
             control_summary_rows,
             comparison_consistency_rows,
             effects_consistency_rows,
@@ -401,6 +438,7 @@ def run_a6_logistic_appraisal_analysis(
         "residual_preflight_count": len(residual_preflight_rows),
         "residual_timeseries_count": len(residual_timeseries_rows),
         "residual_contrast_summary_count": len(residual_contrast_summary_rows),
+        "residual_contrast_rollup_count": len(residual_contrast_rollup_rows),
         "comparison_consistency_count": len(comparison_consistency_rows),
         "effects_consistency_count": len(effects_consistency_rows),
         "missing_required_fields": sorted(missing_required_fields),
@@ -1181,6 +1219,147 @@ def _residual_contrast_interpretation(status: str) -> str:
     return "residual timeseries pair missing or incomplete; do not interpret"
 
 
+def _residual_contrast_rollup_rows(
+    residual_contrast_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for row in residual_contrast_rows:
+        grouped.setdefault(
+            (
+                str(row["contrast"]),
+                str(row["control_condition"]),
+                str(row["outcome_field"]),
+            ),
+            [],
+        ).append(row)
+
+    rows: list[dict[str, Any]] = []
+    for (contrast, control_condition, outcome), group_rows in sorted(grouped.items()):
+        complete_rows = [
+            row
+            for row in group_rows
+            if str(row.get("paired", "")) == "true"
+            and row.get("residual_variance_delta", "") not in {"", None}
+            and row.get("residual_lag1_autocorrelation_delta", "") not in {"", None}
+            and row.get("residual_sign_change_count_delta", "") not in {"", None}
+        ]
+        statuses = sorted({str(row.get("status", "")) for row in group_rows})
+        status = _residual_rollup_status(statuses, group_rows, complete_rows)
+        variance_stats = _direction_stats(
+            [row.get("residual_variance_delta", "") for row in complete_rows]
+        )
+        autocorrelation_stats = _direction_stats(
+            [
+                row.get("residual_lag1_autocorrelation_delta", "")
+                for row in complete_rows
+            ]
+        )
+        sign_change_stats = _direction_stats(
+            [row.get("residual_sign_change_count_delta", "") for row in complete_rows]
+        )
+        rows.append(
+            {
+                "contrast": contrast,
+                "control_condition": control_condition,
+                "outcome_field": outcome,
+                "paired_seed_count": sum(
+                    1 for row in group_rows if str(row.get("paired", "")) == "true"
+                ),
+                "complete_seed_count": len(complete_rows),
+                "incomplete_seed_count": len(group_rows) - len(complete_rows),
+                "status": status,
+                "statuses_observed": "|".join(statuses),
+                "seeds_included": "|".join(
+                    str(int(row["seed"])) for row in sorted(
+                        complete_rows,
+                        key=lambda item: int(item["seed"]),
+                    )
+                ),
+                "mean_residual_variance_delta": variance_stats["mean"],
+                "residual_variance_delta_positive_count": variance_stats["positive"],
+                "residual_variance_delta_negative_count": variance_stats["negative"],
+                "residual_variance_delta_zero_count": variance_stats["zero"],
+                "residual_variance_direction_agreement": variance_stats["agreement"],
+                "mean_residual_lag1_autocorrelation_delta": autocorrelation_stats["mean"],
+                "residual_lag1_autocorrelation_delta_positive_count": autocorrelation_stats[
+                    "positive"
+                ],
+                "residual_lag1_autocorrelation_delta_negative_count": autocorrelation_stats[
+                    "negative"
+                ],
+                "residual_lag1_autocorrelation_delta_zero_count": autocorrelation_stats[
+                    "zero"
+                ],
+                "residual_lag1_autocorrelation_direction_agreement": autocorrelation_stats[
+                    "agreement"
+                ],
+                "mean_residual_sign_change_count_delta": sign_change_stats["mean"],
+                "residual_sign_change_count_delta_positive_count": sign_change_stats[
+                    "positive"
+                ],
+                "residual_sign_change_count_delta_negative_count": sign_change_stats[
+                    "negative"
+                ],
+                "residual_sign_change_count_delta_zero_count": sign_change_stats["zero"],
+                "residual_sign_change_count_direction_agreement": sign_change_stats[
+                    "agreement"
+                ],
+                "interpretation": _residual_rollup_interpretation(status),
+            }
+        )
+    return rows
+
+
+def _residual_rollup_status(
+    statuses: list[str],
+    group_rows: list[dict[str, Any]],
+    complete_rows: list[dict[str, Any]],
+) -> str:
+    if not complete_rows:
+        return "missing_residual_pair"
+    if len(complete_rows) != len(group_rows):
+        return "incomplete_seed_rollup"
+    if any(status.startswith("missing") for status in statuses):
+        return "missing_residual_pair"
+    if any(status.startswith("tick_count_mismatch") for status in statuses):
+        return "tick_count_mismatch"
+    if any(status.startswith("underdetermined") for status in statuses):
+        return "underdetermined_smoke_scale"
+    if statuses == ["computed"]:
+        return "computed"
+    return "|".join(statuses)
+
+
+def _direction_stats(values: list[Any]) -> dict[str, Any]:
+    numeric = [float(value) for value in values if value not in {"", None}]
+    positive = sum(1 for value in numeric if value > 0)
+    negative = sum(1 for value in numeric if value < 0)
+    zero = sum(1 for value in numeric if value == 0)
+    directional = positive + negative
+    agreement = ""
+    if numeric:
+        agreement = str(round(max(positive, negative, zero) / len(numeric), 6))
+    return {
+        "mean": _rounded_mean(numeric),
+        "positive": positive,
+        "negative": negative,
+        "zero": zero,
+        "agreement": agreement if directional or zero else "",
+    }
+
+
+def _residual_rollup_interpretation(status: str) -> str:
+    if status == "computed":
+        return "read-only residual contrast rollup computed; still requires preregistered promotion gate"
+    if status == "underdetermined_smoke_scale":
+        return "smoke-scale residual contrast rollup only; direction agreement is not recurrence evidence"
+    if status == "incomplete_seed_rollup":
+        return "some residual seed contrasts are incomplete; do not interpret as mechanism evidence"
+    if status == "tick_count_mismatch":
+        return "paired residual traces have unequal tick counts; rollup is incomplete"
+    return "residual contrast rollup incomplete; do not interpret"
+
+
 def _residual_run_contexts(
     compare_path: Path,
 ) -> list[tuple[str, int, list[dict[str, str]], tuple[str, ...], tuple[str, ...]]]:
@@ -1503,6 +1682,7 @@ def _summary(
     residual_preflight_rows: list[dict[str, Any]],
     residual_timeseries_rows: list[dict[str, Any]],
     residual_contrast_summary_rows: list[dict[str, Any]],
+    residual_contrast_rollup_rows: list[dict[str, Any]],
     control_summary_rows: list[dict[str, Any]],
     comparison_consistency_rows: list[dict[str, Any]],
     effects_consistency_rows: list[dict[str, Any]],
@@ -1522,6 +1702,7 @@ def _summary(
         f"- residual preflight rows: {len(residual_preflight_rows)}",
         f"- residual timeseries rows: {len(residual_timeseries_rows)}",
         f"- residual contrast summary rows: {len(residual_contrast_summary_rows)}",
+        f"- residual contrast rollup rows: {len(residual_contrast_rollup_rows)}",
         f"- control summary rows: {len(control_summary_rows)}",
         f"- comparison consistency rows: {len(comparison_consistency_rows)}",
         f"- effects consistency rows: {len(effects_consistency_rows)}",
@@ -1544,6 +1725,7 @@ def _summary(
             "- Residual preflight uses existing per-tick smoke metrics only; underdetermined smoke-scale rows are not recurrence evidence.",
             "- Residual timeseries rows expose fitted and residual values for audit only, not as a recurrence claim.",
             "- Residual contrast summary rows aggregate per-seed residual variance, lag-1 autocorrelation, and sign-change deltas for audit only.",
+            "- Residual contrast rollup rows summarize cross-seed direction agreement for audit only; they do not promote A6.",
             "- Comparison consistency preflight checks aggregate CSV arithmetic against existing run artifacts only.",
             "- Effects consistency preflight checks aggregate effect deltas against comparison CSV condition means only.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
