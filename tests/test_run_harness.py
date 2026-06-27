@@ -32,6 +32,7 @@ from ohdyn.sim import (
 from ohdyn.analyze_a6_logistic_appraisal import (
     A6_ANALYSIS_ENDPOINT_FIELDS,
     A6_ANALYSIS_MANIFEST_FIELDS,
+    A6_CONTROL_DELTA_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
 from ohdyn.compare_a6_logistic_appraisal import (
@@ -15013,9 +15014,47 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
         assert next(csv.reader(handle)) == list(A6_ANALYSIS_ENDPOINT_FIELDS)
     with (out_dir / "a6_logistic_appraisal_manifest.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_ANALYSIS_MANIFEST_FIELDS)
+    with (out_dir / "a6_logistic_appraisal_control_deltas.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_CONTROL_DELTA_FIELDS)
     summary = (out_dir / "summary.md").read_text()
     assert "- reran simulations: no" in summary
     assert "## Control Levels" in summary
+
+
+def test_a6_read_only_analysis_writes_paired_control_deltas(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "compare"
+    for config_path in (
+        A6_LOGISTIC_APPRAISAL,
+        A6_LINEAR_APPRAISAL,
+        A6_THRESHOLD_SHUFFLED,
+        A6_PHASE_SHUFFLED,
+    ):
+        run_experiment(config_path, seed=4, out_dir=compare_dir / config_path.stem)
+
+    out_dir = tmp_path / "analysis"
+    result = run_a6_logistic_appraisal_analysis(compare_dir, out_dir)
+
+    assert result["control_delta_count"] == 3
+    assert result["missing_required_fields"] == []
+    with (out_dir / "a6_logistic_appraisal_control_deltas.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert [row["contrast"] for row in rows] == [
+        "logistic_vs_linear",
+        "logistic_vs_phase_shuffled",
+        "logistic_vs_threshold_shuffled",
+    ]
+    assert {row["paired"] for row in rows} == {"true"}
+    linear_row = next(row for row in rows if row["contrast"] == "logistic_vs_linear")
+    assert linear_row["seed"] == "4"
+    assert linear_row["missing_required_fields"] == ""
+    assert linear_row["queue_depth_delta"] != ""
+    assert linear_row["action_opportunity_total_delta"] == "0.0"
+    summary = (out_dir / "summary.md").read_text()
+    assert "- paired control delta rows: 3" in summary
+    assert "- missing required fields: none" in summary
 
 
 def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
