@@ -29,12 +29,14 @@ summary.md
 ## A5 Anticipatory Predictive-Control Smoke
 
 A5 is preregistered in `docs/a5_anticipatory_predictive_control_preregistration.md`.
-For the 2026-06-27 automation run, Ben's explicit A5 request makes this the
-active bounded scientific stage despite later historical A6/A7 documents. The
-first scaffold is intentionally single-hive and deterministic. It keeps the
-existing action set and artifact contract, adds a hidden periodic demand-share
-signal over the four attention classes, and lets an opt-in predictive controller
-shift work-task class priority from forecasted future pressure.
+The A5 loop is now closed under the seed `7..16` accounting evidence recorded
+in `docs/results/a5_eight_condition_closure_update_seed7_16.md` and
+`docs/results/a5_closure_note_seed7_16.md`. The scaffold remains intentionally
+single-hive and deterministic. It keeps the existing action set and artifact
+contract, adds a hidden periodic demand-share signal over the four attention
+classes, and lets an opt-in predictive controller shift work-task class
+priority from forecasted future pressure. Do not reopen A5 for broader seeds,
+new mechanics, or residual-structure claims without a new preregistration.
 
 The checked-in low-budget linear smoke fixture is:
 

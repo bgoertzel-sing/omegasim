@@ -5,63 +5,78 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Ben explicitly requested A5 anticipatory predictive-control dynamics as the
-current bounded scientific stage. This overrides the prior closed/no-op A4
-boundary for the purpose of the A5 preregistration and small smoke scaffold,
-while preserving the A2/A3/A4 lessons about load, service capacity, action
-opportunity, and accounting confounds.
+A5 is closed under its preregistered accounting evidence. The seed `7..16`
+closure records in `docs/results/a5_eight_condition_closure_update_seed7_16.md`
+and `docs/results/a5_closure_note_seed7_16.md` are the current A5
+interpretation: prediction manipulations improved forecast skill, but residual
+structure did not survive full accounting and paired null checks. Do not reopen
+A5 for additional seeds, mechanics, or residual/lobe/attractor claims without a
+new preregistration.
 
-The active gate is the single-hive preregistration in
-`docs/a5_anticipatory_predictive_control_preregistration.md`. Later A6/A7
-documents and mechanics remain historical follow-on branches for this run and
-must not be imported into A5. The A5 path should stay deterministic,
-single-hive, and free of real LLM calls, dashboards, Lean, Slack, browser
-automation, Atomspace integrations, live task boards, broad three-hive
-mechanics, or downstream multi-hive coupling.
+A7 is the active gated direction accepted by Ben on 2026-06-27. It is a
+single-hive semantic-field design gate for source-accounted semantic/artifact
+fields and logistic inter-agent dependence. Existing A7 artifacts are
+schema/mechanics smoke evidence only: they do not support semantic dynamics,
+lobe structure, attractors, synchrony, or downstream multi-hive coupling.
 
-The current A5 question is whether resource-bounded prediction creates richer
-but still partly predictable residual collective dynamics than zero-budget
-reactivity or oracle-like smoothing, after matched accounting controls and
-surrogate nulls. Prediction budget is an experimental axis and a scarce managed
-resource, not a free analytic overlay.
+The latest urgent external strategic review in
+`../outputs/strategy-reviews/omegasim/latest-review.md` reported
+`strategic_change_level: major` and `notify_ben: true`. The direction shift is
+to stop the A5 re-open loop, record A5 as closed/accounting-explained, restore
+A7 as the active gated smoke, and notify Ben that the status/README drift was
+corrected.
+
+Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
+Atomspace integrations, live task boards, broad three-hive mechanics, or
+downstream multi-hive coupling. Do not make attractor, lobe, synchrony, or
+semantic-dynamics claims from A7 smoke artifacts.
 
 ## Latest Changes
 
-- Marked the A5 preregistration as the current automation gate for Ben's
-  explicit 2026-06-27 request, while keeping A6/A7 as historical context only.
-- Clarified in the README that A5 is the active bounded stage for this run and
-  that the checked-in scaffold is intentionally deterministic and single-hive.
-- Confirmed that the existing A5 scaffold already covers the minimal smoke
-  surface: reactive, linear, nonlinear, high-budget nonlinear, oracle, and
-  budget-matched timing-broken null predictor conditions over matched demand
-  streams.
-- No broad mechanics, multi-hive coupling, real integrations, dashboards, seed
-  sweeps, or attractor/lobe claims were added.
+- Reconciled `AUTOMATION_STATUS.md` and `README.md` with the closed A5
+  evidence and the accepted A7 roadmap. The stale A5-active wording has been
+  replaced with A5-closed/A7-active wording.
+- Ran the current stale A5 paired-seed pilot command and residual-accounting
+  analyzer before the urgent review completed. The result still fails closed:
+  all intermediate prediction budgets improved forecast skill, but none
+  satisfied the preregistered residual and guardrail promotion criteria.
+- Requested and incorporated an urgent GPT-5.5-Pro strategy review because this
+  run observed source-of-truth drift between A5-active status wording and
+  A5-closed/A7-accepted roadmap/results. The review requires Ben notification.
+- No simulator mechanics, dashboards, real integrations, seed sweeps, broad
+  three-hive mechanics, or downstream multi-hive coupling were added.
 
 ## Verification
 
-- `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py
-  ohdyn/analyze_a5_residual_accounting.py ohdyn/automation_guard.py` passed.
-- `.venv-conda/bin/python -m ohdyn.run --config
-  configs/a5_predictive_linear_smoke.yaml --seed 5 --out
-  /tmp/omegasim_a5_predictive_linear_smoke_20260627_a5_restart` passed.
+- `git status --short --branch` initially reported a clean worktree on
+  `main...origin/main`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed with `state: open`,
+  `should_noop: false`, and `closed_reasons: []`.
+- `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_predictive_control_compare_20260627_current` passed.
+- `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir
+  /tmp/omegasim_a5_predictive_control_compare_20260627_current --out
+  /tmp/omegasim_a5_residual_accounting_20260627_current` passed. The analyzer
+  reported `Promotion decision: fail closed; no intermediate-budget condition
+  satisfies all preregistered criteria.`
+- `../outputs/strategy-review.py --project omegasim --repo "$PWD" --root ..
+  --trigger "urgent in-run confusion or novelty" --urgent` passed and wrote a
+  major/notify-Ben review.
+- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  ohdyn/analyze_a5_residual_accounting.py ohdyn/analyze_a7_semantic_field.py`
+  passed.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'a5_predictive_control or a5_residual_accounting or automation_guard'`
-  passed: `12 passed, 602 deselected`.
-- `.venv-conda/bin/python -m ohdyn.automation_guard` passed with
-  `state: open`, `should_noop: false`, and `closed_reasons: []`.
+  'a7 or automation_guard'` passed: `18 passed, 596 deselected`.
 - `git diff --check` passed.
 
 ## Blockers
 
-None for the preregistration/status correction or existing A5 smoke scaffold.
-Scientifically, A5 still has no new evidence in this run beyond the ability to
-run the deterministic scaffold; any structured strange-attractor-like
-interpretation remains secondary and fail-closed pending accounting controls and
-surrogate nulls.
+Ben should be notified that the urgent review marked the status/roadmap drift
+as a major strategic correction: A5 is closed/accounting-explained and A7 is
+the active gated smoke. There is no code or local environment blocker.
 
 ## Recommended Next Step
 
-Run the smallest paired-seed A5 pilot comparison and residual-accounting
-analysis against the frozen single-hive preregistration, then decide whether
-intermediate prediction budgets show residual structure beyond matched nulls.
+Implement the first read-only A7 residual/null analyzer over the existing six
+preregistered A7 conditions, keeping seed-1 smoke rows and all null contrasts
+fail-closed unless preregistered A7 decision criteria are fully satisfied.
