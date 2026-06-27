@@ -6,14 +6,14 @@ checked from GitHub, including from a phone.
 ## Current Focus
 
 Ben explicitly requested reopening the next scientific stage as A5
-anticipatory predictive-control dynamics, overriding the earlier A5/A6/A7
-closed/no-op posture for this bounded run.
+anticipatory predictive-control dynamics. That bounded reopening is now closed
+with the eight-condition seed `7..16` confirmatory result and closure update.
 
-The active A5 target is single-hive only: deterministic predictive/adaptive
-controllers allocate attention or service priority from forecasts of future
+The closed A5 target was single-hive only: deterministic predictive/adaptive
+controllers allocated attention or service priority from forecasts of future
 task pressure while keeping task-arrival totals, service capacity, action
-opportunity, and work budget matched. Prediction budget is a manipulated scarce
-resource axis, not a free analytic overlay.
+opportunity, and work budget matched. Prediction budget was a manipulated
+scarce resource axis, not a free analytic overlay.
 
 Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
@@ -21,11 +21,15 @@ downstream multi-hive coupling. Treat any strange-attractor/lobe-like language
 as secondary and fail-closed unless residual structure survives the
 preregistered accounting controls and timing-broken nulls. The external
 strategic review dated for this run recommended an A7 implementation gate, but
-that recommendation is deferred because this status file records Ben's newer
-explicit A5 reopening and is the source of truth for bounded automation.
+that recommendation was deferred for this bounded run because this status file
+recorded Ben's newer explicit A5 reopening and the next required action was the
+A5 closure update.
 
 ## Latest Changes
 
+- Added `docs/results/a5_eight_condition_closure_update_seed7_16.md`, which
+  supersedes the older six-condition closure note for current A5
+  interpretation without rerunning simulations or changing simulator mechanics.
 - Ran the preregistered eight-condition A5 confirmatory paired-seed set for
   seeds `7..16` with no simulator mechanics changes:
   `reactive`, `linear`, `nonlinear`, `nonlinear_high_budget`, `oracle`,
@@ -46,6 +50,13 @@ explicit A5 reopening and is the source of truth for bounded automation.
 
 ## Verification
 
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed before the closure
+  update with `state: open`, `a5_preregistration_active: true`, and recommended
+  this A5 closure update.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the closure
+  update with `state: closed_awaiting_preregistration`, `should_noop: true`,
+  and `closed_reasons: ["automation_status_noop_guard",
+  "automation_status_a5_closed"]`.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed with
   `state: open`, `a5_preregistration_active: true`, and recommended the
   eight-condition A5 confirmatory paired-seed set.
@@ -65,16 +76,18 @@ explicit A5 reopening and is the source of truth for bounded automation.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'a5_predictive_control or a5_residual_accounting or automation_guard'`
   passed: `11 passed, 600 deselected`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard'` passed after the closure update: `8 passed, 603
+  deselected`.
 - `git diff --check` passed.
 
 ## Blockers
 
 None for recording this bounded result. Scientifically, the eight-condition
 confirmatory set does not support an attractor-like or residual lobe-grammar
-claim.
+claim. Do not reopen A5 without a new preregistration.
 
 ## Recommended Next Step
 
-Write a short A5 closure update that supersedes the older six-condition closure
-note with the eight-condition confirmatory result, without new simulator
-mechanics or additional runs.
+Remain in no-op/awaiting-preregistration state for A5 unless Ben explicitly
+requests a new preregistered A5 design.
