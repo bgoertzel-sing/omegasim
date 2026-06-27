@@ -28,34 +28,31 @@ downstream multi-hive coupling.
 
 ## Latest Changes
 
-- Status: A6 artifact provenance audit added, 2026-06-27.
-- Changed: extended `ohdyn.analyze_a6_logistic_appraisal` with
-  `a6_logistic_appraisal_artifact_provenance.csv`, a read-only audit that
-  derives per-artifact-field tick deltas from `metrics.csv` and attributes them
-  to same-tick A6 event/action sources from existing run artifacts.
-- Changed: ran
-  `.venv-conda/bin/python -m ohdyn.analyze_a6_logistic_appraisal --compare-dir runs/a6_logistic_appraisal_compare --out runs/a6_artifact_provenance_audit`
-  over the existing seed `1..2` smoke comparison artifacts and added
-  `docs/results/a6_artifact_provenance_audit_seed1_2.md`.
-- Result: the audit emitted 80 artifact-provenance rows. Across all conditions,
-  alias flags were `57` `high_action_alias_risk`, `15` `no_change`, `6`
-  `mixed_or_low_alias_risk_smoke`, and `2` `action_coupled_smoke`. Logistic
-  artifact readiness and utility rows for both seeds were
-  `high_action_alias_risk`, dominated by same-tick handoff-success attribution.
-- Interpretation: A6 remains smoke/analyzer-only. The provenance audit
-  strengthens the previous non-promotion conclusion because current artifact
-  utility/readiness signals are too handoff/action-coupled to support attractor,
-  lobe-grammar, synchrony, causality, recurrence, or nonlinear collective
-  structure claims.
+- Status: A5 automation prompt reconciled, 2026-06-27.
+- Changed: status-only update. The requested A5 preregistration, deterministic
+  single-hive scaffold, confirmatory residual-accounting analysis, and
+  forecast-skill/residual-gap diagnostic report were rechecked and remain
+  complete. No A5 simulator mechanics, analyzers, configs, tests, dashboards,
+  external integrations, broader seeds, or multi-hive coupling were added.
+- Result: A5 remains accounting-confirmed closed. The seed `7..16` diagnostic
+  report supports the narrow claim that bounded predictors improved forecast
+  skill, while residual collective-structure claims failed the preregistered
+  load/opportunity/accounting controls and budget-matched timing-broken nulls.
+- Interpretation: the current source of truth remains post-A5 A6 smoke/analyzer
+  work. A6 is not promoted; the most recent A6 artifact provenance audit still
+  warns that artifact utility/readiness signals are too action/handoff-coupled
+  for attractor, lobe-grammar, synchrony, causality, recurrence, or nonlinear
+  collective-structure claims.
 - External strategic review handling: latest review has
   `strategic_change_level: minor` and `notify_ben: false`; its completed A6 gate
   recommendation remains accepted. No GPT-5.5-Pro recommendation was rejected in
   this run.
 - Verification: `.venv-conda/bin/python -m py_compile
-  ohdyn/analyze_a6_logistic_appraisal.py tests/test_run_harness.py` passed;
-  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state: open`;
-  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q -k
-  'a6_read_only_analysis or automation_guard'` passed with `11 passed, 586
-  deselected`; `git diff --check` passed.
+  ohdyn/compare_predictive_control.py ohdyn/analyze_a5_residual_accounting.py
+  ohdyn/automation_guard.py` passed; `.venv-conda/bin/python -m pytest
+  tests/test_run_harness.py -q -k 'a5 or automation_guard'` passed with `10
+  passed, 587 deselected`; `.venv-conda/bin/python -m ohdyn.automation_guard`
+  reported `state: open`, `should_noop: false`, `strategic_change_level:
+  minor`, and `notify_ben: false`; `git diff --check` passed.
 - Blockers: none.
 - Recommended next step: write a minimal A6.1 schema/control addendum that preregisters how to separate ambient artifact drift, handoff success/failure effects, prediction expenditure, and queue/work accounting before any broader A6 seed run.
