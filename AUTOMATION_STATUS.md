@@ -5,83 +5,65 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-This run completed the accepted A6.2 96-tick long-horizon validation over
-paired seeds `1` and `2`. The previous external strategy review header remains
-`strategic_change_level: minor` and `notify_ben: false`; its recommendation to
-publish actual A6 analyzer/gate status was accepted and extended through the
-current preregistered A6.2 validation.
+This run reconciled Ben's A5 anticipatory predictive-control request against
+the current repository state. The requested concise A5 preregistration and
+minimal deterministic single-hive scaffold already exist:
+`docs/a5_anticipatory_predictive_control_preregistration.md`,
+`configs/a5_predictive_linear_smoke.yaml`, `ohdyn.compare_predictive_control`,
+and `ohdyn.analyze_a5_residual_accounting`.
 
-A0/A1 and A5 remain complete and should not be duplicated. A5 remains closed:
-bounded predictors improved forecast skill, but the seed `7..16` evidence did
-not pass the full-accounting residual structure gate. A6.2 now also closes
-conservatively: the 96-tick validation passed schema/computation checks, but
-logistic did not beat linear and both source-preserving nulls on the same
-target with paired cross-seed agreement. The result is tracked in
-`docs/results/a6_2_long_horizon_validation_seed1_2.md`.
+A5 remains scientifically closed after the seed `7..16` residual-gap result and
+post-closure reopening gate. The frozen interpretation is narrow: bounded
+predictors improved forecast skill under matched demand streams, but the effect
+did not survive full accounting controls and budget-matched timing-broken nulls.
+No new A5 preregistration rules, simulator mechanics, analyzers, configs,
+dashboards, external integrations, broad seed runs, or multi-hive coupling were
+added.
+
+The later A6.2 validation remains the current post-A5 state: the fixed 96-tick
+paired-seed validation passed schema/computation checks but closed
+conservatively because logistic did not beat linear and both source-preserving
+nulls on the same target with paired cross-seed agreement.
 
 Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
-downstream multi-hive coupling. Do not broaden seeds, change A6 mechanisms, or
-use attractor/lobe-like promotion language unless a later accepted
-preregistration explicitly supersedes the conservative A6.2 closure.
+downstream multi-hive coupling. Do not broaden seeds, reinterpret A5/A6 as
+attractor evidence, or add anticipatory-prediction mechanics unless a later
+accepted preregistration explicitly supersedes the current closures.
 
 ## Latest Changes
 
-- Added fixed 96-tick A6.2 validation configs:
-  `configs/a6_2_long_horizon_logistic.yaml`,
-  `configs/a6_2_long_horizon_linear.yaml`,
-  `configs/a6_2_long_horizon_phase_shuffled.yaml`, and
-  `configs/a6_2_long_horizon_threshold_shuffled.yaml`.
-- Added `ohdyn.compare_a6_2_long_horizon`, a bounded wrapper that runs only
-  paired seeds `1` and `2`, includes the two existing source-preserving null
-  artifacts, and rejects seed broadening.
-- Ran the fixed comparison and the existing read-only A6.2 analyzer, producing
-  `runs/a6_2_long_horizon_compare_seed1_2` and
-  `runs/a6_2_long_horizon_residual_recurrence_seed1_2`.
-- Published `docs/results/a6_2_long_horizon_validation_seed1_2.md` and updated
-  `README.md` with the completed conservative A6.2 validation status.
-- Fixed one A6 long-horizon robustness bug: A6 softmax action selection can no
-  longer choose unavailable `work_task` when the queue is empty. This matches
-  the baseline selector's work availability behavior.
-- Fixed one read-only A6.2 analyzer bookkeeping bug so artifact metric fields
-  map to event source fields such as `artifact_readiness`, allowing dominant
-  artifact-update source shares to be reported.
-- Attempted the urgent strategy-review command because the validation changes
-  the A6.2 decision state, but it was throttled:
-  `strategy review skipped for omegasim: last failed attempt age 702s < 1800s`.
-  No newer review superseded the existing minor recommendation.
+- Updated this status file to record that the repeated A5 prompt is already
+  satisfied by tracked A5 preregistration/scaffold artifacts and should not be
+  duplicated.
+- Rechecked the A5 preregistration, deterministic smoke config, predictive
+  comparison helper, read-only residual-accounting analyzer, post-closure gate,
+  and seed `7..16` residual-gap report.
+- Preserved the completed A6.2 validation result and did not change simulator
+  code, configs, tests, analyzers, result documents, dashboards, integrations,
+  seed scope, or multi-hive mechanics.
 
 ## Verification
 
+- `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py
+  ohdyn/analyze_a5_residual_accounting.py ohdyn/automation_guard.py
+  ohdyn/sim.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_predictive_control or a5_residual_accounting or automation_guard'`
+  passed: `10 passed, 593 deselected`.
+- `.venv-conda/bin/python -m ohdyn.run --config
+  configs/a5_predictive_linear_smoke.yaml --seed 5 --out
+  /tmp/omegasim_a5_reconcile_smoke_20260627_1600` passed.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
   `state=open`, `should_noop=false`, `strategic_change_level=minor`, and
-  `notify_ben=false`; its review text is stale relative to this completed
-  A6.2 validation, but the prior recommendation has been satisfied.
-- `.venv-conda/bin/python -m ohdyn.compare_a6_2_long_horizon --seeds 1 2
-  --out runs/a6_2_long_horizon_compare_seed1_2` passed.
-- `.venv-conda/bin/python -m ohdyn.analyze_a6_2_residual_recurrence
-  --compare-dir runs/a6_2_long_horizon_compare_seed1_2 --out
-  runs/a6_2_long_horizon_residual_recurrence_seed1_2` passed.
-- The A6.2 analyzer wrote: `manifest=1`, `paired_seed_completeness=12`,
-  `residual_recurrence_metrics=156`, and `residual_recurrence_deltas=130`
-  rows. Status counts were `complete=12`, `computed=156`,
-  `closure_no_recurrence_advantage=98`, and
-  `eligible_for_cross_seed_direction_check=32`; overall status was
-  `conservative_closure`.
-- `.venv-conda/bin/python -m py_compile ohdyn/sim.py
-  ohdyn/compare_a6_logistic_appraisal.py ohdyn/compare_a6_2_long_horizon.py
-  ohdyn/analyze_a6_2_residual_recurrence.py` passed.
-- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'a6_2_long_horizon or
-  a6_1_comparison_derives_source_preserving_nulls_and_gate or
-  a6_smoke_comparison_helper_runs_only_preregistered_fixtures'` passed:
-  `3 passed, 600 deselected`.
+  `notify_ben=false`; the open state is driven by the later A6 thread, not by
+  missing A5 preregistration/scaffold work.
 
 ## Blockers
 
-None for the completed validation run. Scientifically, A6.2 did not pass its
-promotion/eligibility gate and should not be broadened or reinterpreted without
-a new accepted preregistration.
+None for this reconciliation run. Scientifically, A5 should remain closed
+unless Ben accepts a new preregistration that explicitly supersedes the
+post-closure reopening gate.
 
 ## Recommended Next Step
 
