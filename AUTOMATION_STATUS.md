@@ -33,6 +33,18 @@ downstream multi-hive coupling.
 
 ## Latest Changes
 
+- This bounded automation run re-read the repository source of truth and the
+  urgent external strategic review. It did not duplicate A0/A1, reopen A5,
+  rerun A7 validation, broaden seeds, add mechanics, or add downstream
+  multi-hive coupling.
+- The current source of truth remains unchanged: A5 is closed under seed
+  `7..16` accounting evidence, A7 is the active gated direction, and the
+  completed A7 seed `1..2` long-horizon validation is
+  `fail_closed_residual_null_gate`.
+- Further experimental progress is blocked by research direction, not by the
+  local environment: Ben's decision or a new preregistration is required before
+  any A7 redesign, seed broadening, mechanism changes, or downstream
+  multi-hive coupling.
 - Added `docs/results/a7_ben_notification_status_20260627.md` as the bounded
   Ben-facing notification record requested by the current automation status and
   the urgent strategic review. It states that A5 is closed/accounting-explained,
@@ -77,6 +89,19 @@ downstream multi-hive coupling.
 
 ## Verification
 
+- `git status --short` initially reported a clean worktree.
+- Re-read `README.md`, `AUTOMATION_STATUS.md`, available configs/tests,
+  `docs/omegasim_provisional_experiment_roadmap.md`, and
+  `../outputs/strategy-reviews/omegasim/latest-review.md`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` reported state `open`,
+  `strategic_change_level: major`, `notify_ben: true`, and recommended next
+  action: wait for Ben's decision or a new preregistration before any A7
+  redesign, seed broadening, mechanism changes, or downstream multi-hive
+  coupling.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed recent loop completions
+  and no newer local blocker than the current strategic hold.
+- No simulator or analyzer code changed in this run, so no code test was
+  required before stopping at the documented research-direction blocker.
 - `git status --short --branch` initially reported a clean worktree on
   `main...origin/main`.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` reported state `open`,
@@ -145,7 +170,7 @@ downstream multi-hive coupling.
 Ben notification has been packaged in
 `docs/results/a7_ben_notification_status_20260627.md`, but further research
 direction is intentionally blocked on Ben's decision or a new preregistration.
-There is no code or local environment blocker.
+There is no code, test, or local environment blocker.
 
 ## Recommended Next Step
 
