@@ -88,11 +88,22 @@ python -m ohdyn.analyze_a6_2_residual_recurrence \
   --out runs/a6_2_residual_recurrence_analysis_seed1_2
 ```
 
-The next accepted A6.2 design gate is documented in
-`docs/a6_2_long_horizon_validation_preregistration.md`. It preregisters a
-bounded 96-tick, paired seed `1..2` validation using the same single-hive A6
-mechanics and source-preserving null controls. It does not authorize broader
-seeds, new mechanisms, downstream multi-hive coupling, or promotion language.
+The accepted A6.2 design gate is documented in
+`docs/a6_2_long_horizon_validation_preregistration.md`, and the completed
+96-tick seed `1..2` result is recorded in
+`docs/results/a6_2_long_horizon_validation_seed1_2.md`. The validation used the
+same single-hive A6 mechanics and source-preserving null controls and closed
+conservatively: source schema and recurrence computation passed, but logistic
+did not beat linear and both source-preserving nulls on the same target with
+paired cross-seed agreement. It does not authorize broader seeds, new
+mechanisms, downstream multi-hive coupling, or promotion language.
+
+The fixed comparison and analysis commands are:
+
+```bash
+python -m ohdyn.compare_a6_2_long_horizon --seeds 1 2 --out runs/a6_2_long_horizon_compare_seed1_2
+python -m ohdyn.analyze_a6_2_residual_recurrence --compare-dir runs/a6_2_long_horizon_compare_seed1_2 --out runs/a6_2_long_horizon_residual_recurrence_seed1_2
+```
 
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, linear, nonlinear, oracle, linear-budget shuffled, and

@@ -392,7 +392,7 @@ def _missing_run_fields(run: dict[str, Any], target_field: str) -> list[str]:
 def _source_shares(run: dict[str, Any], target_field: str) -> dict[str, Any]:
     artifact_field = target_field.removesuffix("_tick")
     if artifact_field.startswith("a6_artifact_"):
-        artifact_field = artifact_field.removeprefix("a6_artifact_")
+        artifact_field = artifact_field.removeprefix("a6_")
     totals = {
         "ambient": 0.0,
         "handoff_attempt": 0.0,

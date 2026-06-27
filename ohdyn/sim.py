@@ -2149,6 +2149,9 @@ def _choose_logistic_appraisal_action(
     appraisal = config.logistic_appraisal
     utilities: dict[str, float] = {}
     for action in config.model.actions:
+        if action == "work_task" and not has_queued_tasks:
+            utilities[action] = -1.0e9
+            continue
         signal = _a6_action_signal(action, latent, artifact)
         if appraisal.condition == "phase_shuffled":
             signal = _clamp01(signal + 0.08 * np.sin((tick + appraisal.phase_shift_ticks) / 2.0))

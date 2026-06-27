@@ -5,70 +5,86 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-This run reconciled the current A6 analyzer state with the latest external
-strategy review. The review header was `strategic_change_level: minor` and
-`notify_ben: false`; its recommendation was accepted because it stays inside
-the accepted A6 roadmap and prevents adding seeds or mechanisms before the
-actual analyzer gate is published.
+This run completed the accepted A6.2 96-tick long-horizon validation over
+paired seeds `1` and `2`. The previous external strategy review header remains
+`strategic_change_level: minor` and `notify_ben: false`; its recommendation to
+publish actual A6 analyzer/gate status was accepted and extended through the
+current preregistered A6.2 validation.
 
 A0/A1 and A5 remain complete and should not be duplicated. A5 remains closed:
 bounded predictors improved forecast skill, but the seed `7..16` evidence did
-not pass the full-accounting residual structure gate. The active direction is
-the accepted A6 roadmap, with the current A6.2 longer-horizon validation
-preregistered in `docs/a6_2_long_horizon_validation_preregistration.md`.
+not pass the full-accounting residual structure gate. A6.2 now also closes
+conservatively: the 96-tick validation passed schema/computation checks, but
+logistic did not beat linear and both source-preserving nulls on the same
+target with paired cross-seed agreement. The result is tracked in
+`docs/results/a6_2_long_horizon_validation_seed1_2.md`.
 
 Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
 downstream multi-hive coupling. Do not broaden seeds, change A6 mechanisms, or
-use attractor/lobe-like promotion language unless a later preregistration
-explicitly supersedes the current A6.2 design gate.
+use attractor/lobe-like promotion language unless a later accepted
+preregistration explicitly supersedes the conservative A6.2 closure.
 
 ## Latest Changes
 
-- Updated this status file and `docs/results/a6_analysis_gate_seed1_2.md` on
-  2026-06-27T15:11:36Z to resolve the analyzer/status mismatch identified by
-  the external strategy review.
-- Ran the current read-only `ohdyn.analyze_a6_logistic_appraisal` against the
-  existing `runs/a6_logistic_appraisal_compare` seed `1..2` smoke artifacts
-  without rerunning simulations.
-- Published the current analyzer artifact inventory and row counts, including
-  the newer manifest levels and `a6_1_pilot_null_gate.csv` output.
-- Confirmed the four-condition smoke comparison still supports only
-  endpoint/control-delta/residual smoke-gate validation: source-accounting rows
-  are all `missing_required_fields`, and A6.1 pilot-null gate rows are absent
-  because source-preserving null conditions are not present in that comparison.
-- Confirmed the later tracked A6.1 and A6.2 reports remain the source of truth
-  for source-field-complete artifacts and fail-closed recurrence analysis.
-- No simulator mechanics, configs, tests, dashboards, external integrations,
-  seed broadening, or multi-hive coupling were added.
+- Added fixed 96-tick A6.2 validation configs:
+  `configs/a6_2_long_horizon_logistic.yaml`,
+  `configs/a6_2_long_horizon_linear.yaml`,
+  `configs/a6_2_long_horizon_phase_shuffled.yaml`, and
+  `configs/a6_2_long_horizon_threshold_shuffled.yaml`.
+- Added `ohdyn.compare_a6_2_long_horizon`, a bounded wrapper that runs only
+  paired seeds `1` and `2`, includes the two existing source-preserving null
+  artifacts, and rejects seed broadening.
+- Ran the fixed comparison and the existing read-only A6.2 analyzer, producing
+  `runs/a6_2_long_horizon_compare_seed1_2` and
+  `runs/a6_2_long_horizon_residual_recurrence_seed1_2`.
+- Published `docs/results/a6_2_long_horizon_validation_seed1_2.md` and updated
+  `README.md` with the completed conservative A6.2 validation status.
+- Fixed one A6 long-horizon robustness bug: A6 softmax action selection can no
+  longer choose unavailable `work_task` when the queue is empty. This matches
+  the baseline selector's work availability behavior.
+- Fixed one read-only A6.2 analyzer bookkeeping bug so artifact metric fields
+  map to event source fields such as `artifact_readiness`, allowing dominant
+  artifact-update source shares to be reported.
+- Attempted the urgent strategy-review command because the validation changes
+  the A6.2 decision state, but it was throttled:
+  `strategy review skipped for omegasim: last failed attempt age 702s < 1800s`.
+  No newer review superseded the existing minor recommendation.
 
 ## Verification
 
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
-  `state=open`, `should_noop=false`, `strategic_change_level=minor`,
-  `notify_ben=false`, and the A6 analyzer-audit recommendation.
-- `.venv-conda/bin/python -m ohdyn.analyze_a6_logistic_appraisal --compare-dir
-  runs/a6_logistic_appraisal_compare --out
-  runs/a6_logistic_appraisal_analysis_gate_seed1_2_rerun_20260627` passed.
-- The analyzer rerun wrote: `endpoints=8`, `manifest=9`,
-  `control_deltas=6`, `control_summary=42`, `residual_preflight=112`,
-  `residual_timeseries=1792`, `residual_contrast_summary=84`,
-  `residual_contrast_rollup=42`, `comparison_consistency=4`,
-  `effects_consistency=3`, `artifact_provenance=80`,
-  `source_accounting=80`, and `A6.1 pilot null gate=0` rows.
-- `.venv-conda/bin/python -m py_compile ohdyn/analyze_a6_logistic_appraisal.py
-  ohdyn/analyze_a6_2_residual_recurrence.py ohdyn/automation_guard.py` passed.
-- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a6 and
-  analysis'` passed: `5 passed, 597 deselected`.
+  `state=open`, `should_noop=false`, `strategic_change_level=minor`, and
+  `notify_ben=false`; its review text is stale relative to this completed
+  A6.2 validation, but the prior recommendation has been satisfied.
+- `.venv-conda/bin/python -m ohdyn.compare_a6_2_long_horizon --seeds 1 2
+  --out runs/a6_2_long_horizon_compare_seed1_2` passed.
+- `.venv-conda/bin/python -m ohdyn.analyze_a6_2_residual_recurrence
+  --compare-dir runs/a6_2_long_horizon_compare_seed1_2 --out
+  runs/a6_2_long_horizon_residual_recurrence_seed1_2` passed.
+- The A6.2 analyzer wrote: `manifest=1`, `paired_seed_completeness=12`,
+  `residual_recurrence_metrics=156`, and `residual_recurrence_deltas=130`
+  rows. Status counts were `complete=12`, `computed=156`,
+  `closure_no_recurrence_advantage=98`, and
+  `eligible_for_cross_seed_direction_check=32`; overall status was
+  `conservative_closure`.
+- `.venv-conda/bin/python -m py_compile ohdyn/sim.py
+  ohdyn/compare_a6_logistic_appraisal.py ohdyn/compare_a6_2_long_horizon.py
+  ohdyn/analyze_a6_2_residual_recurrence.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a6_2_long_horizon or
+  a6_1_comparison_derives_source_preserving_nulls_and_gate or
+  a6_smoke_comparison_helper_runs_only_preregistered_fixtures'` passed:
+  `3 passed, 600 deselected`.
 
 ## Blockers
 
-None for the analyzer-gate reconciliation. Scientifically, the canonical
-four-condition A6 smoke comparison is not source-accounting-complete and does
-not contain A6.1 source-preserving nulls, so it must not be used for promotion.
+None for the completed validation run. Scientifically, A6.2 did not pass its
+promotion/eligibility gate and should not be broadened or reinterpreted without
+a new accepted preregistration.
 
 ## Recommended Next Step
 
-Create the fixed 96-tick A6.2 validation configs and the smallest comparison
-helper needed to regenerate the six required paired conditions, then run only
-seeds `1` and `2` and analyze them with the existing read-only A6.2 analyzer.
+Create a short A6.2 closure addendum that freezes the conservative
+interpretation and explicitly blocks further single-hive A6 seed broadening or
+mechanism work unless Ben accepts a new preregistered direction.

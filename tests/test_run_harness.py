@@ -55,6 +55,7 @@ from ohdyn.analyze_a6_2_residual_recurrence import (
     A6_2_RECURRENCE_FIELDS,
     run_a6_2_residual_recurrence_analysis,
 )
+from ohdyn.compare_a6_2_long_horizon import run_a6_2_long_horizon_comparison
 from ohdyn.compare_a6_logistic_appraisal import (
     A6_COMPARISON_FIELDS,
     A6_EFFECT_FIELDS,
@@ -15804,6 +15805,57 @@ def test_a6_1_comparison_derives_source_preserving_nulls_and_gate(
     summary = (analysis_dir / "summary.md").read_text()
     assert "- A6.1 pilot null gate rows: 8" in summary
     assert "backlog-adjusted productivity" in summary
+
+
+def test_a6_2_long_horizon_comparison_uses_fixed_configs_and_seeds(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a6_2_long_horizon_compare"
+
+    rows = run_a6_2_long_horizon_comparison(out_dir=compare_dir)
+
+    assert [row["condition"] for row in rows] == [
+        "logistic",
+        "linear",
+        "threshold_shuffled",
+        "phase_shuffled",
+        "source_label_shuffled_within_tick",
+        "handoff_success_timing_broken_matched_counts",
+    ]
+    assert {row["tick_count"] for row in rows} == {96}
+    for condition in (
+        "logistic",
+        "linear",
+        "threshold_shuffled",
+        "phase_shuffled",
+        "source_label_shuffled_within_tick",
+        "handoff_success_timing_broken_matched_counts",
+    ):
+        for seed in (1, 2):
+            run_dir = compare_dir / f"{condition}_seed{seed}"
+            config = yaml.safe_load((run_dir / "config.yaml").read_text())
+            assert config["run"]["ticks"] == 96
+            _assert_artifacts_match_output_directory(run_dir, A0_FULL_ARTIFACTS)
+
+    with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
+        run_a6_2_long_horizon_comparison(
+            seeds=(1, 2, 3),
+            out_dir=tmp_path / "a6_2_long_horizon_broadened",
+        )
+
+    analysis_dir = tmp_path / "a6_2_long_horizon_analysis"
+    result = run_a6_2_residual_recurrence_analysis(compare_dir, analysis_dir)
+    assert result["status"] in {"conservative_closure", "computed_no_promotion"}
+    with (analysis_dir / "a6_2_residual_recurrence_metrics.csv").open() as handle:
+        metric_rows = list(csv.DictReader(handle))
+    readiness_rows = [
+        row
+        for row in metric_rows
+        if row["condition"] == "logistic"
+        and row["target_field"] == "a6_artifact_readiness_tick"
+    ]
+    assert readiness_rows
+    assert {row["dominant_source"] for row in readiness_rows} != {""}
 
 
 def test_a6_smoke_comparison_cli(tmp_path: Path) -> None:

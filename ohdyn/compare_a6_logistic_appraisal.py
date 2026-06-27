@@ -24,6 +24,12 @@ A6_SMOKE_CONFIGS = (
     ("threshold_shuffled", Path("configs/a6_threshold_shuffled_smoke.yaml")),
     ("phase_shuffled", Path("configs/a6_phase_shuffled_smoke.yaml")),
 )
+A6_2_LONG_HORIZON_CONFIGS = (
+    ("logistic", Path("configs/a6_2_long_horizon_logistic.yaml")),
+    ("linear", Path("configs/a6_2_long_horizon_linear.yaml")),
+    ("threshold_shuffled", Path("configs/a6_2_long_horizon_threshold_shuffled.yaml")),
+    ("phase_shuffled", Path("configs/a6_2_long_horizon_phase_shuffled.yaml")),
+)
 A6_1_SOURCE_NULL_CONDITIONS = (
     "source_label_shuffled_within_tick",
     "handoff_success_timing_broken_matched_counts",
@@ -109,16 +115,25 @@ def run_a6_logistic_appraisal_comparison(
     seeds: tuple[int, ...] = DEFAULT_A6_SEEDS,
     out_dir: str | Path = DEFAULT_A6_COMPARE_DIR,
     include_a6_1_nulls: bool = False,
+    config_specs: tuple[tuple[str, Path], ...] = A6_SMOKE_CONFIGS,
+    summary_title: str = "A6 Logistic-Appraisal Smoke Comparison",
+    scope_line: str = "four checked-in single-hive smoke fixtures only; no broad sweep",
+    scientific_status: str = "smoke artifact comparison, not promotion evidence",
+    conservative_use: str = (
+        "This helper is limited to the preregistered A6 smoke fixtures. "
+        "Use these artifacts to exercise schemas and the read-only analyzer; "
+        "do not treat them as evidence for residual latent-state attractors."
+    ),
 ) -> list[dict[str, Any]]:
     _validate_seeds(seeds)
     output_path = Path(out_dir)
     _ensure_outputs_available(output_path)
-    _validate_smoke_configs()
+    _validate_a6_configs(config_specs)
     output_path.mkdir(parents=True, exist_ok=True)
 
     rows: list[dict[str, Any]] = []
     logistic_results_by_seed: dict[int, SimulationResult] = {}
-    for condition, config_path in A6_SMOKE_CONFIGS:
+    for condition, config_path in config_specs:
         results: list[SimulationResult] = []
         for seed in seeds:
             run_dir = output_path / f"{condition}_seed{seed}"
@@ -153,7 +168,7 @@ def run_a6_logistic_appraisal_comparison(
             rows.append(
                 _aggregate_row(
                     null_condition,
-                    Path(f"derived:{null_condition}:configs/a6_logistic_appraisal_smoke.yaml"),
+                    Path(f"derived:{null_condition}:{_logistic_config_path(config_specs)}"),
                     results,
                 )
             )
@@ -169,7 +184,17 @@ def run_a6_logistic_appraisal_comparison(
         A6_EFFECT_FIELDS,
         effect_rows,
     )
-    (output_path / "summary.md").write_text(_summary(rows, effect_rows, seeds))
+    (output_path / "summary.md").write_text(
+        _summary(
+            rows,
+            effect_rows,
+            seeds,
+            title=summary_title,
+            scope_line=scope_line,
+            scientific_status=scientific_status,
+            conservative_use=conservative_use,
+        )
+    )
     return rows
 
 
@@ -196,13 +221,13 @@ def _ensure_outputs_available(output_path: Path) -> None:
         raise FileExistsError(f"Output path {output_path} already contains A6 artifacts: {names}")
 
 
-def _validate_smoke_configs() -> None:
+def _validate_a6_configs(config_specs: tuple[tuple[str, Path], ...]) -> None:
     expected_conditions = set(LOGISTIC_APPRAISAL_CONDITIONS)
-    observed_conditions = {condition for condition, _ in A6_SMOKE_CONFIGS}
+    observed_conditions = {condition for condition, _ in config_specs}
     if observed_conditions != expected_conditions:
-        raise ValueError("A6 smoke comparison must include exactly the preregistered conditions.")
+        raise ValueError("A6 comparison must include exactly the preregistered conditions.")
 
-    for condition, config_path in A6_SMOKE_CONFIGS:
+    for condition, config_path in config_specs:
         cfg = load_config(config_path)
         if cfg.logistic_appraisal is None:
             raise ValueError(f"{config_path} must enable logistic_appraisal.")
@@ -213,6 +238,13 @@ def _validate_smoke_configs() -> None:
             )
         if cfg.hives:
             raise ValueError(f"{config_path} must remain single-hive for A6 smoke.")
+
+
+def _logistic_config_path(config_specs: tuple[tuple[str, Path], ...]) -> str:
+    for condition, config_path in config_specs:
+        if condition == "logistic":
+            return str(config_path)
+    raise ValueError("A6 comparison requires a logistic config.")
 
 
 def _aggregate_row(
@@ -335,12 +367,12 @@ def _interpret_effect(row: dict[str, Any]) -> str:
     queue_delta = _as_float(row["queue_depth_mean_delta"])
     failure_delta = _as_float(row["handoff_failures_total_mean_delta"])
     if utility_delta > 0.0 and queue_delta <= 0.0 and failure_delta <= 0.0:
-        return "smoke guardrails improve, but residual recurrence remains unanalyzed"
+        return "comparison guardrails improve, but residual recurrence remains unanalyzed"
     if utility_delta <= 0.0:
-        return "artifact-utility guardrail does not improve in smoke comparison"
+        return "artifact-utility guardrail does not improve in this comparison"
     if queue_delta > 0.0:
         return "artifact utility improves with higher queue load; treat as accounting risk"
-    return "smoke comparison only; read-only residual analysis required before interpretation"
+    return "artifact comparison only; read-only residual analysis required before interpretation"
 
 
 def _write_csv(path: Path, fields: tuple[str, ...], rows: list[dict[str, Any]]) -> None:
@@ -511,14 +543,19 @@ def _summary(
     rows: list[dict[str, Any]],
     effect_rows: list[dict[str, Any]],
     seeds: tuple[int, ...],
+    *,
+    title: str,
+    scope_line: str,
+    scientific_status: str,
+    conservative_use: str,
 ) -> str:
     lines = [
-        "# A6 Logistic-Appraisal Smoke Comparison",
+        f"# {title}",
         "",
         f"- seeds: {', '.join(str(seed) for seed in seeds)}",
         f"- run count: {sum(int(row['run_count']) for row in rows)}",
-        "- scope: four checked-in single-hive smoke fixtures only; no broad sweep",
-        "- scientific status: smoke artifact comparison, not promotion evidence",
+        f"- scope: {scope_line}",
+        f"- scientific status: {scientific_status}",
         "",
         "## Condition Means",
         "",
@@ -550,11 +587,7 @@ def _summary(
             "",
             "## Conservative Use",
             "",
-            (
-                "This helper is limited to the preregistered A6 smoke fixtures. "
-                "Use these artifacts to exercise schemas and the read-only analyzer; "
-                "do not treat them as evidence for residual latent-state attractors."
-            ),
+            conservative_use,
             "",
         ]
     )
