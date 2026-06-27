@@ -58,6 +58,14 @@ accounting, null semantics, schemas, and tests.
   outputs, and fails closed when A7 runs, null conditions, or required schema
   fields are absent.
 - Added focused tests for the frozen A7 contract and analyzer fail-closed path.
+- Added `ohdyn.compare_a7_semantic_field`, a deterministic A7 placeholder
+  comparison scaffold that enumerates the six frozen fixture stubs and paired
+  seeds, writes normalized generated configs plus config/manifest-only run
+  placeholders, and deliberately does not run simulator mechanics or emit
+  metrics/events.
+- Added focused tests that verify the A7 placeholder scaffold writes only
+  config/manifest/summary placeholders and that the read-only A7 analyzer still
+  fails closed on those placeholders.
 - Added `docs/results/a6_2_closure_addendum_seed1_2.md` to freeze the A6.2
   conservative interpretation before moving on.
 - Added `docs/a7_semantic_field_preregistration.md` as the accepted A7 design
@@ -70,7 +78,8 @@ accounting, null semantics, schemas, and tests.
 - The earlier A7 contract/analyzer gate did not change simulator mechanics,
   dashboards, integrations, seed scope, or multi-hive mechanics.
 - This run did not change simulator mechanics, dashboards, integrations, seed
-  scope, or multi-hive mechanics. It added A7 config schema/fixture stubs only.
+  scope, or multi-hive mechanics. It added A7 placeholder comparison artifacts
+  only.
 
 ## Verification
 
@@ -102,6 +111,23 @@ accounting, null semantics, schemas, and tests.
   passed.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'a7 or automation_guard'` passed: `10 passed, 596 deselected`.
+- Guard before this run: `.venv-conda/bin/python -m ohdyn.automation_guard`
+  passed with `state=open`, `should_noop=false`, `strategic_change_level=none`,
+  and `notify_ben=false`. Its recommended next action was the A7 placeholder
+  comparison scaffold completed here.
+- External strategy review at
+  `../outputs/strategy-reviews/omegasim/latest-review.md` recommended the
+  earlier A7 implementation contract/gate; that gate was already complete, so
+  this run followed the newer `AUTOMATION_STATUS.md` next step. No
+  GPT-5.5-Pro recommendation was deferred or rejected.
+- `.venv-conda/bin/python -m py_compile
+  ohdyn/compare_a7_semantic_field.py ohdyn/analyze_a7_semantic_field.py
+  ohdyn/a7_semantic_field_contract.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a7 or automation_guard'` passed: `15 passed, 596 deselected`.
+- `.venv-conda/bin/python -m ohdyn.compare_a7_semantic_field --seeds 1 2
+  --out <temp>/compare` passed and wrote only generated configs plus
+  config/manifest/summary placeholders.
 
 ## Blockers
 
@@ -110,6 +136,7 @@ preregistration that explicitly supersedes those closures.
 
 ## Recommended Next Step
 
-Add the minimal A7 comparison scaffold that enumerates the six frozen fixture
-stubs and writes deterministic generated-config/manifest placeholders, but
-does not run simulator mechanics or claim A7 scientific evidence.
+Add the minimal opt-in A7 semantic-field simulator mechanics needed to emit the
+frozen A7 metric/event schema for the six preregistered conditions, then run
+only the tiny paired smoke grid as a schema/manipulation check with no
+scientific promotion claim.

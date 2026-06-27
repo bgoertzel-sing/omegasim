@@ -144,6 +144,10 @@ from ohdyn.analyze_a7_semantic_field import (
     A7_ANALYZER_MANIFEST_FIELDS,
     run_a7_semantic_field_analysis,
 )
+from ohdyn.compare_a7_semantic_field import (
+    A7_PLACEHOLDER_MANIFEST_FIELDS,
+    run_a7_semantic_field_placeholder_comparison,
+)
 from ohdyn.calibrate_exogenous_arrivals import (
     EXOGENOUS_CALIBRATION_FIELDS,
     run_exogenous_arrival_calibration,
@@ -902,6 +906,69 @@ def test_a7_analyzer_fails_closed_on_missing_schema(tmp_path: Path) -> None:
     assert "no semantic-field interpretation is allowed" in (
         out_dir / "summary.md"
     ).read_text()
+
+
+def test_a7_placeholder_comparison_writes_configs_and_manifests_only(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a7_placeholder_compare"
+
+    rows = run_a7_semantic_field_placeholder_comparison(
+        seeds=(1, 2),
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == len(A7_CONDITIONS) * 2
+    assert [row["condition"] for row in rows[::2]] == list(A7_CONDITIONS)
+    placeholder_rows = list(
+        csv.DictReader((out_dir / "a7_semantic_field_placeholder_manifest.csv").open())
+    )
+    assert list(placeholder_rows[0]) == list(A7_PLACEHOLDER_MANIFEST_FIELDS)
+    assert {row["placeholder_status"] for row in placeholder_rows} == {
+        "config_manifest_only"
+    }
+    assert {row["scientific_status"] for row in placeholder_rows} == {
+        "no_simulator_mechanics_no_a7_evidence"
+    }
+
+    for condition in A7_CONDITIONS:
+        generated_config = out_dir / "configs" / f"{condition}.yaml"
+        assert generated_config.exists()
+        generated = yaml.safe_load(generated_config.read_text())
+        assert generated["semantic_field"]["condition"] == condition
+        for seed in (1, 2):
+            run_dir = out_dir / f"{condition}_seed{seed}"
+            assert (run_dir / "config.yaml").exists()
+            assert (run_dir / "manifest.yaml").exists()
+            assert (run_dir / "summary.md").exists()
+            assert not (run_dir / "metrics.csv").exists()
+            assert not (run_dir / "events.csv").exists()
+            manifest = yaml.safe_load((run_dir / "manifest.yaml").read_text())
+            assert manifest["seed"] == seed
+            assert manifest["a7_semantic_field"]["condition"] == condition
+            assert manifest["a7_semantic_field"]["simulator_mechanics_touched"] is False
+            assert manifest["scientific_status"] == "no_simulator_mechanics_no_a7_evidence"
+            assert manifest["artifacts"] == ["config.yaml", "manifest.yaml", "summary.md"]
+
+    assert "does not run" in (out_dir / "summary.md").read_text()
+
+
+def test_a7_placeholder_comparison_still_fails_closed_in_analyzer(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_placeholder_compare"
+    analysis_dir = tmp_path / "a7_placeholder_analysis"
+    run_a7_semantic_field_placeholder_comparison(seeds=(1,), out_dir=compare_dir)
+
+    result = run_a7_semantic_field_analysis(compare_dir, analysis_dir)
+
+    assert result["status"] == "fail_closed_missing_schema"
+    completeness_rows = list(
+        csv.DictReader((analysis_dir / "a7_semantic_field_completeness.csv").open())
+    )
+    assert len(completeness_rows) == len(A7_CONDITIONS)
+    assert {row["status"] for row in completeness_rows} == {"fail_closed"}
+    assert all(row["row_count"] == "0" for row in completeness_rows)
 
 
 def test_automation_guard_closes_after_a5_closure_despite_preregistration(

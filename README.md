@@ -120,6 +120,15 @@ configs/a7_semantic_field_phase_shuffle_smoke.yaml
 configs/a7_prediction_budget_timing_broken_matched_count_null_smoke.yaml
 ```
 
+The placeholder comparison scaffold enumerates those six fixtures and paired
+seeds, writing normalized generated configs and config/manifest-only run
+placeholders. It intentionally does not call the simulator, write metrics or
+events, or create A7 scientific evidence:
+
+```bash
+python -m ohdyn.compare_a7_semantic_field --seeds 1 2 --out runs/a7_semantic_field_compare
+```
+
 The fixed comparison and analysis commands are:
 
 ```bash
