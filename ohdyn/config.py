@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from ohdyn.a7_semantic_field_contract import A7_CONDITIONS
+
 
 ATTENTION_CLASSES = (
     "near_term_external",
@@ -43,6 +45,8 @@ LOGISTIC_APPRAISAL_CONDITIONS = (
     "threshold_shuffled",
     "phase_shuffled",
 )
+
+SEMANTIC_FIELD_CONDITIONS = A7_CONDITIONS
 
 A6_ACTIONS = (
     "synthesize",
@@ -136,6 +140,19 @@ class LogisticAppraisalConfig:
 
 
 @dataclass(frozen=True)
+class SemanticFieldConfig:
+    condition: str
+    prediction_budget_per_tick: float
+    lead_ticks: int = 2
+    semantic_decay: float = 0.9
+    logistic_beta: float = 4.0
+    linear_gain: float = 1.0
+    threshold_adaptation_rate: float = 0.03
+    semantic_noise: float = 0.02
+    phase_shift_ticks: int = 3
+
+
+@dataclass(frozen=True)
 class HiveConfig:
     hive_id: str
     seed_offset: int
@@ -160,6 +177,7 @@ class OmegaConfig:
     exogenous_arrivals: ExogenousArrivalsConfig | None = None
     predictive_control: PredictiveControlConfig | None = None
     logistic_appraisal: LogisticAppraisalConfig | None = None
+    semantic_field: SemanticFieldConfig | None = None
     hives: tuple[HiveConfig, ...] = ()
     coupling: CouplingConfig | None = None
 
@@ -180,6 +198,8 @@ class OmegaConfig:
             data.pop("predictive_control")
         if self.logistic_appraisal is None:
             data.pop("logistic_appraisal")
+        if self.semantic_field is None:
+            data.pop("semantic_field")
         if not self.hives:
             data.pop("hives")
             data.pop("coupling")
@@ -205,6 +225,7 @@ def load_config(path: str | Path) -> OmegaConfig:
     exogenous_arrivals = _optional_exogenous_arrivals(raw.get("exogenous_arrivals"))
     predictive_control = _optional_predictive_control(raw.get("predictive_control"))
     logistic_appraisal = _optional_logistic_appraisal(raw.get("logistic_appraisal"))
+    semantic_field = _optional_semantic_field(raw.get("semantic_field"))
     hives = _optional_hives(raw.get("hives"))
     coupling = _optional_coupling(raw.get("coupling"), hives)
 
@@ -236,12 +257,17 @@ def load_config(path: str | Path) -> OmegaConfig:
         exogenous_arrivals=exogenous_arrivals,
         predictive_control=predictive_control,
         logistic_appraisal=logistic_appraisal,
+        semantic_field=semantic_field,
         hives=hives,
         coupling=coupling,
     )
-    _validate_actions(cfg.model.actions, allow_a6=cfg.logistic_appraisal is not None)
+    _validate_actions(
+        cfg.model.actions,
+        allow_a6=cfg.logistic_appraisal is not None or cfg.semantic_field is not None,
+    )
     _validate_predictive_control_scope(cfg)
     _validate_logistic_appraisal_scope(cfg)
+    _validate_semantic_field_scope(cfg)
     _validate_hive_seed_streams(cfg.hives, cfg.coupling)
     return cfg
 
@@ -491,6 +517,66 @@ def _optional_logistic_appraisal(value: Any) -> LogisticAppraisalConfig | None:
     )
 
 
+def _optional_semantic_field(value: Any) -> SemanticFieldConfig | None:
+    if value is None:
+        return None
+    semantic_field = _expect_mapping(value, "semantic_field")
+    supported_keys = {
+        "condition",
+        "prediction_budget_per_tick",
+        "lead_ticks",
+        "semantic_decay",
+        "logistic_beta",
+        "linear_gain",
+        "threshold_adaptation_rate",
+        "semantic_noise",
+        "phase_shift_ticks",
+    }
+    unknown = set(semantic_field) - supported_keys
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"semantic_field contains unsupported keys: {names}")
+
+    return SemanticFieldConfig(
+        condition=_semantic_field_condition(
+            semantic_field.get("condition"),
+            "semantic_field.condition",
+        ),
+        prediction_budget_per_tick=_nonnegative_float(
+            semantic_field.get("prediction_budget_per_tick", 0.25),
+            "semantic_field.prediction_budget_per_tick",
+        ),
+        lead_ticks=_nonnegative_int(
+            semantic_field.get("lead_ticks", 2),
+            "semantic_field.lead_ticks",
+        ),
+        semantic_decay=_probability(
+            semantic_field.get("semantic_decay", 0.9),
+            "semantic_field.semantic_decay",
+        ),
+        logistic_beta=_positive_float(
+            semantic_field.get("logistic_beta", 4.0),
+            "semantic_field.logistic_beta",
+        ),
+        linear_gain=_nonnegative_float(
+            semantic_field.get("linear_gain", 1.0),
+            "semantic_field.linear_gain",
+        ),
+        threshold_adaptation_rate=_probability(
+            semantic_field.get("threshold_adaptation_rate", 0.03),
+            "semantic_field.threshold_adaptation_rate",
+        ),
+        semantic_noise=_probability(
+            semantic_field.get("semantic_noise", 0.02),
+            "semantic_field.semantic_noise",
+        ),
+        phase_shift_ticks=_nonnegative_int(
+            semantic_field.get("phase_shift_ticks", 3),
+            "semantic_field.phase_shift_ticks",
+        ),
+    )
+
+
 def _optional_hives(value: Any) -> tuple[HiveConfig, ...]:
     if value is None:
         return ()
@@ -640,6 +726,15 @@ def _logistic_appraisal_condition(value: Any, name: str) -> str:
     return value
 
 
+def _semantic_field_condition(value: Any, name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"Config value {name!r} must be a string.")
+    if value not in SEMANTIC_FIELD_CONDITIONS:
+        names = ", ".join(SEMANTIC_FIELD_CONDITIONS)
+        raise ValueError(f"Config value {name!r} must be one of: {names}.")
+    return value
+
+
 def _validate_coupling(coupling: CouplingConfig) -> None:
     if coupling.mode == "none":
         if coupling.transfer_probability != 0.0:
@@ -669,6 +764,17 @@ def _validate_logistic_appraisal_scope(config: OmegaConfig) -> None:
         raise ValueError("logistic_appraisal is currently preregistered for single-hive A6 runs only.")
     if config.predictive_control is not None:
         raise ValueError("logistic_appraisal must not be combined with A5 predictive_control.")
+
+
+def _validate_semantic_field_scope(config: OmegaConfig) -> None:
+    if config.semantic_field is None:
+        return
+    if config.hives:
+        raise ValueError("semantic_field is currently preregistered for single-hive A7 runs only.")
+    if config.predictive_control is not None:
+        raise ValueError("semantic_field must not be combined with A5 predictive_control.")
+    if config.logistic_appraisal is not None:
+        raise ValueError("semantic_field must not be combined with A6 logistic_appraisal.")
 
 
 def _validate_hive_seed_streams(

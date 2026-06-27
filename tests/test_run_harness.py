@@ -63,6 +63,7 @@ from ohdyn.compare_a6_logistic_appraisal import (
 )
 from ohdyn.config import (
     ATTENTION_CLASSES,
+    A6_ACTIONS,
     ExogenousArrivalsConfig,
     OmegaConfig,
     load_config,
@@ -241,6 +242,26 @@ A6_LOGISTIC_APPRAISAL = Path("configs/a6_logistic_appraisal_smoke.yaml")
 A6_LINEAR_APPRAISAL = Path("configs/a6_linear_appraisal_smoke.yaml")
 A6_THRESHOLD_SHUFFLED = Path("configs/a6_threshold_shuffled_smoke.yaml")
 A6_PHASE_SHUFFLED = Path("configs/a6_phase_shuffled_smoke.yaml")
+A7_LOGISTIC_SEMANTIC_COUPLING = Path("configs/a7_logistic_semantic_coupling_smoke.yaml")
+A7_SEMANTIC_OFF_BASELINE = Path("configs/a7_semantic_off_baseline_smoke.yaml")
+A7_AMPLITUDE_MATCHED_LINEAR = Path(
+    "configs/a7_amplitude_matched_linear_semantic_coupling_smoke.yaml"
+)
+A7_SOURCE_PRESERVING_LABEL_SHUFFLE = Path(
+    "configs/a7_source_preserving_semantic_label_shuffle_smoke.yaml"
+)
+A7_SEMANTIC_PHASE_SHUFFLE = Path("configs/a7_semantic_field_phase_shuffle_smoke.yaml")
+A7_PREDICTION_TIMING_BROKEN = Path(
+    "configs/a7_prediction_budget_timing_broken_matched_count_null_smoke.yaml"
+)
+A7_SMOKE_FIXTURES = (
+    A7_LOGISTIC_SEMANTIC_COUPLING,
+    A7_SEMANTIC_OFF_BASELINE,
+    A7_AMPLITUDE_MATCHED_LINEAR,
+    A7_SOURCE_PRESERVING_LABEL_SHUFFLE,
+    A7_SEMANTIC_PHASE_SHUFFLE,
+    A7_PREDICTION_TIMING_BROKEN,
+)
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -15087,6 +15108,91 @@ def test_a6_config_loading_rejects_unknown_fields_and_invalid_probabilities(
     invalid_path.write_text(yaml.safe_dump(invalid))
     with pytest.raises(ValueError, match="between 0.0 and 1.0"):
         load_config(invalid_path)
+
+
+def test_loads_a7_semantic_field_smoke_fixture_stubs() -> None:
+    observed_conditions = []
+    for config_path in A7_SMOKE_FIXTURES:
+        config = load_config(config_path)
+
+        assert config.run.ticks == 16
+        assert config.model.agent_count == 15
+        assert set(A6_ACTIONS).issubset(set(config.model.actions))
+        assert config.semantic_field is not None
+        assert config.semantic_field.prediction_budget_per_tick == 0.25
+        assert config.semantic_field.lead_ticks == 2
+        assert config.semantic_field.semantic_decay == 0.9
+        assert config.semantic_field.logistic_beta == 4.0
+        assert config.semantic_field.linear_gain == 1.0
+        assert config.semantic_field.threshold_adaptation_rate == 0.03
+        assert config.semantic_field.semantic_noise == 0.02
+        assert config.semantic_field.phase_shift_ticks == 3
+        assert config.logistic_appraisal is None
+        assert config.predictive_control is None
+        assert config.hives == ()
+        observed_conditions.append(config.semantic_field.condition)
+
+    assert tuple(observed_conditions) == A7_CONDITIONS
+
+
+def test_a7_semantic_field_config_round_trips_to_normalized_dict() -> None:
+    config = load_config(A7_LOGISTIC_SEMANTIC_COUPLING)
+    normalized = config.to_dict()
+
+    assert normalized["semantic_field"] == {
+        "condition": "a7_logistic_semantic_coupling",
+        "prediction_budget_per_tick": 0.25,
+        "lead_ticks": 2,
+        "semantic_decay": 0.9,
+        "logistic_beta": 4.0,
+        "linear_gain": 1.0,
+        "threshold_adaptation_rate": 0.03,
+        "semantic_noise": 0.02,
+        "phase_shift_ticks": 3,
+    }
+    assert "logistic_appraisal" not in normalized
+    assert "predictive_control" not in normalized
+
+
+def test_a7_config_loading_rejects_unknown_invalid_and_out_of_scope_fields(
+    tmp_path: Path,
+) -> None:
+    base = yaml.safe_load(A7_LOGISTIC_SEMANTIC_COUPLING.read_text())
+    base["semantic_field"]["surprise_knob"] = 1.0
+    unknown_path = tmp_path / "unknown_a7.yaml"
+    unknown_path.write_text(yaml.safe_dump(base))
+    with pytest.raises(ValueError, match="unsupported keys: surprise_knob"):
+        load_config(unknown_path)
+
+    invalid_condition = yaml.safe_load(A7_LOGISTIC_SEMANTIC_COUPLING.read_text())
+    invalid_condition["semantic_field"]["condition"] = "a7_unregistered_condition"
+    invalid_condition_path = tmp_path / "invalid_condition_a7.yaml"
+    invalid_condition_path.write_text(yaml.safe_dump(invalid_condition))
+    with pytest.raises(ValueError, match="must be one of"):
+        load_config(invalid_condition_path)
+
+    invalid_probability = yaml.safe_load(A7_LOGISTIC_SEMANTIC_COUPLING.read_text())
+    invalid_probability["semantic_field"]["semantic_noise"] = 1.2
+    invalid_probability_path = tmp_path / "invalid_probability_a7.yaml"
+    invalid_probability_path.write_text(yaml.safe_dump(invalid_probability))
+    with pytest.raises(ValueError, match="between 0.0 and 1.0"):
+        load_config(invalid_probability_path)
+
+    mixed_a6 = yaml.safe_load(A7_LOGISTIC_SEMANTIC_COUPLING.read_text())
+    mixed_a6["logistic_appraisal"] = yaml.safe_load(A6_LOGISTIC_APPRAISAL.read_text())[
+        "logistic_appraisal"
+    ]
+    mixed_a6_path = tmp_path / "mixed_a6_a7.yaml"
+    mixed_a6_path.write_text(yaml.safe_dump(mixed_a6))
+    with pytest.raises(ValueError, match="must not be combined with A6 logistic_appraisal"):
+        load_config(mixed_a6_path)
+
+    multi_hive = yaml.safe_load(A7_LOGISTIC_SEMANTIC_COUPLING.read_text())
+    multi_hive["hives"] = [{"hive_id": "hive_a", "seed_offset": 0}]
+    multi_hive_path = tmp_path / "multi_hive_a7.yaml"
+    multi_hive_path.write_text(yaml.safe_dump(multi_hive))
+    with pytest.raises(ValueError, match="single-hive A7"):
+        load_config(multi_hive_path)
 
 
 def test_a6_smoke_run_is_deterministic_and_emits_schema(tmp_path: Path) -> None:

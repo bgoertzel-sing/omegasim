@@ -32,6 +32,20 @@ accounting, null semantics, schemas, and tests.
 
 ## Latest Changes
 
+- Added a strict opt-in `semantic_field` config schema for A7 that imports the
+  frozen A7 condition names from `ohdyn/a7_semantic_field_contract.py`,
+  normalizes through `OmegaConfig.to_dict()`, permits the existing A6 action
+  vocabulary for future semantic-field mechanics, and rejects unsupported
+  fields, invalid probabilities, mixed A5/A6/A7 configs, and multi-hive A7
+  configs.
+- Added six A7 smoke fixture stubs under `configs/`, one for each frozen
+  condition/null: `a7_logistic_semantic_coupling`,
+  `semantic_off_baseline`, `amplitude_matched_linear_semantic_coupling`,
+  `source_preserving_semantic_label_shuffle`, `semantic_field_phase_shuffle`,
+  and `prediction_budget_timing_broken_matched_count_null`.
+- Added focused tests that load the A7 fixture bundle, assert exact condition
+  order against `A7_CONDITIONS`, verify normalized config output, and check the
+  new fail-fast config validation paths.
 - Added `ohdyn/a7_semantic_field_contract.py` to freeze the A7 semantic field
   values, prediction fields, source ledger components, control fields,
   preregistered conditions/nulls, utility/update-equation text, schema fields,
@@ -53,11 +67,28 @@ accounting, null semantics, schemas, and tests.
   rather than reopening A6.2.
 - Updated `ohdyn.automation_guard` so a Markdown `Recommended Next Step`
   section in this file overrides stale strategy-review next-action text.
-- No simulator mechanics, configs, dashboards, integrations, seed scope, or
-  multi-hive mechanics were changed.
+- The earlier A7 contract/analyzer gate did not change simulator mechanics,
+  dashboards, integrations, seed scope, or multi-hive mechanics.
+- This run did not change simulator mechanics, dashboards, integrations, seed
+  scope, or multi-hive mechanics. It added A7 config schema/fixture stubs only.
 
 ## Verification
 
+- Guard before this run: `.venv-conda/bin/python -m ohdyn.automation_guard`
+  passed with `state=open`, `should_noop=false`, `strategic_change_level=none`,
+  and `notify_ben=false`. Its recommended next action was the A7 config schema
+  and smoke fixture stub gate completed here.
+- External strategy review at
+  `../outputs/strategy-reviews/omegasim/latest-review.md` recommended the
+  earlier A7 implementation contract/gate. That gate was already complete, so
+  this run followed the newer `AUTOMATION_STATUS.md` next step. No
+  GPT-5.5-Pro recommendation was deferred or rejected.
+- `.venv-conda/bin/python -m py_compile
+  ohdyn/config.py ohdyn/a7_semantic_field_contract.py
+  ohdyn/analyze_a7_semantic_field.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a7 or automation_guard'` passed: `13 passed, 596 deselected`.
+- `git diff --check` passed.
 - Guard before changes: `.venv-conda/bin/python -m ohdyn.automation_guard`
   passed with `state=open`, `should_noop=false`, `strategic_change_level=none`,
   and `notify_ben=false`.
@@ -79,6 +110,6 @@ preregistration that explicitly supersedes those closures.
 
 ## Recommended Next Step
 
-Add the minimal opt-in A7 config schema and smoke fixture stubs that reference
-the frozen contract, without changing simulator mechanics or running A7
-scientific comparisons.
+Add the minimal A7 comparison scaffold that enumerates the six frozen fixture
+stubs and writes deterministic generated-config/manifest placeholders, but
+does not run simulator mechanics or claim A7 scientific evidence.

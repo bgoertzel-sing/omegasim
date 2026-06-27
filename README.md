@@ -105,6 +105,21 @@ on 2026-06-27. The A7 semantic-field preregistration is documented in
 for source-accounted semantic/artifact fields and logistic inter-agent
 dependence, not as a continuation-by-seed-broadening of A6.2.
 
+The A7 implementation contract is frozen in
+`ohdyn/a7_semantic_field_contract.py` and `docs/a7_implementation_gate.md`.
+The checked-in A7 smoke fixture stubs are config-schema fixtures only; they
+load the six preregistered conditions and do not authorize simulator mechanics
+or scientific comparisons yet:
+
+```text
+configs/a7_logistic_semantic_coupling_smoke.yaml
+configs/a7_semantic_off_baseline_smoke.yaml
+configs/a7_amplitude_matched_linear_semantic_coupling_smoke.yaml
+configs/a7_source_preserving_semantic_label_shuffle_smoke.yaml
+configs/a7_semantic_field_phase_shuffle_smoke.yaml
+configs/a7_prediction_budget_timing_broken_matched_count_null_smoke.yaml
+```
+
 The fixed comparison and analysis commands are:
 
 ```bash
