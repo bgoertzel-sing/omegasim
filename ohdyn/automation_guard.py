@@ -32,6 +32,8 @@ def read_automation_state(
     closed_reasons = _closed_reasons(status=status, review=review)
     if a5_preregistration_active and not _status_closes_active_a5(status):
         closed_reasons = []
+    if a5_preregistration_active and _status_reopens_active_a5(status):
+        closed_reasons = []
     roadmap_reopens_a7 = _roadmap_reopens_after_a5(roadmap) and not (
         _status_supersedes_roadmap(status)
     )
@@ -144,6 +146,15 @@ def _status_closes_active_a5(status: str) -> bool:
             in normalized_status
             or "do not reopen a5" in normalized_status
         )
+    )
+
+
+def _status_reopens_active_a5(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "current concise a5 gate" in normalized_status
+        and "explicit single-hive a5 reopening" in normalized_status
+        and "active preregistration summary" in normalized_status
     )
 
 

@@ -1,5 +1,10 @@
 # A5 Anticipatory Predictive-Control Preregistration
 
+Current concise A5 gate: `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+That document records the 2026-06-27 explicit single-hive A5 reopening and is
+the active preregistration summary for the bounded smoke/pilot. This older
+document remains the detailed original A5 design record.
+
 ## Purpose
 
 This preregisters the next OmegaSim stage after the A4 two-hive closure. A4

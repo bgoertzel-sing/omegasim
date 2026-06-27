@@ -28,15 +28,21 @@ summary.md
 
 ## A5 Anticipatory Predictive-Control Smoke
 
-A5 is preregistered in `docs/a5_anticipatory_predictive_control_preregistration.md`.
-The A5 loop is now closed under the seed `7..16` accounting evidence recorded
-in `docs/results/a5_eight_condition_closure_update_seed7_16.md` and
-`docs/results/a5_closure_note_seed7_16.md`. The scaffold remains intentionally
-single-hive and deterministic. It keeps the existing action set and artifact
-contract, adds a hidden periodic demand-share signal over the four attention
-classes, and lets an opt-in predictive controller shift work-task class
-priority from forecasted future pressure. Do not reopen A5 for broader seeds,
-new mechanics, or residual-structure claims without a new preregistration.
+A5 is currently reopened only for the explicitly requested bounded
+single-hive anticipatory predictive-control stage preregistered in
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+The older detailed design record remains in
+`docs/a5_anticipatory_predictive_control_preregistration.md`. The prior seed
+`7..16` and A5.1a accounting closures still constrain interpretation: do not
+make residual-structure, lobe-like, or strange-attractor-like claims unless the
+new preregistered accounting controls and surrogate nulls pass.
+
+The scaffold remains intentionally single-hive and deterministic. It keeps the
+existing action set and artifact contract, adds a hidden periodic demand-share
+signal over the four attention classes, and lets an opt-in predictive
+controller shift work-task class priority from forecasted future pressure. Do
+not broaden A5 to new mechanics, wider seed sweeps, dashboards, integrations,
+or multi-hive coupling without another preregistration.
 
 When Ben explicitly requests an A5 anticipatory predictive-control pass, the
 existing A5 preregistration is the active gate for bounded verification. That

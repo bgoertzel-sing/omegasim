@@ -5,44 +5,58 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-A5.1a is now closed conservatively for Ben's resource-bounded prediction
-question. The prior A5 seed `7..16` result remains a conservative
-forecast-skill/accounting result: deterministic predictors improved forecast
-skill under matched single-hive demand streams, but residual structure did not
-survive full accounting controls and budget-matched timing-broken nulls.
-The current A5 anticipatory predictive-control loop is closed at the A5.1a
-accounting boundary.
+Current concise A5 gate:
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+That document records the 2026-06-27 explicit single-hive A5 reopening and is
+the active preregistration summary for the bounded smoke/pilot.
 
-The preregistered A5.1 question was whether prediction expenditure
-that competes directly with work opportunity creates richer but still partially
-predictable residual collective dynamics at intermediate budgets than either
-zero-spend reactivity or oracle-like smoothing. The A5.1a subgate calibrated
-charged prediction cost and added spend-only replay nulls before any broader
-A5.1 run. That gate failed closed: charged predictors improved forecast skill
-against replay nulls, but did not beat replay nulls on full-accounting residual
-structure.
+This reopens A5 only for the explicitly requested anticipatory
+predictive-control smoke/pilot. It supersedes the previous no-op automation
+posture but preserves the prior A5 seed `7..16` and A5.1a fail-closed results
+as interpretation constraints. Forecast-skill gains are not enough: any
+structured-dynamics claim must survive matched task-arrival totals, service
+capacity, action opportunity, work budget, prediction-spend accounting, and
+budget-matched shuffled/phase-randomized nulls.
 
-A5.1a remains single-hive, deterministic, and abstract/numeric. It does not
+The current hypothesis is Ben's resource-bounded prediction hypothesis:
+inter-agent or inter-role prediction is itself a scarce managed resource.
+Zero-budget reactivity may be too myopic, while perfect/oracle prediction may
+smooth away the dynamics of interest. The target question is whether
+intermediate prediction budgets create richer but still partially predictable
+residual collective dynamics than either zero-budget reactivity or oracle
+smoothing.
+
+A5 remains single-hive, deterministic, and abstract/numeric. It does not
 authorize real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics,
-downstream multi-hive coupling, or promotion language before the preregistered
-accounting/null gates pass. Those gates did not pass.
-
-The first A5.1 paired-seed smoke/pilot is complete and fail-closed. It verified
-that prediction spend can be charged against work opportunity and analyzed with
-full accounting controls, but it degraded work-completion guardrails and does
-not support structured-dynamics promotion.
-
-External GPT-5.5-Pro strategy review on 2026-06-27 marked this as
-`strategic_change_level: major` and `notify_ben: true`. This run completes the
-scientifically sensible part of that recommendation: the A5.1a
-cost-calibration/spend-only-null patch has been preregistered, implemented, and
-closed conservatively. Ben should be notified that the active direction shifted
-from the older A7 roadmap wording back to a narrow A5.1 accounting gate and
-that this accounting gate has now failed closed.
+downstream multi-hive coupling, or promotion language. Three-hive delayed
+anticipatory coupling remains downstream and requires a separate
+preregistration with target/phase nulls and resource-bounded cross-hive
+prediction costs.
 
 ## Latest Changes
 
+- 2026-06-27 16:40 PDT explicit A5 reopening: added
+  `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md` as
+  the concise active preregistration for the requested single-hive
+  anticipatory predictive-control stage. The preregistration freezes matched
+  task arrivals, service capacity, action opportunity, work budget,
+  prediction-budget/null controls, primary residual endpoints, guardrails, and
+  fail-closed treatment of strange-attractor-like claims.
+- Updated `README.md` and the older A5 preregistration to point at the concise
+  active A5 gate while retaining the prior A5/A5.1a closure evidence as an
+  interpretation constraint.
+- Updated `ohdyn.automation_guard` so the explicit current A5 preregistration
+  marker can reopen the automation despite stale historical no-op status text,
+  without changing the existing closure behavior when no current reopening is
+  recorded.
+- Ran the bounded reopened A5 single-hive smoke/pilot with the existing
+  deterministic scaffold only. The paired seed `5,6` comparison again showed
+  forecast-skill improvements, but the residual-accounting analyzer failed
+  closed: no intermediate-budget condition satisfied the preregistered
+  residual/null and guardrail criteria.
+- Added `docs/results/a5_single_hive_reopened_smoke_seed5_6.md` to record the
+  smoke result and fail-closed interpretation boundary.
 - 2026-06-27 16:08 PDT bounded no-op verification: re-read `README.md`, this
   status file, the current configs/tests surface, the provisional roadmap,
   A5.1/A5.1a preregistration and closure documents, and the latest
@@ -297,15 +311,35 @@ that this accounting gate has now failed closed.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   automation_guard` passed after this no-op guard status update: `10 passed,
   612 deselected`.
+- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed
+  after adding the explicit current-A5 reopening guard marker.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the status
+  update and reported `state=open`, `should_noop=false`, no closed reasons,
+  and the single next step to run the bounded A5 single-hive smoke/pilot and
+  residual-accounting check.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting'`
+  passed after the preregistration/guard update: `15 passed, 608 deselected`.
+- `.venv-conda/bin/python -m ohdyn.run --config
+  configs/a5_predictive_linear_smoke.yaml --seed 5 --out
+  /tmp/omegasim_a5_reopened_linear_smoke_seed5_20260627` passed.
+- `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_reopened_predictive_compare_seed5_6_20260627` passed
+  and wrote 16 run artifacts across the matched A5 predictive-control
+  conditions.
+- `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir
+  /tmp/omegasim_a5_reopened_predictive_compare_seed5_6_20260627 --out
+  /tmp/omegasim_a5_reopened_residual_accounting_seed5_6_20260627` passed. The
+  summary reported fail-closed promotion status; no intermediate-budget
+  condition satisfied all preregistered criteria.
 
 ## Blockers
 
-There is no local environment blocker. The scientific blocker is strategic:
-the first A5.1 smoke/pilot degraded guardrails, and the A5.1a
-cost-calibration smoke still failed the spend-only replay-null residual gate.
-The external review also marked the direction shift as major and said Ben
-should be notified.
+There is no local environment blocker. The scientific blocker is that the
+reopened A5 smoke reproduced forecast-skill gains but did not produce
+residual/null evidence strong enough for promotion. The external review also
+marked the direction shift as major and said Ben should be notified.
 
 ## Recommended Next Step
 
-- Recommended next step: remain in no-op/awaiting-preregistration state pending Ben's decision on whether to stop A5-family work or preregister a new delayed semantic/logistic or multi-hive design.
+- Recommended next step: design one preregistered resource-bounded residual diagnostic that can separate useful anticipation from accounting/null effects before adding any new mechanics.
