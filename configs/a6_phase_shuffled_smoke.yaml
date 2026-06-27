@@ -1,0 +1,40 @@
+run:
+  experiment_id: a6_phase_shuffled_smoke
+  ticks: 16
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+    - synthesize
+    - review
+    - formalize
+    - maintain
+    - predict
+    - communicate
+    - pause
+  task_creation_pressure: 1.0
+  work_service_capacity: 1.0
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+logistic_appraisal:
+  condition: phase_shuffled
+  appraisal_gain: 1.0
+  sigmoid_slope: 6.0
+  prediction_budget: 0.25
+  action_temperature: 0.9
+  handoff_threshold: 0.55
+  overload_threshold: 0.82
+  adaptive_threshold_rate: 0.03
+  phase_shift_ticks: 2
+  threshold_shuffle_probability: 0.35
+  appraisal_noise: 0.04
+  artifact_noise: 0.03

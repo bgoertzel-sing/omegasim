@@ -10,6 +10,7 @@ import pytest
 import yaml
 
 from ohdyn.sim import (
+    A6_EVENT_TYPES,
     ATTENTION_EVENT_TYPES,
     BASELINE_EVENT_TYPES,
     BASELINE_LOBE_LABELS,
@@ -22,10 +23,16 @@ from ohdyn.sim import (
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
     attention_policy_metric_fields,
+    logistic_appraisal_metric_fields,
     metrics_fieldnames,
     predictive_control_metric_fields,
     role_action_metric_fields,
     simulate,
+)
+from ohdyn.analyze_a6_logistic_appraisal import (
+    A6_ANALYSIS_ENDPOINT_FIELDS,
+    A6_ANALYSIS_MANIFEST_FIELDS,
+    run_a6_logistic_appraisal_analysis,
 )
 from ohdyn.config import (
     ATTENTION_CLASSES,
@@ -183,6 +190,10 @@ A4_TWO_HIVE_DIRECT_HOLDOUT = Path("configs/a4_two_hive_direct_holdout.yaml")
 A4_TWO_HIVE_DELAYED_HOLDOUT = Path("configs/a4_two_hive_delayed_holdout.yaml")
 A4_TWO_HIVE_SHUFFLED_HOLDOUT = Path("configs/a4_two_hive_shuffled_holdout.yaml")
 A5_PREDICTIVE_LINEAR = Path("configs/a5_predictive_linear_smoke.yaml")
+A6_LOGISTIC_APPRAISAL = Path("configs/a6_logistic_appraisal_smoke.yaml")
+A6_LINEAR_APPRAISAL = Path("configs/a6_linear_appraisal_smoke.yaml")
+A6_THRESHOLD_SHUFFLED = Path("configs/a6_threshold_shuffled_smoke.yaml")
+A6_PHASE_SHUFFLED = Path("configs/a6_phase_shuffled_smoke.yaml")
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
 CONFIG_ONLY = Path("configs/a0_config_only.yaml")
@@ -290,6 +301,10 @@ OUTPUT_FIXTURE_ARTIFACTS = {
         "coupling_events.csv",
     ],
     A5_PREDICTIVE_LINEAR: A0_FULL_ARTIFACTS,
+    A6_LOGISTIC_APPRAISAL: A0_FULL_ARTIFACTS,
+    A6_LINEAR_APPRAISAL: A0_FULL_ARTIFACTS,
+    A6_THRESHOLD_SHUFFLED: A0_FULL_ARTIFACTS,
+    A6_PHASE_SHUFFLED: A0_FULL_ARTIFACTS,
     DEFAULT_OUTPUTS: A0_FULL_ARTIFACTS,
     REORDERED_ACTIONS: A0_FULL_ARTIFACTS,
     CONFIG_ONLY: CONFIG_ONLY_ARTIFACTS,
@@ -14855,3 +14870,144 @@ def test_fixed_seed_event_type_totals_are_stable(tmp_path: Path) -> None:
             assert f"- {event_type}: {count}" in summary
 
     assert observed == expected
+
+
+def test_loads_a6_logistic_appraisal_smoke_config() -> None:
+    config = load_config(A6_LOGISTIC_APPRAISAL)
+
+    assert config.run.experiment_id == "a6_logistic_appraisal_smoke"
+    assert config.run.ticks == 16
+    assert config.logistic_appraisal is not None
+    assert config.logistic_appraisal.condition == "logistic"
+    assert config.logistic_appraisal.handoff_threshold == 0.55
+    assert config.logistic_appraisal.threshold_shuffle_probability == 0.35
+    assert set(config.model.actions) == {
+        "idle",
+        "message",
+        "create_task",
+        "work_task",
+        "synthesize",
+        "review",
+        "formalize",
+        "maintain",
+        "predict",
+        "communicate",
+        "pause",
+    }
+
+
+def test_a6_config_loading_rejects_unknown_fields_and_invalid_probabilities(
+    tmp_path: Path,
+) -> None:
+    base = yaml.safe_load(A6_LOGISTIC_APPRAISAL.read_text())
+    base["logistic_appraisal"]["surprise_knob"] = 1.0
+    unknown_path = tmp_path / "unknown_a6.yaml"
+    unknown_path.write_text(yaml.safe_dump(base))
+    with pytest.raises(ValueError, match="unsupported keys: surprise_knob"):
+        load_config(unknown_path)
+
+    invalid = yaml.safe_load(A6_LOGISTIC_APPRAISAL.read_text())
+    invalid["logistic_appraisal"]["threshold_shuffle_probability"] = 1.2
+    invalid_path = tmp_path / "invalid_a6.yaml"
+    invalid_path.write_text(yaml.safe_dump(invalid))
+    with pytest.raises(ValueError, match="between 0.0 and 1.0"):
+        load_config(invalid_path)
+
+
+def test_a6_smoke_run_is_deterministic_and_emits_schema(tmp_path: Path) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    first_result = run_experiment(A6_LOGISTIC_APPRAISAL, seed=6, out_dir=first)
+    second_result = run_experiment(A6_LOGISTIC_APPRAISAL, seed=6, out_dir=second)
+
+    _assert_artifacts_match_output_directory(first, A0_FULL_ARTIFACTS)
+    _assert_artifacts_match_output_directory(second, A0_FULL_ARTIFACTS)
+    assert (first / "metrics.csv").read_text() == (second / "metrics.csv").read_text()
+    assert (first / "events.csv").read_text() == (second / "events.csv").read_text()
+    assert first_result.metrics == second_result.metrics
+
+    with (first / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+    for field in logistic_appraisal_metric_fields():
+        assert field in metrics_header
+
+    with (first / "events.csv").open() as handle:
+        event_types = {row["event_type"] for row in csv.DictReader(handle)}
+    assert event_types & set(A6_EVENT_TYPES)
+
+    manifest = yaml.safe_load((first / "manifest.yaml").read_text())
+    assert manifest["model"]["logistic_appraisal"]["condition"] == "logistic"
+    assert manifest["model"]["logistic_appraisal"]["fields"] == list(
+        logistic_appraisal_metric_fields()
+    )
+    assert set(manifest["model"]["logistic_appraisal"]["event_types"]) == set(A6_EVENT_TYPES)
+
+    summary = (first / "summary.md").read_text()
+    assert "## A6 logistic appraisal" in summary
+    assert "- total handoff attempts:" in summary
+    assert "- final artifact readiness:" in summary
+
+
+def test_a6_non_a6_configs_preserve_existing_a0_schema(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a0"
+    run_experiment(CONFIG, seed=1, out_dir=out_dir)
+
+    with (out_dir / "metrics.csv").open() as handle:
+        metrics_header = next(csv.reader(handle))
+    assert metrics_header == list(metrics_fieldnames(("idle", "message", "create_task", "work_task")))
+    assert all(not field.startswith("a6_") for field in metrics_header)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert "logistic_appraisal" not in manifest["model"]
+
+
+def test_a6_smoke_conditions_share_stream_contract_and_action_opportunity(
+    tmp_path: Path,
+) -> None:
+    configs = (
+        A6_LOGISTIC_APPRAISAL,
+        A6_LINEAR_APPRAISAL,
+        A6_THRESHOLD_SHUFFLED,
+        A6_PHASE_SHUFFLED,
+    )
+    stream_contracts = []
+    action_opportunities = []
+    for config_path in configs:
+        out_dir = tmp_path / config_path.stem
+        result = run_experiment(config_path, seed=8, out_dir=out_dir)
+        manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+        stream_contracts.append(manifest["model"]["logistic_appraisal"]["rng_streams"])
+        action_opportunities.append(
+            [
+                sum(
+                    int(row[f"role_{role}_{action}_tick"])
+                    for role in BASELINE_ROLES
+                    for action in result.config.model.actions
+                )
+                for row in result.metrics
+            ]
+        )
+
+    assert all(contract == stream_contracts[0] for contract in stream_contracts)
+    assert action_opportunities == [[15] * 16] * 4
+
+
+def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "compare"
+    for config_path in (A6_LOGISTIC_APPRAISAL, A6_LINEAR_APPRAISAL):
+        run_experiment(config_path, seed=3, out_dir=compare_dir / config_path.stem)
+
+    out_dir = tmp_path / "analysis"
+    result = run_a6_logistic_appraisal_analysis(compare_dir, out_dir)
+
+    assert result["run_count"] == 2
+    with (out_dir / "a6_logistic_appraisal_endpoints.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_ANALYSIS_ENDPOINT_FIELDS)
+    with (out_dir / "a6_logistic_appraisal_manifest.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_ANALYSIS_MANIFEST_FIELDS)
+    summary = (out_dir / "summary.md").read_text()
+    assert "- reran simulations: no" in summary
+    assert "## Control Levels" in summary

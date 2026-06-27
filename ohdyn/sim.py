@@ -10,6 +10,7 @@ import networkx as nx
 import numpy as np
 
 from ohdyn.config import (
+    A6_ACTIONS,
     ATTENTION_CLASSES,
     ExogenousArrivalsConfig,
     OmegaConfig,
@@ -53,6 +54,16 @@ ATTENTION_EVENT_TYPES = (
 
 EXOGENOUS_ARRIVAL_EVENT_TYPES = (
     "exogenous_task_arrived",
+)
+
+A6_EVENT_TYPES = (
+    "a6_appraisal_update",
+    "a6_artifact_update",
+    "a6_handoff_attempted",
+    "a6_handoff_succeeded",
+    "a6_handoff_failed",
+    "a6_prediction_spent",
+    "a6_threshold_adapted",
 )
 
 EVENT_FIELDS = (
@@ -147,6 +158,7 @@ def metrics_fieldnames(
     include_attention_policy: bool = False,
     include_exogenous_arrivals: bool = False,
     include_predictive_control: bool = False,
+    include_logistic_appraisal: bool = False,
 ) -> tuple[str, ...]:
     return (
         "tick",
@@ -171,6 +183,7 @@ def metrics_fieldnames(
         *QUEUED_TASK_AGE_METRIC_FIELDS,
         *(attention_policy_metric_fields() if include_attention_policy else ()),
         *(predictive_control_metric_fields() if include_predictive_control else ()),
+        *(logistic_appraisal_metric_fields() if include_logistic_appraisal else ()),
         "idle_tick",
         *role_action_metric_fields(actions),
         "mean_agent_bias",
@@ -238,6 +251,55 @@ def predictive_control_metric_fields() -> tuple[str, ...]:
     )
 
 
+A6_ARTIFACT_FIELDS = (
+    "artifact_novelty",
+    "artifact_coherence",
+    "artifact_actionability",
+    "artifact_provenance_debt",
+    "artifact_risk",
+    "artifact_contradiction",
+    "artifact_readiness",
+    "artifact_implementation_maturity",
+    "artifact_communication_maturity",
+)
+
+A6_LATENT_FIELDS = (
+    "activation",
+    "focus",
+    "fatigue",
+    "novelty_appetite",
+    "risk_sensitivity",
+    "handoff_threshold",
+    "prediction_error",
+)
+
+
+def logistic_appraisal_metric_fields() -> tuple[str, ...]:
+    return (
+        "a6_condition",
+        "a6_appraisal_gain",
+        "a6_sigmoid_slope",
+        "a6_prediction_budget",
+        "a6_prediction_budget_spent_tick",
+        "a6_latent_activation_mean_tick",
+        "a6_latent_focus_mean_tick",
+        "a6_latent_fatigue_mean_tick",
+        "a6_latent_prediction_error_mean_tick",
+        "a6_artifact_novelty_tick",
+        "a6_artifact_coherence_tick",
+        "a6_artifact_actionability_tick",
+        "a6_artifact_provenance_debt_tick",
+        "a6_artifact_risk_tick",
+        "a6_artifact_contradiction_tick",
+        "a6_artifact_readiness_tick",
+        "a6_artifact_implementation_maturity_tick",
+        "a6_artifact_communication_maturity_tick",
+        "a6_handoff_attempts_tick",
+        "a6_handoff_successes_tick",
+        "a6_handoff_failures_tick",
+    )
+
+
 @dataclass(frozen=True)
 class AgentState:
     agent_id: str
@@ -252,6 +314,14 @@ class Task:
     created_tick: int
     remaining_work: int
     task_class: str = ""
+
+
+@dataclass
+class _A6TickState:
+    prediction_budget_spent: float = 0.0
+    handoff_attempts: int = 0
+    handoff_successes: int = 0
+    handoff_failures: int = 0
 
 
 @dataclass(frozen=True)
@@ -339,6 +409,12 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
     previous_lobe_label = ""
     baseline_lobe_run_id = 0
     baseline_lobe_current_run_length = 0
+    a6_appraisal_rng = _a6_stream_rng(config, seed, "appraisal_noise_stream")
+    a6_artifact_rng = _a6_stream_rng(config, seed, "artifact_update_stream")
+    a6_prediction_rng = _a6_stream_rng(config, seed, "prediction_noise_stream")
+    a6_shuffle_rng = _a6_stream_rng(config, seed, "control_shuffle_stream")
+    a6_latent = _initial_a6_latent(agents, config, a6_appraisal_rng)
+    a6_artifact = _initial_a6_artifact(config)
 
     for tick in range(config.run.ticks):
         queue_depth_start = len(task_queue)
@@ -349,6 +425,18 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
         completed_this_tick = 0
         attention_value_weighted_completed_tick = 0
         exogenous_created_this_tick = 0
+        a6_tick = _A6TickState()
+        if config.logistic_appraisal is not None:
+            _advance_a6_background_state(
+                config=config,
+                latent=a6_latent,
+                artifact=a6_artifact,
+                tick=tick,
+                appraisal_rng=a6_appraisal_rng,
+                artifact_rng=a6_artifact_rng,
+                shuffle_rng=a6_shuffle_rng,
+                events=events,
+            )
         if _exogenous_arrivals_enabled(config):
             assert exogenous_rng is not None
             exogenous_created_this_tick = int(
@@ -382,14 +470,25 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                     )
                 )
         for agent in agents:
-            action = _choose_action(
-                config.model.actions,
-                bool(task_queue),
-                agent,
-                rng,
-                task_creation_pressure=config.model.task_creation_pressure,
-                work_service_capacity=config.model.work_service_capacity,
-            )
+            if config.logistic_appraisal is None:
+                action = _choose_action(
+                    config.model.actions,
+                    bool(task_queue),
+                    agent,
+                    rng,
+                    task_creation_pressure=config.model.task_creation_pressure,
+                    work_service_capacity=config.model.work_service_capacity,
+                )
+            else:
+                action = _choose_logistic_appraisal_action(
+                    config=config,
+                    has_queued_tasks=bool(task_queue),
+                    agent=agent,
+                    rng=rng,
+                    latent=a6_latent[agent.agent_id],
+                    artifact=a6_artifact,
+                    tick=tick,
+                )
             action_counts[action] += 1
             role_action_counts[(agent.role, action)] += 1
 
@@ -490,6 +589,18 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                         task_class=task.task_class,
                     )
                 )
+            elif action in A6_ACTIONS:
+                _apply_logistic_appraisal_action(
+                    config=config,
+                    tick=tick,
+                    agent=agent,
+                    action=action,
+                    latent=a6_latent[agent.agent_id],
+                    artifact=a6_artifact,
+                    prediction_rng=a6_prediction_rng,
+                    a6_tick=a6_tick,
+                    events=events,
+                )
             else:
                 events.append(
                     _event(
@@ -519,6 +630,12 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
             config=config,
             tick=tick,
             work_counts_tick=attention_work_counts_tick,
+        )
+        a6_metrics = _logistic_appraisal_metrics(
+            config=config,
+            latent=a6_latent,
+            artifact=a6_artifact,
+            a6_tick=a6_tick,
         )
         baseline_lobe_label = _baseline_lobe_label(
             action_counts=action_counts,
@@ -575,6 +692,7 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                 **queue_age_metrics,
                 **attention_metrics,
                 **predictive_metrics,
+                **a6_metrics,
                 "idle_tick": action_counts["idle"],
                 **_role_action_metrics(config.model.actions, role_action_counts),
                 "mean_agent_bias": round(float(np.mean([agent.bias for agent in agents])), 6),
@@ -1825,6 +1943,489 @@ def _predictive_control_metrics(
         }
     )
     return metrics
+
+
+def _a6_stream_rng(
+    config: OmegaConfig,
+    seed: int,
+    stream_name: str,
+) -> np.random.Generator | None:
+    if config.logistic_appraisal is None:
+        return None
+    stream_offsets = {
+        "baseline_action_stream": 0xA600,
+        "appraisal_noise_stream": 0xA601,
+        "artifact_update_stream": 0xA602,
+        "prediction_noise_stream": 0xA603,
+        "control_shuffle_stream": 0xA604,
+    }
+    return np.random.default_rng(np.random.SeedSequence([seed, stream_offsets[stream_name]]))
+
+
+def _initial_a6_latent(
+    agents: tuple[AgentState, ...],
+    config: OmegaConfig,
+    rng: np.random.Generator | None,
+) -> dict[str, dict[str, float]]:
+    if config.logistic_appraisal is None:
+        return {}
+    assert rng is not None
+    latent = {}
+    for agent in agents:
+        latent[agent.agent_id] = {
+            "activation": round(float(rng.uniform(0.36, 0.54)), 6),
+            "focus": round(float(rng.uniform(0.42, 0.62)), 6),
+            "fatigue": round(float(rng.uniform(0.08, 0.22)), 6),
+            "novelty_appetite": round(float(rng.uniform(0.46, 0.72)), 6),
+            "risk_sensitivity": round(float(rng.uniform(0.34, 0.62)), 6),
+            "handoff_threshold": config.logistic_appraisal.handoff_threshold,
+            "prediction_error": 0.0,
+        }
+    return latent
+
+
+def _initial_a6_artifact(config: OmegaConfig) -> dict[str, float]:
+    if config.logistic_appraisal is None:
+        return {}
+    return {
+        "artifact_novelty": 0.48,
+        "artifact_coherence": 0.36,
+        "artifact_actionability": 0.34,
+        "artifact_provenance_debt": 0.28,
+        "artifact_risk": 0.24,
+        "artifact_contradiction": 0.30,
+        "artifact_readiness": 0.38,
+        "artifact_implementation_maturity": 0.28,
+        "artifact_communication_maturity": 0.22,
+    }
+
+
+def _advance_a6_background_state(
+    *,
+    config: OmegaConfig,
+    latent: dict[str, dict[str, float]],
+    artifact: dict[str, float],
+    tick: int,
+    appraisal_rng: np.random.Generator | None,
+    artifact_rng: np.random.Generator | None,
+    shuffle_rng: np.random.Generator | None,
+    events: list[dict[str, Any]],
+) -> None:
+    assert config.logistic_appraisal is not None
+    assert appraisal_rng is not None
+    assert artifact_rng is not None
+    assert shuffle_rng is not None
+    appraisal = config.logistic_appraisal
+    phase_tick = tick
+    if appraisal.condition == "phase_shuffled":
+        phase_tick += appraisal.phase_shift_ticks
+    phase = np.sin((phase_tick + 1) / 3.0)
+    novelty_drift = 0.018 * phase + float(
+        artifact_rng.normal(0.0, appraisal.artifact_noise)
+    )
+    artifact["artifact_novelty"] = _clamp01(artifact["artifact_novelty"] + novelty_drift)
+    artifact["artifact_contradiction"] = _clamp01(
+        artifact["artifact_contradiction"]
+        + 0.012 * max(0.0, artifact["artifact_novelty"] - artifact["artifact_coherence"])
+    )
+    _update_a6_readiness(artifact)
+
+    for agent_id, state in latent.items():
+        noise = float(appraisal_rng.normal(0.0, appraisal.appraisal_noise))
+        state["activation"] = _clamp01(
+            state["activation"]
+            + 0.03 * (artifact["artifact_novelty"] - state["activation"])
+            + noise
+        )
+        state["focus"] = _clamp01(
+            state["focus"]
+            + 0.025 * (artifact["artifact_readiness"] - state["focus"])
+            - 0.015 * state["fatigue"]
+        )
+        state["fatigue"] = _clamp01(state["fatigue"] * 0.97 + 0.01 * state["activation"])
+        target_threshold = appraisal.handoff_threshold
+        if appraisal.condition == "threshold_shuffled" and (
+            shuffle_rng.random() < appraisal.threshold_shuffle_probability
+        ):
+            target_threshold = float(shuffle_rng.uniform(0.38, 0.78))
+        old_threshold = state["handoff_threshold"]
+        state["handoff_threshold"] = _clamp01(
+            old_threshold
+            + appraisal.adaptive_threshold_rate * (target_threshold - old_threshold)
+            + 0.01 * (state["fatigue"] - 0.3)
+        )
+        events.append(
+            _event(
+                tick=tick,
+                event_type="a6_appraisal_update",
+                agent_id=agent_id,
+                action="appraisal_update",
+            )
+        )
+        if round(old_threshold, 6) != round(state["handoff_threshold"], 6):
+            events.append(
+                _event(
+                    tick=tick,
+                    event_type="a6_threshold_adapted",
+                    agent_id=agent_id,
+                    action="threshold_adapted",
+                )
+            )
+    events.append(
+        _event(
+            tick=tick,
+            event_type="a6_artifact_update",
+            agent_id="",
+            action="artifact_update",
+        )
+    )
+
+
+def _choose_logistic_appraisal_action(
+    *,
+    config: OmegaConfig,
+    has_queued_tasks: bool,
+    agent: AgentState,
+    rng: np.random.Generator,
+    latent: dict[str, float],
+    artifact: dict[str, float],
+    tick: int,
+) -> str:
+    assert config.logistic_appraisal is not None
+    appraisal = config.logistic_appraisal
+    utilities: dict[str, float] = {}
+    for action in config.model.actions:
+        signal = _a6_action_signal(action, latent, artifact)
+        if appraisal.condition == "phase_shuffled":
+            signal = _clamp01(signal + 0.08 * np.sin((tick + appraisal.phase_shift_ticks) / 2.0))
+        gate = _a6_appraisal_gate(
+            signal=signal,
+            threshold=latent["handoff_threshold"],
+            condition=appraisal.condition,
+            slope=appraisal.sigmoid_slope,
+        )
+        utilities[action] = (
+            _a6_action_base(action, has_queued_tasks)
+            + appraisal.appraisal_gain * gate
+            + _a6_role_bias(agent.role, action)
+            - _a6_fatigue_cost(action, latent["fatigue"])
+            - _a6_risk_cost(action, latent, artifact)
+            - _a6_prediction_cost(action, appraisal.prediction_budget)
+        )
+    probabilities = _softmax_probabilities(
+        [utilities[action] for action in config.model.actions],
+        temperature=appraisal.action_temperature,
+    )
+    return str(rng.choice(list(config.model.actions), p=probabilities))
+
+
+def _a6_appraisal_gate(
+    *,
+    signal: float,
+    threshold: float,
+    condition: str,
+    slope: float,
+) -> float:
+    if condition == "linear":
+        return _clamp01(0.5 + signal - threshold)
+    return _sigmoid(slope * (signal - threshold))
+
+
+def _a6_action_signal(
+    action: str,
+    latent: dict[str, float],
+    artifact: dict[str, float],
+) -> float:
+    signals = {
+        "idle": 0.18 + latent["fatigue"],
+        "pause": 0.25 + latent["fatigue"],
+        "message": artifact["artifact_communication_maturity"],
+        "create_task": 0.5 * artifact["artifact_novelty"] + 0.5 * latent["novelty_appetite"],
+        "work_task": artifact["artifact_implementation_maturity"],
+        "synthesize": 0.6 * artifact["artifact_novelty"] + 0.4 * latent["focus"],
+        "review": artifact["artifact_readiness"],
+        "formalize": 0.5 * artifact["artifact_coherence"] + 0.5 * artifact["artifact_actionability"],
+        "maintain": max(
+            artifact["artifact_provenance_debt"],
+            artifact["artifact_contradiction"],
+            artifact["artifact_risk"],
+            latent["fatigue"],
+        ),
+        "predict": abs(latent["prediction_error"]) + 0.35 * artifact["artifact_novelty"],
+        "communicate": artifact["artifact_communication_maturity"],
+    }
+    return _clamp01(signals.get(action, 0.0))
+
+
+def _a6_action_base(action: str, has_queued_tasks: bool) -> float:
+    base = {
+        "idle": -0.2,
+        "pause": -0.25,
+        "message": 0.1,
+        "create_task": 0.05,
+        "work_task": 0.18 if has_queued_tasks else -2.0,
+        "synthesize": 0.15,
+        "review": 0.1,
+        "formalize": 0.05,
+        "maintain": 0.0,
+        "predict": -0.05,
+        "communicate": -0.05,
+    }
+    return base.get(action, -1.0)
+
+
+def _a6_role_bias(role: str, action: str) -> float:
+    role_bias = {
+        ("researcher", "create_task"): 0.18,
+        ("researcher", "synthesize"): 0.16,
+        ("architect", "synthesize"): 0.18,
+        ("architect", "formalize"): 0.14,
+        ("implementer", "work_task"): 0.2,
+        ("implementer", "formalize"): 0.16,
+        ("reviewer", "review"): 0.22,
+        ("reviewer", "maintain"): 0.12,
+        ("coordinator", "message"): 0.18,
+        ("coordinator", "communicate"): 0.2,
+        ("coordinator", "predict"): 0.1,
+    }
+    return role_bias.get((role, action), 0.0)
+
+
+def _a6_fatigue_cost(action: str, fatigue: float) -> float:
+    if action in {"idle", "pause", "maintain"}:
+        return 0.0
+    return 0.45 * fatigue
+
+
+def _a6_risk_cost(
+    action: str,
+    latent: dict[str, float],
+    artifact: dict[str, float],
+) -> float:
+    if action in {"communicate", "formalize", "work_task"}:
+        return latent["risk_sensitivity"] * artifact["artifact_risk"]
+    return 0.0
+
+
+def _a6_prediction_cost(action: str, prediction_budget: float) -> float:
+    return 0.25 * prediction_budget if action == "predict" else 0.0
+
+
+def _apply_logistic_appraisal_action(
+    *,
+    config: OmegaConfig,
+    tick: int,
+    agent: AgentState,
+    action: str,
+    latent: dict[str, float],
+    artifact: dict[str, float],
+    prediction_rng: np.random.Generator | None,
+    a6_tick: _A6TickState,
+    events: list[dict[str, Any]],
+) -> None:
+    assert config.logistic_appraisal is not None
+    assert prediction_rng is not None
+    appraisal = config.logistic_appraisal
+    if action == "pause":
+        latent["fatigue"] = _clamp01(latent["fatigue"] - 0.04)
+        events.append(_event(tick=tick, event_type="agent_idle", agent_id=agent.agent_id, action=action))
+        return
+
+    if action == "predict":
+        spent = appraisal.prediction_budget / max(config.model.agent_count, 1)
+        a6_tick.prediction_budget_spent += spent
+        prediction_error = float(prediction_rng.normal(0.0, 0.18))
+        latent["prediction_error"] = _clamp(prediction_error, -1.0, 1.0)
+        latent["fatigue"] = _clamp01(latent["fatigue"] + 0.025 + spent)
+        events.append(
+            _event(
+                tick=tick,
+                event_type="a6_prediction_spent",
+                agent_id=agent.agent_id,
+                action=action,
+                work_units=round(float(spent), 6),
+            )
+        )
+        return
+
+    if action in {"synthesize", "review", "formalize", "maintain", "communicate"}:
+        a6_tick.handoff_attempts += 1
+        events.append(
+            _event(
+                tick=tick,
+                event_type="a6_handoff_attempted",
+                agent_id=agent.agent_id,
+                action=action,
+            )
+        )
+        success = _a6_handoff_success(action, latent, artifact, appraisal.overload_threshold)
+        if success:
+            a6_tick.handoff_successes += 1
+            _a6_apply_successful_handoff(action, latent, artifact)
+            event_type = "a6_handoff_succeeded"
+        else:
+            a6_tick.handoff_failures += 1
+            artifact["artifact_contradiction"] = _clamp01(artifact["artifact_contradiction"] + 0.025)
+            artifact["artifact_provenance_debt"] = _clamp01(artifact["artifact_provenance_debt"] + 0.02)
+            latent["fatigue"] = _clamp01(latent["fatigue"] + 0.02)
+            latent["prediction_error"] = _clamp(latent["prediction_error"] + 0.05, -1.0, 1.0)
+            event_type = "a6_handoff_failed"
+        _update_a6_readiness(artifact)
+        events.append(
+            _event(
+                tick=tick,
+                event_type=event_type,
+                agent_id=agent.agent_id,
+                action=action,
+            )
+        )
+        return
+
+    events.append(_event(tick=tick, event_type="agent_idle", agent_id=agent.agent_id, action=action))
+
+
+def _a6_handoff_success(
+    action: str,
+    latent: dict[str, float],
+    artifact: dict[str, float],
+    overload_threshold: float,
+) -> bool:
+    threshold = latent["handoff_threshold"]
+    fatigue_ok = latent["fatigue"] < overload_threshold
+    gates = {
+        "synthesize": artifact["artifact_novelty"] >= threshold and fatigue_ok,
+        "review": artifact["artifact_readiness"] >= threshold and fatigue_ok,
+        "formalize": (
+            artifact["artifact_coherence"] >= threshold
+            and artifact["artifact_actionability"] >= threshold
+            and artifact["artifact_provenance_debt"] <= overload_threshold
+            and fatigue_ok
+        ),
+        "communicate": (
+            artifact["artifact_communication_maturity"] >= threshold
+            and artifact["artifact_risk"] <= overload_threshold
+            and fatigue_ok
+        ),
+        "maintain": (
+            max(
+                artifact["artifact_provenance_debt"],
+                artifact["artifact_contradiction"],
+                artifact["artifact_risk"],
+                latent["fatigue"],
+            )
+            >= threshold
+        ),
+    }
+    return bool(gates.get(action, False))
+
+
+def _a6_apply_successful_handoff(
+    action: str,
+    latent: dict[str, float],
+    artifact: dict[str, float],
+) -> None:
+    if action == "synthesize":
+        artifact["artifact_coherence"] = _clamp01(artifact["artifact_coherence"] + 0.08)
+        artifact["artifact_actionability"] = _clamp01(artifact["artifact_actionability"] + 0.04)
+        artifact["artifact_novelty"] = _clamp01(artifact["artifact_novelty"] - 0.03)
+    elif action == "review":
+        artifact["artifact_risk"] = _clamp01(artifact["artifact_risk"] - 0.05)
+        artifact["artifact_contradiction"] = _clamp01(artifact["artifact_contradiction"] - 0.06)
+        artifact["artifact_provenance_debt"] = _clamp01(artifact["artifact_provenance_debt"] - 0.04)
+    elif action == "formalize":
+        artifact["artifact_implementation_maturity"] = _clamp01(
+            artifact["artifact_implementation_maturity"] + 0.08
+        )
+        artifact["artifact_provenance_debt"] = _clamp01(artifact["artifact_provenance_debt"] - 0.03)
+    elif action == "communicate":
+        artifact["artifact_communication_maturity"] = _clamp01(
+            artifact["artifact_communication_maturity"] + 0.09
+        )
+        artifact["artifact_risk"] = _clamp01(artifact["artifact_risk"] + 0.01)
+    elif action == "maintain":
+        artifact["artifact_provenance_debt"] = _clamp01(artifact["artifact_provenance_debt"] - 0.06)
+        artifact["artifact_contradiction"] = _clamp01(artifact["artifact_contradiction"] - 0.04)
+        artifact["artifact_risk"] = _clamp01(artifact["artifact_risk"] - 0.03)
+        latent["fatigue"] = _clamp01(latent["fatigue"] - 0.05)
+    latent["fatigue"] = _clamp01(latent["fatigue"] + 0.015)
+    latent["prediction_error"] = _clamp(latent["prediction_error"] * 0.85, -1.0, 1.0)
+
+
+def _update_a6_readiness(artifact: dict[str, float]) -> None:
+    readiness = (
+        0.25 * artifact["artifact_novelty"]
+        + 0.30 * artifact["artifact_coherence"]
+        + 0.25 * artifact["artifact_actionability"]
+        - 0.12 * artifact["artifact_provenance_debt"]
+        - 0.08 * artifact["artifact_risk"]
+    )
+    artifact["artifact_readiness"] = _clamp01(readiness)
+
+
+def _logistic_appraisal_metrics(
+    *,
+    config: OmegaConfig,
+    latent: dict[str, dict[str, float]],
+    artifact: dict[str, float],
+    a6_tick: _A6TickState,
+) -> dict[str, int | float | str]:
+    if config.logistic_appraisal is None:
+        return {}
+    appraisal = config.logistic_appraisal
+    return {
+        "a6_condition": appraisal.condition,
+        "a6_appraisal_gain": appraisal.appraisal_gain,
+        "a6_sigmoid_slope": appraisal.sigmoid_slope,
+        "a6_prediction_budget": appraisal.prediction_budget,
+        "a6_prediction_budget_spent_tick": round(float(a6_tick.prediction_budget_spent), 6),
+        "a6_latent_activation_mean_tick": _a6_latent_mean(latent, "activation"),
+        "a6_latent_focus_mean_tick": _a6_latent_mean(latent, "focus"),
+        "a6_latent_fatigue_mean_tick": _a6_latent_mean(latent, "fatigue"),
+        "a6_latent_prediction_error_mean_tick": _a6_latent_mean(latent, "prediction_error"),
+        "a6_artifact_novelty_tick": round(float(artifact["artifact_novelty"]), 6),
+        "a6_artifact_coherence_tick": round(float(artifact["artifact_coherence"]), 6),
+        "a6_artifact_actionability_tick": round(float(artifact["artifact_actionability"]), 6),
+        "a6_artifact_provenance_debt_tick": round(float(artifact["artifact_provenance_debt"]), 6),
+        "a6_artifact_risk_tick": round(float(artifact["artifact_risk"]), 6),
+        "a6_artifact_contradiction_tick": round(float(artifact["artifact_contradiction"]), 6),
+        "a6_artifact_readiness_tick": round(float(artifact["artifact_readiness"]), 6),
+        "a6_artifact_implementation_maturity_tick": round(
+            float(artifact["artifact_implementation_maturity"]),
+            6,
+        ),
+        "a6_artifact_communication_maturity_tick": round(
+            float(artifact["artifact_communication_maturity"]),
+            6,
+        ),
+        "a6_handoff_attempts_tick": a6_tick.handoff_attempts,
+        "a6_handoff_successes_tick": a6_tick.handoff_successes,
+        "a6_handoff_failures_tick": a6_tick.handoff_failures,
+    }
+
+
+def _a6_latent_mean(latent: dict[str, dict[str, float]], field: str) -> float:
+    if not latent:
+        return 0.0
+    return round(float(np.mean([state[field] for state in latent.values()])), 6)
+
+
+def _softmax_probabilities(values: list[float], *, temperature: float) -> np.ndarray:
+    scaled = np.array(values, dtype=float) / temperature
+    shifted = scaled - np.max(scaled)
+    exp = np.exp(shifted)
+    return exp / exp.sum()
+
+
+def _sigmoid(value: float) -> float:
+    return float(1.0 / (1.0 + np.exp(-value)))
+
+
+def _clamp01(value: float) -> float:
+    return _clamp(value, 0.0, 1.0)
+
+
+def _clamp(value: float, low: float, high: float) -> float:
+    return round(float(min(high, max(low, value))), 6)
 
 
 def _attention_capture_pressure_event(

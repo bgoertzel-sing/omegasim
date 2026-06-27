@@ -37,6 +37,23 @@ PREDICTIVE_CONTROL_CONDITIONS = (
     "nonlinear_shuffled",
 )
 
+LOGISTIC_APPRAISAL_CONDITIONS = (
+    "logistic",
+    "linear",
+    "threshold_shuffled",
+    "phase_shuffled",
+)
+
+A6_ACTIONS = (
+    "synthesize",
+    "review",
+    "formalize",
+    "maintain",
+    "predict",
+    "communicate",
+    "pause",
+)
+
 
 @dataclass(frozen=True)
 class RunConfig:
@@ -103,6 +120,22 @@ class PredictiveControlConfig:
 
 
 @dataclass(frozen=True)
+class LogisticAppraisalConfig:
+    condition: str
+    appraisal_gain: float
+    sigmoid_slope: float
+    prediction_budget: float
+    action_temperature: float = 1.0
+    handoff_threshold: float = 0.55
+    overload_threshold: float = 0.82
+    adaptive_threshold_rate: float = 0.03
+    phase_shift_ticks: int = 2
+    threshold_shuffle_probability: float = 0.35
+    appraisal_noise: float = 0.04
+    artifact_noise: float = 0.03
+
+
+@dataclass(frozen=True)
 class HiveConfig:
     hive_id: str
     seed_offset: int
@@ -126,6 +159,7 @@ class OmegaConfig:
     attention_policy: AttentionPolicyConfig | None = None
     exogenous_arrivals: ExogenousArrivalsConfig | None = None
     predictive_control: PredictiveControlConfig | None = None
+    logistic_appraisal: LogisticAppraisalConfig | None = None
     hives: tuple[HiveConfig, ...] = ()
     coupling: CouplingConfig | None = None
 
@@ -144,6 +178,8 @@ class OmegaConfig:
             }
         if self.predictive_control is None:
             data.pop("predictive_control")
+        if self.logistic_appraisal is None:
+            data.pop("logistic_appraisal")
         if not self.hives:
             data.pop("hives")
             data.pop("coupling")
@@ -168,6 +204,7 @@ def load_config(path: str | Path) -> OmegaConfig:
     attention_policy = _optional_attention_policy(raw.get("attention_policy"))
     exogenous_arrivals = _optional_exogenous_arrivals(raw.get("exogenous_arrivals"))
     predictive_control = _optional_predictive_control(raw.get("predictive_control"))
+    logistic_appraisal = _optional_logistic_appraisal(raw.get("logistic_appraisal"))
     hives = _optional_hives(raw.get("hives"))
     coupling = _optional_coupling(raw.get("coupling"), hives)
 
@@ -198,11 +235,13 @@ def load_config(path: str | Path) -> OmegaConfig:
         attention_policy=attention_policy,
         exogenous_arrivals=exogenous_arrivals,
         predictive_control=predictive_control,
+        logistic_appraisal=logistic_appraisal,
         hives=hives,
         coupling=coupling,
     )
-    _validate_actions(cfg.model.actions)
+    _validate_actions(cfg.model.actions, allow_a6=cfg.logistic_appraisal is not None)
     _validate_predictive_control_scope(cfg)
+    _validate_logistic_appraisal_scope(cfg)
     _validate_hive_seed_streams(cfg.hives, cfg.coupling)
     return cfg
 
@@ -377,6 +416,81 @@ def _optional_predictive_control(value: Any) -> PredictiveControlConfig | None:
     )
 
 
+def _optional_logistic_appraisal(value: Any) -> LogisticAppraisalConfig | None:
+    if value is None:
+        return None
+    appraisal = _expect_mapping(value, "logistic_appraisal")
+    supported_keys = {
+        "condition",
+        "appraisal_gain",
+        "sigmoid_slope",
+        "prediction_budget",
+        "action_temperature",
+        "handoff_threshold",
+        "overload_threshold",
+        "adaptive_threshold_rate",
+        "phase_shift_ticks",
+        "threshold_shuffle_probability",
+        "appraisal_noise",
+        "artifact_noise",
+    }
+    unknown = set(appraisal) - supported_keys
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"logistic_appraisal contains unsupported keys: {names}")
+
+    return LogisticAppraisalConfig(
+        condition=_logistic_appraisal_condition(
+            appraisal.get("condition"),
+            "logistic_appraisal.condition",
+        ),
+        appraisal_gain=_nonnegative_float(
+            appraisal.get("appraisal_gain", 1.0),
+            "logistic_appraisal.appraisal_gain",
+        ),
+        sigmoid_slope=_positive_float(
+            appraisal.get("sigmoid_slope", 6.0),
+            "logistic_appraisal.sigmoid_slope",
+        ),
+        prediction_budget=_nonnegative_float(
+            appraisal.get("prediction_budget", 0.25),
+            "logistic_appraisal.prediction_budget",
+        ),
+        action_temperature=_positive_float(
+            appraisal.get("action_temperature", 1.0),
+            "logistic_appraisal.action_temperature",
+        ),
+        handoff_threshold=_probability(
+            appraisal.get("handoff_threshold", 0.55),
+            "logistic_appraisal.handoff_threshold",
+        ),
+        overload_threshold=_probability(
+            appraisal.get("overload_threshold", 0.82),
+            "logistic_appraisal.overload_threshold",
+        ),
+        adaptive_threshold_rate=_probability(
+            appraisal.get("adaptive_threshold_rate", 0.03),
+            "logistic_appraisal.adaptive_threshold_rate",
+        ),
+        phase_shift_ticks=_nonnegative_int(
+            appraisal.get("phase_shift_ticks", 2),
+            "logistic_appraisal.phase_shift_ticks",
+        ),
+        threshold_shuffle_probability=_probability(
+            appraisal.get("threshold_shuffle_probability", 0.35),
+            "logistic_appraisal.threshold_shuffle_probability",
+        ),
+        appraisal_noise=_probability(
+            appraisal.get("appraisal_noise", 0.04),
+            "logistic_appraisal.appraisal_noise",
+        ),
+        artifact_noise=_probability(
+            appraisal.get("artifact_noise", 0.03),
+            "logistic_appraisal.artifact_noise",
+        ),
+    )
+
+
 def _optional_hives(value: Any) -> tuple[HiveConfig, ...]:
     if value is None:
         return ()
@@ -476,6 +590,13 @@ def _nonnegative_float(value: Any, name: str) -> float:
     return parsed
 
 
+def _positive_float(value: Any, name: str) -> float:
+    parsed = _nonnegative_float(value, name)
+    if parsed <= 0.0:
+        raise ValueError(f"Config value {name!r} must be positive.")
+    return parsed
+
+
 def _probability(value: Any, name: str) -> float:
     parsed = _nonnegative_float(value, name)
     if parsed > 1.0:
@@ -510,6 +631,15 @@ def _predictive_control_condition(value: Any, name: str) -> str:
     return value
 
 
+def _logistic_appraisal_condition(value: Any, name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"Config value {name!r} must be a string.")
+    if value not in LOGISTIC_APPRAISAL_CONDITIONS:
+        names = ", ".join(LOGISTIC_APPRAISAL_CONDITIONS)
+        raise ValueError(f"Config value {name!r} must be one of: {names}.")
+    return value
+
+
 def _validate_coupling(coupling: CouplingConfig) -> None:
     if coupling.mode == "none":
         if coupling.transfer_probability != 0.0:
@@ -532,6 +662,15 @@ def _validate_predictive_control_scope(config: OmegaConfig) -> None:
         raise ValueError("predictive_control is currently preregistered for single-hive A5 runs only.")
 
 
+def _validate_logistic_appraisal_scope(config: OmegaConfig) -> None:
+    if config.logistic_appraisal is None:
+        return
+    if config.hives:
+        raise ValueError("logistic_appraisal is currently preregistered for single-hive A6 runs only.")
+    if config.predictive_control is not None:
+        raise ValueError("logistic_appraisal must not be combined with A5 predictive_control.")
+
+
 def _validate_hive_seed_streams(
     hives: tuple[HiveConfig, ...],
     coupling: CouplingConfig | None,
@@ -545,16 +684,18 @@ def _validate_hive_seed_streams(
         )
 
 
-def _validate_actions(actions: tuple[str, ...]) -> None:
+def _validate_actions(actions: tuple[str, ...], *, allow_a6: bool = False) -> None:
     required = {"idle", "message", "create_task", "work_task"}
+    allowed = required | (set(A6_ACTIONS) if allow_a6 else set())
     configured = set(actions)
     missing = required - configured
     if missing:
         names = ", ".join(sorted(missing))
         raise ValueError(f"model.actions is missing required baseline actions: {names}")
-    unknown = configured - required
+    unknown = configured - allowed
     if unknown:
         names = ", ".join(sorted(unknown))
-        raise ValueError(f"model.actions contains unsupported baseline actions: {names}")
+        scope = "A6" if allow_a6 else "baseline"
+        raise ValueError(f"model.actions contains unsupported {scope} actions: {names}")
     if len(configured) != len(actions):
         raise ValueError("model.actions must not contain duplicates.")

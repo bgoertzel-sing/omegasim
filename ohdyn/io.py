@@ -15,6 +15,9 @@ import yaml
 
 from ohdyn.config import ATTENTION_CLASSES
 from ohdyn.sim import (
+    A6_ARTIFACT_FIELDS,
+    A6_EVENT_TYPES,
+    A6_LATENT_FIELDS,
     ATTENTION_EVENT_TYPES,
     BASELINE_EVENT_TYPES,
     BASELINE_LOBE_LABELS,
@@ -31,6 +34,7 @@ from ohdyn.sim import (
     QUEUED_TASK_AGE_METRIC_FIELDS,
     SimulationResult,
     attention_policy_metric_fields,
+    logistic_appraisal_metric_fields,
     metrics_fieldnames,
     predictive_control_metric_fields,
     role_action_metric_fields,
@@ -149,6 +153,31 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "single_hive_only": True,
             "demand_stream": "deterministic periodic class-pressure shares",
             "fields": list(predictive_control_metric_fields()),
+        }
+    if result.config.logistic_appraisal is not None:
+        manifest["model"]["logistic_appraisal"] = {
+            "condition": result.config.logistic_appraisal.condition,
+            "single_hive_only": True,
+            "actions": list(result.config.model.actions),
+            "latent_fields": list(A6_LATENT_FIELDS),
+            "artifact_fields": list(A6_ARTIFACT_FIELDS),
+            "event_types": list(A6_EVENT_TYPES),
+            "fields": list(logistic_appraisal_metric_fields()),
+            "rng_streams": {
+                "baseline_action_stream": "numpy.default_rng(seed)",
+                "appraisal_noise_stream": (
+                    "numpy.default_rng(SeedSequence([seed, 0xA601]))"
+                ),
+                "artifact_update_stream": (
+                    "numpy.default_rng(SeedSequence([seed, 0xA602]))"
+                ),
+                "prediction_noise_stream": (
+                    "numpy.default_rng(SeedSequence([seed, 0xA603]))"
+                ),
+                "control_shuffle_stream": (
+                    "numpy.default_rng(SeedSequence([seed, 0xA604]))"
+                ),
+            },
         }
     if _exogenous_arrivals_enabled(result) and result.config.exogenous_arrivals is not None:
         assert result.config.exogenous_arrivals is not None
@@ -273,6 +302,7 @@ def _metrics_fieldnames(result: SimulationResult) -> tuple[str, ...]:
         include_attention_policy=result.config.attention_policy is not None,
         include_exogenous_arrivals=_exogenous_arrivals_enabled(result),
         include_predictive_control=result.config.predictive_control is not None,
+        include_logistic_appraisal=result.config.logistic_appraisal is not None,
     )
     if _multi_hive_enabled(result):
         return (*fields, *MULTI_HIVE_QUEUE_FLOW_METRIC_FIELDS)
@@ -285,6 +315,8 @@ def _event_types(result: SimulationResult) -> tuple[str, ...]:
         event_types.extend(ATTENTION_EVENT_TYPES)
     if _exogenous_arrivals_enabled(result):
         event_types.extend(EXOGENOUS_ARRIVAL_EVENT_TYPES)
+    if result.config.logistic_appraisal is not None:
+        event_types.extend(A6_EVENT_TYPES)
     return tuple(event_types)
 
 
@@ -424,6 +456,15 @@ def _summary(result: SimulationResult) -> str:
                 *_predictive_control_summary(result),
             ]
         )
+    if result.config.logistic_appraisal is not None:
+        lines.extend(
+            [
+                "",
+                "## A6 logistic appraisal",
+                "",
+                *_logistic_appraisal_summary(result),
+            ]
+        )
     if _exogenous_arrivals_enabled(result) and result.config.exogenous_arrivals is not None:
         lines.extend(
             [
@@ -512,6 +553,11 @@ def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
         *(
             [f"- A5 predictive-control fields: {len(predictive_control_metric_fields())}"]
             if result.config.predictive_control is not None
+            else []
+        ),
+        *(
+            [f"- A6 logistic-appraisal fields: {len(logistic_appraisal_metric_fields())}"]
+            if result.config.logistic_appraisal is not None
             else []
         ),
         *(
@@ -637,6 +683,32 @@ def _predictive_control_summary(result: SimulationResult) -> list[str]:
         f"{last.get('a5_work_forecast_alignment_tick', 0)}",
         "- final work future-demand alignment: "
         f"{last.get('a5_work_future_demand_alignment_tick', 0)}",
+    ]
+
+
+def _logistic_appraisal_summary(result: SimulationResult) -> list[str]:
+    last = result.metrics[-1] if result.metrics else {}
+    assert result.config.logistic_appraisal is not None
+    return [
+        f"- condition: {result.config.logistic_appraisal.condition}",
+        f"- appraisal gain: {result.config.logistic_appraisal.appraisal_gain}",
+        f"- sigmoid slope: {result.config.logistic_appraisal.sigmoid_slope}",
+        f"- prediction budget: {result.config.logistic_appraisal.prediction_budget}",
+        "- total handoff attempts: "
+        f"{sum(int(row.get('a6_handoff_attempts_tick', 0)) for row in result.metrics)}",
+        "- total handoff successes: "
+        f"{sum(int(row.get('a6_handoff_successes_tick', 0)) for row in result.metrics)}",
+        "- total handoff failures: "
+        f"{sum(int(row.get('a6_handoff_failures_tick', 0)) for row in result.metrics)}",
+        "- final latent activation mean: "
+        f"{last.get('a6_latent_activation_mean_tick', 0)}",
+        "- final latent fatigue mean: "
+        f"{last.get('a6_latent_fatigue_mean_tick', 0)}",
+        f"- final artifact readiness: {last.get('a6_artifact_readiness_tick', 0)}",
+        "- final artifact implementation maturity: "
+        f"{last.get('a6_artifact_implementation_maturity_tick', 0)}",
+        "- final artifact communication maturity: "
+        f"{last.get('a6_artifact_communication_maturity_tick', 0)}",
     ]
 
 
