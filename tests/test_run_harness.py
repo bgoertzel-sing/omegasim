@@ -123,6 +123,26 @@ from ohdyn.analyze_exogenous_arrival_controls import (
     run_exogenous_arrival_control_analysis,
 )
 from ohdyn.automation_guard import read_automation_state
+from ohdyn.a7_semantic_field_contract import (
+    A7_CONDITIONS,
+    A7_CONTROL_FIELDS,
+    A7_EVENT_FIELDS,
+    A7_FIELD_VALUES,
+    A7_NULL_CONDITIONS,
+    A7_POSITIVE_CONDITION,
+    A7_PREDICTION_FIELDS,
+    A7_SOURCE_COMPONENTS,
+    A7_STATE_FIELDS,
+    A7_UPDATE_EQUATIONS,
+    A7_UTILITY_EQUATIONS,
+    a7_required_event_fields,
+    a7_required_metric_fields,
+)
+from ohdyn.analyze_a7_semantic_field import (
+    A7_ANALYZER_COMPLETENESS_FIELDS,
+    A7_ANALYZER_MANIFEST_FIELDS,
+    run_a7_semantic_field_analysis,
+)
 from ohdyn.calibrate_exogenous_arrivals import (
     EXOGENOUS_CALIBRATION_FIELDS,
     run_exogenous_arrival_calibration,
@@ -773,6 +793,94 @@ def test_automation_guard_opens_when_a5_preregistration_exists(tmp_path: Path) -
     assert state["should_noop"] is False
     assert state["closed_reasons"] == []
     assert state["a5_preregistration_active"] is True
+
+
+def test_a7_semantic_field_contract_freezes_gate_names_and_equations() -> None:
+    assert A7_FIELD_VALUES == (
+        "semantic_novelty",
+        "semantic_coherence",
+        "semantic_contradiction",
+        "semantic_risk",
+        "artifact_readiness",
+        "trust_weighted_salience",
+    )
+    assert A7_PREDICTION_FIELDS == (
+        "prediction_budget_spent",
+        "prediction_error",
+    )
+    assert A7_STATE_FIELDS == (*A7_FIELD_VALUES, *A7_PREDICTION_FIELDS)
+    assert A7_SOURCE_COMPONENTS == (
+        "ambient_decay",
+        "self_contribution",
+        "peer_contribution",
+        "artifact_handoff",
+        "prediction_expenditure",
+        "prediction_error",
+        "queue_work_accounting",
+        "semantic_noise",
+        "clip_residual",
+    )
+    assert A7_POSITIVE_CONDITION == "a7_logistic_semantic_coupling"
+    assert A7_CONDITIONS == (
+        "a7_logistic_semantic_coupling",
+        "semantic_off_baseline",
+        "amplitude_matched_linear_semantic_coupling",
+        "source_preserving_semantic_label_shuffle",
+        "semantic_field_phase_shuffle",
+        "prediction_budget_timing_broken_matched_count_null",
+    )
+    assert A7_NULL_CONDITIONS == A7_CONDITIONS[1:]
+    assert "queue_depth" in A7_CONTROL_FIELDS
+    assert "a7_work_budget_tick" in A7_CONTROL_FIELDS
+    assert "a7_delta_prediction_error" in A7_EVENT_FIELDS
+    assert any(equation.startswith("linear:") for equation in A7_UTILITY_EQUATIONS)
+    assert any(equation.startswith("logistic:") for equation in A7_UTILITY_EQUATIONS)
+    assert any(equation.startswith("budget:") for equation in A7_UPDATE_EQUATIONS)
+    assert "a7_semantic_novelty_tick" in a7_required_metric_fields()
+    assert "a7_prediction_error_mean_tick" in a7_required_metric_fields()
+    assert "a7_semantic_field" in a7_required_event_fields()
+
+
+def test_a7_analyzer_fails_closed_on_missing_schema(tmp_path: Path) -> None:
+    compare_dir = tmp_path / "a7_compare"
+    run_dir = compare_dir / "a7_logistic_semantic_coupling_seed1"
+    out_dir = tmp_path / "a7_analysis"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "seed": 1,
+                "config": {
+                    "semantic_field": {
+                        "condition": "a7_logistic_semantic_coupling",
+                    }
+                },
+            },
+            sort_keys=True,
+        )
+    )
+    (run_dir / "metrics.csv").write_text("tick,queue_depth\n0,1\n")
+    (run_dir / "events.csv").write_text("tick,event_type\n0,task_created\n")
+
+    result = run_a7_semantic_field_analysis(compare_dir, out_dir)
+
+    assert result["status"] == "fail_closed_missing_conditions"
+    completeness_rows = list(
+        csv.DictReader((out_dir / "a7_semantic_field_completeness.csv").open())
+    )
+    manifest_rows = list(
+        csv.DictReader((out_dir / "a7_semantic_field_manifest.csv").open())
+    )
+    assert list(completeness_rows[0]) == list(A7_ANALYZER_COMPLETENESS_FIELDS)
+    assert list(manifest_rows[0]) == list(A7_ANALYZER_MANIFEST_FIELDS)
+    assert completeness_rows[0]["status"] == "fail_closed"
+    assert completeness_rows[0]["required_field_status"] == "missing_fields"
+    assert "a7_semantic_novelty_tick" in completeness_rows[0]["missing_required_fields"]
+    assert "a7_delta_total" in completeness_rows[0]["missing_required_fields"]
+    assert manifest_rows[0]["status"] == "fail_closed_missing_conditions"
+    assert "no semantic-field interpretation is allowed" in (
+        out_dir / "summary.md"
+    ).read_text()
 
 
 def test_automation_guard_closes_after_a5_closure_despite_preregistration(

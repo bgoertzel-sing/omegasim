@@ -32,6 +32,18 @@ accounting, null semantics, schemas, and tests.
 
 ## Latest Changes
 
+- Added `ohdyn/a7_semantic_field_contract.py` to freeze the A7 semantic field
+  values, prediction fields, source ledger components, control fields,
+  preregistered conditions/nulls, utility/update-equation text, schema fields,
+  and helper functions before simulator mechanics.
+- Added `docs/a7_implementation_gate.md` to record the implementation contract:
+  state vector, update equations, utility equations, source reconstruction
+  ledger, null semantics, controls, and fail-closed analyzer requirements.
+- Added read-only `ohdyn/analyze_a7_semantic_field.py`, which inspects existing
+  comparison artifacts, writes deterministic completeness/manifest/summary
+  outputs, and fails closed when A7 runs, null conditions, or required schema
+  fields are absent.
+- Added focused tests for the frozen A7 contract and analyzer fail-closed path.
 - Added `docs/results/a6_2_closure_addendum_seed1_2.md` to freeze the A6.2
   conservative interpretation before moving on.
 - Added `docs/a7_semantic_field_preregistration.md` as the accepted A7 design
@@ -41,19 +53,24 @@ accounting, null semantics, schemas, and tests.
   rather than reopening A6.2.
 - Updated `ohdyn.automation_guard` so a Markdown `Recommended Next Step`
   section in this file overrides stale strategy-review next-action text.
-- No simulator code, configs, analyzers, dashboards, integrations, seed scope,
-  or multi-hive mechanics were changed.
+- No simulator mechanics, configs, dashboards, integrations, seed scope, or
+  multi-hive mechanics were changed.
 
 ## Verification
 
-- Documentation-only update.
+- Guard before changes: `.venv-conda/bin/python -m ohdyn.automation_guard`
+  passed with `state=open`, `should_noop=false`, `strategic_change_level=none`,
+  and `notify_ben=false`.
+- External strategy review at
+  `../outputs/strategy-reviews/omegasim/latest-review.md` recommended the A7
+  implementation contract/gate first; no GPT-5.5-Pro recommendation was
+  deferred or rejected.
 - `git diff --check` passed.
-- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed.
+- `.venv-conda/bin/python -m py_compile
+  ohdyn/a7_semantic_field_contract.py ohdyn/analyze_a7_semantic_field.py`
+  passed.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'automation_guard'` passed: `8 passed, 596 deselected`.
-- `.venv-conda/bin/python -m ohdyn.automation_guard` passed with
-  `state=open`, `should_noop=false`, and recommended next action set to the A7
-  implementation gate.
+  'a7 or automation_guard'` passed: `10 passed, 596 deselected`.
 
 ## Blockers
 
@@ -62,8 +79,6 @@ preregistration that explicitly supersedes those closures.
 
 ## Recommended Next Step
 
-Create the A7 implementation gate: freeze the semantic/artifact state vector,
-logistic and linear action-utility equations, prediction-budget accounting,
-source-preserving null semantics, schema additions, deterministic tests, and
-read-only analyzer skeleton before changing simulator mechanics or running a
-tiny paired smoke.
+Add the minimal opt-in A7 config schema and smoke fixture stubs that reference
+the frozen contract, without changing simulator mechanics or running A7
+scientific comparisons.
