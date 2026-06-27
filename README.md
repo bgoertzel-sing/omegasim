@@ -105,6 +105,10 @@ larger paired-seed run.
 `docs/a5_forecast_skill_residual_gap_diagnostic_plan.md` defines the bounded
 read-only follow-up for why the checked-in forecast-skill gains did not survive
 full residual accounting.
+`docs/a5_post_closure_reopening_gate.md` freezes the conservative A5
+interpretation after the seed `7..16` closure and requires a new
+preregistration before any future anticipatory-prediction mechanics, broader
+seeds, or multi-hive coupling.
 
 The matching read-only analyzer consumes an existing comparison directory
 without rerunning simulations:
