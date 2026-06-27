@@ -40,6 +40,37 @@ The checked-in low-budget linear smoke fixture is:
 python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out runs/a5_predictive_linear_seed5
 ```
 
+## A6 Logistic-Appraisal Smoke
+
+A6 is the current post-A5 preregistered smoke-scaffold direction, recorded in
+`docs/omegasim_provisional_experiment_roadmap.md` and
+`docs/a6_logistic_appraisal_attractor_preregistration.md`. It is single-hive
+only and remains abstract/numeric: no real LLM calls, Lean, Slack, browser,
+Atomspace, dashboard, or downstream multi-hive integration.
+
+The four checked-in smoke fixtures are:
+
+```bash
+python -m ohdyn.run --config configs/a6_logistic_appraisal_smoke.yaml --seed 1 --out runs/a6_logistic_appraisal_seed1
+python -m ohdyn.run --config configs/a6_linear_appraisal_smoke.yaml --seed 1 --out runs/a6_linear_appraisal_seed1
+python -m ohdyn.run --config configs/a6_threshold_shuffled_smoke.yaml --seed 1 --out runs/a6_threshold_shuffled_seed1
+python -m ohdyn.run --config configs/a6_phase_shuffled_smoke.yaml --seed 1 --out runs/a6_phase_shuffled_seed1
+```
+
+The bounded paired-seed smoke comparison runs only those four fixtures and
+writes aggregate artifacts for schema/analyzer exercise, not scientific
+promotion:
+
+```bash
+python -m ohdyn.compare_a6_logistic_appraisal --seeds 1 2 --out runs/a6_logistic_appraisal_compare
+python -m ohdyn.analyze_a6_logistic_appraisal --compare-dir runs/a6_logistic_appraisal_compare --out runs/a6_logistic_appraisal_analysis
+```
+
+The comparison directory contains one normal run artifact directory per
+condition/seed, `a6_logistic_appraisal_comparison_metrics.csv`,
+`a6_logistic_appraisal_effects.csv`, and `summary.md`. The analyzer consumes
+those existing artifacts without rerunning simulations.
+
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, linear, nonlinear, oracle, linear-budget shuffled, and
 nonlinear-budget shuffled predictors from the smoke fixture:

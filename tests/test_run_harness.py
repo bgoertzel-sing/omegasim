@@ -34,6 +34,11 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_ANALYSIS_MANIFEST_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
+from ohdyn.compare_a6_logistic_appraisal import (
+    A6_COMPARISON_FIELDS,
+    A6_EFFECT_FIELDS,
+    run_a6_logistic_appraisal_comparison,
+)
 from ohdyn.config import (
     ATTENTION_CLASSES,
     ExogenousArrivalsConfig,
@@ -15011,3 +15016,63 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     summary = (out_dir / "summary.md").read_text()
     assert "- reran simulations: no" in summary
     assert "## Control Levels" in summary
+
+
+def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a6_compare"
+
+    rows = run_a6_logistic_appraisal_comparison(seeds=(1, 2), out_dir=out_dir)
+
+    assert [row["condition"] for row in rows] == [
+        "logistic",
+        "linear",
+        "threshold_shuffled",
+        "phase_shuffled",
+    ]
+    assert all(row["seed_count"] == 2 for row in rows)
+    assert all(row["run_count"] == 2 for row in rows)
+    for condition in ("logistic", "linear", "threshold_shuffled", "phase_shuffled"):
+        for seed in (1, 2):
+            _assert_artifacts_match_output_directory(
+                out_dir / f"{condition}_seed{seed}",
+                A0_FULL_ARTIFACTS,
+            )
+
+    with (out_dir / "a6_logistic_appraisal_comparison_metrics.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_COMPARISON_FIELDS)
+    with (out_dir / "a6_logistic_appraisal_effects.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_EFFECT_FIELDS)
+    summary = (out_dir / "summary.md").read_text()
+    assert "- scope: four checked-in single-hive smoke fixtures only; no broad sweep" in summary
+    assert "- scientific status: smoke artifact comparison, not promotion evidence" in summary
+
+    analysis_dir = tmp_path / "a6_analysis"
+    analysis = run_a6_logistic_appraisal_analysis(out_dir, analysis_dir)
+    assert analysis["run_count"] == 8
+
+
+def test_a6_smoke_comparison_cli(tmp_path: Path) -> None:
+    out_dir = tmp_path / "a6_compare_cli"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ohdyn.compare_a6_logistic_appraisal",
+            "--seeds",
+            "1",
+            "2",
+            "--out",
+            str(out_dir),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    assert (out_dir / "a6_logistic_appraisal_comparison_metrics.csv").exists()
+    assert (out_dir / "a6_logistic_appraisal_effects.csv").exists()
+    assert (out_dir / "summary.md").exists()
