@@ -6,9 +6,10 @@ checked from GitHub, including from a phone.
 ## Current Focus
 
 A6/A6.1 remain conservatively closed as evidence, and A6.2 is now the active
-read-only residual-recurrence analyzer gate from the accepted provisional
-roadmap. This run implemented the smallest A6.2 analyzer path over the existing
-A6.1 source-preserving null comparison artifacts.
+residual-recurrence route from the accepted provisional roadmap. The seed `1..2`
+A6.2 analyzer gate has already passed schema/source-field completeness and
+failed closed as `insufficient_horizon`; the current bounded focus is the
+preregistered longer-horizon validation design, not a simulation run.
 
 Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
@@ -23,49 +24,37 @@ External strategic review handling:
 - Accepted: publish the actual A6 analyzer gate status before new simulations
   or mechanisms.
 - Applied to the current roadmap by adding the A6.2 read-only gate report.
+- Accepted extension: preregister a narrow longer-horizon A6.2 validation before
+  any longer-horizon run.
 - Rejected/deferred: no scientifically sensible GPT-5.5-Pro recommendation was
   rejected.
 
 ## Latest Changes
 
-- Added `ohdyn/analyze_a6_2_residual_recurrence.py`.
-- Added focused tests for A6.2 missing required source fields and
-  smoke-horizon `insufficient_horizon` handling.
-- Ran the analyzer read-only against `runs/a6_1_pilot_null_compare`.
-- Added `docs/results/a6_2_residual_recurrence_gate_seed1_2.md`.
-- Documented the A6.2 analyzer command in `README.md`.
+- Added `docs/a6_2_long_horizon_validation_preregistration.md`.
+- Documented the new A6.2 longer-horizon design gate in `README.md`.
+- The preregistration freezes a 96-tick, paired seed `1..2`, single-hive
+  validation with the existing A6 mechanics and the same source-preserving null
+  controls.
+- No simulations were run, no configs were added, no mechanisms were changed,
+  and no broader seed or multi-hive work was started.
 
 ## Verification
 
-- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'a6_2_residual_recurrence_gate or automation_guard'` passed: `9 passed,
-  593 deselected`.
-- `.venv-conda/bin/python -m py_compile
-  ohdyn/analyze_a6_2_residual_recurrence.py tests/test_run_harness.py` passed.
+- Documentation-only change; no simulator or analyzer code changed.
 - `git diff --check` passed.
-- `.venv-conda/bin/python -m ohdyn.analyze_a6_2_residual_recurrence
-  --compare-dir runs/a6_1_pilot_null_compare
-  --out runs/a6_2_residual_recurrence_analysis_seed1_2` passed.
-
-Analyzer output summary:
-
-- run artifacts read: 12
-- conditions observed: 6
-- seeds observed: 2
-- required field status: `complete=12`
-- recurrence rows: 156, all `insufficient_horizon`
-- paired delta rows: 130, all `insufficient_horizon`
-- simulations rerun: no
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed: `7 passed, 595 deselected`.
 
 ## Blockers
 
-None for the bounded A6.2 analyzer gate. Scientifically, the existing 16-tick
-smoke artifacts are too short for residual-recurrence interpretation, and the
-analyzer correctly fails closed as `insufficient_horizon`.
+None for the bounded design gate. Scientifically, A6.2 remains unpromoted; the
+existing 16-tick smoke artifacts are too short for residual-recurrence
+interpretation, and the longer-horizon validation is preregistered only as an
+eligibility/closure test.
 
 ## Recommended Next Step
 
-Preregister a narrow longer-horizon A6.2 validation design using the same
-source-preserving null controls and no new mechanisms, or explicitly close the
-single-hive residual-recurrence route; do not run longer horizons before that
-design gate is written.
+Create the fixed 96-tick A6.2 validation configs and the smallest comparison
+helper needed to regenerate the six required paired conditions, then run only
+seeds `1` and `2` and analyze them with the existing read-only A6.2 analyzer.

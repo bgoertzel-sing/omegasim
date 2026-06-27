@@ -88,6 +88,12 @@ python -m ohdyn.analyze_a6_2_residual_recurrence \
   --out runs/a6_2_residual_recurrence_analysis_seed1_2
 ```
 
+The next accepted A6.2 design gate is documented in
+`docs/a6_2_long_horizon_validation_preregistration.md`. It preregisters a
+bounded 96-tick, paired seed `1..2` validation using the same single-hive A6
+mechanics and source-preserving null controls. It does not authorize broader
+seeds, new mechanisms, downstream multi-hive coupling, or promotion language.
+
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, linear, nonlinear, oracle, linear-budget shuffled, and
 nonlinear-budget shuffled predictors from the smoke fixture:
