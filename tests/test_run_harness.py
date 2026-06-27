@@ -48,6 +48,13 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_SOURCE_ACCOUNTING_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
+from ohdyn.analyze_a6_2_residual_recurrence import (
+    A6_2_COMPLETENESS_FIELDS,
+    A6_2_DELTA_FIELDS,
+    A6_2_MANIFEST_FIELDS,
+    A6_2_RECURRENCE_FIELDS,
+    run_a6_2_residual_recurrence_analysis,
+)
 from ohdyn.compare_a6_logistic_appraisal import (
     A6_COMPARISON_FIELDS,
     A6_EFFECT_FIELDS,
@@ -15339,6 +15346,195 @@ def test_a6_read_only_analysis_writes_residual_preflight(
         in summary
     )
     assert "cross-seed direction agreement for audit only" in summary
+
+
+def _write_a6_2_minimal_run(
+    run_dir: Path,
+    *,
+    condition: str,
+    seed: int,
+    ticks: int = 16,
+    omit_event_sources: bool = False,
+) -> None:
+    run_dir.mkdir(parents=True)
+    (run_dir / "config.yaml").write_text(
+        yaml.safe_dump({"logistic_appraisal": {"condition": condition}})
+    )
+    (run_dir / "manifest.yaml").write_text(yaml.safe_dump({"seed": seed}))
+    metric_fields = [
+        "tick",
+        "queue_depth",
+        "tasks_created_total",
+        "tasks_completed_total",
+        "tasks_worked_tick",
+        "a6_prediction_budget_spent_tick",
+        "a6_prediction_actions_tick",
+        "a6_latent_activation_mean_tick",
+        "a6_latent_focus_mean_tick",
+        "a6_latent_fatigue_mean_tick",
+        "a6_latent_prediction_error_mean_tick",
+        "a6_artifact_novelty_tick",
+        "a6_artifact_coherence_tick",
+        "a6_artifact_actionability_tick",
+        "a6_artifact_provenance_debt_tick",
+        "a6_artifact_risk_tick",
+        "a6_artifact_contradiction_tick",
+        "a6_artifact_readiness_tick",
+        "a6_artifact_implementation_maturity_tick",
+        "a6_artifact_communication_maturity_tick",
+        "a6_handoff_attempts_tick",
+        "a6_handoff_successes_tick",
+        "a6_handoff_failures_tick",
+        "a6_queue_depth_tick",
+        "a6_work_actions_tick",
+        "a6_action_opportunity_tick",
+        "a6_service_capacity_tick",
+    ]
+    with (run_dir / "metrics.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=metric_fields)
+        writer.writeheader()
+        for tick in range(ticks):
+            base = 0.1 + (0.01 * tick)
+            writer.writerow(
+                {
+                    "tick": tick,
+                    "queue_depth": 3 + tick % 2,
+                    "tasks_created_total": 10 + tick,
+                    "tasks_completed_total": 4 + tick // 2,
+                    "tasks_worked_tick": 2,
+                    "a6_prediction_budget_spent_tick": 0,
+                    "a6_prediction_actions_tick": 0,
+                    "a6_latent_activation_mean_tick": base,
+                    "a6_latent_focus_mean_tick": base + 0.01,
+                    "a6_latent_fatigue_mean_tick": base + 0.02,
+                    "a6_latent_prediction_error_mean_tick": base + 0.03,
+                    "a6_artifact_novelty_tick": base + 0.04,
+                    "a6_artifact_coherence_tick": base + 0.05,
+                    "a6_artifact_actionability_tick": base + 0.06,
+                    "a6_artifact_provenance_debt_tick": base + 0.07,
+                    "a6_artifact_risk_tick": base + 0.08,
+                    "a6_artifact_contradiction_tick": base + 0.09,
+                    "a6_artifact_readiness_tick": base + 0.10,
+                    "a6_artifact_implementation_maturity_tick": base + 0.11,
+                    "a6_artifact_communication_maturity_tick": base + 0.12,
+                    "a6_handoff_attempts_tick": 1,
+                    "a6_handoff_successes_tick": 1 if tick % 2 == 0 else 0,
+                    "a6_handoff_failures_tick": 0 if tick % 2 == 0 else 1,
+                    "a6_queue_depth_tick": 3 + tick % 2,
+                    "a6_work_actions_tick": 2,
+                    "a6_action_opportunity_tick": 15,
+                    "a6_service_capacity_tick": 1,
+                }
+            )
+    event_fields = [
+        "tick",
+        "event_type",
+        "a6_artifact_update_source",
+        "a6_artifact_field",
+        "a6_artifact_delta_total",
+        "a6_artifact_delta_ambient",
+        "a6_artifact_delta_handoff_attempt",
+        "a6_artifact_delta_handoff_success",
+        "a6_artifact_delta_handoff_failure",
+        "a6_artifact_delta_prediction_expenditure",
+        "a6_artifact_delta_prediction_error",
+        "a6_artifact_delta_queue_work_accounting",
+        "a6_artifact_delta_noise",
+        "a6_artifact_delta_unclipped",
+        "a6_artifact_delta_clip_residual",
+    ]
+    if omit_event_sources:
+        event_fields = ["tick", "event_type"]
+    with (run_dir / "events.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=event_fields)
+        writer.writeheader()
+        for tick in range(ticks):
+            row = {"tick": tick, "event_type": "a6_artifact_update"}
+            if not omit_event_sources:
+                row.update(
+                    {
+                        "a6_artifact_update_source": "handoff_success",
+                        "a6_artifact_field": "readiness",
+                        "a6_artifact_delta_total": 0.01,
+                        "a6_artifact_delta_ambient": 0,
+                        "a6_artifact_delta_handoff_attempt": 0,
+                        "a6_artifact_delta_handoff_success": 0.01,
+                        "a6_artifact_delta_handoff_failure": 0,
+                        "a6_artifact_delta_prediction_expenditure": 0,
+                        "a6_artifact_delta_prediction_error": 0,
+                        "a6_artifact_delta_queue_work_accounting": 0,
+                        "a6_artifact_delta_noise": 0,
+                        "a6_artifact_delta_unclipped": 0.01,
+                        "a6_artifact_delta_clip_residual": 0,
+                    }
+                )
+            writer.writerow(row)
+
+
+def test_a6_2_residual_recurrence_gate_writes_insufficient_horizon_rows(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "compare"
+    _write_a6_2_minimal_run(compare_dir / "logistic_seed1", condition="logistic", seed=1)
+    _write_a6_2_minimal_run(compare_dir / "linear_seed1", condition="linear", seed=1)
+
+    out_dir = tmp_path / "analysis"
+    result = run_a6_2_residual_recurrence_analysis(compare_dir, out_dir)
+
+    assert result["run_count"] == 2
+    assert result["recurrence_count"] == 26
+    assert result["delta_count"] == 65
+    assert result["status"] == "insufficient_horizon"
+    with (out_dir / "a6_2_paired_seed_completeness.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_2_COMPLETENESS_FIELDS)
+        completeness_rows = list(csv.DictReader(handle, fieldnames=A6_2_COMPLETENESS_FIELDS))
+    with (out_dir / "a6_2_residual_recurrence_metrics.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_2_RECURRENCE_FIELDS)
+        recurrence_rows = list(csv.DictReader(handle, fieldnames=A6_2_RECURRENCE_FIELDS))
+    with (out_dir / "a6_2_residual_recurrence_deltas.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_2_DELTA_FIELDS)
+        delta_rows = list(csv.DictReader(handle, fieldnames=A6_2_DELTA_FIELDS))
+    with (out_dir / "a6_2_manifest.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_2_MANIFEST_FIELDS)
+
+    assert {row["required_field_status"] for row in completeness_rows} == {"complete"}
+    assert {row["status"] for row in recurrence_rows} == {"insufficient_horizon"}
+    linear_delta = next(
+        row
+        for row in delta_rows
+        if row["contrast"] == "logistic_vs_linear"
+        and row["target_field"] == "a6_artifact_readiness_tick"
+    )
+    assert linear_delta["paired"] == "true"
+    assert linear_delta["gate_status"] == "insufficient_horizon"
+    assert "Rows marked insufficient_horizon are not recurrence evidence" in (
+        out_dir / "summary.md"
+    ).read_text()
+
+
+def test_a6_2_residual_recurrence_gate_reports_missing_source_fields(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "compare"
+    _write_a6_2_minimal_run(
+        compare_dir / "logistic_seed1",
+        condition="logistic",
+        seed=1,
+        omit_event_sources=True,
+    )
+
+    out_dir = tmp_path / "analysis"
+    result = run_a6_2_residual_recurrence_analysis(compare_dir, out_dir)
+
+    assert result["status"] == "missing_required_fields"
+    assert "a6_artifact_delta_total" in result["missing_required_fields"]
+    with (out_dir / "a6_2_paired_seed_completeness.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows[0]["required_field_status"] == "missing_required_fields"
+    assert "a6_artifact_update_source" in rows[0]["missing_required_fields"]
+    with (out_dir / "a6_2_residual_recurrence_metrics.csv").open() as handle:
+        recurrence_rows = list(csv.DictReader(handle))
+    assert {row["status"] for row in recurrence_rows} == {"missing_required_fields"}
 
 
 def test_a6_read_only_analysis_writes_artifact_provenance_audit(

@@ -76,6 +76,18 @@ those existing artifacts without rerunning simulations, including the A6.1
 `a6_logistic_appraisal_source_accounting.csv` schema/control audit when source
 fields are present in the run artifacts.
 
+The A6.2 residual-recurrence gate is a read-only analyzer over the existing
+A6.1 source-preserving null comparison. It checks source/control field
+completeness and emits recurrence/delta status rows; smoke-horizon rows are
+expected to fail closed as `insufficient_horizon` rather than support recurrence
+claims:
+
+```bash
+python -m ohdyn.analyze_a6_2_residual_recurrence \
+  --compare-dir runs/a6_1_pilot_null_compare \
+  --out runs/a6_2_residual_recurrence_analysis_seed1_2
+```
+
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, linear, nonlinear, oracle, linear-budget shuffled, and
 nonlinear-budget shuffled predictors from the smoke fixture:
