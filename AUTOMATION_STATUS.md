@@ -5,10 +5,11 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Current concise A5 gate:
+Source-of-truth status: the reopened single-hive A5 smoke/pilot is closed
+conservatively after failing residual/null promotion. Current concise A5 gate:
 `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
 That document records the 2026-06-27 explicit single-hive A5 reopening and is
-the active preregistration summary for the bounded smoke/pilot.
+the active preregistration summary for the bounded smoke/pilot already run.
 
 This reopens A5 only for the explicitly requested anticipatory
 predictive-control smoke/pilot. It supersedes the previous no-op automation
@@ -34,8 +35,29 @@ anticipatory coupling remains downstream and requires a separate
 preregistration with target/phase nulls and resource-bounded cross-hive
 prediction costs.
 
+The latest GPT-5.5-Pro strategy review still has
+`strategic_change_level: major` and `notify_ben: true`. Ben should be notified
+that the direction shifted from older A7 roadmap wording back to a narrow A5
+prediction/resource gate, and that the reopened A5 smoke failed closed.
+
 ## Latest Changes
 
+- 2026-06-27 16:55 PDT bounded guard-closure run: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests surface, the provisional roadmap,
+  A5/A5.1 preregistrations/results, and the latest GPT-5.5-Pro strategy
+  review before choosing a next step. The status file is the source of truth:
+  the reopened A5 smoke is already run and fail-closed, so this run did not
+  add simulator mechanics, configs, analyzers, dashboards, integrations,
+  broad seed sweeps, or multi-hive coupling.
+- Updated `ohdyn.automation_guard` so the explicit current-A5 reopening marker
+  no longer reopens automation after the newer status records the reopened A5
+  smoke as fail-closed. The guard now treats this current A5 closure as
+  superseding older accepted A7 roadmap wording.
+- Added a regression test for the reopened-A5 fail-closed status wording.
+  External review recommendations to control prediction cost/spend-only
+  artifacts remain scientifically sensible and already incorporated via the
+  completed A5.1a gate; delayed semantic/logistic or multi-hive suggestions
+  remain deferred pending Ben's explicit preregistered decision.
 - 2026-06-27 16:40 PDT explicit A5 reopening: added
   `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md` as
   the concise active preregistration for the requested single-hive
@@ -332,6 +354,25 @@ prediction costs.
   /tmp/omegasim_a5_reopened_residual_accounting_seed5_6_20260627` passed. The
   summary reported fail-closed promotion status; no intermediate-budget
   condition satisfied all preregistered criteria.
+- `git status --short --branch` passed at the start of the 2026-06-27 16:55
+  PDT guard-closure run and reported `main...origin/main` with no uncommitted
+  changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` initially reported
+  `state=open`, `should_noop=false`, `strategic_change_level=major`,
+  `notify_ben=true`, and the next step to design one preregistered
+  resource-bounded residual diagnostic, exposing that older reopening/roadmap
+  markers were overriding the newer fail-closed A5 status.
+- `git diff --check` passed after the guard/test patch.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting'`
+  passed after the guard/test patch: `16 passed, 608 deselected`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the
+  guard/test patch. It reported `state=closed_awaiting_preregistration`,
+  `should_noop=true`, closed reason
+  `automation_status_a5_reopened_smoke_failed_closed`,
+  `strategic_change_level=major`, `notify_ben=true`, and the single next step
+  to design one preregistered resource-bounded residual diagnostic before any
+  new mechanics.
 
 ## Blockers
 

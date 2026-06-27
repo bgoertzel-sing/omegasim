@@ -32,7 +32,11 @@ def read_automation_state(
     closed_reasons = _closed_reasons(status=status, review=review)
     if a5_preregistration_active and not _status_closes_active_a5(status):
         closed_reasons = []
-    if a5_preregistration_active and _status_reopens_active_a5(status):
+    if (
+        a5_preregistration_active
+        and _status_reopens_active_a5(status)
+        and not _status_closes_active_a5(status)
+    ):
         closed_reasons = []
     roadmap_reopens_a7 = _roadmap_reopens_after_a5(roadmap) and not (
         _status_supersedes_roadmap(status)
@@ -118,6 +122,16 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         in normalized_status
     ):
         status_reasons.append("automation_status_a5_loop_closed")
+    if (
+        "recommended next step: design one preregistered resource-bounded residual diagnostic"
+        in normalized_status
+        and (
+            "reopened a5 smoke" in normalized_status
+            or "reopened a5 preregistration" in normalized_status
+        )
+        and "fail-closed" in normalized_status
+    ):
+        status_reasons.append("automation_status_a5_reopened_smoke_failed_closed")
 
     reasons = list(status_reasons)
     if not status_reasons:
@@ -136,6 +150,7 @@ def _status_closes_active_a5(status: str) -> bool:
     return (
         (
             "current a5" in normalized_status
+            or "current concise a5 gate" in normalized_status
             or "the current a5 anticipatory predictive-control loop" in normalized_status
         )
         and "closed" in normalized_status
@@ -143,6 +158,8 @@ def _status_closes_active_a5(status: str) -> bool:
             "recommended next step: remain in no-op/awaiting-preregistration state"
             in normalized_status
             or "recommended next step: have ben decide whether a5 should stay closed"
+            in normalized_status
+            or "recommended next step: design one preregistered resource-bounded residual diagnostic"
             in normalized_status
             or "do not reopen a5" in normalized_status
         )
@@ -194,6 +211,11 @@ def _status_supersedes_roadmap(status: str) -> bool:
             "a5.1a" in normalized_status
             and "closed" in normalized_status
             and "older a7 roadmap wording" in normalized_status
+        )
+        or (
+            "current concise a5 gate" in normalized_status
+            and "reopened a5 smoke" in normalized_status
+            and "fail-closed" in normalized_status
         )
     )
 
