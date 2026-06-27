@@ -32,7 +32,9 @@ def read_automation_state(
     closed_reasons = _closed_reasons(status=status, review=review)
     if a5_preregistration_active and not _status_closes_active_a5(status):
         closed_reasons = []
-    roadmap_reopens_a7 = _roadmap_reopens_after_a5(roadmap)
+    roadmap_reopens_a7 = _roadmap_reopens_after_a5(roadmap) and not (
+        _status_supersedes_roadmap(status)
+    )
     if closed_reasons and roadmap_reopens_a7:
         closed_reasons = []
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
@@ -170,6 +172,18 @@ def _roadmap_reopens_after_a5(roadmap: str) -> bool:
         "accepted by ben" in normalized_roadmap
         and "ben accepted proceeding to a7" in normalized_roadmap
         and "replaces the closed a5 no-op posture" in normalized_roadmap
+    )
+
+
+def _status_supersedes_roadmap(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "source of truth" in normalized_status
+        or (
+            "a5.1a" in normalized_status
+            and "closed" in normalized_status
+            and "older a7 roadmap wording" in normalized_status
+        )
     )
 
 

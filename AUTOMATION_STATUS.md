@@ -5,24 +5,28 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-A5.1a is the current bounded A5 follow-up gate for Ben's resource-bounded
-prediction question. The prior A5 seed `7..16` result remains a conservative
+A5.1a is now closed conservatively for Ben's resource-bounded prediction
+question. The prior A5 seed `7..16` result remains a conservative
 forecast-skill/accounting result: deterministic predictors improved forecast
 skill under matched single-hive demand streams, but residual structure did not
 survive full accounting controls and budget-matched timing-broken nulls.
+The current A5 anticipatory predictive-control loop is closed at the A5.1a
+accounting boundary.
 
-The newly preregistered A5.1 question remains whether prediction expenditure
+The preregistered A5.1 question was whether prediction expenditure
 that competes directly with work opportunity creates richer but still partially
 predictable residual collective dynamics at intermediate budgets than either
-zero-spend reactivity or oracle-like smoothing. The active A5.1a subgate is
-narrower: calibrate charged prediction cost and add a spend-only replay null
-before any broader A5.1 run.
+zero-spend reactivity or oracle-like smoothing. The A5.1a subgate calibrated
+charged prediction cost and added spend-only replay nulls before any broader
+A5.1 run. That gate failed closed: charged predictors improved forecast skill
+against replay nulls, but did not beat replay nulls on full-accounting residual
+structure.
 
 A5.1a remains single-hive, deterministic, and abstract/numeric. It does not
 authorize real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics,
 downstream multi-hive coupling, or promotion language before the preregistered
-accounting/null gates pass.
+accounting/null gates pass. Those gates did not pass.
 
 The first A5.1 paired-seed smoke/pilot is complete and fail-closed. It verified
 that prediction spend can be charged against work opportunity and analyzed with
@@ -30,11 +34,12 @@ full accounting controls, but it degraded work-completion guardrails and does
 not support structured-dynamics promotion.
 
 External GPT-5.5-Pro strategy review on 2026-06-27 marked this as
-`strategic_change_level: major` and `notify_ben: true`. This run accepts the
-scientifically sensible part of that recommendation: do not broaden A5.1; first
-preregister an A5.1a cost-calibration/spend-only-null patch. Ben should be
-notified that the active direction has shifted from the older A7 roadmap wording
-back to a narrow A5.1 accounting gate.
+`strategic_change_level: major` and `notify_ben: true`. This run completes the
+scientifically sensible part of that recommendation: the A5.1a
+cost-calibration/spend-only-null patch has been preregistered, implemented, and
+closed conservatively. Ben should be notified that the active direction shifted
+from the older A7 roadmap wording back to a narrow A5.1 accounting gate and
+that this accounting gate has now failed closed.
 
 ## Latest Changes
 
@@ -98,6 +103,11 @@ back to a narrow A5.1 accounting gate.
   nulls on forecast skill, but none beat the replay null on full-accounting
   residual predictability. The A5.1a audit failed closed for all charged cost
   rules.
+- Added `docs/results/a5_1a_cost_calibration_closure_note_seed5_6.md`
+  documenting the A5.1a closure boundary. It records the three charged cost
+  rules, spend-only replay nulls, full-accounting residual audit, external
+  strategy-review handling, and the stop condition against broader A5.1 seed
+  sweeps.
 - No dashboards, real integrations, broad seed sweeps, A6/A7 imports, or
   multi-hive mechanics were added.
 
@@ -178,17 +188,34 @@ back to a narrow A5.1 accounting gate.
   --overwrite` passed after the analyzer extension. The summary reported
   fail-closed promotion status for harsh, gentle, and capped charged-cost
   conditions against their spend-only replay nulls.
+- `git status --short --branch` passed at the start of this closure-note run
+  and reported `main...origin/main` with no uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed at the start of
+  this closure-note run. It reported state `open`, `should_noop: false`,
+  `strategic_change_level: major`, `notify_ben: true`, and recommended the
+  A5.1a closure note.
+- `git diff --check` passed after the A5.1a closure note and status update.
+- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed
+  after updating the guard to let newer A5.1a closure status supersede the
+  older accepted A7 roadmap.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_1 or automation_guard'` passed after the closure/guard update:
+  `14 passed, 608 deselected`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the final
+  status update. It reported state `closed_awaiting_preregistration`,
+  `should_noop: true`, closed reason `automation_status_next_step_noop`,
+  `strategic_change_level: major`, `notify_ben: true`, and the single next
+  step to remain in no-op/awaiting-preregistration state while notifying Ben.
+- `git diff --check` passed after the final status update.
 
 ## Blockers
 
-There is no local environment blocker. The scientific blocker is now stronger:
-the first A5.1 smoke/pilot degraded guardrails, and the A5.1a cost-calibration
-smoke still fails the spend-only replay-null residual gate. The external review
-also marked the direction shift as major and said Ben should be notified.
+There is no local environment blocker. The scientific blocker is strategic:
+the first A5.1 smoke/pilot degraded guardrails, and the A5.1a
+cost-calibration smoke still failed the spend-only replay-null residual gate.
+The external review also marked the direction shift as major and said Ben
+should be notified.
 
 ## Recommended Next Step
 
-Write a concise A5.1a closure note under `docs/results/` documenting the seed
-`5,6` cost-calibration/replay-null result and recommending no broader A5.1 seed
-sweep unless Ben explicitly chooses a new delayed semantic/logistic or
-multi-hive preregistration.
+- Recommended next step: remain in no-op/awaiting-preregistration state pending Ben's decision on whether to stop A5-family work or preregister a new delayed semantic/logistic or multi-hive design.

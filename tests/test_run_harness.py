@@ -1329,6 +1329,76 @@ def test_automation_guard_reopens_when_accepted_roadmap_replaces_a5_noop(
     )
 
 
+def test_automation_guard_prefers_newer_a5_1a_closure_over_old_a7_roadmap(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    roadmap_path = tmp_path / "docs" / "omegasim_provisional_experiment_roadmap.md"
+    a5_path = tmp_path / "docs" / "a5_anticipatory_predictive_control_preregistration.md"
+    roadmap_path.parent.mkdir()
+    a5_path.write_text("# A5 Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "A5.1a is now closed conservatively.",
+                "The current A5 anticipatory predictive-control loop is closed "
+                "at the A5.1a accounting boundary.",
+                "Ben should be notified that the active direction shifted from "
+                "the older A7 roadmap wording back to a narrow A5.1 accounting "
+                "gate and that this gate failed closed.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: remain in no-op/awaiting-preregistration "
+                "state and notify Ben of the A5.1a fail-closed result.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                "recommended_next_action: Do not broaden A5.1.",
+            ]
+        )
+    )
+    roadmap_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Provisional Experiment Roadmap",
+                "",
+                "Accepted by Ben on 2026-06-27.",
+                "",
+                "Update 2026-06-27: A6/A6.1/A6.2 are now closed conservatively. "
+                "Ben accepted proceeding to A7 as the next preregistered direction.",
+                "",
+                "This roadmap replaces the closed A5 no-op posture as the "
+                "provisional direction for OmegaSim experimentation.",
+                "",
+                "## Immediate Next Step",
+                "",
+                "Create an A7 implementation gate before any broad experiment.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path, roadmap_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["closed_reasons"] == ["automation_status_next_step_noop"]
+    assert state["notify_ben"] is True
+    assert (
+        state["recommended_next_action"]
+        == "remain in no-op/awaiting-preregistration state and notify Ben of "
+        "the A5.1a fail-closed result."
+    )
+
+
 def _write_config(path: Path, overrides: dict[str, object]) -> Path:
     data = {
         "run": {"experiment_id": "a4_config_validation", "ticks": 3},
