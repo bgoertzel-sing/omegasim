@@ -43,6 +43,17 @@ that this accounting gate has now failed closed.
 
 ## Latest Changes
 
+- This bounded automation run re-read `README.md`, this status file, configs,
+  tests, the provisional roadmap, and the latest GPT-5.5-Pro strategy review
+  before choosing a next step. The guard and status file remain authoritative:
+  A5.1a is already preregistered, implemented, tested, and closed
+  conservatively, so no new simulator/analyzer mechanics or experiment runs
+  were started.
+- The external review still recommends A5.1a cost calibration and a
+  spend-only replay null with `strategic_change_level: major` and
+  `notify_ben: true`; this run records that the recommendation has already
+  been incorporated and closed fail-closed, while Ben still needs notification
+  about the direction shift and closure.
 - This bounded automation run treated the status file and guard as authoritative:
   A5.1a remains closed conservatively, the older accepted A7 roadmap wording is
   still superseded by the newer A5.1a closure status, and no new simulations,
@@ -122,6 +133,25 @@ that this accounting gate has now failed closed.
 
 ## Verification
 
+- `git status --short --branch` passed at the start of this bounded no-op run
+  and reported `main...origin/main` with no uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed at the start of
+  this bounded no-op run. It reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`, closed reason
+  `automation_status_next_step_noop`, `strategic_change_level=major`,
+  `notify_ben=true`, and the single next step to remain in no-op/awaiting-
+  preregistration state pending Ben's decision.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed recent automation loops
+  completed successfully and that the latest strategy review still requested
+  Ben notification.
+- `git diff --check` passed after this bounded no-op status update.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after this bounded
+  no-op status update and still reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `strategic_change_level=major`, and `notify_ben=true`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed after this bounded no-op status update:
+  `10 passed, 612 deselected`.
 - `git status --short --branch` initially reported
   `main...origin/main [ahead 1]` with no uncommitted changes before this
   preregistration pass.
