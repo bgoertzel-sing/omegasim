@@ -133,6 +133,13 @@ events, or create A7 scientific evidence:
 python -m ohdyn.compare_a7_semantic_field --seeds 1 2 --out runs/a7_semantic_field_compare
 ```
 
+The first longer-horizon A7 validation gate is preregistered in
+`docs/a7_long_horizon_residual_null_validation_preregistration.md`. It freezes
+a bounded 96-tick, seed `1..2`, six-condition residual/null validation over the
+existing A7 mechanics and read-only analyzer. It does not authorize new A7
+mechanics, broader seeds, parameter sweeps, downstream multi-hive coupling, or
+semantic-dynamics promotion language.
+
 The fixed comparison and analysis commands are:
 
 ```bash

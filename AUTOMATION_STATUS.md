@@ -33,6 +33,13 @@ semantic-dynamics claims from A7 smoke artifacts.
 
 ## Latest Changes
 
+- Preregistered the smallest A7 long-horizon residual/null validation gate in
+  `docs/a7_long_horizon_residual_null_validation_preregistration.md`. The gate
+  freezes a 96-tick, seed `1..2`, six-condition validation using the existing
+  A7 mechanics and read-only analyzer, with explicit closure, productivity,
+  null completeness, and paired-direction rules.
+- Updated `README.md` to point A7 follow-up work at the new preregistered
+  long-horizon validation gate and to keep the scope bounded.
 - Implemented the first read-only A7 residual/null analyzer over the existing
   six preregistered A7 conditions. `ohdyn.analyze_a7_semantic_field` now writes
   deterministic residual metric rows and paired positive-vs-null contrast rows
@@ -72,9 +79,13 @@ semantic-dynamics claims from A7 smoke artifacts.
   major/notify-Ben review.
 - `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
   ohdyn/analyze_a7_semantic_field.py ohdyn/a7_semantic_field_contract.py`
-  passed.
+  passed after the A7 long-horizon preregistration update.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'a7 or automation_guard'` passed: `18 passed, 596 deselected`.
+  'a7 or automation_guard'` passed after the A7 long-horizon preregistration
+  update: `18 passed, 596 deselected`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the A7
+  long-horizon preregistration update with state open, `should_noop: false`,
+  `strategic_change_level: major`, and `notify_ben: true`.
 - Generated deterministic seed-1 A7 smoke artifacts for all six preregistered
   conditions under `/tmp/omegasim_a7_seed1_smoke_20260627_residual` and ran
   `.venv-conda/bin/python -m ohdyn.analyze_a7_semantic_field --compare-dir
@@ -84,7 +95,7 @@ semantic-dynamics claims from A7 smoke artifacts.
   pass rows `6`, field variation pass rows `6`, prediction/work-budget
   competition pass rows `6`, residual row status `insufficient_horizon=36`,
   and null-contrast gate status `insufficient_horizon=30`.
-- `git diff --check` passed.
+- `git diff --check` passed after the A7 long-horizon preregistration update.
 
 ## Blockers
 
@@ -94,7 +105,6 @@ the active gated smoke. There is no code or local environment blocker.
 
 ## Recommended Next Step
 
-Preregister the smallest A7 long-horizon residual/null validation gate before
-running any longer A7 paired seeds, including minimum horizon, promotion/closure
-criteria, productivity safeguard, null completeness requirements, and
-cross-seed direction agreement rules.
+Create the fixed 96-tick A7 long-horizon validation configs and the smallest
+comparison helper needed to regenerate the six paired A7 conditions for seeds
+`1` and `2`, without changing simulator mechanics.
