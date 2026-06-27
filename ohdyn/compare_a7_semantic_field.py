@@ -20,6 +20,7 @@ from ohdyn.a7_semantic_field_contract import (
     A7_POSITIVE_CONDITION,
 )
 from ohdyn.config import load_config
+from ohdyn.run import run_experiment
 
 
 DEFAULT_A7_SMOKE_CONFIGS = (
@@ -32,6 +33,16 @@ DEFAULT_A7_SMOKE_CONFIGS = (
 )
 DEFAULT_A7_SEMANTIC_FIELD_SEEDS = (1, 2)
 DEFAULT_A7_SEMANTIC_FIELD_COMPARE_DIR = Path("runs/a7_semantic_field_compare")
+DEFAULT_A7_LONG_HORIZON_CONFIGS = (
+    Path("configs/a7_long_horizon_logistic_semantic_coupling.yaml"),
+    Path("configs/a7_long_horizon_semantic_off_baseline.yaml"),
+    Path("configs/a7_long_horizon_amplitude_matched_linear_semantic_coupling.yaml"),
+    Path("configs/a7_long_horizon_source_preserving_semantic_label_shuffle.yaml"),
+    Path("configs/a7_long_horizon_semantic_field_phase_shuffle.yaml"),
+    Path("configs/a7_long_horizon_prediction_budget_timing_broken_matched_count_null.yaml"),
+)
+DEFAULT_A7_LONG_HORIZON_SEEDS = (1, 2)
+DEFAULT_A7_LONG_HORIZON_COMPARE_DIR = Path("runs/a7_long_horizon_compare_seed1_2")
 
 A7_PLACEHOLDER_MANIFEST_FIELDS = (
     "condition",
@@ -39,6 +50,16 @@ A7_PLACEHOLDER_MANIFEST_FIELDS = (
     "config",
     "run_dir",
     "placeholder_status",
+    "scientific_status",
+)
+A7_COMPARISON_MANIFEST_FIELDS = (
+    "condition",
+    "seed",
+    "config",
+    "run_dir",
+    "tick_count",
+    "metrics_rows",
+    "events_rows",
     "scientific_status",
 )
 
@@ -97,6 +118,53 @@ def run_a7_semantic_field_placeholder_comparison(
     return rows
 
 
+def run_a7_semantic_field_comparison(
+    *,
+    config_paths: tuple[str | Path, ...] = DEFAULT_A7_LONG_HORIZON_CONFIGS,
+    seeds: tuple[int, ...] = DEFAULT_A7_LONG_HORIZON_SEEDS,
+    out_dir: str | Path = DEFAULT_A7_LONG_HORIZON_COMPARE_DIR,
+) -> list[dict[str, Any]]:
+    """Run the fixed A7 long-horizon six-condition validation comparison."""
+
+    if seeds != DEFAULT_A7_LONG_HORIZON_SEEDS:
+        raise ValueError("A7 long-horizon validation is fixed to paired seeds 1 and 2.")
+    configs = _load_a7_configs(config_paths)
+    _validate_long_horizon_configs(configs)
+    output_path = Path(out_dir)
+    _ensure_real_outputs_available(output_path)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    rows: list[dict[str, Any]] = []
+    for condition in A7_CONDITIONS:
+        config_path = Path(config_paths[A7_CONDITIONS.index(condition)])
+        config = configs[condition]
+        for seed in seeds:
+            run_dir = output_path / f"{condition}_seed{seed}"
+            run_experiment(config_path, seed=seed, out_dir=run_dir)
+            rows.append(
+                {
+                    "condition": condition,
+                    "seed": seed,
+                    "config": str(config_path),
+                    "run_dir": run_dir.name,
+                    "tick_count": config.run.ticks,
+                    "metrics_rows": _csv_row_count(run_dir / "metrics.csv"),
+                    "events_rows": _csv_row_count(run_dir / "events.csv"),
+                    "scientific_status": (
+                        "bounded_validation_artifacts_only_requires_read_only_analyzer"
+                    ),
+                }
+            )
+
+    _write_csv(
+        output_path / "a7_semantic_field_comparison_manifest.csv",
+        rows,
+        A7_COMPARISON_MANIFEST_FIELDS,
+    )
+    (output_path / "summary.md").write_text(_real_summary(rows, seeds))
+    return rows
+
+
 def _validate_seeds(seeds: tuple[int, ...]) -> None:
     if not seeds:
         raise ValueError("At least one seed is required.")
@@ -135,6 +203,20 @@ def _load_a7_configs(
             + ", ".join(A7_CONDITIONS)
         )
     return configs
+
+
+def _validate_long_horizon_configs(configs: dict[str, Any]) -> None:
+    invalid = [
+        condition
+        for condition, config in configs.items()
+        if config.run.ticks != 96
+        or not config.run.experiment_id.startswith("a7_long_horizon_")
+    ]
+    if invalid:
+        raise ValueError(
+            "A7 long-horizon validation configs must use 96 ticks and "
+            "a7_long_horizon_* experiment IDs: " + ", ".join(invalid)
+        )
 
 
 def _write_generated_configs(
@@ -193,6 +275,15 @@ def _ensure_outputs_available(output_path: Path) -> None:
         )
 
 
+def _ensure_real_outputs_available(output_path: Path) -> None:
+    if output_path.exists() and not output_path.is_dir():
+        raise FileExistsError(f"Output path {output_path} exists and is not a directory.")
+    if (output_path / "a7_semantic_field_comparison_manifest.csv").exists():
+        raise FileExistsError(
+            f"Output path {output_path} already contains A7 comparison artifacts."
+        )
+
+
 def _write_csv(
     path: Path,
     rows: list[dict[str, Any]],
@@ -202,6 +293,14 @@ def _write_csv(
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+
+def _csv_row_count(path: Path) -> int:
+    if not path.exists():
+        return 0
+    with path.open(newline="") as handle:
+        reader = csv.DictReader(handle)
+        return sum(1 for _ in reader)
 
 
 def _placeholder_run_summary(condition: str, seed: int) -> str:
@@ -233,6 +332,26 @@ def _summary(rows: list[dict[str, Any]], seeds: tuple[int, ...]) -> str:
             "normalized configs and manifests only. It intentionally does not run",
             "simulator mechanics, write metrics/events, or authorize semantic-field",
             "interpretation.",
+            "",
+        ]
+    )
+
+
+def _real_summary(rows: list[dict[str, Any]], seeds: tuple[int, ...]) -> str:
+    return "\n".join(
+        [
+            "# A7 Long-Horizon Residual/Null Validation Comparison",
+            "",
+            f"- Conditions: {len(A7_CONDITIONS)}",
+            f"- Seeds: {', '.join(str(seed) for seed in seeds)}",
+            f"- Run directories: {len(rows)}",
+            "- Horizon: 96 ticks",
+            "- Status: `bounded_validation_artifacts_only_requires_read_only_analyzer`",
+            "",
+            "This helper runs only the preregistered single-hive A7 six-condition",
+            "validation for paired seeds 1 and 2. It does not change simulator",
+            "mechanics or authorize semantic-dynamics, attractor, lobe, synchrony,",
+            "or downstream multi-hive claims.",
             "",
         ]
     )

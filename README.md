@@ -149,8 +149,8 @@ semantic-dynamics promotion language.
 The fixed comparison and analysis commands are:
 
 ```bash
-python -m ohdyn.compare_a6_2_long_horizon --seeds 1 2 --out runs/a6_2_long_horizon_compare_seed1_2
-python -m ohdyn.analyze_a6_2_residual_recurrence --compare-dir runs/a6_2_long_horizon_compare_seed1_2 --out runs/a6_2_long_horizon_residual_recurrence_seed1_2
+python -m ohdyn.compare_a7_long_horizon --seeds 1 2 --out runs/a7_long_horizon_compare_seed1_2
+python -m ohdyn.analyze_a7_semantic_field --compare-dir runs/a7_long_horizon_compare_seed1_2 --out runs/a7_long_horizon_residual_null_analysis_seed1_2
 ```
 
 A bounded paired-seed pilot comparison derives matched single-hive configs for

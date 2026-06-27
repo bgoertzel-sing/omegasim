@@ -149,7 +149,10 @@ from ohdyn.analyze_a7_semantic_field import (
     run_a7_semantic_field_analysis,
 )
 from ohdyn.compare_a7_semantic_field import (
+    A7_COMPARISON_MANIFEST_FIELDS,
     A7_PLACEHOLDER_MANIFEST_FIELDS,
+    DEFAULT_A7_LONG_HORIZON_CONFIGS,
+    run_a7_semantic_field_comparison,
     run_a7_semantic_field_placeholder_comparison,
 )
 from ohdyn.calibrate_exogenous_arrivals import (
@@ -999,6 +1002,60 @@ def test_a7_placeholder_comparison_still_fails_closed_in_analyzer(
     assert len(contrast_rows) == len(A7_NULL_CONDITIONS) * len(A7_FIELD_VALUES)
     assert list(contrast_rows[0]) == list(A7_ANALYZER_NULL_CONTRAST_FIELDS)
     assert {row["gate_status"] for row in contrast_rows} == {"missing_required_fields"}
+
+
+def test_a7_long_horizon_configs_are_fixed_validation_derivatives() -> None:
+    assert len(DEFAULT_A7_LONG_HORIZON_CONFIGS) == len(A7_CONDITIONS)
+    for config_path, condition in zip(
+        DEFAULT_A7_LONG_HORIZON_CONFIGS,
+        A7_CONDITIONS,
+        strict=True,
+    ):
+        config = load_config(config_path)
+        source = load_config(A7_SMOKE_FIXTURES[A7_CONDITIONS.index(condition)])
+        assert config.run.ticks == 96
+        assert config.run.experiment_id.startswith("a7_long_horizon_")
+        assert config.semantic_field is not None
+        assert source.semantic_field is not None
+        assert config.semantic_field.condition == condition
+        assert config.model == source.model
+        assert config.outputs == source.outputs
+        assert config.semantic_field == source.semantic_field
+
+
+def test_a7_long_horizon_comparison_runs_fixed_paired_validation(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a7_long_horizon_compare"
+
+    rows = run_a7_semantic_field_comparison(out_dir=out_dir)
+
+    assert len(rows) == len(A7_CONDITIONS) * 2
+    assert {row["seed"] for row in rows} == {1, 2}
+    assert {row["tick_count"] for row in rows} == {96}
+    manifest_rows = list(
+        csv.DictReader((out_dir / "a7_semantic_field_comparison_manifest.csv").open())
+    )
+    assert list(manifest_rows[0]) == list(A7_COMPARISON_MANIFEST_FIELDS)
+    assert {row["scientific_status"] for row in manifest_rows} == {
+        "bounded_validation_artifacts_only_requires_read_only_analyzer"
+    }
+    for row in manifest_rows:
+        run_dir = out_dir / row["run_dir"]
+        assert int(row["metrics_rows"]) == 96
+        assert int(row["events_rows"]) > 0
+        assert (run_dir / "config.yaml").exists()
+        assert (run_dir / "manifest.yaml").exists()
+        assert (run_dir / "metrics.csv").exists()
+        assert (run_dir / "events.csv").exists()
+    assert "Horizon: 96 ticks" in (out_dir / "summary.md").read_text()
+
+
+def test_a7_long_horizon_comparison_rejects_unregistered_seeds(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
+        run_a7_semantic_field_comparison(seeds=(1,), out_dir=tmp_path / "bad")
 
 
 def test_a7_logistic_semantic_field_run_emits_schema_and_source_ledger(

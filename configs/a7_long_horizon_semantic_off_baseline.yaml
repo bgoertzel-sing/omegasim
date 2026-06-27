@@ -1,0 +1,37 @@
+run:
+  experiment_id: a7_long_horizon_semantic_off_baseline
+  ticks: 96
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+    - synthesize
+    - review
+    - formalize
+    - maintain
+    - predict
+    - communicate
+    - pause
+  task_creation_pressure: 1.0
+  work_service_capacity: 1.0
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+semantic_field:
+  condition: semantic_off_baseline
+  prediction_budget_per_tick: 0.25
+  lead_ticks: 2
+  semantic_decay: 0.9
+  logistic_beta: 4.0
+  linear_gain: 1.0
+  threshold_adaptation_rate: 0.03
+  semantic_noise: 0.02
+  phase_shift_ticks: 3
