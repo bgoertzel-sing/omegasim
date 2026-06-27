@@ -28,14 +28,17 @@ summary.md
 
 ## A5 Anticipatory Predictive-Control Smoke
 
-A5 is currently reopened only for the explicitly requested bounded
-single-hive anticipatory predictive-control stage preregistered in
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-The older detailed design record remains in
+A5 is closed conservatively after the explicitly requested bounded
+single-hive anticipatory predictive-control smoke/pilot failed residual/null
+promotion. The concise A5 gate remains recorded in
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`, and
+the smoke result is recorded in
+`docs/results/a5_single_hive_reopened_smoke_seed5_6.md`. The older detailed
+design record remains in
 `docs/a5_anticipatory_predictive_control_preregistration.md`. The prior seed
-`7..16` and A5.1a accounting closures still constrain interpretation: do not
-make residual-structure, lobe-like, or strange-attractor-like claims unless the
-new preregistered accounting controls and surrogate nulls pass.
+`7..16`, A5.1a accounting closure, and reopened A5 seed `5,6` closure all
+constrain interpretation: do not make residual-structure, lobe-like, or
+strange-attractor-like claims from A5-family artifacts.
 
 The scaffold remains intentionally single-hive and deterministic. It keeps the
 existing action set and artifact contract, adds a hidden periodic demand-share
@@ -44,25 +47,25 @@ controller shift work-task class priority from forecasted future pressure. Do
 not broaden A5 to new mechanics, wider seed sweeps, dashboards, integrations,
 or multi-hive coupling without another preregistration.
 
-When Ben explicitly requests an A5 anticipatory predictive-control pass, the
-existing A5 preregistration is the active gate for bounded verification. That
-does not import A6/A7 mechanics or authorize broader A5 seed sweeps; it only
-permits the single-hive smoke/pilot scaffold and preregistered residual
-accounting checks unless a new A5 preregistration is written first.
+Do not reopen A5 by broader seed sweeps, new predictor knobs, or rescue
+diagnostics. A future predictive-control mechanism requires a new
+preregistration and Ben's explicit decision. The non-active decision document
+for the candidate delayed artifact-mediated endogenous-prediction direction is
+`docs/a5_family_exit_and_a7_2_decision_preregistration.md`.
 
-The next A5 follow-up gate is now preregistered in
-`docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 is still
-single-hive and deterministic, but asks the narrower resource-bounded question
+The completed A5 follow-up gate is recorded in
+`docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
+single-hive and deterministic, but asked the narrower resource-bounded question
 that the first A5 scaffold did not test directly: prediction spend must compete
 with work opportunity, with spend-matched timing-broken nulls and full
 accounting controls before any residual-structure or strange-attractor-like
 language is allowed.
 
-The current bounded A5.1a subgate is cost calibration, not seed broadening.
-Before any larger prediction-spend run, the preregistration requires explicit
-prediction-cost scale/cap knobs plus a spend-only replay null that deducts the
-same work opportunities at the same ticks while removing useful forecast
-timing.
+The bounded A5.1a subgate was cost calibration, not seed broadening. It added
+explicit prediction-cost scale/cap knobs plus a spend-only replay null that
+deducts the same work opportunities at the same ticks while removing useful
+forecast timing. It closed fail-closed in
+`docs/results/a5_1a_cost_calibration_closure_note_seed5_6.md`.
 
 The checked-in A5.1a scaffold adds `prediction_cost_scale`,
 `max_prediction_work_fraction_per_tick`, and generated spend-only replay-null
@@ -91,7 +94,7 @@ python -m ohdyn.analyze_a5_residual_accounting --compare-dir runs/a5_1_predictio
 
 ## A6 Logistic-Appraisal Smoke
 
-A6 is the current post-A5 preregistered smoke-scaffold direction, recorded in
+A6 was the post-A5 preregistered smoke-scaffold direction, recorded in
 `docs/omegasim_provisional_experiment_roadmap.md` and
 `docs/a6_logistic_appraisal_attractor_preregistration.md`. The bounded A6.1
 source-accounting and pilot/null gates are recorded in

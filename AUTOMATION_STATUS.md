@@ -37,11 +37,33 @@ prediction costs.
 
 The latest GPT-5.5-Pro strategy review still has
 `strategic_change_level: major` and `notify_ben: true`. Ben should be notified
-that the direction shifted from older A7 roadmap wording back to a narrow A5
-prediction/resource gate, and that the reopened A5 smoke failed closed.
+that the direction has shifted again: the review recommends keeping the guard
+closed, exiting A5-family seed work, and asking Ben to decide whether to open a
+new delayed artifact-mediated endogenous-prediction preregistration. This run
+accepted that recommendation as scientifically sensible and recorded it only as
+a non-active decision document, not as an active experiment gate.
 
 ## Latest Changes
 
+- 2026-06-27 17:10 PDT bounded decision-preregistration run: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the provisional
+  roadmap, current A5/A5.1/A6/A7 closure evidence, and the latest GPT-5.5-Pro
+  strategy review before choosing a next step. The guard was closed, so this
+  run did not add simulator mechanics, configs, analyzers, simulations,
+  dashboards, integrations, seed sweeps, or multi-hive coupling.
+- Added non-active
+  `docs/a5_family_exit_and_a7_2_decision_preregistration.md` to summarize the
+  A5/A5.1a/A6.2/A7 fail-closed evidence boundary and freeze the candidate
+  A7.2 delayed artifact-mediated endogenous-prediction direction for Ben's
+  decision only.
+- Updated `README.md` so A5 no longer reads as currently reopened. The current
+  posture is closed awaiting Ben; do not reopen A5 without a new explicit
+  preregistration and decision.
+- The latest GPT-5.5-Pro review's delayed artifact-mediated endogenous
+  prediction recommendation is accepted as sensible enough for a decision
+  preregistration. Multi-hive ring work remains deferred because the current
+  status/roadmap does not authorize downstream coupling and earlier gates are
+  closed rather than promoted.
 - 2026-06-27 16:55 PDT bounded guard-closure run: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests surface, the provisional roadmap,
   A5/A5.1 preregistrations/results, and the latest GPT-5.5-Pro strategy
@@ -373,14 +395,39 @@ prediction/resource gate, and that the reopened A5 smoke failed closed.
   `strategic_change_level=major`, `notify_ben=true`, and the single next step
   to design one preregistered resource-bounded residual diagnostic before any
   new mechanics.
+- `git status --short --branch` passed at the start of the 2026-06-27 17:10
+  PDT bounded decision-preregistration run and reported `main...origin/main`
+  with no uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed at the start of
+  this run. It reported `state=closed_awaiting_preregistration`,
+  `should_noop=true`, closed reason
+  `automation_status_a5_reopened_smoke_failed_closed`,
+  `strategic_change_level=major`, `notify_ben=true`, and the review
+  recommendation to keep the guard closed and draft a non-active Ben-decision
+  preregistration.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed recent automation loops
+  completed successfully and that the latest strategy review requested Ben
+  notification.
+- `git diff --check` passed after the non-active decision preregistration and
+  README/status updates.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the
+  documentation updates. It reported `state=closed_awaiting_preregistration`,
+  `should_noop=true`, closed reason `automation_status_a5_closed`,
+  `strategic_change_level=major`, `notify_ben=true`, and the single next step
+  to notify Ben and await his decision.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed after the documentation updates: `12 passed, 612
+  deselected`.
 
 ## Blockers
 
 There is no local environment blocker. The scientific blocker is that the
 reopened A5 smoke reproduced forecast-skill gains but did not produce
 residual/null evidence strong enough for promotion. The external review also
-marked the direction shift as major and said Ben should be notified.
+marked the direction shift as major and said Ben should be notified. Do not
+reopen A5, run more A5/A5.1 seeds, or implement A7.2/multi-hive mechanics until
+Ben chooses a new preregistered direction.
 
 ## Recommended Next Step
 
-- Recommended next step: design one preregistered resource-bounded residual diagnostic that can separate useful anticipation from accounting/null effects before adding any new mechanics.
+- Recommended next step: notify Ben of the major direction shift and await his decision on whether to close A5-family work, open the non-active A7.2 delayed artifact-mediated endogenous-prediction preregistration, or request a separate three-hive ring preregistration.
