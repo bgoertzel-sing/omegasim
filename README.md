@@ -97,6 +97,9 @@ and promotion/closure rules.
 `docs/a5_confirmatory_addendum.md` freezes prospective confirmatory guardrail
 tolerances and budget-matched timing-broken null requirements for any fresh
 larger paired-seed run.
+`docs/a5_forecast_skill_residual_gap_diagnostic_plan.md` defines the bounded
+read-only follow-up for why the checked-in forecast-skill gains did not survive
+full residual accounting.
 
 The matching read-only analyzer consumes an existing comparison directory
 without rerunning simulations:
