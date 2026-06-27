@@ -39,8 +39,20 @@ should preserve the existing deterministic OmegaSim artifact discipline and
 avoid real LLM calls, dashboards, browsers, Lean, Slack, Atomspace integrations,
 or live task boards.
 
-The hive receives a deterministic hidden demand process that changes future task
-pressure across the existing attention classes:
+The preregistered first setup is deterministic and single-hive:
+
+- one existing OmegaSim hive, agent population, action set, queue, and output
+  artifact contract;
+- the existing four-class attention policy and work-task selection surface;
+- a deterministic hidden demand-share process over attention classes, computed
+  from tick, lead horizon, period, amplitude, and seed-stable config only;
+- no multi-hive transfer, no external service calls, and no live task source;
+- paired seeds and generated condition configs so every condition sees the same
+  task-arrival totals, class-demand stream, action opportunity, service
+  capacity, and work budget.
+
+The hidden demand process changes future task pressure across the existing
+attention classes:
 
 - `near_term_external`
 - `long_term_research`
@@ -50,6 +62,14 @@ pressure across the existing attention classes:
 Controllers may adjust attention shares or service priority using forecasts of
 future task pressure, while total task-arrival volume, service capacity, action
 opportunity, and work budget remain matched across conditions.
+
+Prediction is treated as an action-relevant resource, not as a free analytic
+overlay. The initial scaffold may encode budget as a deterministic normalized
+condition field, but every pilot and later holdout must report prediction budget
+spent per tick and forecast skill per unit budget. A later richer version may
+make prediction spend compete directly with work, coordination, cleanup, or
+research actions; that extension requires a separate preregistration because it
+would change work opportunity.
 
 ## Conditions
 
@@ -80,6 +100,13 @@ opportunity, work budget, and deterministic demand stream matched. Prediction
 budget may change forecast timing and service-priority allocation; it must not
 silently change the amount of work available or the amount of demand injected.
 
+Budget-matched timing-broken nulls are required before interpreting a predictor
+as doing useful anticipation. The linear predictor must be compared to a
+linear-budget shuffled or phase-randomized null. The nonlinear predictor must be
+compared to a nonlinear-budget shuffled or phase-randomized null. Oracle is a
+positive control for smoothing and coordination, not a target condition for
+strange-attractor-like dynamics.
+
 The follow-up confirmatory addendum freezes the next single-hive larger-run
 rules, including budget-matched timing-broken nulls and prospective practical
 guardrail tolerances:
@@ -94,8 +121,9 @@ Fail closed unless the result survives the following accounting controls and
 surrogate nulls:
 
 - forecast skill per unit prediction budget;
-- whether attention allocation leads future demand rather than merely tracking
-  current backlog;
+- lead-lag relation between attention allocation or service priority and future
+  demand, with explicit checks that allocation leads future demand rather than
+  merely tracking current backlog;
 - residual phase structure after controlling for load, service capacity, action
   opportunity, task volume, and work budget;
 - recurrence or return-map structure in delay embeddings of residual predictive
@@ -119,6 +147,12 @@ nontrivial than the oracle condition. A plausible positive pattern is:
 - the recurrent structure is more compressible/predictable at a high level than
   detailed task-level trajectories;
 - accounting controls do not explain the effect.
+
+The explicit scientific question is whether intermediate prediction budgets
+produce richer but still partially predictable residual collective dynamics than
+zero-budget reactivity or oracle-like prediction. Perfect prediction can count
+as a useful positive control while still being scientifically uninteresting if
+it smooths away the residual dynamics A5 is designed to test.
 
 If all apparent structure is explained by backlog, service capacity, work
 opportunity, or demand volume, close A5 as another accounting result.
