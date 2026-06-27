@@ -44,9 +44,12 @@ python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --
 
 A6 is the current post-A5 preregistered smoke-scaffold direction, recorded in
 `docs/omegasim_provisional_experiment_roadmap.md` and
-`docs/a6_logistic_appraisal_attractor_preregistration.md`. It is single-hive
-only and remains abstract/numeric: no real LLM calls, Lean, Slack, browser,
-Atomspace, dashboard, or downstream multi-hive integration.
+`docs/a6_logistic_appraisal_attractor_preregistration.md`. The bounded A6.1
+source-accounting and pilot/null gates are recorded in
+`docs/a6_1_schema_control_addendum.md` and
+`docs/a6_1_pilot_null_preregistration.md`. A6 is single-hive only and remains
+abstract/numeric: no real LLM calls, Lean, Slack, browser, Atomspace,
+dashboard, or downstream multi-hive integration.
 
 The four checked-in smoke fixtures are:
 

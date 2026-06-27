@@ -5,12 +5,11 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-This run audited the current A6 analyzer against the existing seed `1..2` smoke
-artifacts, following the external GPT-5.5-Pro strategy review recommendation.
-The review direction was incorporated because it was scientifically sensible:
-the analyzer code had outrun the tracked interpretation, and the next bounded
-step was to publish the actual control-delta/residual gate rather than add
-seeds or mechanisms.
+This run preregistered the smallest A6.1 pilot/null design after the completed
+A6 analyzer gate and A6.1 source-accounting audit. The previous GPT-5.5-Pro
+strategy-review direction remains incorporated: the analyzer/status mismatch
+was resolved before any new seed or mechanism work, and the current step keeps
+A6 schema/analyzer-only.
 
 A5 remains closed conservatively by the seed `7..16` forecast-skill/residual-gap
 evidence: bounded predictors improved forecast skill under matched deterministic
@@ -34,6 +33,7 @@ downstream multi-hive coupling.
 ## Latest Changes
 
 - Status: A6 analyzer/read-only gate reconciliation completed, 2026-06-27.
+- Status: A6.1 pilot/null preregistration added, 2026-06-27.
 - External review: `../outputs/strategy-reviews/omegasim/latest-review.md`
   reported `strategic_change_level: minor`, `notify_ben: false`, and
   recommended auditing the expanded A6 analyzer before adding seeds or
@@ -66,13 +66,24 @@ downstream multi-hive coupling.
   separate tracked source-accounting audit over fresh source-schema artifacts,
   `docs/results/a6_1_source_accounting_audit_seed1_2.md`, remains the relevant
   source-accounting result.
+- Preregistration: `docs/a6_1_pilot_null_preregistration.md` now freezes the
+  smallest next pilot/null design. It adds no simulator mechanics and
+  authorizes only paired seeds `1` and `2`, the existing four A6 conditions,
+  `source_label_shuffled_within_tick`, and
+  `handoff_success_timing_broken_matched_counts`. Prediction-expenditure timing
+  nulls are deferred because the current readiness/utility source-accounting
+  audit shows zero prediction share for the relevant logistic rows.
 - Verification: `.venv-conda/bin/python -m py_compile
   ohdyn/analyze_a6_logistic_appraisal.py ohdyn/automation_guard.py` passed;
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q -k
   'a6_read_only_analysis or automation_guard'` passed (`12 passed, 587
   deselected`).
+- Verification: `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state: open`, `should_noop: false`, `strategic_change_level: minor`, and
+  `notify_ben: false` during this preregistration run.
 - Blockers: none.
-- Recommended next step: preregister the smallest A6.1 pilot/null design using
-  source-field-complete artifacts, source-preserving nulls, and
-  backlog-adjusted productivity controls, without broadening seeds or changing
-  interpretation in the same run.
+- Recommended next step: implement the smallest read-only source-preserving
+  null path for `source_label_shuffled_within_tick` and
+  `handoff_success_timing_broken_matched_counts`, add focused deterministic
+  tests, run only paired seeds `1` and `2`, and publish
+  `docs/results/a6_1_pilot_null_gate_seed1_2.md`.
