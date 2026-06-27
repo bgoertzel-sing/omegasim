@@ -18,6 +18,7 @@ from ohdyn.a7_semantic_field_contract import (
     A7_ANALYZER_COMPLETENESS_FIELDS,
     A7_ANALYZER_MANIFEST_FIELDS,
     A7_CONDITIONS,
+    A7_SOURCE_COMPONENTS,
     a7_required_event_fields,
     a7_required_metric_fields,
     missing_fields,
@@ -130,12 +131,20 @@ def _completeness_row(run: dict[str, Any]) -> dict[str, str | int]:
         *missing_fields(event_header, a7_required_event_fields()),
     )
     required_status = "pass" if not missing else "missing_fields"
-    source_status = "pass" if not missing else "not_evaluable"
+    source_status = (
+        _source_reconstruction_status(events_path) if not missing else "not_evaluable"
+    )
     null_status = "not_evaluable"
-    status = "fail_closed" if missing else "schema_present_analysis_not_implemented"
+    status = (
+        "fail_closed"
+        if missing or source_status != "pass"
+        else "schema_present_analysis_not_implemented"
+    )
     interpretation = (
         "A7 artifacts are absent or incomplete; no semantic-field interpretation is allowed."
         if missing
+        else "A7 source ledger does not reconstruct field deltas; no semantic-field interpretation is allowed."
+        if source_status != "pass"
         else "A7 schema is present; residual recurrence and null contrasts remain unimplemented."
     )
     return {
@@ -159,6 +168,32 @@ def _csv_header_and_row_count(path: Path) -> tuple[frozenset[str], int]:
     with path.open(newline="") as handle:
         reader = csv.DictReader(handle)
         return frozenset(reader.fieldnames or ()), sum(1 for _ in reader)
+
+
+def _source_reconstruction_status(path: Path) -> str:
+    if not path.exists():
+        return "missing_events"
+    checked = 0
+    with path.open(newline="") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            if row.get("event_type") != "a7_semantic_field_update":
+                continue
+            checked += 1
+            source_sum = sum(
+                _float_cell(row.get(f"a7_delta_{source}", "0"))
+                for source in A7_SOURCE_COMPONENTS
+            )
+            total = _float_cell(row.get("a7_delta_total", "0"))
+            if round(source_sum, 6) != round(total, 6):
+                return "fail"
+    return "pass" if checked else "no_a7_update_events"
+
+
+def _float_cell(value: str | None) -> float:
+    if value in {None, ""}:
+        return 0.0
+    return float(value)
 
 
 def _overall_status(rows: list[dict[str, str | int]], conditions: list[str]) -> str:

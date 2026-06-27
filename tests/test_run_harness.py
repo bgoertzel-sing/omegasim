@@ -30,6 +30,7 @@ from ohdyn.sim import (
     metrics_fieldnames,
     predictive_control_metric_fields,
     role_action_metric_fields,
+    semantic_field_metric_fields,
     simulate,
 )
 from ohdyn.analyze_a6_logistic_appraisal import (
@@ -969,6 +970,58 @@ def test_a7_placeholder_comparison_still_fails_closed_in_analyzer(
     assert len(completeness_rows) == len(A7_CONDITIONS)
     assert {row["status"] for row in completeness_rows} == {"fail_closed"}
     assert all(row["row_count"] == "0" for row in completeness_rows)
+
+
+def test_a7_logistic_semantic_field_run_emits_schema_and_source_ledger(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a7_logistic_seed1"
+
+    result = run_experiment(A7_LOGISTIC_SEMANTIC_COUPLING, seed=1, out_dir=out_dir)
+
+    assert result.config.semantic_field is not None
+    assert result.config.semantic_field.condition == A7_POSITIVE_CONDITION
+    with (out_dir / "metrics.csv").open(newline="") as handle:
+        metric_rows = list(csv.DictReader(handle))
+    with (out_dir / "events.csv").open(newline="") as handle:
+        event_rows = list(csv.DictReader(handle))
+    assert metric_rows
+    assert event_rows
+    metrics_header = set(metric_rows[0])
+    events_header = set(event_rows[0])
+    assert set(a7_required_metric_fields()).issubset(metrics_header)
+    assert set(a7_required_event_fields()).issubset(events_header)
+    for field in semantic_field_metric_fields():
+        assert field in metrics_header
+
+    semantic_updates = [
+        row for row in event_rows if row["event_type"] == "a7_semantic_field_update"
+    ]
+    assert semantic_updates
+    assert {row["a7_condition"] for row in semantic_updates} == {A7_POSITIVE_CONDITION}
+    for row in semantic_updates:
+        source_sum = sum(
+            float(row[f"a7_delta_{source}"] or 0.0)
+            for source in A7_SOURCE_COMPONENTS
+        )
+        assert round(source_sum, 6) == round(float(row["a7_delta_total"]), 6)
+
+    novelty_values = [float(row["a7_semantic_novelty_tick"]) for row in metric_rows]
+    assert max(novelty_values) != min(novelty_values)
+    assert any(float(row["a7_prediction_budget_spent_tick"]) > 0.0 for row in metric_rows)
+    assert any(
+        float(row["a7_work_budget_tick"]) < float(row["a7_action_opportunity_tick"])
+        for row in metric_rows
+    )
+    assert any(float(row["a7_near_threshold_occupancy_tick"]) >= 0.0 for row in metric_rows)
+
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["model"]["semantic_field"]["execution_mode"] == (
+        "real_simulator_schema_smoke"
+    )
+    assert manifest["model"]["semantic_field"]["scientific_status"] == (
+        "schema_complete_smoke_only_no_semantic_dynamics_claim"
+    )
 
 
 def test_automation_guard_closes_after_a5_closure_despite_preregistration(

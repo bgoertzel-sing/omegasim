@@ -14,6 +14,11 @@ from typing import Any
 import yaml
 
 from ohdyn.config import ATTENTION_CLASSES
+from ohdyn.a7_semantic_field_contract import (
+    A7_EVENT_FIELDS,
+    A7_RNG_STREAMS,
+    a7_required_metric_fields,
+)
 from ohdyn.sim import (
     A6_ARTIFACT_FIELDS,
     A6_ARTIFACT_UPDATE_SOURCE_FIELDS,
@@ -39,6 +44,7 @@ from ohdyn.sim import (
     metrics_fieldnames,
     predictive_control_metric_fields,
     role_action_metric_fields,
+    semantic_field_metric_fields,
 )
 
 
@@ -181,6 +187,18 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
                 ),
             },
         }
+    if result.config.semantic_field is not None:
+        manifest["model"]["semantic_field"] = {
+            "condition": result.config.semantic_field.condition,
+            "single_hive_only": True,
+            "execution_mode": "real_simulator_schema_smoke",
+            "scientific_status": "schema_complete_smoke_only_no_semantic_dynamics_claim",
+            "actions": list(result.config.model.actions),
+            "event_fields": list(A7_EVENT_FIELDS),
+            "metric_fields": list(a7_required_metric_fields()),
+            "rng_streams": list(A7_RNG_STREAMS),
+            "prediction_budget_competes_with_work": True,
+        }
     if _exogenous_arrivals_enabled(result) and result.config.exogenous_arrivals is not None:
         assert result.config.exogenous_arrivals is not None
         manifest["model"]["exogenous_arrivals"] = {
@@ -305,6 +323,7 @@ def _metrics_fieldnames(result: SimulationResult) -> tuple[str, ...]:
         include_exogenous_arrivals=_exogenous_arrivals_enabled(result),
         include_predictive_control=result.config.predictive_control is not None,
         include_logistic_appraisal=result.config.logistic_appraisal is not None,
+        include_semantic_field=result.config.semantic_field is not None,
     )
     if _multi_hive_enabled(result):
         return (*fields, *MULTI_HIVE_QUEUE_FLOW_METRIC_FIELDS)
@@ -319,6 +338,8 @@ def _event_types(result: SimulationResult) -> tuple[str, ...]:
         event_types.extend(EXOGENOUS_ARRIVAL_EVENT_TYPES)
     if result.config.logistic_appraisal is not None:
         event_types.extend(A6_EVENT_TYPES)
+    if result.config.semantic_field is not None:
+        event_types.extend(("a7_semantic_field_update",))
     return tuple(event_types)
 
 
@@ -560,6 +581,11 @@ def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
         *(
             [f"- A6 logistic-appraisal fields: {len(logistic_appraisal_metric_fields())}"]
             if result.config.logistic_appraisal is not None
+            else []
+        ),
+        *(
+            [f"- A7 semantic-field fields: {len(semantic_field_metric_fields())}"]
+            if result.config.semantic_field is not None
             else []
         ),
         *(

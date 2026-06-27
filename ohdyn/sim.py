@@ -9,6 +9,14 @@ from typing import Any
 import networkx as nx
 import numpy as np
 
+from ohdyn.a7_semantic_field_contract import (
+    A7_CONTROL_FIELDS,
+    A7_EVENT_FIELDS,
+    A7_FIELD_VALUES,
+    A7_METRIC_FIELDS,
+    A7_RNG_STREAMS,
+    A7_SOURCE_COMPONENTS,
+)
 from ohdyn.config import (
     A6_ACTIONS,
     ATTENTION_CLASSES,
@@ -97,6 +105,7 @@ EVENT_FIELDS = (
     "attention_pressure_class",
     "attention_capture_pressure",
     *A6_ARTIFACT_UPDATE_SOURCE_FIELDS,
+    *tuple(field for field in A7_EVENT_FIELDS if field not in {"tick", "agent_id", "event_type"}),
 )
 
 HIVE_EVENT_FIELDS = ("hive_id", *EVENT_FIELDS)
@@ -176,6 +185,7 @@ def metrics_fieldnames(
     include_exogenous_arrivals: bool = False,
     include_predictive_control: bool = False,
     include_logistic_appraisal: bool = False,
+    include_semantic_field: bool = False,
 ) -> tuple[str, ...]:
     return (
         "tick",
@@ -201,6 +211,7 @@ def metrics_fieldnames(
         *(attention_policy_metric_fields() if include_attention_policy else ()),
         *(predictive_control_metric_fields() if include_predictive_control else ()),
         *(logistic_appraisal_metric_fields() if include_logistic_appraisal else ()),
+        *(semantic_field_metric_fields() if include_semantic_field else ()),
         "idle_tick",
         *role_action_metric_fields(actions),
         "mean_agent_bias",
@@ -335,6 +346,24 @@ def logistic_appraisal_metric_fields() -> tuple[str, ...]:
     )
 
 
+def semantic_field_metric_fields() -> tuple[str, ...]:
+    return (
+        "a7_condition",
+        "a7_prediction_budget_per_tick",
+        "a7_lead_ticks",
+        "a7_semantic_decay",
+        "a7_logistic_beta",
+        "a7_linear_gain",
+        "a7_threshold_adaptation_rate",
+        "a7_semantic_noise",
+        *A7_METRIC_FIELDS,
+        *A7_CONTROL_FIELDS,
+        "a7_threshold_mean_tick",
+        "a7_fatigue_mean_tick",
+        "a7_near_threshold_occupancy_tick",
+    )
+
+
 @dataclass(frozen=True)
 class AgentState:
     agent_id: str
@@ -358,6 +387,18 @@ class _A6TickState:
     handoff_attempts: int = 0
     handoff_successes: int = 0
     handoff_failures: int = 0
+
+
+@dataclass
+class _A7TickState:
+    prediction_budget_spent: float = 0.0
+    prediction_error_sum: float = 0.0
+    prediction_actions: int = 0
+    work_actions: int = 0
+    handoff_attempts: int = 0
+    handoff_successes: int = 0
+    handoff_failures: int = 0
+    near_threshold_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -451,6 +492,12 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
     a6_shuffle_rng = _a6_stream_rng(config, seed, "control_shuffle_stream")
     a6_latent = _initial_a6_latent(agents, config, a6_appraisal_rng)
     a6_artifact = _initial_a6_artifact(config)
+    a7_action_rng = _a7_stream_rng(config, seed, "baseline_action_stream")
+    a7_update_rng = _a7_stream_rng(config, seed, "semantic_update_stream")
+    a7_prediction_rng = _a7_stream_rng(config, seed, "prediction_noise_stream")
+    a7_shuffle_rng = _a7_stream_rng(config, seed, "semantic_control_shuffle_stream")
+    a7_agent_state = _initial_a7_agent_state(agents, config, a7_update_rng)
+    a7_field = _initial_a7_field(config)
 
     for tick in range(config.run.ticks):
         queue_depth_start = len(task_queue)
@@ -462,6 +509,7 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
         attention_value_weighted_completed_tick = 0
         exogenous_created_this_tick = 0
         a6_tick = _A6TickState()
+        a7_tick = _A7TickState()
         if config.logistic_appraisal is not None:
             _advance_a6_background_state(
                 config=config,
@@ -471,6 +519,16 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                 appraisal_rng=a6_appraisal_rng,
                 artifact_rng=a6_artifact_rng,
                 shuffle_rng=a6_shuffle_rng,
+                events=events,
+            )
+        if config.semantic_field is not None:
+            _advance_a7_background_state(
+                config=config,
+                field=a7_field,
+                tick=tick,
+                update_rng=a7_update_rng,
+                shuffle_rng=a7_shuffle_rng,
+                queue_depth=queue_depth_start,
                 events=events,
             )
         if _exogenous_arrivals_enabled(config):
@@ -506,7 +564,18 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                     )
                 )
         for agent in agents:
-            if config.logistic_appraisal is None:
+            if config.semantic_field is not None:
+                assert a7_action_rng is not None
+                action = _choose_semantic_field_action(
+                    config=config,
+                    has_queued_tasks=bool(task_queue),
+                    agent=agent,
+                    rng=a7_action_rng,
+                    agent_state=a7_agent_state[agent.agent_id],
+                    field=a7_field,
+                    tick=tick,
+                )
+            elif config.logistic_appraisal is None:
                 action = _choose_action(
                     config.model.actions,
                     bool(task_queue),
@@ -626,17 +695,30 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                     )
                 )
             elif action in A6_ACTIONS:
-                _apply_logistic_appraisal_action(
-                    config=config,
-                    tick=tick,
-                    agent=agent,
-                    action=action,
-                    latent=a6_latent[agent.agent_id],
-                    artifact=a6_artifact,
-                    prediction_rng=a6_prediction_rng,
-                    a6_tick=a6_tick,
-                    events=events,
-                )
+                if config.semantic_field is not None:
+                    _apply_semantic_field_action(
+                        config=config,
+                        tick=tick,
+                        agent=agent,
+                        action=action,
+                        agent_state=a7_agent_state[agent.agent_id],
+                        field=a7_field,
+                        prediction_rng=a7_prediction_rng,
+                        a7_tick=a7_tick,
+                        events=events,
+                    )
+                else:
+                    _apply_logistic_appraisal_action(
+                        config=config,
+                        tick=tick,
+                        agent=agent,
+                        action=action,
+                        latent=a6_latent[agent.agent_id],
+                        artifact=a6_artifact,
+                        prediction_rng=a6_prediction_rng,
+                        a6_tick=a6_tick,
+                        events=events,
+                    )
             else:
                 events.append(
                     _event(
@@ -674,6 +756,17 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
             a6_tick=a6_tick,
             queue_depth=queue_depth_end,
             work_actions=action_counts["work_task"],
+            action_opportunity=len(agents),
+        )
+        a7_metrics = _semantic_field_metrics(
+            config=config,
+            agent_state=a7_agent_state,
+            field=a7_field,
+            a7_tick=a7_tick,
+            queue_depth=queue_depth_end,
+            queue_delta=queue_delta,
+            tasks_created_total=task_counter,
+            tasks_completed_total=completed_tasks,
             action_opportunity=len(agents),
         )
         baseline_lobe_label = _baseline_lobe_label(
@@ -732,6 +825,7 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                 **attention_metrics,
                 **predictive_metrics,
                 **a6_metrics,
+                **a7_metrics,
                 "idle_tick": action_counts["idle"],
                 **_role_action_metrics(config.model.actions, role_action_counts),
                 "mean_agent_bias": round(float(np.mean([agent.bias for agent in agents])), 6),
@@ -2653,6 +2747,441 @@ def _a6_latent_mean(latent: dict[str, dict[str, float]], field: str) -> float:
     return round(float(np.mean([state[field] for state in latent.values()])), 6)
 
 
+def _a7_stream_rng(
+    config: OmegaConfig,
+    seed: int,
+    stream_name: str,
+) -> np.random.Generator | None:
+    if config.semantic_field is None:
+        return None
+    stream_offsets = {
+        "baseline_action_stream": 0xA700,
+        "semantic_update_stream": 0xA701,
+        "prediction_noise_stream": 0xA702,
+        "semantic_control_shuffle_stream": 0xA703,
+    }
+    if stream_name not in A7_RNG_STREAMS:
+        raise ValueError(f"Unknown A7 RNG stream: {stream_name}")
+    return np.random.default_rng(np.random.SeedSequence([seed, stream_offsets[stream_name]]))
+
+
+def _initial_a7_field(config: OmegaConfig) -> dict[str, float]:
+    if config.semantic_field is None:
+        return {}
+    return {
+        "semantic_novelty": 0.46,
+        "semantic_coherence": 0.42,
+        "semantic_contradiction": 0.26,
+        "semantic_risk": 0.24,
+        "artifact_readiness": 0.34,
+        "trust_weighted_salience": 0.38,
+        "prediction_budget_spent": 0.0,
+        "prediction_error": 0.0,
+    }
+
+
+def _initial_a7_agent_state(
+    agents: tuple[AgentState, ...],
+    config: OmegaConfig,
+    rng: np.random.Generator | None,
+) -> dict[str, dict[str, float]]:
+    if config.semantic_field is None:
+        return {}
+    assert rng is not None
+    return {
+        agent.agent_id: {
+            "threshold": round(float(rng.uniform(0.44, 0.58)), 6),
+            "fatigue": round(float(rng.uniform(0.08, 0.2)), 6),
+            "prediction_error": 0.0,
+        }
+        for agent in agents
+    }
+
+
+def _advance_a7_background_state(
+    *,
+    config: OmegaConfig,
+    field: dict[str, float],
+    tick: int,
+    update_rng: np.random.Generator | None,
+    shuffle_rng: np.random.Generator | None,
+    queue_depth: int,
+    events: list[dict[str, Any]],
+) -> None:
+    assert config.semantic_field is not None
+    assert update_rng is not None
+    assert shuffle_rng is not None
+    semantic = config.semantic_field
+    phase_tick = tick + (
+        semantic.phase_shift_ticks
+        if semantic.condition == "semantic_field_phase_shuffle"
+        else 0
+    )
+    phase = float(np.sin((phase_tick + 1) / 3.0))
+    queue_pressure = min(queue_depth / 12.0, 1.0)
+    for field_name in A7_FIELD_VALUES:
+        ambient_decay = round(
+            float((semantic.semantic_decay - 1.0) * field[field_name]),
+            6,
+        )
+        if semantic.condition == "semantic_off_baseline":
+            semantic_noise = 0.0
+            queue_work_accounting = 0.0
+        else:
+            semantic_noise = round(
+                float(update_rng.normal(0.0, semantic.semantic_noise)),
+                6,
+            )
+            queue_work_accounting = round(
+                float(_a7_queue_delta(field_name, queue_pressure, phase)),
+                6,
+            )
+        if semantic.condition == "source_preserving_semantic_label_shuffle":
+            field_name = str(shuffle_rng.choice(list(A7_FIELD_VALUES)))
+        _apply_a7_field_delta(
+            field=field,
+            field_name=field_name,
+            tick=tick,
+            agent_id="",
+            action="semantic_background",
+            events=events,
+            condition=semantic.condition,
+            ambient_decay=ambient_decay,
+            queue_work_accounting=queue_work_accounting,
+            semantic_noise=semantic_noise,
+        )
+
+
+def _a7_queue_delta(field_name: str, queue_pressure: float, phase: float) -> float:
+    weights = {
+        "semantic_novelty": 0.016 * phase,
+        "semantic_coherence": 0.010 * (1.0 - queue_pressure),
+        "semantic_contradiction": 0.018 * queue_pressure,
+        "semantic_risk": 0.014 * queue_pressure,
+        "artifact_readiness": 0.010 * (0.5 - queue_pressure),
+        "trust_weighted_salience": 0.012 * (1.0 - abs(phase)),
+    }
+    return weights.get(field_name, 0.0)
+
+
+def _choose_semantic_field_action(
+    *,
+    config: OmegaConfig,
+    has_queued_tasks: bool,
+    agent: AgentState,
+    rng: np.random.Generator,
+    agent_state: dict[str, float],
+    field: dict[str, float],
+    tick: int,
+) -> str:
+    assert config.semantic_field is not None
+    semantic = config.semantic_field
+    utilities: dict[str, float] = {}
+    for action in config.model.actions:
+        if action == "work_task" and not has_queued_tasks:
+            utilities[action] = -1.0e9
+            continue
+        signal = _a7_action_signal(action, field)
+        if semantic.condition == "semantic_field_phase_shuffle":
+            signal = _clamp01(signal + 0.05 * np.sin((tick + semantic.phase_shift_ticks) / 2.0))
+        if semantic.condition == "amplitude_matched_linear_semantic_coupling":
+            gate = _clamp01(0.5 + semantic.linear_gain * (signal - agent_state["threshold"]))
+        else:
+            gate = _sigmoid(semantic.logistic_beta * (signal - agent_state["threshold"]))
+        if semantic.condition == "semantic_off_baseline":
+            gate = 0.0
+        utilities[action] = (
+            _a6_action_base(action, has_queued_tasks)
+            + gate
+            + _a6_role_bias(agent.role, action)
+            - _a7_fatigue_cost(action, agent_state["fatigue"])
+            - _a7_prediction_cost(action, semantic.prediction_budget_per_tick)
+        )
+    probabilities = _softmax_probabilities(
+        [utilities[action] for action in config.model.actions],
+        temperature=1.0,
+    )
+    return str(rng.choice(list(config.model.actions), p=probabilities))
+
+
+def _a7_action_signal(action: str, field: dict[str, float]) -> float:
+    signals = {
+        "idle": 0.18,
+        "pause": 0.25 + field["semantic_risk"],
+        "message": field["trust_weighted_salience"],
+        "create_task": field["semantic_novelty"],
+        "work_task": field["artifact_readiness"],
+        "synthesize": 0.65 * field["semantic_novelty"] + 0.35 * field["semantic_coherence"],
+        "review": 0.5 * field["semantic_contradiction"] + 0.5 * field["semantic_risk"],
+        "formalize": 0.55 * field["semantic_coherence"] + 0.45 * field["artifact_readiness"],
+        "maintain": max(field["semantic_contradiction"], field["semantic_risk"]),
+        "predict": abs(field["prediction_error"]) + 0.35 * field["semantic_novelty"],
+        "communicate": field["trust_weighted_salience"],
+    }
+    return _clamp01(signals.get(action, 0.0))
+
+
+def _a7_fatigue_cost(action: str, fatigue: float) -> float:
+    if action in {"idle", "pause"}:
+        return 0.0
+    return 0.35 * fatigue
+
+
+def _a7_prediction_cost(action: str, prediction_budget_per_tick: float) -> float:
+    return 0.2 * prediction_budget_per_tick if action == "predict" else 0.0
+
+
+def _apply_semantic_field_action(
+    *,
+    config: OmegaConfig,
+    tick: int,
+    agent: AgentState,
+    action: str,
+    agent_state: dict[str, float],
+    field: dict[str, float],
+    prediction_rng: np.random.Generator | None,
+    a7_tick: _A7TickState,
+    events: list[dict[str, Any]],
+) -> None:
+    assert config.semantic_field is not None
+    assert prediction_rng is not None
+    semantic = config.semantic_field
+    signal = _a7_action_signal(action, field)
+    if abs(signal - agent_state["threshold"]) <= 0.08:
+        a7_tick.near_threshold_count += 1
+    if action == "pause":
+        agent_state["fatigue"] = _clamp01(agent_state["fatigue"] - 0.04)
+        events.append(_event(tick=tick, event_type="agent_idle", agent_id=agent.agent_id, action=action))
+        return
+    if action == "predict":
+        spent = semantic.prediction_budget_per_tick / max(config.model.agent_count, 1)
+        error_mean = 0.0
+        if semantic.condition == "prediction_budget_timing_broken_matched_count_null":
+            error_mean = 0.08
+        prediction_error = _clamp(float(prediction_rng.normal(error_mean, 0.16)), -1.0, 1.0)
+        agent_state["prediction_error"] = prediction_error
+        agent_state["fatigue"] = _clamp01(agent_state["fatigue"] + 0.02 + spent)
+        a7_tick.prediction_budget_spent += spent
+        a7_tick.prediction_error_sum += abs(prediction_error)
+        a7_tick.prediction_actions += 1
+        _apply_a7_field_delta(
+            field=field,
+            field_name="prediction_budget_spent",
+            tick=tick,
+            agent_id=agent.agent_id,
+            action=action,
+            events=events,
+            condition=semantic.condition,
+            prediction_expenditure=spent,
+        )
+        _apply_a7_field_delta(
+            field=field,
+            field_name="prediction_error",
+            tick=tick,
+            agent_id=agent.agent_id,
+            action=action,
+            events=events,
+            condition=semantic.condition,
+            prediction_error=prediction_error,
+        )
+        return
+    if action == "work_task":
+        a7_tick.work_actions += 1
+        agent_state["fatigue"] = _clamp01(agent_state["fatigue"] + 0.012)
+        return
+    if action in {"synthesize", "review", "formalize", "maintain", "communicate"}:
+        a7_tick.handoff_attempts += 1
+        success = signal >= agent_state["threshold"] and agent_state["fatigue"] < 0.82
+        if success:
+            a7_tick.handoff_successes += 1
+            deltas = _a7_success_deltas(action)
+        else:
+            a7_tick.handoff_failures += 1
+            deltas = {
+                "semantic_contradiction": 0.025,
+                "semantic_risk": 0.018,
+                "artifact_readiness": -0.012,
+            }
+        for field_name, delta in deltas.items():
+            _apply_a7_field_delta(
+                field=field,
+                field_name=field_name,
+                tick=tick,
+                agent_id=agent.agent_id,
+                action=action,
+                events=events,
+                condition=semantic.condition,
+                artifact_handoff=delta,
+                peer_contribution=0.004 if success else 0.0,
+            )
+        agent_state["fatigue"] = _clamp01(agent_state["fatigue"] + (0.014 if success else 0.022))
+    agent_state["threshold"] = _clamp01(
+        agent_state["threshold"]
+        + semantic.threshold_adaptation_rate * abs(agent_state["prediction_error"])
+        - (0.01 if action in {"idle", "pause"} else 0.0)
+    )
+
+
+def _a7_success_deltas(action: str) -> dict[str, float]:
+    if action == "synthesize":
+        return {
+            "semantic_coherence": 0.045,
+            "artifact_readiness": 0.025,
+            "semantic_novelty": -0.018,
+        }
+    if action == "review":
+        return {
+            "semantic_contradiction": -0.038,
+            "semantic_risk": -0.025,
+            "trust_weighted_salience": 0.018,
+        }
+    if action == "formalize":
+        return {
+            "artifact_readiness": 0.052,
+            "semantic_coherence": 0.024,
+        }
+    if action == "communicate":
+        return {
+            "trust_weighted_salience": 0.05,
+            "semantic_risk": 0.006,
+        }
+    if action == "maintain":
+        return {
+            "semantic_contradiction": -0.032,
+            "semantic_risk": -0.024,
+        }
+    return {}
+
+
+def _apply_a7_field_delta(
+    *,
+    field: dict[str, float],
+    field_name: str,
+    tick: int,
+    agent_id: str,
+    action: str,
+    events: list[dict[str, Any]],
+    condition: str = "",
+    ambient_decay: float = 0.0,
+    self_contribution: float = 0.0,
+    peer_contribution: float = 0.0,
+    artifact_handoff: float = 0.0,
+    prediction_expenditure: float = 0.0,
+    prediction_error: float = 0.0,
+    queue_work_accounting: float = 0.0,
+    semantic_noise: float = 0.0,
+) -> None:
+    deltas = {
+        "ambient_decay": round(float(ambient_decay), 6),
+        "self_contribution": round(float(self_contribution), 6),
+        "peer_contribution": round(float(peer_contribution), 6),
+        "artifact_handoff": round(float(artifact_handoff), 6),
+        "prediction_expenditure": round(float(prediction_expenditure), 6),
+        "prediction_error": round(float(prediction_error), 6),
+        "queue_work_accounting": round(float(queue_work_accounting), 6),
+        "semantic_noise": round(float(semantic_noise), 6),
+    }
+    before = field[field_name]
+    unclipped_delta = round(float(sum(deltas.values())), 6)
+    after = _clamp01(before + unclipped_delta)
+    total_delta = round(float(after - before), 6)
+    clip_residual = round(float(total_delta - unclipped_delta), 6)
+    field[field_name] = after
+    source_fields = {
+        f"a7_delta_{source}": deltas.get(source, clip_residual)
+        for source in A7_SOURCE_COMPONENTS
+    }
+    source_fields["a7_delta_clip_residual"] = clip_residual
+    events.append(
+        _event(
+            tick=tick,
+            event_type="a7_semantic_field_update",
+            agent_id=agent_id,
+            action=action,
+            a7_condition=condition,
+            a7_semantic_field=field_name,
+            a7_delta_total=total_delta,
+            **source_fields,
+        )
+    )
+
+
+def _semantic_field_metrics(
+    *,
+    config: OmegaConfig,
+    agent_state: dict[str, dict[str, float]],
+    field: dict[str, float],
+    a7_tick: _A7TickState,
+    queue_depth: int,
+    queue_delta: int,
+    tasks_created_total: int,
+    tasks_completed_total: int,
+    action_opportunity: int,
+) -> dict[str, int | float | str]:
+    if config.semantic_field is None:
+        return {}
+    semantic = config.semantic_field
+    prediction_error_mean = (
+        a7_tick.prediction_error_sum / a7_tick.prediction_actions
+        if a7_tick.prediction_actions
+        else abs(field["prediction_error"])
+    )
+    metrics: dict[str, int | float | str] = {
+        "a7_condition": semantic.condition,
+        "a7_prediction_budget_per_tick": semantic.prediction_budget_per_tick,
+        "a7_lead_ticks": semantic.lead_ticks,
+        "a7_semantic_decay": semantic.semantic_decay,
+        "a7_logistic_beta": semantic.logistic_beta,
+        "a7_linear_gain": semantic.linear_gain,
+        "a7_threshold_adaptation_rate": semantic.threshold_adaptation_rate,
+        "a7_semantic_noise": semantic.semantic_noise,
+        "a7_service_capacity_tick": config.model.work_service_capacity,
+        "a7_action_opportunity_tick": action_opportunity,
+        "a7_work_budget_tick": round(
+            float(max(action_opportunity - a7_tick.prediction_actions, 0)),
+            6,
+        ),
+        "a7_work_actions_tick": a7_tick.work_actions,
+        "a7_prediction_actions_tick": a7_tick.prediction_actions,
+        "a7_handoff_attempts_tick": a7_tick.handoff_attempts,
+        "a7_handoff_successes_tick": a7_tick.handoff_successes,
+        "a7_handoff_failures_tick": a7_tick.handoff_failures,
+        "a7_threshold_mean_tick": _a7_agent_mean(agent_state, "threshold"),
+        "a7_fatigue_mean_tick": _a7_agent_mean(agent_state, "fatigue"),
+        "a7_near_threshold_occupancy_tick": round(
+            float(a7_tick.near_threshold_count / max(action_opportunity, 1)),
+            6,
+        ),
+    }
+    control_values = {
+        "queue_depth": queue_depth,
+        "queue_delta_tick": queue_delta,
+        "tasks_created_total": tasks_created_total,
+        "tasks_completed_total": tasks_completed_total,
+    }
+    metrics.update(control_values)
+    for field_name in A7_FIELD_VALUES:
+        metrics[f"a7_{field_name}_tick"] = round(float(field[field_name]), 6)
+        metrics[f"a7_{field_name}_mean_tick"] = round(float(field[field_name]), 6)
+    metrics["a7_prediction_budget_spent_tick"] = round(
+        float(a7_tick.prediction_budget_spent),
+        6,
+    )
+    metrics["a7_prediction_budget_spent_mean_tick"] = round(
+        float(a7_tick.prediction_budget_spent / max(action_opportunity, 1)),
+        6,
+    )
+    metrics["a7_prediction_error_tick"] = round(float(field["prediction_error"]), 6)
+    metrics["a7_prediction_error_mean_tick"] = round(float(prediction_error_mean), 6)
+    return metrics
+
+
+def _a7_agent_mean(agent_state: dict[str, dict[str, float]], field: str) -> float:
+    if not agent_state:
+        return 0.0
+    return round(float(np.mean([state[field] for state in agent_state.values()])), 6)
+
+
 def _softmax_probabilities(values: list[float], *, temperature: float) -> np.ndarray:
     scaled = np.array(values, dtype=float) / temperature
     shifted = scaled - np.max(scaled)
@@ -2825,6 +3354,18 @@ def _event(
     a6_artifact_delta_noise: float | str = "",
     a6_artifact_delta_unclipped: float | str = "",
     a6_artifact_delta_clip_residual: float | str = "",
+    a7_condition: str = "",
+    a7_semantic_field: str = "",
+    a7_delta_total: float | str = "",
+    a7_delta_ambient_decay: float | str = "",
+    a7_delta_self_contribution: float | str = "",
+    a7_delta_peer_contribution: float | str = "",
+    a7_delta_artifact_handoff: float | str = "",
+    a7_delta_prediction_expenditure: float | str = "",
+    a7_delta_prediction_error: float | str = "",
+    a7_delta_queue_work_accounting: float | str = "",
+    a7_delta_semantic_noise: float | str = "",
+    a7_delta_clip_residual: float | str = "",
 ) -> dict[str, Any]:
     return {
         "tick": tick,
@@ -2853,4 +3394,16 @@ def _event(
         "a6_artifact_delta_noise": a6_artifact_delta_noise,
         "a6_artifact_delta_unclipped": a6_artifact_delta_unclipped,
         "a6_artifact_delta_clip_residual": a6_artifact_delta_clip_residual,
+        "a7_condition": a7_condition,
+        "a7_semantic_field": a7_semantic_field,
+        "a7_delta_total": a7_delta_total,
+        "a7_delta_ambient_decay": a7_delta_ambient_decay,
+        "a7_delta_self_contribution": a7_delta_self_contribution,
+        "a7_delta_peer_contribution": a7_delta_peer_contribution,
+        "a7_delta_artifact_handoff": a7_delta_artifact_handoff,
+        "a7_delta_prediction_expenditure": a7_delta_prediction_expenditure,
+        "a7_delta_prediction_error": a7_delta_prediction_error,
+        "a7_delta_queue_work_accounting": a7_delta_queue_work_accounting,
+        "a7_delta_semantic_noise": a7_delta_semantic_noise,
+        "a7_delta_clip_residual": a7_delta_clip_residual,
     }
