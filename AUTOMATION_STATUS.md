@@ -33,6 +33,16 @@ downstream multi-hive coupling.
 
 ## Latest Changes
 
+- Added `docs/results/a7_ben_notification_status_20260627.md` as the bounded
+  Ben-facing notification record requested by the current automation status and
+  the urgent strategic review. It states that A5 is closed/accounting-explained,
+  A7 seed `1..2` long-horizon validation is
+  `fail_closed_residual_null_gate`, and a new preregistration is required
+  before A7 redesign, seed broadening, mechanism changes, or downstream
+  multi-hive coupling.
+- No simulator mechanics, analyzer logic, configs, dashboards, real
+  integrations, seed sweeps, A5 reruns, A7 reruns, broad three-hive mechanics,
+  or downstream multi-hive coupling were added in this notification pass.
 - Added `docs/results/a7_long_horizon_residual_null_validation_seed1_2.md`
   from the completed `/tmp/omegasim_a7_long_horizon_*_20260627` comparison and
   analysis artifacts. The report records the preregistered 96-tick, six-
@@ -70,8 +80,31 @@ downstream multi-hive coupling.
 - `git status --short --branch` initially reported a clean worktree on
   `main...origin/main`.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` reported state `open`,
-  `strategic_change_level: major`, `notify_ben: true`, and recommended writing
-  the A7 long-horizon validation report from the completed `/tmp` artifacts.
+  `strategic_change_level: major`, `notify_ben: true`, and recommended
+  notifying Ben that A5 remains closed/accounting-explained, A7 is documented
+  as `fail_closed_residual_null_gate` for the preregistered seed `1..2`
+  long-horizon validation, and a new preregistration is required before A7
+  redesign, seed broadening, or downstream multi-hive coupling.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed recent loop completions
+  and an older dirty-worktree snapshot from earlier A5 work; current git status
+  remained clean before this run's edits.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the
+  notification update. It reported state `open`, `strategic_change_level:
+  major`, `notify_ben: true`, and the recommended next action: wait for Ben's
+  decision or a new preregistration before any A7 redesign, seed broadening,
+  mechanism changes, or downstream multi-hive coupling.
+- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  ohdyn/analyze_a7_semantic_field.py ohdyn/compare_a7_long_horizon.py
+  ohdyn/a7_semantic_field_contract.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a7 or automation_guard'` passed: `21 passed, 596 deselected`.
+- Previous A7 validation pass: `git status --short --branch` initially reported
+  a clean worktree on
+  `main...origin/main`.
+- Previous A7 validation pass: `.venv-conda/bin/python -m
+  ohdyn.automation_guard` reported state `open`, `strategic_change_level:
+  major`, `notify_ben: true`, and recommended writing the A7 long-horizon
+  validation report from the completed `/tmp` artifacts.
 - `.venv-conda/bin/python -m ohdyn.compare_a7_long_horizon --seeds 1 2 --out
   /tmp/omegasim_a7_long_horizon_compare_20260627` was attempted for artifact
   verification and stopped before rerun with the expected refusal: the output
@@ -109,14 +142,12 @@ downstream multi-hive coupling.
 
 ## Blockers
 
-Ben should be notified that the urgent review marked the status/roadmap drift
-as a major strategic correction: A5 is closed/accounting-explained and A7 is
-the active gated smoke/validation path. There is no code or local environment
-blocker.
+Ben notification has been packaged in
+`docs/results/a7_ben_notification_status_20260627.md`, but further research
+direction is intentionally blocked on Ben's decision or a new preregistration.
+There is no code or local environment blocker.
 
 ## Recommended Next Step
 
-Notify Ben that A5 remains closed/accounting-explained, A7 is now documented
-as `fail_closed_residual_null_gate` for the preregistered seed `1..2`
-long-horizon validation, and a new preregistration is required before any A7
-redesign, seed broadening, or downstream multi-hive coupling.
+Wait for Ben's decision or a new preregistration before any A7 redesign, seed
+broadening, mechanism changes, or downstream multi-hive coupling.
