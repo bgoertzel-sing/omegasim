@@ -98,6 +98,13 @@ did not beat linear and both source-preserving nulls on the same target with
 paired cross-seed agreement. It does not authorize broader seeds, new
 mechanisms, downstream multi-hive coupling, or promotion language.
 
+The A6.2 closure addendum is recorded in
+`docs/results/a6_2_closure_addendum_seed1_2.md`. Ben accepted proceeding to A7
+on 2026-06-27. The A7 semantic-field preregistration is documented in
+`docs/a7_semantic_field_preregistration.md`; it treats A7 as a new design gate
+for source-accounted semantic/artifact fields and logistic inter-agent
+dependence, not as a continuation-by-seed-broadening of A6.2.
+
 The fixed comparison and analysis commands are:
 
 ```bash

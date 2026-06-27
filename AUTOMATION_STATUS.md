@@ -5,68 +5,57 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-This run reconciled Ben's A5 anticipatory predictive-control request against
-the current repository state. The requested concise A5 preregistration and
-minimal deterministic single-hive scaffold already exist:
-`docs/a5_anticipatory_predictive_control_preregistration.md`,
-`configs/a5_predictive_linear_smoke.yaml`, `ohdyn.compare_predictive_control`,
-and `ohdyn.analyze_a5_residual_accounting`.
-
 A5 remains scientifically closed after the seed `7..16` residual-gap result and
 post-closure reopening gate. The frozen interpretation is narrow: bounded
 predictors improved forecast skill under matched demand streams, but the effect
 did not survive full accounting controls and budget-matched timing-broken nulls.
-No new A5 preregistration rules, simulator mechanics, analyzers, configs,
-dashboards, external integrations, broad seed runs, or multi-hive coupling were
-added.
 
-The later A6.2 validation remains the current post-A5 state: the fixed 96-tick
-paired-seed validation passed schema/computation checks but closed
-conservatively because logistic did not beat linear and both source-preserving
-nulls on the same target with paired cross-seed agreement.
+A6/A6.1/A6.2 are also closed conservatively. The fixed 96-tick A6.2
+paired-seed validation passed schema/computation checks but logistic did not
+beat linear and both source-preserving nulls on the same target with paired
+cross-seed agreement. The closure addendum is
+`docs/results/a6_2_closure_addendum_seed1_2.md`.
+
+Ben accepted proceeding to A7 on 2026-06-27. The current focus is the A7
+semantic-field preregistration/design gate in
+`docs/a7_semantic_field_preregistration.md`: add a source-accounted
+semantic/artifact activation field and test logistic inter-agent dependence
+under limited prediction/attention resources, with strict nulls and accounting
+controls.
 
 Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
-downstream multi-hive coupling. Do not broaden seeds, reinterpret A5/A6 as
-attractor evidence, or add anticipatory-prediction mechanics unless a later
-accepted preregistration explicitly supersedes the current closures.
+downstream multi-hive coupling. Do not broaden A5/A6/A6.2 seeds, reinterpret
+A5/A6 as attractor evidence, or add simulator mechanics before the A7
+implementation gate freezes state variables, update equations, source
+accounting, null semantics, schemas, and tests.
 
 ## Latest Changes
 
-- Updated this status file to record that the repeated A5 prompt is already
-  satisfied by tracked A5 preregistration/scaffold artifacts and should not be
-  duplicated.
-- Rechecked the A5 preregistration, deterministic smoke config, predictive
-  comparison helper, read-only residual-accounting analyzer, post-closure gate,
-  and seed `7..16` residual-gap report.
-- Preserved the completed A6.2 validation result and did not change simulator
-  code, configs, tests, analyzers, result documents, dashboards, integrations,
-  seed scope, or multi-hive mechanics.
+- Added `docs/results/a6_2_closure_addendum_seed1_2.md` to freeze the A6.2
+  conservative interpretation before moving on.
+- Added `docs/a7_semantic_field_preregistration.md` as the accepted A7 design
+  target.
+- Updated `docs/omegasim_provisional_experiment_roadmap.md`, `README.md`, and
+  this status file so automation treats A7 as the next preregistered direction
+  rather than reopening A6.2.
+- No simulator code, configs, tests, analyzers, dashboards, integrations, seed
+  scope, or multi-hive mechanics were changed.
 
 ## Verification
 
-- `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py
-  ohdyn/analyze_a5_residual_accounting.py ohdyn/automation_guard.py
-  ohdyn/sim.py` passed.
-- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'a5_predictive_control or a5_residual_accounting or automation_guard'`
-  passed: `10 passed, 593 deselected`.
-- `.venv-conda/bin/python -m ohdyn.run --config
-  configs/a5_predictive_linear_smoke.yaml --seed 5 --out
-  /tmp/omegasim_a5_reconcile_smoke_20260627_1600` passed.
-- `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
-  `state=open`, `should_noop=false`, `strategic_change_level=minor`, and
-  `notify_ben=false`; the open state is driven by the later A6 thread, not by
-  missing A5 preregistration/scaffold work.
+- Documentation-only update.
+- `git diff --check` passed.
 
 ## Blockers
 
-None for this reconciliation run. Scientifically, A5 should remain closed
-unless Ben accepts a new preregistration that explicitly supersedes the
-post-closure reopening gate.
+None. Scientifically, A5 and A6.2 remain closed unless Ben accepts a later
+preregistration that explicitly supersedes those closures.
 
 ## Recommended Next Step
 
-Create a short A6.2 closure addendum that freezes the conservative
-interpretation and explicitly blocks further single-hive A6 seed broadening or
-mechanism work unless Ben accepts a new preregistered direction.
+Create the A7 implementation gate: freeze the semantic/artifact state vector,
+logistic and linear action-utility equations, prediction-budget accounting,
+source-preserving null semantics, schema additions, deterministic tests, and
+read-only analyzer skeleton before changing simulator mechanics or running a
+tiny paired smoke.

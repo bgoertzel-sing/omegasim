@@ -2,10 +2,15 @@
 
 Accepted by Ben on 2026-06-27.
 
+Update 2026-06-27: A6/A6.1/A6.2 are now closed conservatively. Ben accepted
+proceeding to A7 as the next preregistered direction. A7 is a new
+semantic-field design gate, not a promotion of A6.2 and not permission to
+broaden A6.2 seeds.
+
 This roadmap replaces the closed A5 no-op posture as the provisional direction
 for OmegaSim experimentation. It does not authorize an unbounded rewrite or a
-large simulation sweep. The immediate next task is to convert A6 into a minimal,
-testable implementation gate.
+large simulation sweep. The immediate next task is now to convert A7 into a
+minimal, testable implementation gate.
 
 ## Roadmap Order
 
@@ -40,12 +45,14 @@ testable implementation gate.
 
 ## Immediate Next Step
 
-Create an A6 implementation gate before any broad experiment:
+Create an A7 implementation gate before any broad experiment:
 
 ```text
-freeze state vector
-freeze action utility equations
-freeze artifact fields and update rules
+freeze semantic/artifact state vector
+freeze logistic and linear action utility equations
+freeze semantic/artifact field update rules
+freeze prediction-budget accounting
+freeze source-preserving null semantics
 define paired seed/noise streams
 define smoke configs
 define output schemas
@@ -70,8 +77,9 @@ claims from raw backlog, throughput, or action counts
 
 ## Promotion Standard
 
-Promote beyond A6 smoke only if the logistic-appraisal condition shows useful
-structured recurrence in residual latent state, not merely worse queueing or
-more action churn. It must beat amplitude-matched linear controls, survive
+Promote beyond A7 smoke only if the logistic semantic-field condition shows
+useful structured recurrence in residual semantic/artifact state, not merely
+worse queueing, more handoff churn, or a source-accounting artifact. It must
+beat amplitude-matched linear controls, semantic-off controls, source-preserving
 shuffle/null controls, preserve or improve artifact utility, and maintain
 bounded backlog-adjusted productivity.
