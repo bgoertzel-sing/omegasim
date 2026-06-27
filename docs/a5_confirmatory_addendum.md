@@ -18,8 +18,8 @@ opportunity settings:
 
 - `linear` budget `0.35` is compared to `shuffled` budget `0.35`.
 - `nonlinear` budget `0.65` is compared to `nonlinear_shuffled` budget `0.65`.
-- Any future high-budget condition must add its own budget-matched shuffled or
-  phase-randomized null before it is run.
+- `nonlinear_high_budget` budget `0.85` is compared to
+  `nonlinear_high_budget_shuffled` budget `0.85`.
 
 The older nonlinear-minus-`shuffled` contrast is retained only as pilot context;
 it is not a confirmatory promotion contrast because the budgets differ.

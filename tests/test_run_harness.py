@@ -2405,15 +2405,23 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         "reactive",
         "linear",
         "nonlinear",
+        "nonlinear_high_budget",
         "oracle",
         "shuffled",
         "nonlinear_shuffled",
+        "nonlinear_high_budget_shuffled",
     ]
     assert {row["run_count"] for row in first_rows} == {2}
     assert (tmp_path / "first" / "reactive_seed5" / "metrics.csv").is_file()
     assert (tmp_path / "first" / "configs" / "a5_predictive_oracle.yaml").is_file()
     assert (
         tmp_path / "first" / "configs" / "a5_predictive_nonlinear_shuffled.yaml"
+    ).is_file()
+    assert (
+        tmp_path
+        / "first"
+        / "configs"
+        / "a5_predictive_nonlinear_high_budget_shuffled.yaml"
     ).is_file()
 
     with (tmp_path / "first" / "predictive_control_comparison_metrics.csv").open() as handle:
@@ -2424,17 +2432,29 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     oracle_config = yaml.safe_load(
         (tmp_path / "first" / "configs" / "a5_predictive_oracle.yaml").read_text()
     )
+    high_budget_config = yaml.safe_load(
+        (
+            tmp_path
+            / "first"
+            / "configs"
+            / "a5_predictive_nonlinear_high_budget.yaml"
+        ).read_text()
+    )
 
     assert set(comparison_rows[0]) == set(A5_PREDICTIVE_COMPARISON_FIELDS)
     assert set(effect_rows[0]) == set(A5_PREDICTIVE_EFFECT_FIELDS)
-    assert len(comparison_rows) == 6
-    assert len(effect_rows) == 6
+    assert len(comparison_rows) == 8
+    assert len(effect_rows) == 9
     assert oracle_config["predictive_control"]["condition"] == "oracle"
     assert oracle_config["predictive_control"]["prediction_budget"] == 1.0
+    assert high_budget_config["predictive_control"]["condition"] == "nonlinear_high_budget"
+    assert high_budget_config["predictive_control"]["prediction_budget"] == 0.85
+    assert high_budget_config["predictive_control"]["memory_window"] == 4
     assert "- scope: single-hive matched-demand pilot" in summary
     assert "## Condition Means" in summary
     assert "oracle minus reactive" in summary
     assert "nonlinear_shuffled" in summary
+    assert "nonlinear_high_budget_shuffled" in summary
 
 
 def test_a5_residual_accounting_analyzes_existing_comparison(
@@ -2449,7 +2469,7 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
         out_dir=tmp_path / "analysis",
     )
 
-    assert result["condition_count"] == 6
+    assert result["condition_count"] == 8
     assert result["seed_count"] == 2
     assert result["metric_rows"] > 0
     assert result["effect_rows"] > 0
@@ -2487,6 +2507,12 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
     )
     assert any(
         row["contrast"] == "nonlinear_minus_nonlinear_shuffled"
+        and row["control_level"] == "full_accounting"
+        and row["endpoint"] == "residual_state_predictability_r2"
+        for row in effect_rows
+    )
+    assert any(
+        row["contrast"] == "nonlinear_high_budget_minus_nonlinear_high_budget_shuffled"
         and row["control_level"] == "full_accounting"
         and row["endpoint"] == "residual_state_predictability_r2"
         for row in effect_rows

@@ -18,12 +18,14 @@ from ohdyn.sim import SimulationResult
 DEFAULT_BASE_CONFIG = Path("configs/a5_predictive_linear_smoke.yaml")
 
 A5_PREDICTIVE_CONDITIONS = (
-    ("reactive", 0.0),
-    ("linear", 0.35),
-    ("nonlinear", 0.65),
-    ("oracle", 1.0),
-    ("shuffled", 0.35),
-    ("nonlinear_shuffled", 0.65),
+    ("reactive", 0.0, 3),
+    ("linear", 0.35, 3),
+    ("nonlinear", 0.65, 3),
+    ("nonlinear_high_budget", 0.85, 4),
+    ("oracle", 1.0, 3),
+    ("shuffled", 0.35, 3),
+    ("nonlinear_shuffled", 0.65, 3),
+    ("nonlinear_high_budget_shuffled", 0.85, 4),
 )
 
 A5_PREDICTIVE_COMPARISON_FIELDS = (
@@ -150,13 +152,14 @@ def _write_condition_configs(
 
     config_dir.mkdir(parents=True, exist_ok=True)
     generated = []
-    for condition, budget in A5_PREDICTIVE_CONDITIONS:
+    for condition, budget, memory_window in A5_PREDICTIVE_CONDITIONS:
         condition_raw = dict(raw)
         condition_raw["run"] = dict(raw["run"])
         condition_raw["run"]["experiment_id"] = f"a5_predictive_{condition}_comparison"
         condition_raw["predictive_control"] = dict(raw["predictive_control"])
         condition_raw["predictive_control"]["condition"] = condition
         condition_raw["predictive_control"]["prediction_budget"] = budget
+        condition_raw["predictive_control"]["memory_window"] = memory_window
         path = config_dir / f"a5_predictive_{condition}.yaml"
         path.write_text(yaml.safe_dump(condition_raw, sort_keys=False))
         generated.append((condition, path))
@@ -227,10 +230,17 @@ def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     pairs = (
         ("condition_vs_reactive", "reactive", "linear"),
         ("condition_vs_reactive", "reactive", "nonlinear"),
+        ("condition_vs_reactive", "reactive", "nonlinear_high_budget"),
         ("condition_vs_reactive", "reactive", "oracle"),
         ("condition_vs_shuffled", "shuffled", "linear"),
         ("condition_vs_budget_matched_shuffled", "nonlinear_shuffled", "nonlinear"),
+        (
+            "condition_vs_budget_matched_shuffled",
+            "nonlinear_high_budget_shuffled",
+            "nonlinear_high_budget",
+        ),
         ("oracle_vs_nonlinear", "nonlinear", "oracle"),
+        ("oracle_vs_high_budget_nonlinear", "nonlinear_high_budget", "oracle"),
     )
     return [
         _effect_row(effect_axis, by_condition[low_label], by_condition[high_label])
@@ -322,7 +332,9 @@ def _summary(
                 "service, and deterministic demand-signal settings. Treat throughput and "
                 "queue changes as guardrails, not as evidence for structured dynamics. "
                 "`shuffled` is the linear-budget timing-broken null; "
-                "`nonlinear_shuffled` is the nonlinear-budget timing-broken null."
+                "`nonlinear_shuffled` is the medium nonlinear-budget timing-broken null; "
+                "`nonlinear_high_budget_shuffled` is the high nonlinear-budget "
+                "timing-broken null."
             ),
         ]
     )

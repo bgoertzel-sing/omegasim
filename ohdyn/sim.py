@@ -1771,7 +1771,11 @@ def _a5_forecast_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
 
     if control.condition == "oracle":
         return _a5_demand_shares(config, lead_tick)
-    if control.condition in {"shuffled", "nonlinear_shuffled"}:
+    if control.condition in {
+        "shuffled",
+        "nonlinear_shuffled",
+        "nonlinear_high_budget_shuffled",
+    }:
         return _a5_demand_shares(config, tick + control.phase_shift_ticks)
     if control.condition == "reactive":
         return _a5_demand_shares(config, tick)
@@ -1779,6 +1783,8 @@ def _a5_forecast_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
         return _a5_linear_forecast_shares(config, tick)
     if control.condition == "nonlinear":
         return _a5_nonlinear_forecast_shares(config, tick)
+    if control.condition == "nonlinear_high_budget":
+        return _a5_high_budget_nonlinear_forecast_shares(config, tick)
     raise ValueError(f"Unsupported predictive_control.condition: {control.condition}")
 
 
@@ -1805,6 +1811,35 @@ def _a5_nonlinear_forecast_shares(config: OmegaConfig, tick: int) -> dict[str, f
         velocity = current[class_name] - previous[class_name]
         curvature = current[class_name] - 2.0 * previous[class_name] + previous_2[class_name]
         raw[class_name] = current[class_name] + lead * velocity + 0.5 * (lead**2) * curvature
+    return _normalize_shares(raw)
+
+
+def _a5_high_budget_nonlinear_forecast_shares(
+    config: OmegaConfig,
+    tick: int,
+) -> dict[str, float]:
+    assert config.predictive_control is not None
+    current = _a5_demand_shares(config, tick)
+    previous = _a5_demand_shares(config, max(0, tick - 1))
+    previous_2 = _a5_demand_shares(config, max(0, tick - 2))
+    previous_3 = _a5_demand_shares(config, max(0, tick - 3))
+    lead = config.predictive_control.lead_ticks
+    raw = {}
+    for class_name in ATTENTION_CLASSES:
+        velocity = current[class_name] - previous[class_name]
+        curvature = current[class_name] - 2.0 * previous[class_name] + previous_2[class_name]
+        jerk = (
+            current[class_name]
+            - 3.0 * previous[class_name]
+            + 3.0 * previous_2[class_name]
+            - previous_3[class_name]
+        )
+        raw[class_name] = (
+            current[class_name]
+            + lead * velocity
+            + 0.5 * (lead**2) * curvature
+            + (lead**3 / 6.0) * jerk
+        )
     return _normalize_shares(raw)
 
 

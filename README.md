@@ -137,8 +137,9 @@ python -m ohdyn.analyze_a6_2_residual_recurrence --compare-dir runs/a6_2_long_ho
 ```
 
 A bounded paired-seed pilot comparison derives matched single-hive configs for
-reactive, linear, nonlinear, oracle, linear-budget shuffled, and
-nonlinear-budget shuffled predictors from the smoke fixture:
+reactive, low-budget linear, medium-budget nonlinear, high-budget nonlinear,
+oracle, and budget-matched timing-broken null predictors from the smoke
+fixture:
 
 ```bash
 python -m ohdyn.compare_predictive_control --seeds 5 6 --out runs/a5_predictive_control_compare

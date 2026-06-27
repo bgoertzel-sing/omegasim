@@ -26,14 +26,17 @@ A5_REQUIRED_CONDITIONS = (
     "reactive",
     "linear",
     "nonlinear",
+    "nonlinear_high_budget",
     "oracle",
     "shuffled",
     "nonlinear_shuffled",
+    "nonlinear_high_budget_shuffled",
 )
-A5_INTERMEDIATE_CONDITIONS = ("linear", "nonlinear")
+A5_INTERMEDIATE_CONDITIONS = ("linear", "nonlinear", "nonlinear_high_budget")
 A5_TIMING_BROKEN_NULL_BY_CONDITION = {
     "linear": "shuffled",
     "nonlinear": "nonlinear_shuffled",
+    "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
 }
 A5_CONFIRMATORY_GUARDRAIL_TOLERANCES = {
     "completion_fraction_final": 0.01,
@@ -600,6 +603,7 @@ def _effect_rows(
         ),
         ("oracle_minus_linear", "oracle", "linear"),
         ("oracle_minus_nonlinear", "oracle", "nonlinear"),
+        ("oracle_minus_nonlinear_high_budget", "oracle", "nonlinear_high_budget"),
     ]
     rows = []
     for contrast, high_condition, low_condition in contrasts:

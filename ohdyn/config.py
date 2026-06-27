@@ -34,9 +34,11 @@ PREDICTIVE_CONTROL_CONDITIONS = (
     "reactive",
     "linear",
     "nonlinear",
+    "nonlinear_high_budget",
     "oracle",
     "shuffled",
     "nonlinear_shuffled",
+    "nonlinear_high_budget_shuffled",
 )
 
 LOGISTIC_APPRAISAL_CONDITIONS = (

@@ -24,7 +24,8 @@ directory containing:
 
 It should fail closed if any run is missing required A5 fields, if seeds are not
 paired across all conditions, or if the condition set lacks `reactive`,
-`linear`, `nonlinear`, `oracle`, `shuffled`, and `nonlinear_shuffled`.
+`linear`, `nonlinear`, `nonlinear_high_budget`, `oracle`, `shuffled`,
+`nonlinear_shuffled`, and `nonlinear_high_budget_shuffled`.
 
 ## Primary Variables
 
@@ -95,8 +96,9 @@ Use deterministic surrogate nulls that preserve the relevant marginals:
 
 The two important contrasts are intermediate predictor minus reactive and
 intermediate predictor minus its budget-matched shuffled/phase-randomized null:
-`linear` versus `shuffled`, and `nonlinear` versus `nonlinear_shuffled`.
-Oracle is a positive-control ceiling, not the desired winner.
+`linear` versus `shuffled`, `nonlinear` versus `nonlinear_shuffled`, and
+`nonlinear_high_budget` versus `nonlinear_high_budget_shuffled`. Oracle is a
+positive-control ceiling, not the desired winner.
 
 ## Decision Rule
 

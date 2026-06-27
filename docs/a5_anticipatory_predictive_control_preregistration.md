@@ -103,9 +103,16 @@ silently change the amount of work available or the amount of demand injected.
 Budget-matched timing-broken nulls are required before interpreting a predictor
 as doing useful anticipation. The linear predictor must be compared to a
 linear-budget shuffled or phase-randomized null. The nonlinear predictor must be
-compared to a nonlinear-budget shuffled or phase-randomized null. Oracle is a
-positive control for smoothing and coordination, not a target condition for
-strange-attractor-like dynamics.
+compared to a nonlinear-budget shuffled or phase-randomized null, with separate
+medium- and high-budget nonlinear/null pairs when both budgets are present.
+Oracle is a positive control for smoothing and coordination, not a target
+condition for strange-attractor-like dynamics. The initial scaffold names these
+conditions `linear`, `nonlinear`, `nonlinear_high_budget`, `oracle`,
+`shuffled`, `nonlinear_shuffled`, and `nonlinear_high_budget_shuffled`, with
+`reactive` as the zero-budget baseline. The bounded high-budget scaffold uses
+the same single-hive demand stream with a longer-memory deterministic nonlinear
+forecast, not added task volume, service capacity, action opportunity, or work
+budget.
 
 The follow-up confirmatory addendum freezes the next single-hive larger-run
 rules, including budget-matched timing-broken nulls and prospective practical
