@@ -162,6 +162,14 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "demand_stream": "deterministic periodic class-pressure shares",
             "fields": list(predictive_control_metric_fields()),
         }
+        if result.config.predictive_control.prediction_cost_scale != 1.0:
+            predictive_control_model["prediction_cost_scale"] = (
+                result.config.predictive_control.prediction_cost_scale
+            )
+        if result.config.predictive_control.max_prediction_work_fraction_per_tick is not None:
+            predictive_control_model["max_prediction_work_fraction_per_tick"] = (
+                result.config.predictive_control.max_prediction_work_fraction_per_tick
+            )
         if result.config.predictive_control.charge_prediction_to_work:
             predictive_control_model["charge_prediction_to_work"] = True
         manifest["model"]["predictive_control"] = predictive_control_model
@@ -709,6 +717,9 @@ def _predictive_control_summary(result: SimulationResult) -> list[str]:
     return [
         f"- condition: {result.config.predictive_control.condition}",
         f"- prediction budget: {result.config.predictive_control.prediction_budget}",
+        f"- prediction cost scale: {result.config.predictive_control.prediction_cost_scale}",
+        "- max prediction work fraction per tick: "
+        f"{result.config.predictive_control.max_prediction_work_fraction_per_tick}",
         "- charge prediction to work: "
         f"{result.config.predictive_control.charge_prediction_to_work}",
         f"- lead ticks: {result.config.predictive_control.lead_ticks}",

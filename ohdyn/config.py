@@ -39,6 +39,7 @@ PREDICTIVE_CONTROL_CONDITIONS = (
     "shuffled",
     "nonlinear_shuffled",
     "nonlinear_high_budget_shuffled",
+    "spend_only_replay",
 )
 
 LOGISTIC_APPRAISAL_CONDITIONS = (
@@ -124,6 +125,8 @@ class PredictiveControlConfig:
     memory_window: int = 3
     phase_shift_ticks: int = 3
     charge_prediction_to_work: bool = False
+    prediction_cost_scale: float = 1.0
+    max_prediction_work_fraction_per_tick: float | None = None
 
 
 @dataclass(frozen=True)
@@ -199,8 +202,13 @@ class OmegaConfig:
             }
         if self.predictive_control is None:
             data.pop("predictive_control")
-        elif not self.predictive_control.charge_prediction_to_work:
-            data["predictive_control"].pop("charge_prediction_to_work")
+        else:
+            if not self.predictive_control.charge_prediction_to_work:
+                data["predictive_control"].pop("charge_prediction_to_work")
+            if self.predictive_control.prediction_cost_scale == 1.0:
+                data["predictive_control"].pop("prediction_cost_scale")
+            if self.predictive_control.max_prediction_work_fraction_per_tick is None:
+                data["predictive_control"].pop("max_prediction_work_fraction_per_tick")
         if self.logistic_appraisal is None:
             data.pop("logistic_appraisal")
         if self.semantic_field is None:
@@ -409,6 +417,8 @@ def _optional_predictive_control(value: Any) -> PredictiveControlConfig | None:
         "memory_window",
         "phase_shift_ticks",
         "charge_prediction_to_work",
+        "prediction_cost_scale",
+        "max_prediction_work_fraction_per_tick",
     }
     unknown = set(control) - supported_keys
     if unknown:
@@ -448,6 +458,14 @@ def _optional_predictive_control(value: Any) -> PredictiveControlConfig | None:
         charge_prediction_to_work=_bool(
             control.get("charge_prediction_to_work", False),
             "predictive_control.charge_prediction_to_work",
+        ),
+        prediction_cost_scale=_nonnegative_float(
+            control.get("prediction_cost_scale", 1.0),
+            "predictive_control.prediction_cost_scale",
+        ),
+        max_prediction_work_fraction_per_tick=_optional_probability(
+            control.get("max_prediction_work_fraction_per_tick"),
+            "predictive_control.max_prediction_work_fraction_per_tick",
         ),
     )
 
@@ -698,6 +716,12 @@ def _probability(value: Any, name: str) -> float:
     if parsed > 1.0:
         raise ValueError(f"Config value {name!r} must be between 0.0 and 1.0.")
     return parsed
+
+
+def _optional_probability(value: Any, name: str) -> float | None:
+    if value is None:
+        return None
+    return _probability(value, name)
 
 
 def _attention_selection_strategy(value: Any, name: str) -> str:

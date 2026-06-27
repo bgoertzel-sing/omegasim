@@ -2678,6 +2678,97 @@ def test_a5_1_prediction_spend_smoke_charges_work_budget(
     assert {row["a5_prediction_spend_charged"] for row in spend_events} == {"1"}
 
 
+def test_a5_1_prediction_spend_cost_scale_and_cap_are_explicit(
+    tmp_path: Path,
+) -> None:
+    raw = yaml.safe_load(A5_1_PREDICTION_SPEND_LINEAR.read_text())
+    raw["predictive_control"]["prediction_cost_scale"] = 0.5
+    raw["predictive_control"]["max_prediction_work_fraction_per_tick"] = 0.1
+    config_path = tmp_path / "a5_1_capped.yaml"
+    config_path.write_text(yaml.safe_dump(raw, sort_keys=False))
+
+    result = run_experiment(
+        config_path,
+        seed=5,
+        out_dir=tmp_path / "a5_1_capped",
+    )
+
+    assert result.config.predictive_control is not None
+    assert result.config.predictive_control.prediction_cost_scale == 0.5
+    assert result.config.predictive_control.max_prediction_work_fraction_per_tick == 0.1
+    with (tmp_path / "a5_1_capped" / "metrics.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+    manifest = yaml.safe_load((tmp_path / "a5_1_capped" / "manifest.yaml").read_text())
+    summary = (tmp_path / "a5_1_capped" / "summary.md").read_text()
+
+    assert float(rows[-1]["a5_prediction_cost_scale"]) == 0.5
+    assert float(rows[-1]["a5_max_prediction_work_fraction_per_tick"]) == 0.1
+    assert float(rows[-1]["a5_prediction_work_charge_target_tick"]) == 1.5
+    assert manifest["config"]["predictive_control"]["prediction_cost_scale"] == 0.5
+    assert manifest["config"]["predictive_control"]["max_prediction_work_fraction_per_tick"] == 0.1
+    assert manifest["model"]["predictive_control"]["prediction_cost_scale"] == 0.5
+    assert (
+        manifest["model"]["predictive_control"]["max_prediction_work_fraction_per_tick"]
+        == 0.1
+    )
+    assert "- prediction cost scale: 0.5" in summary
+    assert "- max prediction work fraction per tick: 0.1" in summary
+
+
+def test_a5_1_charged_comparison_generates_cost_calibration_replay_nulls(
+    tmp_path: Path,
+) -> None:
+    rows = run_predictive_control_comparison(
+        base_config=A5_1_PREDICTION_SPEND_LINEAR,
+        seeds=(5,),
+        out_dir=tmp_path / "a5_1a_compare",
+    )
+
+    assert [row["condition"] for row in rows] == [
+        "linear_harsh_cost",
+        "linear_harsh_cost_spend_only_replay",
+        "linear_gentle_cost",
+        "linear_gentle_cost_spend_only_replay",
+        "linear_capped_cost",
+        "linear_capped_cost_spend_only_replay",
+        "linear_no_cost_diagnostic",
+    ]
+    by_condition = {row["condition"]: row for row in rows}
+    assert by_condition["linear_harsh_cost"]["predictive_condition"] == "linear"
+    assert (
+        by_condition["linear_harsh_cost_spend_only_replay"]["predictive_condition"]
+        == "spend_only_replay"
+    )
+    assert by_condition["linear_gentle_cost"]["prediction_cost_scale"] == 0.5
+    assert by_condition["linear_gentle_cost"]["max_prediction_work_fraction_per_tick"] == 0.25
+    assert by_condition["linear_capped_cost"]["prediction_cost_scale"] == 1.0
+    assert by_condition["linear_capped_cost"]["max_prediction_work_fraction_per_tick"] == 0.25
+    assert by_condition["linear_no_cost_diagnostic"]["charge_prediction_to_work"] == "false"
+
+    with (
+        tmp_path
+        / "a5_1a_compare"
+        / "configs"
+        / "a5_predictive_linear_gentle_cost_spend_only_replay.yaml"
+    ).open() as handle:
+        replay_config = yaml.safe_load(handle)
+    assert replay_config["predictive_control"]["condition"] == "spend_only_replay"
+    assert replay_config["predictive_control"]["prediction_cost_scale"] == 0.5
+    assert replay_config["predictive_control"]["max_prediction_work_fraction_per_tick"] == 0.25
+
+    with (tmp_path / "a5_1a_compare" / "predictive_control_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    assert {row["effect_axis"] for row in effect_rows} >= {
+        "a5_1a_spend_only_replay_null",
+        "a5_1a_cost_scale",
+        "a5_1a_cost_cap",
+        "a5_1a_no_cost_diagnostic",
+    }
+    summary = (tmp_path / "a5_1a_compare" / "summary.md").read_text()
+    assert "linear_gentle_cost_spend_only_replay" in summary
+    assert "cost-matched replay nulls" in summary
+
+
 def test_a5_predictive_control_comparison_runs_matched_conditions(
     tmp_path: Path,
 ) -> None:
@@ -2815,6 +2906,31 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
         for row in metric_rows
     )
     assert "promotion_satisfied=" in summary
+
+
+def test_a5_residual_accounting_analyzes_a5_1a_cost_calibration_grid(
+    tmp_path: Path,
+) -> None:
+    run_predictive_control_comparison(
+        base_config=A5_1_PREDICTION_SPEND_LINEAR,
+        seeds=(5, 6),
+        out_dir=tmp_path / "a5_1a_compare",
+    )
+    result = run_a5_residual_accounting_analysis(
+        compare_dir=tmp_path / "a5_1a_compare",
+        out_dir=tmp_path / "a5_1a_analysis",
+    )
+
+    assert result["condition_count"] == 7
+    assert result["seed_count"] == 2
+    with (tmp_path / "a5_1a_analysis" / "a5_residual_accounting_effects.csv").open() as handle:
+        effect_rows = list(csv.DictReader(handle))
+    assert "linear_gentle_cost_minus_linear_gentle_cost_spend_only_replay" in {
+        row["contrast"] for row in effect_rows
+    }
+    summary = (tmp_path / "a5_1a_analysis" / "summary.md").read_text()
+    assert "A5.1a audit: fail closed unless" in summary
+    assert "skill_vs_spend_only_null=" in summary
 
 
 def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(

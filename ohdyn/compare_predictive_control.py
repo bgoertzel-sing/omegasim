@@ -28,10 +28,24 @@ A5_PREDICTIVE_CONDITIONS = (
     ("nonlinear_high_budget_shuffled", 0.85, 4),
 )
 
+A5_1A_COST_CALIBRATION_CONDITIONS = (
+    ("linear_harsh_cost", "linear", 0.35, 3, 1.0, None),
+    ("linear_harsh_cost_spend_only_replay", "spend_only_replay", 0.35, 3, 1.0, None),
+    ("linear_gentle_cost", "linear", 0.35, 3, 0.5, 0.25),
+    ("linear_gentle_cost_spend_only_replay", "spend_only_replay", 0.35, 3, 0.5, 0.25),
+    ("linear_capped_cost", "linear", 0.35, 3, 1.0, 0.25),
+    ("linear_capped_cost_spend_only_replay", "spend_only_replay", 0.35, 3, 1.0, 0.25),
+    ("linear_no_cost_diagnostic", "linear", 0.35, 3, 1.0, None),
+)
+
 A5_PREDICTIVE_COMPARISON_FIELDS = (
     "condition",
+    "predictive_condition",
     "config",
     "prediction_budget",
+    "prediction_cost_scale",
+    "max_prediction_work_fraction_per_tick",
+    "charge_prediction_to_work",
     "lead_ticks",
     "signal_period",
     "signal_amplitude",
@@ -156,17 +170,36 @@ def _write_condition_configs(
 
     config_dir.mkdir(parents=True, exist_ok=True)
     generated = []
-    for condition, budget, memory_window in A5_PREDICTIVE_CONDITIONS:
+    if cfg.predictive_control.charge_prediction_to_work:
+        condition_specs = A5_1A_COST_CALIBRATION_CONDITIONS
+    else:
+        condition_specs = tuple(
+            (condition, condition, budget, memory_window, 1.0, None)
+            for condition, budget, memory_window in A5_PREDICTIVE_CONDITIONS
+        )
+    for label, condition, budget, memory_window, cost_scale, max_work_fraction in condition_specs:
         condition_raw = dict(raw)
         condition_raw["run"] = dict(raw["run"])
-        condition_raw["run"]["experiment_id"] = f"a5_predictive_{condition}_comparison"
+        condition_raw["run"]["experiment_id"] = f"a5_predictive_{label}_comparison"
         condition_raw["predictive_control"] = dict(raw["predictive_control"])
         condition_raw["predictive_control"]["condition"] = condition
         condition_raw["predictive_control"]["prediction_budget"] = budget
         condition_raw["predictive_control"]["memory_window"] = memory_window
-        path = config_dir / f"a5_predictive_{condition}.yaml"
+        condition_raw["predictive_control"]["prediction_cost_scale"] = cost_scale
+        if max_work_fraction is None:
+            condition_raw["predictive_control"].pop(
+                "max_prediction_work_fraction_per_tick",
+                None,
+            )
+        else:
+            condition_raw["predictive_control"][
+                "max_prediction_work_fraction_per_tick"
+            ] = max_work_fraction
+        if label == "linear_no_cost_diagnostic":
+            condition_raw["predictive_control"]["charge_prediction_to_work"] = False
+        path = config_dir / f"a5_predictive_{label}.yaml"
         path.write_text(yaml.safe_dump(condition_raw, sort_keys=False))
-        generated.append((condition, path))
+        generated.append((label, path))
     return tuple(generated)
 
 
@@ -190,8 +223,16 @@ def _aggregate_row(
     ]
     return {
         "condition": condition,
+        "predictive_condition": cfg.predictive_control.condition,
         "config": str(Path("configs") / config_path.name),
         "prediction_budget": cfg.predictive_control.prediction_budget,
+        "prediction_cost_scale": cfg.predictive_control.prediction_cost_scale,
+        "max_prediction_work_fraction_per_tick": (
+            ""
+            if cfg.predictive_control.max_prediction_work_fraction_per_tick is None
+            else cfg.predictive_control.max_prediction_work_fraction_per_tick
+        ),
+        "charge_prediction_to_work": str(cfg.predictive_control.charge_prediction_to_work).lower(),
         "lead_ticks": cfg.predictive_control.lead_ticks,
         "signal_period": cfg.predictive_control.signal_period,
         "signal_amplitude": cfg.predictive_control.signal_amplitude,
@@ -239,21 +280,43 @@ def _aggregate_row(
 
 def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     by_condition = {str(row["condition"]): row for row in rows}
-    pairs = (
-        ("condition_vs_reactive", "reactive", "linear"),
-        ("condition_vs_reactive", "reactive", "nonlinear"),
-        ("condition_vs_reactive", "reactive", "nonlinear_high_budget"),
-        ("condition_vs_reactive", "reactive", "oracle"),
-        ("condition_vs_shuffled", "shuffled", "linear"),
-        ("condition_vs_budget_matched_shuffled", "nonlinear_shuffled", "nonlinear"),
-        (
-            "condition_vs_budget_matched_shuffled",
-            "nonlinear_high_budget_shuffled",
-            "nonlinear_high_budget",
-        ),
-        ("oracle_vs_nonlinear", "nonlinear", "oracle"),
-        ("oracle_vs_high_budget_nonlinear", "nonlinear_high_budget", "oracle"),
-    )
+    if "linear_harsh_cost" in by_condition:
+        pairs = (
+            (
+                "a5_1a_spend_only_replay_null",
+                "linear_harsh_cost_spend_only_replay",
+                "linear_harsh_cost",
+            ),
+            (
+                "a5_1a_spend_only_replay_null",
+                "linear_gentle_cost_spend_only_replay",
+                "linear_gentle_cost",
+            ),
+            (
+                "a5_1a_spend_only_replay_null",
+                "linear_capped_cost_spend_only_replay",
+                "linear_capped_cost",
+            ),
+            ("a5_1a_cost_scale", "linear_harsh_cost", "linear_gentle_cost"),
+            ("a5_1a_cost_cap", "linear_harsh_cost", "linear_capped_cost"),
+            ("a5_1a_no_cost_diagnostic", "linear_harsh_cost", "linear_no_cost_diagnostic"),
+        )
+    else:
+        pairs = (
+            ("condition_vs_reactive", "reactive", "linear"),
+            ("condition_vs_reactive", "reactive", "nonlinear"),
+            ("condition_vs_reactive", "reactive", "nonlinear_high_budget"),
+            ("condition_vs_reactive", "reactive", "oracle"),
+            ("condition_vs_shuffled", "shuffled", "linear"),
+            ("condition_vs_budget_matched_shuffled", "nonlinear_shuffled", "nonlinear"),
+            (
+                "condition_vs_budget_matched_shuffled",
+                "nonlinear_high_budget_shuffled",
+                "nonlinear_high_budget",
+            ),
+            ("oracle_vs_nonlinear", "nonlinear", "oracle"),
+            ("oracle_vs_high_budget_nonlinear", "nonlinear_high_budget", "oracle"),
+        )
     return [
         _effect_row(effect_axis, by_condition[low_label], by_condition[high_label])
         for effect_axis, low_label, high_label in pairs
@@ -317,6 +380,9 @@ def _summary(
         lines.append(
             "- "
             f"{row['condition']}: budget={_format_number(row['prediction_budget'])}, "
+            f"cost_scale={_format_number(row['prediction_cost_scale'])}, "
+            f"max_work_fraction={row['max_prediction_work_fraction_per_tick'] or 'uncapped'}, "
+            f"charged_to_work={row['charge_prediction_to_work']}, "
             f"forecast_skill={_format_number(row['forecast_skill_final_mean'])}, "
             f"skill_per_budget={_format_number(row['forecast_skill_per_budget_final_mean'])}, "
             f"prediction_work_charged={_format_number(row['prediction_work_charged_final_mean'])}, "
@@ -348,7 +414,9 @@ def _summary(
                 "`shuffled` is the linear-budget timing-broken null; "
                 "`nonlinear_shuffled` is the medium nonlinear-budget timing-broken null; "
                 "`nonlinear_high_budget_shuffled` is the high nonlinear-budget "
-                "timing-broken null."
+                "timing-broken null. A5.1a `*_spend_only_replay` rows are cost-matched "
+                "replay nulls that pay the same configured prediction-work charge rule "
+                "while breaking useful forecast timing."
             ),
         ]
     )

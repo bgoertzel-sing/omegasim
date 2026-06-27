@@ -79,6 +79,25 @@ back to a narrow A5.1 accounting gate.
   prediction-spend run.
 - Updated `README.md` to make A5.1a the current bounded cost-calibration
   subgate and clarify that it is not A5.1 seed broadening.
+- Implemented the A5.1a cost-calibration scaffold in config, simulator,
+  manifest, summary, and comparison outputs. Predictive-control configs now
+  accept `prediction_cost_scale` and
+  `max_prediction_work_fraction_per_tick`; the charged-work target is scaled
+  and capped before entering the existing prediction-charge bank.
+- Added `spend_only_replay` as a timing-broken predictive-control condition.
+  When `compare_predictive_control` is run from a base config with
+  `charge_prediction_to_work=true`, it now generates the preregistered A5.1a
+  grid: harsh-cost linear, gentle-cost linear, capped-cost linear, matched
+  spend-only replay nulls for each charged positive, and a no-cost diagnostic.
+- Extended the read-only A5 residual-accounting analyzer to discover comparison
+  conditions from `predictive_control_comparison_metrics.csv`, preserving the
+  old eight-condition A5 promotion audit while adding an A5.1a-specific
+  spend-only-replay audit.
+- Ran the bounded A5.1a seed `5,6` cost-calibration smoke in `/tmp`. Harsh,
+  gentle, and capped charged linear predictors beat their spend-only replay
+  nulls on forecast skill, but none beat the replay null on full-accounting
+  residual predictability. The A5.1a audit failed closed for all charged cost
+  rules.
 - No dashboards, real integrations, broad seed sweeps, A6/A7 imports, or
   multi-hive mechanics were added.
 
@@ -137,18 +156,39 @@ back to a narrow A5.1 accounting gate.
   patch. It reported state `open`, `should_noop: false`,
   `strategic_change_level: major`, `notify_ben: true`, and the exact next step
   to implement the A5.1a cost-calibration/spend-only replay-null scaffold.
+- `.venv-conda/bin/python -m py_compile ohdyn/config.py ohdyn/sim.py
+  ohdyn/io.py ohdyn/compare_predictive_control.py` passed after implementing
+  the A5.1a scaffold.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_1 or automation_guard'` passed after the scaffold implementation:
+  `12 passed, 608 deselected`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_predictive_control or a5_residual_accounting'` passed after preserving
+  the original non-charged A5 comparison path: `3 passed, 617 deselected`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_1 or a5_predictive_control or a5_residual_accounting or automation_guard'`
+  passed after extending the analyzer for A5.1a: `16 passed, 605 deselected`.
+- `.venv-conda/bin/python -m ohdyn.compare_predictive_control --base-config
+  configs/a5_1_prediction_spend_linear_smoke.yaml --seeds 5 6 --out
+  /tmp/omegasim_a5_1a_cost_calibration_compare_seed5_6_20260627` passed and
+  wrote 14 run artifacts across seven A5.1a conditions.
+- `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir
+  /tmp/omegasim_a5_1a_cost_calibration_compare_seed5_6_20260627 --out
+  /tmp/omegasim_a5_1a_cost_calibration_residual_accounting_seed5_6_20260627
+  --overwrite` passed after the analyzer extension. The summary reported
+  fail-closed promotion status for harsh, gentle, and capped charged-cost
+  conditions against their spend-only replay nulls.
 
 ## Blockers
 
-There is no local environment blocker. The scientific blocker is that the first
-A5.1 smoke/pilot is intentionally fail-closed: prediction spend is now charged
-against work opportunity, but the paired-seed smoke degrades guardrails and does
-not support residual structured-dynamics claims. The external review also
-marked the direction shift as major and said Ben should be notified.
+There is no local environment blocker. The scientific blocker is now stronger:
+the first A5.1 smoke/pilot degraded guardrails, and the A5.1a cost-calibration
+smoke still fails the spend-only replay-null residual gate. The external review
+also marked the direction shift as major and said Ben should be notified.
 
 ## Recommended Next Step
 
-Implement the A5.1a cost-calibration/spend-only replay-null scaffold:
-`prediction_cost_scale`, `max_prediction_work_fraction_per_tick`, and a replay
-null that deducts matched prediction work units at matched ticks while breaking
-useful forecast timing.
+Write a concise A5.1a closure note under `docs/results/` documenting the seed
+`5,6` cost-calibration/replay-null result and recommending no broader A5.1 seed
+sweep unless Ben explicitly chooses a new delayed semantic/logistic or
+multi-hive preregistration.

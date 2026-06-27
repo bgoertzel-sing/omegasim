@@ -58,6 +58,16 @@ prediction-cost scale/cap knobs plus a spend-only replay null that deducts the
 same work opportunities at the same ticks while removing useful forecast
 timing.
 
+The checked-in A5.1a scaffold adds `prediction_cost_scale`,
+`max_prediction_work_fraction_per_tick`, and generated spend-only replay-null
+conditions when the predictive-control comparison helper is run from a
+charged-to-work base config:
+
+```bash
+python -m ohdyn.compare_predictive_control --base-config configs/a5_1_prediction_spend_linear_smoke.yaml --seeds 5 6 --out runs/a5_1a_cost_calibration_compare_seed5_6
+python -m ohdyn.analyze_a5_residual_accounting --compare-dir runs/a5_1a_cost_calibration_compare_seed5_6 --out runs/a5_1a_cost_calibration_residual_accounting_seed5_6
+```
+
 The checked-in low-budget linear smoke fixture is:
 
 ```bash

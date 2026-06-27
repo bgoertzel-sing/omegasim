@@ -264,6 +264,8 @@ def predictive_control_metric_fields() -> tuple[str, ...]:
         "a5_predictive_condition",
         "a5_prediction_budget",
         "a5_prediction_budget_spent_tick",
+        "a5_prediction_cost_scale",
+        "a5_max_prediction_work_fraction_per_tick",
         "a5_prediction_charged_to_work",
         "a5_prediction_work_charge_target_tick",
         "a5_prediction_work_charged_tick",
@@ -1903,7 +1905,17 @@ def _a5_prediction_work_charge_target(config: OmegaConfig, action_opportunity: i
     if not _a5_prediction_charges_work(config):
         return 0.0
     assert config.predictive_control is not None
-    return max(config.predictive_control.prediction_budget * action_opportunity, 0.0)
+    control = config.predictive_control
+    target = max(
+        control.prediction_budget * control.prediction_cost_scale * action_opportunity,
+        0.0,
+    )
+    if control.max_prediction_work_fraction_per_tick is not None:
+        target = min(
+            target,
+            action_opportunity * control.max_prediction_work_fraction_per_tick,
+        )
+    return target
 
 
 def _a5_demand_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
@@ -1934,6 +1946,7 @@ def _a5_forecast_shares(config: OmegaConfig, tick: int) -> dict[str, float]:
         "shuffled",
         "nonlinear_shuffled",
         "nonlinear_high_budget_shuffled",
+        "spend_only_replay",
     }:
         return _a5_demand_shares(config, tick + control.phase_shift_ticks)
     if control.condition == "reactive":
@@ -2132,6 +2145,12 @@ def _predictive_control_metrics(
         "a5_predictive_condition": control.condition,
         "a5_prediction_budget": control.prediction_budget,
         "a5_prediction_budget_spent_tick": control.prediction_budget,
+        "a5_prediction_cost_scale": control.prediction_cost_scale,
+        "a5_max_prediction_work_fraction_per_tick": (
+            ""
+            if control.max_prediction_work_fraction_per_tick is None
+            else control.max_prediction_work_fraction_per_tick
+        ),
         "a5_prediction_charged_to_work": str(control.charge_prediction_to_work).lower(),
         "a5_prediction_work_charge_target_tick": round(
             float(prediction_work_charge_target_tick),

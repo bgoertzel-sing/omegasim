@@ -38,6 +38,16 @@ A5_TIMING_BROKEN_NULL_BY_CONDITION = {
     "nonlinear": "nonlinear_shuffled",
     "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
 }
+A5_1A_INTERMEDIATE_CONDITIONS = (
+    "linear_harsh_cost",
+    "linear_gentle_cost",
+    "linear_capped_cost",
+)
+A5_1A_SPEND_ONLY_NULL_BY_CONDITION = {
+    "linear_harsh_cost": "linear_harsh_cost_spend_only_replay",
+    "linear_gentle_cost": "linear_gentle_cost_spend_only_replay",
+    "linear_capped_cost": "linear_capped_cost_spend_only_replay",
+}
 A5_CONFIRMATORY_GUARDRAIL_TOLERANCES = {
     "completion_fraction_final": 0.01,
     "queue_depth_final": 1.0,
@@ -211,7 +221,8 @@ def run_a5_residual_accounting_analysis(
     output_path.mkdir(parents=True, exist_ok=True)
 
     metric_rows: list[dict[str, Any]] = []
-    for condition in A5_REQUIRED_CONDITIONS:
+    conditions = tuple(run_index)
+    for condition in conditions:
         for seed, run_path in sorted(run_index[condition].items()):
             metrics = _read_metrics(run_path / "metrics.csv")
             metric_rows.extend(_endpoint_rows(condition, seed, metrics))
@@ -227,7 +238,7 @@ def run_a5_residual_accounting_analysis(
             "covariates": "|".join(covariates) if covariates else "none",
             "description": description,
             "compare_dir": str(source_path),
-            "condition_count": len(A5_REQUIRED_CONDITIONS),
+            "condition_count": len(conditions),
             "seed_count": len(next(iter(run_index.values()))),
         }
         for name, covariates, description in A5_CONTROL_LEVELS
@@ -250,7 +261,7 @@ def run_a5_residual_accounting_analysis(
     (output_path / "summary.md").write_text(_summary(source_path, metric_rows, effect_rows))
     return {
         "out_dir": str(output_path),
-        "condition_count": len(A5_REQUIRED_CONDITIONS),
+        "condition_count": len(conditions),
         "seed_count": len(next(iter(run_index.values()))),
         "metric_rows": len(metric_rows),
         "effect_rows": len(effect_rows),
@@ -280,11 +291,12 @@ def _validate_source(source_path: Path) -> dict[str, dict[int, Path]]:
         if not (source_path / artifact).is_file():
             raise FileNotFoundError(f"A5 comparison source is missing {artifact}: {source_path}")
 
-    run_index: dict[str, dict[int, Path]] = {condition: {} for condition in A5_REQUIRED_CONDITIONS}
+    conditions = _comparison_conditions(source_path)
+    run_index: dict[str, dict[int, Path]] = {condition: {} for condition in conditions}
     for child in source_path.iterdir():
         if not child.is_dir():
             continue
-        for condition in A5_REQUIRED_CONDITIONS:
+        for condition in conditions:
             prefix = f"{condition}_seed"
             if child.name.startswith(prefix):
                 seed_text = child.name.removeprefix(prefix)
@@ -300,7 +312,7 @@ def _validate_source(source_path: Path) -> dict[str, dict[int, Path]]:
             f"{', '.join(missing_conditions)}"
         )
     seed_sets = {condition: set(runs) for condition, runs in run_index.items()}
-    reference_seeds = seed_sets[A5_REQUIRED_CONDITIONS[0]]
+    reference_seeds = seed_sets[conditions[0]]
     mismatches = [
         condition
         for condition, seeds in seed_sets.items()
@@ -325,6 +337,18 @@ def _validate_source(source_path: Path) -> dict[str, dict[int, Path]]:
         suffix = "" if len(missing) <= 6 else f", ... ({len(missing)} missing total)"
         raise FileNotFoundError(f"A5 comparison source is missing artifacts: {sample}{suffix}")
     return run_index
+
+
+def _comparison_conditions(source_path: Path) -> tuple[str, ...]:
+    metrics_path = source_path / "predictive_control_comparison_metrics.csv"
+    with metrics_path.open(newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    conditions = tuple(str(row.get("condition", "")).strip() for row in rows)
+    if not conditions or any(not condition for condition in conditions):
+        raise ValueError(f"A5 comparison metrics contain no condition labels: {metrics_path}")
+    if len(set(conditions)) != len(conditions):
+        raise ValueError(f"A5 comparison metrics contain duplicate condition labels: {metrics_path}")
+    return conditions
 
 
 def _ensure_outputs_available(output_path: Path, *, overwrite: bool) -> None:
@@ -592,23 +616,8 @@ def _effect_rows(
             (str(row["condition"]), str(row["control_level"]), str(row["endpoint"]))
         ][int(row["seed"])] = float(row["value"])
 
-    contrasts = [
-        *(
-            (f"{condition}_minus_reactive", condition, "reactive")
-            for condition in A5_INTERMEDIATE_CONDITIONS
-        ),
-        *(
-            (
-                f"{condition}_minus_{A5_TIMING_BROKEN_NULL_BY_CONDITION[condition]}",
-                condition,
-                A5_TIMING_BROKEN_NULL_BY_CONDITION[condition],
-            )
-            for condition in A5_INTERMEDIATE_CONDITIONS
-        ),
-        ("oracle_minus_linear", "oracle", "linear"),
-        ("oracle_minus_nonlinear", "oracle", "nonlinear"),
-        ("oracle_minus_nonlinear_high_budget", "oracle", "nonlinear_high_budget"),
-    ]
+    available_conditions = {condition for condition, _level, _endpoint in grouped}
+    contrasts = _analysis_contrasts(available_conditions)
     rows = []
     for contrast, high_condition, low_condition in contrasts:
         for control_level, _covariates, _description in A5_CONTROL_LEVELS:
@@ -653,6 +662,53 @@ def _effect_rows(
                     }
                 )
     return rows
+
+
+def _analysis_contrasts(
+    available_conditions: set[str],
+) -> list[tuple[str, str, str]]:
+    if set(A5_1A_INTERMEDIATE_CONDITIONS) <= available_conditions:
+        contrasts = [
+            (
+                f"{condition}_minus_{A5_1A_SPEND_ONLY_NULL_BY_CONDITION[condition]}",
+                condition,
+                A5_1A_SPEND_ONLY_NULL_BY_CONDITION[condition],
+            )
+            for condition in A5_1A_INTERMEDIATE_CONDITIONS
+        ]
+        contrasts.extend(
+            [
+                ("linear_gentle_cost_minus_linear_harsh_cost", "linear_gentle_cost", "linear_harsh_cost"),
+                ("linear_capped_cost_minus_linear_harsh_cost", "linear_capped_cost", "linear_harsh_cost"),
+                (
+                    "linear_no_cost_diagnostic_minus_linear_harsh_cost",
+                    "linear_no_cost_diagnostic",
+                    "linear_harsh_cost",
+                ),
+            ]
+        )
+        return [
+            contrast
+            for contrast in contrasts
+            if contrast[1] in available_conditions and contrast[2] in available_conditions
+        ]
+    return [
+        *(
+            (f"{condition}_minus_reactive", condition, "reactive")
+            for condition in A5_INTERMEDIATE_CONDITIONS
+        ),
+        *(
+            (
+                f"{condition}_minus_{A5_TIMING_BROKEN_NULL_BY_CONDITION[condition]}",
+                condition,
+                A5_TIMING_BROKEN_NULL_BY_CONDITION[condition],
+            )
+            for condition in A5_INTERMEDIATE_CONDITIONS
+        ),
+        ("oracle_minus_linear", "oracle", "linear"),
+        ("oracle_minus_nonlinear", "oracle", "nonlinear"),
+        ("oracle_minus_nonlinear_high_budget", "oracle", "nonlinear_high_budget"),
+    ]
 
 
 def _label_permutation_deltas(
@@ -710,7 +766,13 @@ def _summary(
         (row["contrast"], row["control_level"], row["endpoint"]): row
         for row in effect_rows
     }
-    promotion_rows = _promotion_rule_rows(rows_by_endpoint)
+    conditions = {str(row["condition"]) for row in metric_rows}
+    is_a5_1a = set(A5_1A_INTERMEDIATE_CONDITIONS) <= conditions
+    promotion_rows = (
+        _a5_1a_audit_rows(rows_by_endpoint)
+        if is_a5_1a
+        else _promotion_rule_rows(rows_by_endpoint)
+    )
     lines = [
         "# A5 Residual Accounting Analysis",
         "",
@@ -722,8 +784,14 @@ def _summary(
         "## Primary Contrasts",
         "",
     ]
-    for condition in A5_INTERMEDIATE_CONDITIONS:
-        for baseline in ("reactive", A5_TIMING_BROKEN_NULL_BY_CONDITION[condition]):
+    primary_conditions = A5_1A_INTERMEDIATE_CONDITIONS if is_a5_1a else A5_INTERMEDIATE_CONDITIONS
+    for condition in primary_conditions:
+        baselines = (
+            (A5_1A_SPEND_ONLY_NULL_BY_CONDITION[condition],)
+            if is_a5_1a
+            else ("reactive", A5_TIMING_BROKEN_NULL_BY_CONDITION[condition])
+        )
+        for baseline in baselines:
             contrast = f"{condition}_minus_{baseline}"
             row = rows_by_endpoint.get(
                 (contrast, "full_accounting", "residual_state_predictability_r2")
@@ -742,22 +810,39 @@ def _summary(
             "",
             "## Promotion Rule Audit",
             "",
-            _A5_GUARDRAIL_POLICY,
+            (
+                "A5.1a audit: fail closed unless the same charged condition improves "
+                "forecast skill, guardrails, and full-accounting residual structure "
+                "against its spend-only replay null."
+                if is_a5_1a
+                else _A5_GUARDRAIL_POLICY
+            ),
             "",
         ]
     )
-    for row in promotion_rows:
-        lines.append(
-            "- "
-            f"{row['condition']}: "
-            f"skill_vs_reactive={row['skill_vs_reactive']}, "
-            f"skill_vs_shuffled={row['skill_vs_shuffled']}, "
-            f"residual_vs_reactive={row['residual_vs_reactive']}, "
-            f"residual_vs_shuffled={row['residual_vs_shuffled']}, "
-            f"nontrivial_vs_oracle={row['nontrivial_vs_oracle']}, "
-            f"guardrails_ok={row['guardrails_ok']}; "
-            f"promotion_satisfied={row['promotion_satisfied']}"
-        )
+    if is_a5_1a:
+        for row in promotion_rows:
+            lines.append(
+                "- "
+                f"{row['condition']}: "
+                f"skill_vs_spend_only_null={row['skill_vs_spend_only_null']}, "
+                f"residual_vs_spend_only_null={row['residual_vs_spend_only_null']}, "
+                f"guardrails_vs_spend_only_null={row['guardrails_vs_spend_only_null']}; "
+                f"promotion_satisfied={row['promotion_satisfied']}"
+            )
+    else:
+        for row in promotion_rows:
+            lines.append(
+                "- "
+                f"{row['condition']}: "
+                f"skill_vs_reactive={row['skill_vs_reactive']}, "
+                f"skill_vs_shuffled={row['skill_vs_shuffled']}, "
+                f"residual_vs_reactive={row['residual_vs_reactive']}, "
+                f"residual_vs_shuffled={row['residual_vs_shuffled']}, "
+                f"nontrivial_vs_oracle={row['nontrivial_vs_oracle']}, "
+                f"guardrails_ok={row['guardrails_ok']}; "
+                f"promotion_satisfied={row['promotion_satisfied']}"
+            )
     if not any(row["promotion_satisfied"] for row in promotion_rows):
         lines.append("")
         lines.append(
@@ -848,11 +933,62 @@ def _promotion_rule_rows(
     return rows
 
 
+def _a5_1a_audit_rows(
+    rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows = []
+    for condition in A5_1A_INTERMEDIATE_CONDITIONS:
+        null_condition = A5_1A_SPEND_ONLY_NULL_BY_CONDITION[condition]
+        contrast = f"{condition}_minus_{null_condition}"
+        skill_vs_null = _effect_positive(
+            rows_by_endpoint,
+            contrast,
+            "full_accounting",
+            "forecast_skill_mean",
+        )
+        residual_vs_null = _effect_positive_outside_null(
+            rows_by_endpoint,
+            contrast,
+            "full_accounting",
+            "residual_state_predictability_r2",
+        )
+        guardrails_vs_null = _guardrails_ok_against_baseline(
+            rows_by_endpoint,
+            condition,
+            null_condition,
+        )
+        promotion_satisfied = all(
+            (
+                skill_vs_null,
+                residual_vs_null,
+                guardrails_vs_null,
+            )
+        )
+        rows.append(
+            {
+                "condition": condition,
+                "skill_vs_spend_only_null": skill_vs_null,
+                "residual_vs_spend_only_null": residual_vs_null,
+                "guardrails_vs_spend_only_null": guardrails_vs_null,
+                "promotion_satisfied": promotion_satisfied,
+            }
+        )
+    return rows
+
+
 def _guardrails_ok(
     rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
     condition: str,
 ) -> bool:
-    contrast = f"{condition}_minus_reactive"
+    return _guardrails_ok_against_baseline(rows_by_endpoint, condition, "reactive")
+
+
+def _guardrails_ok_against_baseline(
+    rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
+    condition: str,
+    baseline: str,
+) -> bool:
+    contrast = f"{condition}_minus_{baseline}"
     queue_delta = _effect_delta(
         rows_by_endpoint,
         contrast,
