@@ -207,6 +207,36 @@ A6_EFFECTS_CONSISTENCY_FIELDS = (
     "missing_comparison_conditions",
     "interpretation",
 )
+A6_ARTIFACT_PROVENANCE_FIELDS = (
+    "condition",
+    "seed",
+    "artifact_field",
+    "tick_count",
+    "changed_tick_count",
+    "total_abs_delta",
+    "signed_delta_sum",
+    "abs_delta_on_handoff_success_ticks",
+    "abs_delta_on_handoff_failure_ticks",
+    "abs_delta_on_handoff_attempt_ticks",
+    "abs_delta_on_artifact_update_ticks",
+    "abs_delta_on_no_a6_event_ticks",
+    "handoff_success_event_count",
+    "handoff_failure_event_count",
+    "handoff_attempt_event_count",
+    "artifact_update_event_count",
+    "dominant_event_source",
+    "dominant_event_delta_share",
+    "action_handoff_total",
+    "action_predict_total",
+    "action_work_task_total",
+    "action_create_task_total",
+    "action_message_total",
+    "action_total",
+    "dominant_action_source",
+    "dominant_action_share",
+    "alias_risk",
+    "interpretation",
+)
 _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
@@ -218,6 +248,7 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_residual_contrast_rollup.csv",
     "a6_logistic_appraisal_comparison_consistency.csv",
     "a6_logistic_appraisal_effects_consistency.csv",
+    "a6_logistic_appraisal_artifact_provenance.csv",
     "summary.md",
 )
 _A6_CONTROL_PAIRS = (
@@ -259,6 +290,18 @@ _A6_RESIDUAL_OUTCOME_FIELDS = (
     "a6_artifact_communication_maturity_tick",
     "a6_artifact_utility_tick",
 )
+_A6_ARTIFACT_AUDIT_FIELDS = (
+    "a6_artifact_novelty_tick",
+    "a6_artifact_coherence_tick",
+    "a6_artifact_actionability_tick",
+    "a6_artifact_provenance_debt_tick",
+    "a6_artifact_risk_tick",
+    "a6_artifact_contradiction_tick",
+    "a6_artifact_readiness_tick",
+    "a6_artifact_implementation_maturity_tick",
+    "a6_artifact_communication_maturity_tick",
+    "a6_artifact_utility_tick",
+)
 _A6_RESIDUAL_BASE_CONTROL_FIELDS = (
     "tick",
     "queue_depth",
@@ -281,6 +324,13 @@ _A6_ACTIONS = (
     "predict",
     "communicate",
     "pause",
+)
+_A6_HANDOFF_ACTIONS = (
+    "synthesize",
+    "review",
+    "formalize",
+    "maintain",
+    "communicate",
 )
 _A6_COMPARISON_METRICS_NAME = "a6_logistic_appraisal_comparison_metrics.csv"
 _A6_EFFECTS_NAME = "a6_logistic_appraisal_effects.csv"
@@ -343,6 +393,7 @@ def run_a6_logistic_appraisal_analysis(
     )
     comparison_consistency_rows = _comparison_consistency_rows(compare_path, runs)
     effects_consistency_rows = _effects_consistency_rows(compare_path)
+    artifact_provenance_rows = _artifact_provenance_rows(compare_path)
     manifest_rows = [
         {
             "control_level": control_level,
@@ -411,6 +462,11 @@ def run_a6_logistic_appraisal_analysis(
         effects_consistency_rows,
         A6_EFFECTS_CONSISTENCY_FIELDS,
     )
+    _write_csv(
+        output_path / "a6_logistic_appraisal_artifact_provenance.csv",
+        artifact_provenance_rows,
+        A6_ARTIFACT_PROVENANCE_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             compare_path,
@@ -424,6 +480,7 @@ def run_a6_logistic_appraisal_analysis(
             control_summary_rows,
             comparison_consistency_rows,
             effects_consistency_rows,
+            artifact_provenance_rows,
             missing_required_fields,
         )
     )
@@ -441,6 +498,7 @@ def run_a6_logistic_appraisal_analysis(
         "residual_contrast_rollup_count": len(residual_contrast_rollup_rows),
         "comparison_consistency_count": len(comparison_consistency_rows),
         "effects_consistency_count": len(effects_consistency_rows),
+        "artifact_provenance_count": len(artifact_provenance_rows),
         "missing_required_fields": sorted(missing_required_fields),
     }
 
@@ -889,6 +947,272 @@ def _effects_consistency_interpretation(status: str) -> str:
     if status == "missing_comparison_conditions":
         return "aggregate comparison CSV lacks one or more conditions for this effect"
     return "effects CSV deltas differ from aggregate comparison CSV condition means"
+
+
+def _artifact_provenance_rows(compare_path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for run_dir in sorted(path for path in compare_path.iterdir() if path.is_dir()):
+        config_path = run_dir / "config.yaml"
+        metrics_path = run_dir / "metrics.csv"
+        manifest_path = run_dir / "manifest.yaml"
+        events_path = run_dir / "events.csv"
+        if not (
+            config_path.exists()
+            and metrics_path.exists()
+            and manifest_path.exists()
+            and events_path.exists()
+        ):
+            continue
+        config = yaml.safe_load(config_path.read_text()) or {}
+        logistic_appraisal = config.get("logistic_appraisal")
+        if not isinstance(logistic_appraisal, dict):
+            continue
+        metrics = [_with_a6_derived_fields(row) for row in _read_csv(metrics_path)]
+        if not metrics:
+            continue
+        condition = str(logistic_appraisal.get("condition", ""))
+        seed = int((yaml.safe_load(manifest_path.read_text()) or {}).get("seed", -1))
+        event_counts = _a6_event_counts_by_tick(_read_csv(events_path))
+        for artifact_field in _A6_ARTIFACT_AUDIT_FIELDS:
+            rows.append(
+                _artifact_provenance_row(
+                    condition,
+                    seed,
+                    artifact_field,
+                    metrics,
+                    event_counts,
+                )
+            )
+    return rows
+
+
+def _artifact_provenance_row(
+    condition: str,
+    seed: int,
+    artifact_field: str,
+    metrics: list[dict[str, str]],
+    event_counts: dict[int, dict[str, int]],
+) -> dict[str, Any]:
+    if artifact_field not in metrics[0]:
+        return {
+            "condition": condition,
+            "seed": seed,
+            "artifact_field": artifact_field,
+            "tick_count": len(metrics),
+            "changed_tick_count": "",
+            "total_abs_delta": "",
+            "signed_delta_sum": "",
+            "abs_delta_on_handoff_success_ticks": "",
+            "abs_delta_on_handoff_failure_ticks": "",
+            "abs_delta_on_handoff_attempt_ticks": "",
+            "abs_delta_on_artifact_update_ticks": "",
+            "abs_delta_on_no_a6_event_ticks": "",
+            "handoff_success_event_count": "",
+            "handoff_failure_event_count": "",
+            "handoff_attempt_event_count": "",
+            "artifact_update_event_count": "",
+            "dominant_event_source": "missing_artifact_field",
+            "dominant_event_delta_share": "",
+            "action_handoff_total": "",
+            "action_predict_total": "",
+            "action_work_task_total": "",
+            "action_create_task_total": "",
+            "action_message_total": "",
+            "action_total": "",
+            "dominant_action_source": "missing_artifact_field",
+            "dominant_action_share": "",
+            "alias_risk": "missing_artifact_field",
+            "interpretation": "artifact field missing from metrics; provenance audit blocked",
+        }
+
+    abs_delta_by_event = {
+        "handoff_success": 0.0,
+        "handoff_failure": 0.0,
+        "handoff_attempt": 0.0,
+        "artifact_update": 0.0,
+        "no_a6_event": 0.0,
+    }
+    signed_delta_sum = 0.0
+    changed_tick_count = 0
+    event_totals = {
+        "handoff_success": 0,
+        "handoff_failure": 0,
+        "handoff_attempt": 0,
+        "artifact_update": 0,
+    }
+    action_totals = {
+        "handoff": 0.0,
+        "predict": 0.0,
+        "work_task": 0.0,
+        "create_task": 0.0,
+        "message": 0.0,
+    }
+    action_total = 0.0
+
+    previous = metrics[0]
+    for row in metrics[1:]:
+        tick = int(float(row.get("tick", 0) or 0))
+        delta = _number(row, artifact_field) - _number(previous, artifact_field)
+        abs_delta = abs(delta)
+        if abs_delta > 0:
+            changed_tick_count += 1
+        signed_delta_sum += delta
+        counts = event_counts.get(tick, {})
+        handoff_success = int(counts.get("a6_handoff_succeeded", 0))
+        handoff_failure = int(counts.get("a6_handoff_failed", 0))
+        handoff_attempt = int(counts.get("a6_handoff_attempted", 0))
+        artifact_update = int(counts.get("a6_artifact_update", 0))
+        event_totals["handoff_success"] += handoff_success
+        event_totals["handoff_failure"] += handoff_failure
+        event_totals["handoff_attempt"] += handoff_attempt
+        event_totals["artifact_update"] += artifact_update
+        if handoff_success:
+            abs_delta_by_event["handoff_success"] += abs_delta
+        if handoff_failure:
+            abs_delta_by_event["handoff_failure"] += abs_delta
+        if handoff_attempt:
+            abs_delta_by_event["handoff_attempt"] += abs_delta
+        if artifact_update:
+            abs_delta_by_event["artifact_update"] += abs_delta
+        if not any(
+            counts.get(event_type, 0)
+            for event_type in (
+                "a6_handoff_succeeded",
+                "a6_handoff_failed",
+                "a6_handoff_attempted",
+                "a6_artifact_update",
+                "a6_prediction_spent",
+            )
+        ):
+            abs_delta_by_event["no_a6_event"] += abs_delta
+
+        handoff_actions = sum(_action_tick(row, action) for action in _A6_HANDOFF_ACTIONS)
+        action_totals["handoff"] += handoff_actions
+        action_totals["predict"] += _action_tick(row, "predict")
+        action_totals["work_task"] += _action_tick(row, "work_task")
+        action_totals["create_task"] += _action_tick(row, "create_task")
+        action_totals["message"] += _action_tick(row, "message")
+        action_total += sum(_action_tick(row, action) for action in _A6_ACTIONS)
+        previous = row
+
+    total_abs_delta = sum(
+        abs(_number(current, artifact_field) - _number(previous_row, artifact_field))
+        for previous_row, current in zip(metrics, metrics[1:], strict=False)
+    )
+    dominant_event_source, dominant_event_delta = _dominant(abs_delta_by_event)
+    dominant_action_source, dominant_action_count = _dominant(action_totals)
+    dominant_event_share = _safe_ratio(dominant_event_delta, total_abs_delta)
+    dominant_action_share = _safe_ratio(dominant_action_count, action_total)
+    alias_risk = _artifact_alias_risk(
+        artifact_field=artifact_field,
+        total_abs_delta=total_abs_delta,
+        dominant_event_source=dominant_event_source,
+        dominant_event_share=dominant_event_share,
+        dominant_action_source=dominant_action_source,
+        dominant_action_share=dominant_action_share,
+    )
+    return {
+        "condition": condition,
+        "seed": seed,
+        "artifact_field": artifact_field,
+        "tick_count": len(metrics),
+        "changed_tick_count": changed_tick_count,
+        "total_abs_delta": round(total_abs_delta, 6),
+        "signed_delta_sum": round(signed_delta_sum, 6),
+        "abs_delta_on_handoff_success_ticks": round(abs_delta_by_event["handoff_success"], 6),
+        "abs_delta_on_handoff_failure_ticks": round(abs_delta_by_event["handoff_failure"], 6),
+        "abs_delta_on_handoff_attempt_ticks": round(abs_delta_by_event["handoff_attempt"], 6),
+        "abs_delta_on_artifact_update_ticks": round(abs_delta_by_event["artifact_update"], 6),
+        "abs_delta_on_no_a6_event_ticks": round(abs_delta_by_event["no_a6_event"], 6),
+        "handoff_success_event_count": event_totals["handoff_success"],
+        "handoff_failure_event_count": event_totals["handoff_failure"],
+        "handoff_attempt_event_count": event_totals["handoff_attempt"],
+        "artifact_update_event_count": event_totals["artifact_update"],
+        "dominant_event_source": dominant_event_source,
+        "dominant_event_delta_share": dominant_event_share,
+        "action_handoff_total": round(action_totals["handoff"], 6),
+        "action_predict_total": round(action_totals["predict"], 6),
+        "action_work_task_total": round(action_totals["work_task"], 6),
+        "action_create_task_total": round(action_totals["create_task"], 6),
+        "action_message_total": round(action_totals["message"], 6),
+        "action_total": round(action_total, 6),
+        "dominant_action_source": dominant_action_source,
+        "dominant_action_share": dominant_action_share,
+        "alias_risk": alias_risk,
+        "interpretation": _artifact_alias_interpretation(alias_risk),
+    }
+
+
+def _a6_event_counts_by_tick(events: list[dict[str, str]]) -> dict[int, dict[str, int]]:
+    counts_by_tick: dict[int, dict[str, int]] = {}
+    for event in events:
+        tick_value = event.get("tick", "")
+        if tick_value in {"", None}:
+            continue
+        tick = int(float(tick_value))
+        event_type = str(event.get("event_type", ""))
+        if not event_type.startswith("a6_"):
+            continue
+        counts = counts_by_tick.setdefault(tick, {})
+        counts[event_type] = counts.get(event_type, 0) + 1
+    return counts_by_tick
+
+
+def _dominant(values: dict[str, float]) -> tuple[str, float]:
+    if not values:
+        return "", 0.0
+    key, value = max(values.items(), key=lambda item: (item[1], item[0]))
+    return key, value
+
+
+def _artifact_alias_risk(
+    *,
+    artifact_field: str,
+    total_abs_delta: float,
+    dominant_event_source: str,
+    dominant_event_share: float,
+    dominant_action_source: str,
+    dominant_action_share: float,
+) -> str:
+    if total_abs_delta == 0:
+        return "no_change"
+    direct_handoff_fields = {
+        "a6_artifact_coherence_tick",
+        "a6_artifact_actionability_tick",
+        "a6_artifact_provenance_debt_tick",
+        "a6_artifact_risk_tick",
+        "a6_artifact_contradiction_tick",
+        "a6_artifact_readiness_tick",
+        "a6_artifact_implementation_maturity_tick",
+        "a6_artifact_communication_maturity_tick",
+        "a6_artifact_utility_tick",
+    }
+    if (
+        artifact_field in direct_handoff_fields
+        and dominant_event_source
+        in {"handoff_success", "handoff_failure", "handoff_attempt"}
+        and dominant_event_share >= 0.75
+    ):
+        return "high_action_alias_risk"
+    if dominant_action_source == "handoff" and dominant_action_share >= 0.5:
+        return "action_coupled_smoke"
+    if dominant_event_source == "artifact_update" and dominant_event_share >= 0.75:
+        return "ambient_artifact_update_coupled"
+    return "mixed_or_low_alias_risk_smoke"
+
+
+def _artifact_alias_interpretation(alias_risk: str) -> str:
+    if alias_risk == "high_action_alias_risk":
+        return "field changes are concentrated on handoff event ticks; treat utility/readiness as action-count coupled until controlled"
+    if alias_risk == "action_coupled_smoke":
+        return "same-tick action mix is handoff dominated; use as an alias warning, not mechanism evidence"
+    if alias_risk == "ambient_artifact_update_coupled":
+        return "field changes track scheduled artifact-update ticks; audit distinguishes ambient drift from action effects"
+    if alias_risk == "no_change":
+        return "field did not change over this smoke run"
+    if alias_risk == "missing_artifact_field":
+        return "artifact field missing from metrics; provenance audit blocked"
+    return "field changes have mixed same-tick sources at smoke scale; do not interpret as causal provenance"
 
 
 def _read_csv(path: Path) -> list[dict[str, str]]:
@@ -1686,6 +2010,7 @@ def _summary(
     control_summary_rows: list[dict[str, Any]],
     comparison_consistency_rows: list[dict[str, Any]],
     effects_consistency_rows: list[dict[str, Any]],
+    artifact_provenance_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -1706,6 +2031,7 @@ def _summary(
         f"- control summary rows: {len(control_summary_rows)}",
         f"- comparison consistency rows: {len(comparison_consistency_rows)}",
         f"- effects consistency rows: {len(effects_consistency_rows)}",
+        f"- artifact provenance rows: {len(artifact_provenance_rows)}",
         "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
@@ -1728,6 +2054,7 @@ def _summary(
             "- Residual contrast rollup rows summarize cross-seed direction agreement for audit only; they do not promote A6.",
             "- Comparison consistency preflight checks aggregate CSV arithmetic against existing run artifacts only.",
             "- Effects consistency preflight checks aggregate effect deltas against comparison CSV condition means only.",
+            "- Artifact provenance rows attribute same-tick artifact field deltas to recorded A6 events/actions for alias-risk audit only.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",
