@@ -31,6 +31,18 @@ semantic-dynamics claims from A7 placeholders.
 
 ## Latest Changes
 
+- This A5 automation run audited the existing
+  `docs/a5_anticipatory_predictive_control_preregistration.md` against Ben's
+  resource-bounded predictive-control request. The preregistration already
+  defines the deterministic single-hive setup, reactive/linear/nonlinear/oracle
+  and budget-matched timing-broken null conditions, matched task/service/action
+  accounting controls, forecast-skill-per-budget endpoints, residual structure
+  endpoints, and fail-closed attractor-claim guardrails.
+- Confirmed that the checked-in A5 scaffold remains bounded to the smallest
+  deterministic pilot surface: `configs/a5_predictive_linear_smoke.yaml`,
+  `ohdyn.compare_predictive_control`, A5 metrics in `ohdyn.sim`, and the
+  read-only A5 residual-accounting analyzer. No new A5 simulator mechanics were
+  added during this audit.
 - Updated `ohdyn.automation_guard` so the accepted A7 roadmap can reopen the
   loop when stale A5 closure/status wording would otherwise force a no-op.
   Temporary test status files do not read the repository roadmap unless a
@@ -48,6 +60,14 @@ semantic-dynamics claims from A7 placeholders.
 
 ## Verification
 
+- `.venv-conda/bin/python -m ohdyn.run --config
+  configs/a5_predictive_linear_smoke.yaml --seed 5 --out
+  /tmp/omegasim_a5_predictive_linear_smoke_20260627` passed.
+- `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py
+  ohdyn/analyze_a5_residual_accounting.py ohdyn/automation_guard.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_predictive_control or a5_residual_accounting or automation_guard'`
+  passed: `12 passed, 600 deselected`.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed with `state: open`,
   `should_noop: false`, and `closed_reasons: []`.
 - `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
