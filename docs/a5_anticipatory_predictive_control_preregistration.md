@@ -11,6 +11,12 @@ test whether agents that allocate bounded resources to predicting future needs
 can generate structured collective dynamics. This document reopens OmegaSim for
 that bounded A5 design.
 
+Active-stage note for the 2026-06-27 automation run: although later A6/A7
+documents exist as historical follow-on branches, Ben's explicit A5 request
+sets this preregistration as the current gate. A5 must restart from the
+single-hive predictive-control design here; it must not import A6/A7 mechanics
+or downstream multi-hive coupling.
+
 ## Core Hypothesis
 
 Perfect prediction may smooth collective dynamics, while zero prediction leaves
@@ -38,6 +44,10 @@ Start with one hive before adding multi-hive coupling. The single-hive scaffold
 should preserve the existing deterministic OmegaSim artifact discipline and
 avoid real LLM calls, dashboards, browsers, Lean, Slack, Atomspace integrations,
 or live task boards.
+
+Implementation is gated by this preregistration and green smoke/tests. The
+initial implementation scope is only the smallest deterministic scaffold needed
+to run a single-hive A5 smoke or pilot with matched accounting controls.
 
 The preregistered first setup is deterministic and single-hive:
 
