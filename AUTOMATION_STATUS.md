@@ -19,57 +19,62 @@ Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
 downstream multi-hive coupling. Treat any strange-attractor/lobe-like language
 as secondary and fail-closed unless residual structure survives the
-preregistered accounting controls and timing-broken nulls.
+preregistered accounting controls and timing-broken nulls. The external
+strategic review dated for this run recommended an A7 implementation gate, but
+that recommendation is deferred because this status file records Ben's newer
+explicit A5 reopening and is the source of truth for bounded automation.
 
 ## Latest Changes
 
-- Kept the existing A5 preregistration as the active design document and
-  tightened it to name the current scaffold conditions explicitly:
+- Ran the preregistered eight-condition A5 confirmatory paired-seed set for
+  seeds `7..16` with no simulator mechanics changes:
   `reactive`, `linear`, `nonlinear`, `nonlinear_high_budget`, `oracle`,
   `shuffled`, `nonlinear_shuffled`, and
   `nonlinear_high_budget_shuffled`.
-- Added an explicit high-budget nonlinear A5 comparison condition and a
-  budget-matched high-budget timing-broken null to
-  `ohdyn.compare_predictive_control`.
-- Added simulator support for `nonlinear_high_budget` as a deterministic
-  longer-memory nonlinear forecast, separate from the existing medium-budget
-  nonlinear extrapolator.
-- Updated the A5 residual accounting analyzer so required conditions,
-  intermediate-condition promotion checks, timing-broken null mappings, and
-  oracle contrasts include the high-budget nonlinear pair.
-- Updated A5 tests, README text, the residual/accounting diagnostic design, and
-  the confirmatory addendum to freeze the eight-condition pilot scaffold and
-  its concrete budget-matched null requirements.
+- Ran the read-only A5 residual accounting analyzer over that fresh
+  eight-condition comparison. The analyzer emitted `6400` metric rows and
+  `720` effect rows.
+- Recorded the result in
+  `docs/results/a5_eight_condition_confirmatory_seed7_16.md`. Forecast skill
+  improved for all predictor conditions versus reactive or their
+  budget-matched timing-broken nulls, including
+  `nonlinear_high_budget_minus_nonlinear_high_budget_shuffled = +0.106704`.
+- The promotion audit still failed closed: all primary full-accounting
+  residual-state predictability contrasts were inside paired
+  label-permutation intervals, and both nonlinear conditions failed practical
+  guardrails.
 
 ## Verification
 
-- `.venv-conda/bin/python -m py_compile ohdyn/config.py ohdyn/sim.py
-  ohdyn/compare_predictive_control.py ohdyn/analyze_a5_residual_accounting.py`
-  passed.
-- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'a5_predictive_control or a5_residual_accounting'` passed:
-  `3 passed, 608 deselected`.
-- `.venv-conda/bin/python -m pytest tests/test_run_harness.py` passed:
-  `611 passed in 295.43s`.
-- `.venv-conda/bin/python -m ohdyn.run --config
-  configs/a5_predictive_linear_smoke.yaml --seed 5 --out <temp>/smoke`
-  passed.
-- `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
-  --out <temp>/compare` passed and generated 16 runs across 8 matched
-  conditions.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed with
+  `state: open`, `a5_preregistration_active: true`, and recommended the
+  eight-condition A5 confirmatory paired-seed set.
+- `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 7 8 9
+  10 11 12 13 14 15 16 --out
+  runs/a5_predictive_control_confirmatory_seed7_16_eight_condition_20260627`
+  passed and generated 80 deterministic runs across 8 matched conditions.
 - `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
-  --compare-dir <temp>/compare --out <temp>/analysis` passed. The tiny
-  paired-seed pilot still failed closed: no intermediate-budget condition
-  satisfied all preregistered residual-structure and guardrail criteria under
-  full accounting.
+  --compare-dir
+  runs/a5_predictive_control_confirmatory_seed7_16_eight_condition_20260627
+  --out
+  runs/a5_residual_accounting_confirmatory_seed7_16_eight_condition_20260627`
+  passed. Promotion decision: fail closed; no intermediate-budget condition
+  satisfied all preregistered criteria.
+- `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py
+  ohdyn/analyze_a5_residual_accounting.py ohdyn/automation_guard.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_predictive_control or a5_residual_accounting or automation_guard'`
+  passed: `11 passed, 600 deselected`.
+- `git diff --check` passed.
 
 ## Blockers
 
-None for the bounded A5 scaffold. Scientifically, the current smoke/pilot
-output remains analyzer-development evidence only and does not support an
-attractor-like claim.
+None for recording this bounded result. Scientifically, the eight-condition
+confirmatory set does not support an attractor-like or residual lobe-grammar
+claim.
 
 ## Recommended Next Step
 
-Run the preregistered eight-condition A5 confirmatory paired-seed set and
-residual analyzer with no further mechanics changes.
+Write a short A5 closure update that supersedes the older six-condition closure
+note with the eight-condition confirmatory result, without new simulator
+mechanics or additional runs.
