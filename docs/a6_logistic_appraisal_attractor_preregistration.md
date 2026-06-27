@@ -5,10 +5,16 @@ research phase. It is a design/preregistration artifact, not simulator code. It
 supersedes "more pressure" or "more seeds" as the next plausible route toward
 complex dynamics.
 
-Do not implement A6 mechanics until this design has been reviewed and converted
-into a concrete implementation plan with smoke tests, artifact schemas, and
-analysis controls. The aim is not to add logistic dynamics as an arbitrary chaos
-generator. The aim is to model bounded, thresholded cognitive appraisal:
+Update 2026-06-27: Ben accepted the A6/A7/A8 sequence in this document as the
+new provisional OmegaSim experimentation roadmap. The next step is not a broad
+simulation sweep; it is an explicit A6 implementation gate that freezes state
+schemas, smoke configs, deterministic tests, and read-only analyzers before
+running A6 experiments.
+
+Do not implement the full A6/A7/A8 program in one jump. The first implementation
+step should be a minimal A6 smoke scaffold with smoke tests, artifact schemas,
+and analysis controls. The aim is not to add logistic dynamics as an arbitrary
+chaos generator. The aim is to model bounded, thresholded cognitive appraisal:
 agents ignore weak signals, engage sharply near salience thresholds, saturate
 under overload, and adapt thresholds based on fatigue, trust, risk, novelty,
 prediction error, and recent success.

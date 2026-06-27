@@ -32,10 +32,8 @@ def read_automation_state(
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
     status_next_action = _status_next_action(status)
-    recommended_next_action = (
-        status_next_action
-        if closed_reasons and status_next_action
-        else review_header.get("recommended_next_action", "")
+    recommended_next_action = status_next_action or review_header.get(
+        "recommended_next_action", ""
     )
 
     return {

@@ -609,7 +609,7 @@ def test_automation_guard_reports_open_without_closed_status(tmp_path: Path) -> 
     assert state["should_noop"] is False
     assert state["closed_reasons"] == []
     assert state["notify_ben"] is True
-    assert state["recommended_next_action"] == ""
+    assert state["recommended_next_action"] == "run A0 smoke."
     assert state["review_recommended_next_action"] == ""
 
 
