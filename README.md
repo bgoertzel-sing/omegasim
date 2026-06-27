@@ -69,7 +69,9 @@ python -m ohdyn.analyze_a6_logistic_appraisal --compare-dir runs/a6_logistic_app
 The comparison directory contains one normal run artifact directory per
 condition/seed, `a6_logistic_appraisal_comparison_metrics.csv`,
 `a6_logistic_appraisal_effects.csv`, and `summary.md`. The analyzer consumes
-those existing artifacts without rerunning simulations.
+those existing artifacts without rerunning simulations, including the A6.1
+`a6_logistic_appraisal_source_accounting.csv` schema/control audit when source
+fields are present in the run artifacts.
 
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, linear, nonlinear, oracle, linear-budget shuffled, and

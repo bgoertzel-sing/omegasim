@@ -237,6 +237,43 @@ A6_ARTIFACT_PROVENANCE_FIELDS = (
     "alias_risk",
     "interpretation",
 )
+A6_SOURCE_ACCOUNTING_FIELDS = (
+    "condition",
+    "seed",
+    "artifact_field",
+    "update_event_count",
+    "required_field_status",
+    "missing_required_fields",
+    "reconstruction_status",
+    "max_abs_reconstruction_residual",
+    "signed_delta_sum",
+    "total_abs_delta",
+    "ambient_abs_delta",
+    "ambient_share",
+    "handoff_attempt_abs_delta",
+    "handoff_attempt_share",
+    "handoff_success_abs_delta",
+    "handoff_success_share",
+    "handoff_failure_abs_delta",
+    "handoff_failure_share",
+    "prediction_expenditure_abs_delta",
+    "prediction_expenditure_share",
+    "prediction_error_abs_delta",
+    "prediction_error_share",
+    "queue_work_accounting_abs_delta",
+    "queue_work_accounting_share",
+    "noise_abs_delta",
+    "noise_share",
+    "clip_residual_abs_delta",
+    "clip_residual_share",
+    "dominant_source",
+    "dominant_source_share",
+    "handoff_success_alias_share",
+    "prediction_expenditure_alias_share",
+    "queue_work_alias_share",
+    "status",
+    "interpretation",
+)
 _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
@@ -249,6 +286,7 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_comparison_consistency.csv",
     "a6_logistic_appraisal_effects_consistency.csv",
     "a6_logistic_appraisal_artifact_provenance.csv",
+    "a6_logistic_appraisal_source_accounting.csv",
     "summary.md",
 )
 _A6_CONTROL_PAIRS = (
@@ -302,6 +340,65 @@ _A6_ARTIFACT_AUDIT_FIELDS = (
     "a6_artifact_communication_maturity_tick",
     "a6_artifact_utility_tick",
 )
+_A6_EVENT_SOURCE_FIELDS = (
+    "a6_artifact_update_source",
+    "a6_artifact_field",
+    "a6_artifact_delta_total",
+    "a6_artifact_delta_ambient",
+    "a6_artifact_delta_handoff_attempt",
+    "a6_artifact_delta_handoff_success",
+    "a6_artifact_delta_handoff_failure",
+    "a6_artifact_delta_prediction_expenditure",
+    "a6_artifact_delta_prediction_error",
+    "a6_artifact_delta_queue_work_accounting",
+    "a6_artifact_delta_noise",
+    "a6_artifact_delta_unclipped",
+    "a6_artifact_delta_clip_residual",
+)
+_A6_METRIC_SOURCE_REQUIRED_FIELDS = (
+    "a6_prediction_budget_available_tick",
+    "a6_prediction_budget_spent_tick",
+    "a6_prediction_actions_tick",
+    "a6_prediction_error_mean_tick",
+    "a6_handoff_attempts_tick",
+    "a6_handoff_successes_tick",
+    "a6_handoff_failures_tick",
+    "a6_queue_depth_tick",
+    "a6_work_actions_tick",
+    "a6_action_opportunity_tick",
+    "a6_service_capacity_tick",
+)
+_A6_SOURCE_DELTA_FIELDS = (
+    ("ambient", "a6_artifact_delta_ambient"),
+    ("handoff_attempt", "a6_artifact_delta_handoff_attempt"),
+    ("handoff_success", "a6_artifact_delta_handoff_success"),
+    ("handoff_failure", "a6_artifact_delta_handoff_failure"),
+    ("prediction_expenditure", "a6_artifact_delta_prediction_expenditure"),
+    ("prediction_error", "a6_artifact_delta_prediction_error"),
+    ("queue_work_accounting", "a6_artifact_delta_queue_work_accounting"),
+    ("noise", "a6_artifact_delta_noise"),
+)
+_A6_EVENT_FIELD_TO_METRIC_FIELD = {
+    "artifact_novelty": "a6_artifact_novelty_tick",
+    "artifact_coherence": "a6_artifact_coherence_tick",
+    "artifact_actionability": "a6_artifact_actionability_tick",
+    "artifact_provenance_debt": "a6_artifact_provenance_debt_tick",
+    "artifact_risk": "a6_artifact_risk_tick",
+    "artifact_contradiction": "a6_artifact_contradiction_tick",
+    "artifact_readiness": "a6_artifact_readiness_tick",
+    "artifact_implementation_maturity": "a6_artifact_implementation_maturity_tick",
+    "artifact_communication_maturity": "a6_artifact_communication_maturity_tick",
+}
+_A6_UTILITY_FIELD_WEIGHTS = {
+    "artifact_coherence": 0.2,
+    "artifact_actionability": 0.2,
+    "artifact_provenance_debt": -0.2,
+    "artifact_risk": -0.2,
+    "artifact_contradiction": -0.2,
+    "artifact_readiness": 0.2,
+    "artifact_implementation_maturity": 0.2,
+    "artifact_communication_maturity": 0.2,
+}
 _A6_RESIDUAL_BASE_CONTROL_FIELDS = (
     "tick",
     "queue_depth",
@@ -394,6 +491,7 @@ def run_a6_logistic_appraisal_analysis(
     comparison_consistency_rows = _comparison_consistency_rows(compare_path, runs)
     effects_consistency_rows = _effects_consistency_rows(compare_path)
     artifact_provenance_rows = _artifact_provenance_rows(compare_path)
+    source_accounting_rows = _source_accounting_rows(compare_path)
     manifest_rows = [
         {
             "control_level": control_level,
@@ -467,6 +565,11 @@ def run_a6_logistic_appraisal_analysis(
         artifact_provenance_rows,
         A6_ARTIFACT_PROVENANCE_FIELDS,
     )
+    _write_csv(
+        output_path / "a6_logistic_appraisal_source_accounting.csv",
+        source_accounting_rows,
+        A6_SOURCE_ACCOUNTING_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             compare_path,
@@ -481,6 +584,7 @@ def run_a6_logistic_appraisal_analysis(
             comparison_consistency_rows,
             effects_consistency_rows,
             artifact_provenance_rows,
+            source_accounting_rows,
             missing_required_fields,
         )
     )
@@ -499,6 +603,7 @@ def run_a6_logistic_appraisal_analysis(
         "comparison_consistency_count": len(comparison_consistency_rows),
         "effects_consistency_count": len(effects_consistency_rows),
         "artifact_provenance_count": len(artifact_provenance_rows),
+        "source_accounting_count": len(source_accounting_rows),
         "missing_required_fields": sorted(missing_required_fields),
     }
 
@@ -1156,6 +1261,242 @@ def _a6_event_counts_by_tick(events: list[dict[str, str]]) -> dict[int, dict[str
         counts = counts_by_tick.setdefault(tick, {})
         counts[event_type] = counts.get(event_type, 0) + 1
     return counts_by_tick
+
+
+def _source_accounting_rows(compare_path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for run_dir in sorted(path for path in compare_path.iterdir() if path.is_dir()):
+        config_path = run_dir / "config.yaml"
+        metrics_path = run_dir / "metrics.csv"
+        manifest_path = run_dir / "manifest.yaml"
+        events_path = run_dir / "events.csv"
+        if not (
+            config_path.exists()
+            and metrics_path.exists()
+            and manifest_path.exists()
+            and events_path.exists()
+        ):
+            continue
+        config = yaml.safe_load(config_path.read_text()) or {}
+        logistic_appraisal = config.get("logistic_appraisal")
+        if not isinstance(logistic_appraisal, dict):
+            continue
+        metrics = [_with_a6_derived_fields(row) for row in _read_csv(metrics_path)]
+        events = _read_csv(events_path)
+        if not metrics:
+            continue
+        condition = str(logistic_appraisal.get("condition", ""))
+        seed = int((yaml.safe_load(manifest_path.read_text()) or {}).get("seed", -1))
+        metric_fields = set(metrics[0])
+        event_fields = set(events[0]) if events else set()
+        missing_required_fields = sorted(
+            (set(_A6_EVENT_SOURCE_FIELDS) - event_fields)
+            | (set(_A6_METRIC_SOURCE_REQUIRED_FIELDS) - metric_fields)
+        )
+        update_events = [
+            row for row in events if row.get("event_type") == "a6_artifact_update"
+        ]
+        for artifact_field in _A6_ARTIFACT_AUDIT_FIELDS:
+            rows.append(
+                _source_accounting_row(
+                    condition=condition,
+                    seed=seed,
+                    artifact_field=artifact_field,
+                    metrics=metrics,
+                    update_events=update_events,
+                    missing_required_fields=missing_required_fields,
+                )
+            )
+    return rows
+
+
+def _source_accounting_row(
+    *,
+    condition: str,
+    seed: int,
+    artifact_field: str,
+    metrics: list[dict[str, str]],
+    update_events: list[dict[str, str]],
+    missing_required_fields: list[str],
+) -> dict[str, Any]:
+    matching_events = _source_events_for_artifact_field(update_events, artifact_field)
+    source_abs = {source: 0.0 for source, _ in _A6_SOURCE_DELTA_FIELDS}
+    source_signed = {source: 0.0 for source, _ in _A6_SOURCE_DELTA_FIELDS}
+    total_abs_delta = 0.0
+    signed_delta_sum = 0.0
+    clip_residual_abs_delta = 0.0
+    max_abs_residual = 0.0
+    for event in matching_events:
+        weight = _source_event_weight(event, artifact_field)
+        source_sum = 0.0
+        for source, field in _A6_SOURCE_DELTA_FIELDS:
+            delta = weight * _number(event, field)
+            source_sum += delta
+            source_signed[source] += delta
+            source_abs[source] += abs(delta)
+        clip_residual = weight * _number(event, "a6_artifact_delta_clip_residual")
+        total_delta = weight * _number(event, "a6_artifact_delta_total")
+        reconstructed_total = round(source_sum + clip_residual, 6)
+        residual = abs(round(total_delta - reconstructed_total, 6))
+        max_abs_residual = max(max_abs_residual, residual)
+        clip_residual_abs_delta += abs(clip_residual)
+        total_abs_delta += abs(total_delta)
+        signed_delta_sum += total_delta
+
+    if artifact_field == "a6_artifact_utility_tick":
+        total_abs_delta = _metric_total_abs_delta(metrics, artifact_field)
+        signed_delta_sum = _metric_signed_delta_sum(metrics, artifact_field)
+
+    source_share_denominator = sum(source_abs.values()) + clip_residual_abs_delta
+    source_share = {
+        source: _safe_ratio(delta, source_share_denominator)
+        for source, delta in source_abs.items()
+    }
+    clip_residual_share = _safe_ratio(clip_residual_abs_delta, source_share_denominator)
+    dominant_source, dominant_source_delta = _dominant(source_abs)
+    dominant_source_share = _safe_ratio(dominant_source_delta, source_share_denominator)
+    required_status = (
+        "missing_required_fields" if missing_required_fields else "schema_pass"
+    )
+    reconstruction_status = (
+        "missing_required_fields"
+        if missing_required_fields
+        else "reconstruction_failed"
+        if max_abs_residual > 1e-6
+        else "schema_pass"
+    )
+    handoff_success_share = source_share["handoff_success"]
+    prediction_expenditure_share = source_share["prediction_expenditure"]
+    queue_work_share = source_share["queue_work_accounting"]
+    status = _source_accounting_status(
+        required_status=required_status,
+        reconstruction_status=reconstruction_status,
+        handoff_success_share=handoff_success_share,
+        prediction_expenditure_share=prediction_expenditure_share,
+        queue_work_share=queue_work_share,
+    )
+    return {
+        "condition": condition,
+        "seed": seed,
+        "artifact_field": artifact_field,
+        "update_event_count": len(matching_events),
+        "required_field_status": required_status,
+        "missing_required_fields": "|".join(missing_required_fields),
+        "reconstruction_status": reconstruction_status,
+        "max_abs_reconstruction_residual": round(max_abs_residual, 6),
+        "signed_delta_sum": round(signed_delta_sum, 6),
+        "total_abs_delta": round(total_abs_delta, 6),
+        "ambient_abs_delta": round(source_abs["ambient"], 6),
+        "ambient_share": source_share["ambient"],
+        "handoff_attempt_abs_delta": round(source_abs["handoff_attempt"], 6),
+        "handoff_attempt_share": source_share["handoff_attempt"],
+        "handoff_success_abs_delta": round(source_abs["handoff_success"], 6),
+        "handoff_success_share": handoff_success_share,
+        "handoff_failure_abs_delta": round(source_abs["handoff_failure"], 6),
+        "handoff_failure_share": source_share["handoff_failure"],
+        "prediction_expenditure_abs_delta": round(
+            source_abs["prediction_expenditure"],
+            6,
+        ),
+        "prediction_expenditure_share": prediction_expenditure_share,
+        "prediction_error_abs_delta": round(source_abs["prediction_error"], 6),
+        "prediction_error_share": source_share["prediction_error"],
+        "queue_work_accounting_abs_delta": round(
+            source_abs["queue_work_accounting"],
+            6,
+        ),
+        "queue_work_accounting_share": queue_work_share,
+        "noise_abs_delta": round(source_abs["noise"], 6),
+        "noise_share": source_share["noise"],
+        "clip_residual_abs_delta": round(clip_residual_abs_delta, 6),
+        "clip_residual_share": clip_residual_share,
+        "dominant_source": dominant_source,
+        "dominant_source_share": dominant_source_share,
+        "handoff_success_alias_share": handoff_success_share,
+        "prediction_expenditure_alias_share": prediction_expenditure_share,
+        "queue_work_alias_share": queue_work_share,
+        "status": status,
+        "interpretation": _source_accounting_interpretation(status),
+    }
+
+
+def _source_events_for_artifact_field(
+    events: list[dict[str, str]],
+    artifact_field: str,
+) -> list[dict[str, str]]:
+    if artifact_field == "a6_artifact_utility_tick":
+        return [
+            event
+            for event in events
+            if event.get("a6_artifact_field") in _A6_UTILITY_FIELD_WEIGHTS
+        ]
+    event_field = next(
+        (
+            raw_field
+            for raw_field, metric_field in _A6_EVENT_FIELD_TO_METRIC_FIELD.items()
+            if metric_field == artifact_field
+        ),
+        "",
+    )
+    return [
+        event for event in events if event.get("a6_artifact_field") == event_field
+    ]
+
+
+def _source_event_weight(event: dict[str, str], artifact_field: str) -> float:
+    if artifact_field != "a6_artifact_utility_tick":
+        return 1.0
+    return _A6_UTILITY_FIELD_WEIGHTS.get(str(event.get("a6_artifact_field", "")), 0.0)
+
+
+def _metric_total_abs_delta(metrics: list[dict[str, str]], artifact_field: str) -> float:
+    if artifact_field not in metrics[0]:
+        return 0.0
+    return sum(
+        abs(_number(current, artifact_field) - _number(previous, artifact_field))
+        for previous, current in zip(metrics, metrics[1:], strict=False)
+    )
+
+
+def _metric_signed_delta_sum(metrics: list[dict[str, str]], artifact_field: str) -> float:
+    if len(metrics) < 2 or artifact_field not in metrics[0]:
+        return 0.0
+    return _number(metrics[-1], artifact_field) - _number(metrics[0], artifact_field)
+
+
+def _source_accounting_status(
+    *,
+    required_status: str,
+    reconstruction_status: str,
+    handoff_success_share: float,
+    prediction_expenditure_share: float,
+    queue_work_share: float,
+) -> str:
+    if required_status == "missing_required_fields":
+        return "missing_required_fields"
+    if reconstruction_status == "reconstruction_failed":
+        return "reconstruction_failed"
+    if handoff_success_share >= 0.75:
+        return "high_handoff_alias_risk"
+    if prediction_expenditure_share >= 0.75:
+        return "high_prediction_alias_risk"
+    if queue_work_share >= 0.75:
+        return "high_queue_work_alias_risk"
+    return "underdetermined_smoke_scale"
+
+
+def _source_accounting_interpretation(status: str) -> str:
+    if status == "missing_required_fields":
+        return "A6.1 required source/accounting fields are missing; do not interpret"
+    if status == "reconstruction_failed":
+        return "artifact delta source columns do not reconstruct total delta"
+    if status == "high_handoff_alias_risk":
+        return "artifact change is dominated by handoff-success source accounting; treat as action-coupled"
+    if status == "high_prediction_alias_risk":
+        return "artifact change is dominated by prediction-expenditure accounting; treat prediction as a cost alias"
+    if status == "high_queue_work_alias_risk":
+        return "artifact change is dominated by queue/work accounting; residual controls remain required"
+    return "source accounting passes schema reconstruction at smoke scale only; not promotion evidence"
 
 
 def _dominant(values: dict[str, float]) -> tuple[str, float]:
@@ -2011,6 +2352,7 @@ def _summary(
     comparison_consistency_rows: list[dict[str, Any]],
     effects_consistency_rows: list[dict[str, Any]],
     artifact_provenance_rows: list[dict[str, Any]],
+    source_accounting_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -2032,6 +2374,7 @@ def _summary(
         f"- comparison consistency rows: {len(comparison_consistency_rows)}",
         f"- effects consistency rows: {len(effects_consistency_rows)}",
         f"- artifact provenance rows: {len(artifact_provenance_rows)}",
+        f"- source accounting rows: {len(source_accounting_rows)}",
         "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
@@ -2055,6 +2398,7 @@ def _summary(
             "- Comparison consistency preflight checks aggregate CSV arithmetic against existing run artifacts only.",
             "- Effects consistency preflight checks aggregate effect deltas against comparison CSV condition means only.",
             "- Artifact provenance rows attribute same-tick artifact field deltas to recorded A6 events/actions for alias-risk audit only.",
+            "- Source accounting rows audit A6.1 required fields, artifact-delta reconstruction, and per-source shares for schema/control eligibility only.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",

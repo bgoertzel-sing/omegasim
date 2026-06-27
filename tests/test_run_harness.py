@@ -44,6 +44,7 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_RESIDUAL_CONTRAST_ROLLUP_FIELDS,
     A6_RESIDUAL_CONTRAST_SUMMARY_FIELDS,
     A6_RESIDUAL_TIMESERIES_FIELDS,
+    A6_SOURCE_ACCOUNTING_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
 from ohdyn.compare_a6_logistic_appraisal import (
@@ -15111,10 +15112,18 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     with (out_dir / "a6_logistic_appraisal_artifact_provenance.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_ARTIFACT_PROVENANCE_FIELDS)
         provenance_rows = list(csv.DictReader(handle, fieldnames=A6_ARTIFACT_PROVENANCE_FIELDS))
+    with (out_dir / "a6_logistic_appraisal_source_accounting.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_SOURCE_ACCOUNTING_FIELDS)
+        source_rows = list(csv.DictReader(handle, fieldnames=A6_SOURCE_ACCOUNTING_FIELDS))
     assert {row["status"] for row in consistency_rows} == {"missing_comparison_csv"}
     assert {row["status"] for row in effects_rows} == {"missing_effects_csv"}
     assert result["artifact_provenance_count"] == 20
+    assert result["source_accounting_count"] == 20
     assert {row["artifact_field"] for row in provenance_rows} >= {
+        "a6_artifact_readiness_tick",
+        "a6_artifact_utility_tick",
+    }
+    assert {row["artifact_field"] for row in source_rows} >= {
         "a6_artifact_readiness_tick",
         "a6_artifact_utility_tick",
     }
@@ -15126,6 +15135,7 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     assert "- comparison consistency rows: 2" in summary
     assert "- effects consistency rows: 3" in summary
     assert "- artifact provenance rows: 20" in summary
+    assert "- source accounting rows: 20" in summary
 
 
 def test_a6_read_only_analysis_writes_paired_control_deltas(
@@ -15404,6 +15414,78 @@ def test_a6_read_only_analysis_writes_artifact_provenance_audit(
     summary = (out_dir / "summary.md").read_text()
     assert "- artifact provenance rows: 40" in summary
     assert "same-tick artifact field deltas" in summary
+
+
+def test_a6_read_only_analysis_writes_source_accounting_audit(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "compare"
+    for config_path in (
+        A6_LOGISTIC_APPRAISAL,
+        A6_LINEAR_APPRAISAL,
+        A6_THRESHOLD_SHUFFLED,
+        A6_PHASE_SHUFFLED,
+    ):
+        run_experiment(config_path, seed=4, out_dir=compare_dir / config_path.stem)
+
+    out_dir = tmp_path / "analysis"
+    result = run_a6_logistic_appraisal_analysis(compare_dir, out_dir)
+
+    assert result["source_accounting_count"] == 40
+    with (out_dir / "a6_logistic_appraisal_source_accounting.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert list(rows[0]) == list(A6_SOURCE_ACCOUNTING_FIELDS)
+    assert {row["condition"] for row in rows} == {
+        "logistic",
+        "linear",
+        "phase_shuffled",
+        "threshold_shuffled",
+    }
+    assert {
+        row["artifact_field"] for row in rows if row["condition"] == "logistic"
+    } == {
+        "a6_artifact_novelty_tick",
+        "a6_artifact_coherence_tick",
+        "a6_artifact_actionability_tick",
+        "a6_artifact_provenance_debt_tick",
+        "a6_artifact_risk_tick",
+        "a6_artifact_contradiction_tick",
+        "a6_artifact_readiness_tick",
+        "a6_artifact_implementation_maturity_tick",
+        "a6_artifact_communication_maturity_tick",
+        "a6_artifact_utility_tick",
+    }
+    assert {row["required_field_status"] for row in rows} == {"schema_pass"}
+    assert {row["reconstruction_status"] for row in rows} == {"schema_pass"}
+    assert {row["max_abs_reconstruction_residual"] for row in rows} == {"0.0"}
+    logistic_readiness = next(
+        row
+        for row in rows
+        if row["condition"] == "logistic"
+        and row["artifact_field"] == "a6_artifact_readiness_tick"
+    )
+    logistic_utility = next(
+        row
+        for row in rows
+        if row["condition"] == "logistic"
+        and row["artifact_field"] == "a6_artifact_utility_tick"
+    )
+    assert logistic_readiness["update_event_count"] != "0"
+    assert logistic_readiness["handoff_success_alias_share"] != ""
+    assert logistic_readiness["queue_work_alias_share"] != ""
+    assert logistic_utility["update_event_count"] != "0"
+    assert logistic_utility["total_abs_delta"] != ""
+    assert logistic_utility["prediction_expenditure_alias_share"] != ""
+    assert logistic_utility["status"] in {
+        "high_handoff_alias_risk",
+        "high_prediction_alias_risk",
+        "high_queue_work_alias_risk",
+        "underdetermined_smoke_scale",
+    }
+    summary = (out_dir / "summary.md").read_text()
+    assert "- source accounting rows: 40" in summary
+    assert "artifact-delta reconstruction" in summary
 
 
 def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
