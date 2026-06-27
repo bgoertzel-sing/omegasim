@@ -20,28 +20,29 @@ External strategy review
 `../outputs/strategy-reviews/omegasim/latest-review.md` recommends strengthening
 the read-only A6 analyzer before any broader simulation or promotion claim. The
 review did not require notifying Ben (`strategic_change_level: none`,
-`notify_ben: false`). This run followed that recommendation and did not add real
-LLM calls, dashboards, Lean, Slack, browser automation, Atomspace integrations,
-or downstream multi-hive coupling.
+`notify_ben: false`). Current runs follow that recommendation and do not add
+real LLM calls, dashboards, Lean, Slack, browser automation, Atomspace
+integrations, or downstream multi-hive coupling.
 
 ## Latest Changes
 
-- Status: A6 analysis-gate residual timeseries audit added, 2026-06-27.
+- Status: A6 analysis-gate residual contrast summary added, 2026-06-27.
 - Changed: `ohdyn.analyze_a6_logistic_appraisal` now writes
-  `a6_logistic_appraisal_residual_timeseries.csv` alongside the existing
-  endpoint, paired control-delta, residual preflight, control-summary, and
-  consistency-check artifacts. The new CSV exposes per-tick raw, fitted, and
-  residual values for each latent/artifact outcome using the same clock, queue,
-  task, prediction-budget, and action-opportunity controls as the residual
-  preflight.
-- Changed: residual fitting now shares one helper for fitted and residual values,
-  and the analyzer summary reports the residual-timeseries row count while
-  explicitly warning that these rows are audit data, not recurrence evidence.
+  `a6_logistic_appraisal_residual_contrast_summary.csv` alongside the existing
+  endpoint, paired control-delta, residual preflight, residual-timeseries,
+  control-summary, and consistency-check artifacts. The new CSV aggregates the
+  per-tick residual audit rows into paired logistic-minus-control residual
+  variance, lag-1 residual autocorrelation, and residual sign-change count
+  deltas by contrast, seed, and latent/artifact outcome.
+- Changed: analyzer summary and focused A6 tests now cover the new residual
+  contrast artifact and explicitly label it as smoke-scale audit data, not
+  recurrence or promotion evidence.
 - Result: Running the analyzer on the existing canonical A6 smoke comparison
-  `runs/a6_logistic_appraisal_compare` produced 1,792 residual-timeseries rows
-  for the two-seed four-condition smoke grid. The status remains read-only
-  control/residual preflight; residualization is still underdetermined at smoke
-  scale and is not promotion evidence.
+  `runs/a6_logistic_appraisal_compare` produced 84 residual-contrast summary
+  data rows and 1,792 residual-timeseries data rows for the two-seed
+  four-condition smoke grid. The status remains read-only control/residual
+  preflight; residualization is still underdetermined at smoke scale and is not
+  promotion evidence.
 - Verification: `.venv-conda/bin/python -m py_compile
   ohdyn/analyze_a6_logistic_appraisal.py tests/test_run_harness.py` passed;
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -q -k
@@ -50,10 +51,12 @@ or downstream multi-hive coupling.
   -q -k 'a6'` passed with `10 passed, 586 deselected`;
   `.venv-conda/bin/python -m ohdyn.analyze_a6_logistic_appraisal --compare-dir
   runs/a6_logistic_appraisal_compare --out
-  runs/a6_logistic_appraisal_analysis_residual_timeseries_v1` passed and wrote
-  1,792 residual-timeseries data rows.
+  runs/a6_logistic_appraisal_analysis_residual_contrast_v1` passed and wrote
+  84 residual-contrast summary data rows plus 1,792 residual-timeseries data
+  rows.
 - Blockers: none.
-- Recommended next step: add a narrow A6 residual-timeseries contrast summary
-  that aggregates per-tick residual sign changes, lag-1 residual
-  autocorrelation, and residual variance deltas by paired seed and contrast
-  without broadening seeds or making promotion claims.
+- Recommended next step: add a read-only A6 residual-contrast rollup that
+  aggregates the new per-seed residual variance, lag-1 autocorrelation, and
+  sign-change deltas across paired seeds by contrast/outcome, reporting
+  smoke-scale direction agreement without broadening seeds or making promotion
+  claims.

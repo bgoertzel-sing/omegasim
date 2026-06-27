@@ -37,6 +37,7 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_CONTROL_SUMMARY_FIELDS,
     A6_EFFECTS_CONSISTENCY_FIELDS,
     A6_RESIDUAL_PREFLIGHT_FIELDS,
+    A6_RESIDUAL_CONTRAST_SUMMARY_FIELDS,
     A6_RESIDUAL_TIMESERIES_FIELDS,
     run_a6_logistic_appraisal_analysis,
 )
@@ -15027,6 +15028,8 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
         assert next(csv.reader(handle)) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
     with (out_dir / "a6_logistic_appraisal_residual_timeseries.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_RESIDUAL_TIMESERIES_FIELDS)
+    with (out_dir / "a6_logistic_appraisal_residual_contrast_summary.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_RESIDUAL_CONTRAST_SUMMARY_FIELDS)
     with (out_dir / "a6_logistic_appraisal_comparison_consistency.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_COMPARISON_CONSISTENCY_FIELDS)
         consistency_rows = list(csv.DictReader(handle, fieldnames=A6_COMPARISON_CONSISTENCY_FIELDS))
@@ -15097,16 +15100,20 @@ def test_a6_read_only_analysis_writes_residual_preflight(
 
     assert result["residual_preflight_count"] == 56
     assert result["residual_timeseries_count"] == 896
+    assert result["residual_contrast_summary_count"] == 42
     assert result["control_summary_count"] == 42
     with (out_dir / "a6_logistic_appraisal_residual_preflight.csv").open() as handle:
         rows = list(csv.DictReader(handle))
     with (out_dir / "a6_logistic_appraisal_residual_timeseries.csv").open() as handle:
         timeseries_rows = list(csv.DictReader(handle))
+    with (out_dir / "a6_logistic_appraisal_residual_contrast_summary.csv").open() as handle:
+        residual_contrast_rows = list(csv.DictReader(handle))
     with (out_dir / "a6_logistic_appraisal_control_summary.csv").open() as handle:
         summary_rows = list(csv.DictReader(handle))
 
     assert list(rows[0]) == list(A6_RESIDUAL_PREFLIGHT_FIELDS)
     assert list(timeseries_rows[0]) == list(A6_RESIDUAL_TIMESERIES_FIELDS)
+    assert list(residual_contrast_rows[0]) == list(A6_RESIDUAL_CONTRAST_SUMMARY_FIELDS)
     assert list(summary_rows[0]) == list(A6_CONTROL_SUMMARY_FIELDS)
     assert {row["condition"] for row in rows} == {
         "logistic",
@@ -15158,6 +15165,24 @@ def test_a6_read_only_analysis_writes_residual_preflight(
     assert all(row["fitted_value"] != "" for row in logistic_utility_trace)
     assert all(row["residual_value"] != "" for row in logistic_utility_trace)
     assert all("action_predict_tick" in row["control_fields_used"] for row in logistic_utility_trace)
+    logistic_linear_utility_contrast = next(
+        row
+        for row in residual_contrast_rows
+        if row["contrast"] == "logistic_vs_linear"
+        and row["outcome_field"] == "a6_artifact_utility_tick"
+    )
+    assert logistic_linear_utility_contrast["seed"] == "4"
+    assert logistic_linear_utility_contrast["paired"] == "true"
+    assert logistic_linear_utility_contrast["status"] == "underdetermined_smoke_scale"
+    assert logistic_linear_utility_contrast["tick_count"] == "16"
+    assert logistic_linear_utility_contrast["control_tick_count"] == "16"
+    assert logistic_linear_utility_contrast["residual_variance_delta"] != ""
+    assert logistic_linear_utility_contrast["residual_lag1_autocorrelation_delta"] != ""
+    assert logistic_linear_utility_contrast["residual_sign_change_count_delta"] != ""
+    assert (
+        logistic_linear_utility_contrast["interpretation"]
+        == "smoke-scale residual timeseries contrast only; not recurrence evidence"
+    )
     logistic_linear_utility_summary = next(
         row
         for row in summary_rows
@@ -15175,9 +15200,14 @@ def test_a6_read_only_analysis_writes_residual_preflight(
     summary = (out_dir / "summary.md").read_text()
     assert "- residual preflight rows: 56" in summary
     assert "- residual timeseries rows: 896" in summary
+    assert "- residual contrast summary rows: 42" in summary
     assert "- control summary rows: 42" in summary
     assert "underdetermined smoke-scale rows are not recurrence evidence" in summary
     assert "fitted and residual values for audit only" in summary
+    assert (
+        "aggregate per-seed residual variance, lag-1 autocorrelation, and sign-change deltas"
+        in summary
+    )
 
 
 def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
