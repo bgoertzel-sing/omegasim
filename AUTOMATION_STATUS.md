@@ -16,31 +16,43 @@ broaden seeds or interpret logistic-appraisal results until the read-only A6
 analyzer reports paired accounting, residual, and null-control deltas from the
 existing smoke artifacts.
 
+The current A6 analyzer gate has now been run on the existing seed `1..2`
+smoke artifacts and recorded in
+`docs/results/a6_analysis_gate_seed1_2.md`. Treat A6 as smoke/analyzer-only,
+not promoted.
+
 Do not add real LLM calls, dashboards, Lean, Slack, browser automation,
 Atomspace integrations, live task boards, broad three-hive mechanics, or
 downstream multi-hive coupling.
 
 ## Latest Changes
 
-- Status: A5 forecast-skill/residual-gap diagnostic report added, 2026-06-27.
-- Changed: added
-  `docs/results/a5_forecast_skill_residual_gap_report_seed7_16.md`, a
-  read-only report over the existing seed `7..16` A5 confirmatory comparison
-  and residual-accounting artifacts.
-- Result: A5 remains closed. Forecast skill improved, but allocation residuals
-  were absorbed by load/opportunity and full-accounting controls, and primary
-  full-accounting residual-state predictability contrasts remained inside
-  paired label-permutation intervals.
+- Status: A6 read-only analysis gate report added, 2026-06-27.
+- Changed: ran
+  `.venv-conda/bin/python -m ohdyn.analyze_a6_logistic_appraisal --compare-dir runs/a6_logistic_appraisal_compare --out runs/a6_logistic_appraisal_analysis`
+  over the existing seed `1..2` smoke comparison artifacts and added
+  `docs/results/a6_analysis_gate_seed1_2.md`.
+- Result: the analyzer emitted endpoints, manifest, paired control deltas,
+  control summary, residual preflight, residual timeseries, residual contrast
+  summary/rollup, and comparison/effects consistency outputs. Required fields
+  were present, comparison/effects arithmetic was consistent, and no simulations
+  were rerun.
+- Interpretation: A6 remains smoke/analyzer-only. Logistic-versus-linear
+  artifact utility was tiny (`+0.001707` mean), paired seed signs disagreed,
+  logistic queue depth was higher (`+1.5` mean), completion fraction was lower
+  (`-0.018187` mean), and all residual rows remain
+  `underdetermined_smoke_scale`. No attractor, lobe-grammar, synchrony,
+  causality, or promotion claim is supported.
 - External strategic review handling: latest review has
-  `strategic_change_level: none` and `notify_ben: false`; its A6 analyzer
-  recommendation is scientifically sensible and is accepted as the next step.
-  It was deferred during this bounded run because the status-file source of
-  truth still requested the A5 residual-gap report.
+  `strategic_change_level: minor` and `notify_ben: false`; its recommendation
+  to audit the expanded A6 analyzer and publish the actual control/residual
+  gate report was scientifically sensible and has been accepted/completed.
 - Verification: `.venv-conda/bin/python -m pytest tests/test_run_harness.py
-  -q -k 'a5 or automation_guard'` passed with `10 passed, 586 deselected`;
-  `git diff --check` passed.
+  -q -k 'a6_read_only_analysis or automation_guard'` passed with `10 passed,
+  586 deselected`; `git diff --check` passed.
 - Blockers: none.
-- Recommended next step: strengthen `ohdyn.analyze_a6_logistic_appraisal` with
-  paired seed control-delta accounting over the existing A6 smoke comparison
-  artifacts, writing `a6_logistic_appraisal_control_deltas.csv` and explicit
-  missing-field/control-status summary rows without rerunning simulations.
+- Recommended next step: add a minimal read-only A6 artifact-update provenance
+  audit that attributes novelty/coherence/actionability/risk/contradiction/
+  readiness/maturity/utility field changes to action/event sources, so the next
+  gate can test whether artifact utility and readiness are action-count or
+  queue aliases before any broader A6 run.
