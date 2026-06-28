@@ -47,6 +47,22 @@ Prediction spend must be reported explicitly; when prediction is charged to
 work, the pre-charge work opportunity, charged prediction work units, and
 remaining work budget must be available for accounting.
 
+## Determinism and Accounting Locks
+
+All conditions must be derived from the same base configuration and paired
+seeds. Predictor condition is the only intended contrast. The simulator must
+not change task-arrival totals, class-demand totals, service-capacity knobs,
+action set, agent count, action-opportunity schedule, or total work budget
+between conditions. Any prediction charge must be represented as an explicit
+budget transfer from available work opportunity rather than as hidden extra
+capacity.
+
+The comparison must include budget-matched timing-broken nulls for every
+intermediate predictor being interpreted. A positive intermediate-budget claim
+is invalid if it can be reproduced by a shuffled, phase-randomized, or
+spend-only replay null that preserves prediction spend while breaking useful
+forecast timing.
+
 ## Conditions
 
 Compare paired-seed, matched-stream conditions:
@@ -66,6 +82,8 @@ Compare paired-seed, matched-stream conditions:
 The prediction-budget axis is therefore none/reactive, low, medium, high, and
 oracle. Intermediate-budget positives must beat both reactive and their
 budget-matched nulls before they can be interpreted as useful anticipation.
+Oracle is a smoothing positive control and a ceiling for forecast availability,
+not the target dynamics condition.
 
 ## Primary Endpoints
 

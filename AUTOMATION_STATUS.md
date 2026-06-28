@@ -5,115 +5,79 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the explicit A5 single-hive preregistration, the
-reopened smoke scaffold, the A5.1a cost-calibration gate, the read-only
-resource-bounded residual-compression diagnostic, and the compression-enforced
-residual-accounting audit are now complete and closed conservatively. The
-current posture is closed to new simulator mechanics, new simulation runs,
-A7.2 mechanics, and multi-hive coupling until Ben chooses the next
-preregistered gate. The current A5 anticipatory predictive-control loop is
-closed. Do not reopen A5 or treat the existing concise A5 preregistration as
-active authorization for more A5-family automation.
+Source-of-truth status: the current concise A5 gate is
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+That document records the explicit single-hive A5 reopening and is the active
+preregistration summary for the bounded smoke/pilot requested on 2026-06-28.
+This active pass is limited to preregistration tightening, existing
+deterministic single-hive scaffold verification, and read-only residual
+diagnostics; it does not authorize broad new mechanics, dashboards,
+integrations, live services, A7.2 mechanics, or multi-hive coupling.
 
-The 2026-06-28 01:29 PDT pass implemented the narrow GPT-5.5-Pro governance
-recommendation to expose closed-state repo-write policy directly in the
-automation guard. The guard now reports `repo_write_allowed=false` whenever
-`should_noop=true`, including the current
-`closed_awaiting_preregistration` state.
-
-The 2026-06-28 02:23 PDT pass rechecked Ben's explicit A5
-single-hive anticipatory predictive-control request against the checked-in
-preregistration, README scope, deterministic scaffold, and focused tests. The
-requested preregistration and minimal smoke scaffold already exist; the
-current guard remains closed to additional simulator mechanics, configs,
-analyzers, simulation runs, dashboards, integrations, A7.2 mechanics, and
-multi-hive coupling.
-
-The 2026-06-28 02:35 PDT pass rechecked the current source-of-truth status,
-the superseded roadmap, configs/tests surface, the latest GPT-5.5-Pro review,
-the automation guard, and the existing Ben A5-exit/A7.2 decision request. The
-guard still reports `state=closed_awaiting_preregistration`,
-`should_noop=true`, `repo_write_allowed=false`, and `notify_ben=true`.
-GPT-5.5-Pro's recommendation to send Ben the existing decision request and
-stop repo-writing/status-only automation while closed is accepted as
-scientifically sensible. It is deferred for this bounded pass only because the
-current automation instruction explicitly requires updating this status file
-and committing local progress.
-
-The 2026-06-28 03:08 PDT pass rechecked the current source-of-truth status,
-the superseded provisional roadmap, configs/tests surface, the historical A5
-diagnostic plan, the latest GPT-5.5-Pro strategy review, the CLI-loop log, the
-automation guard, and the existing Ben A5-exit/A7.2 decision request. The
-guard still reports `state=closed_awaiting_preregistration`,
-`should_noop=true`, `repo_write_allowed=false`, and `notify_ben=true`.
-GPT-5.5-Pro's recommendation to send Ben the existing decision request and
-stop repo-writing/status-only automation while closed is accepted as
-scientifically sensible. It is deferred for this bounded pass only because the
-current automation instruction explicitly requires updating this status file
-and committing local progress.
-
-The 2026-06-28 01:21 PDT pass rechecked the concise A5 preregistration, the
-resource-bounded residual-compression preregistration/report, the Ben
-A5-exit/A7.2 decision request, and the automation guard. No unhandled A5
-preregistration gap was found; the explicitly requested preregistration and
-small deterministic smoke scaffold already exist, and later audits remain
-fail-closed.
-
-The compression-enforced audit tightens the existing A5 analyzer: any A5
-promotion candidate must now pass the preregistered full-accounting
-`residual_state_compression_ratio` contrast as well as residual
-predictability, forecast-skill, oracle, guardrail, and matched-null checks.
-The latest bounded seed `5,6` smoke still fails closed. Some compression
-contrasts are favorable, but no intermediate-budget condition also passes the
-full residual-predictability and preregistered promotion criteria. The prior
-A5 seed `7..16` and A5.1a results also remain binding constraints. Forecast
-skill gains are not enough: any structured-dynamics claim must survive matched
-task-arrival totals, service capacity, action opportunity, work budget,
-prediction-spend accounting, compression/predictability accounting, and
-budget-matched shuffled/phase-randomized nulls.
-
-The current hypothesis is Ben's resource-bounded prediction hypothesis:
+The resource-bounded prediction hypothesis is the current scientific focus:
 inter-agent or inter-role prediction is itself a scarce managed resource.
 Zero-budget reactivity may be too myopic, while perfect/oracle prediction may
-smooth away the dynamics of interest. The target question is whether
+smooth away the dynamics of interest. The active question is whether
 intermediate prediction budgets create richer but still partially predictable
 residual collective dynamics than either zero-budget reactivity or oracle
 smoothing.
 
-A5 remains single-hive, deterministic, and abstract/numeric. It does not
-authorize real LLM calls, dashboards, Lean, Slack, browser automation,
-Atomspace integrations, live task boards, broad three-hive mechanics,
-downstream multi-hive coupling, or promotion language. Three-hive delayed
-anticipatory coupling remains downstream and requires a separate
-preregistration with target/phase nulls and resource-bounded cross-hive
-prediction costs.
+The existing deterministic scaffold already supports the requested matched
+conditions: reactive, low-budget linear, medium-budget nonlinear, high-budget
+nonlinear, oracle, and budget-matched shuffled/timing-broken nulls. A5 remains
+single-hive, deterministic, and abstract/numeric. All claims must preserve the
+A2/A3/A4 lessons about task-arrival totals, service capacity, action
+opportunity, work budget, prediction spend, and residual accounting. Prior
+A5-family fail-closed results remain interpretation constraints, not
+authorization for promotion language.
 
-The completed read-only resource-bounded residual-compression diagnostic is
-recorded in
-`docs/results/a5_resource_bounded_residual_compression_report.md`. It confirms
-closure: existing A5-family artifacts do not contain an interpretable
-full-accounting residual compression signal that beats reactive, oracle, and
-matched timing-broken or spend-only null expectations. It explicitly accepts
-the sensible GPT-5.5-Pro controls for prediction spend, oracle smoothing, and
-timing-broken nulls while deferring A7.2 and multi-hive recommendations
-pending Ben's explicit decision.
+Three-hive delayed anticipatory coupling remains downstream and requires a
+separate preregistration with target/phase nulls and resource-bounded
+cross-hive prediction costs.
 
 ## Recommended Next Step
 
-- Recommended next step: send Ben the existing A5-exit/A7.2 decision request
-  with the compression-enforced fail-closed update and keep automation closed
-  to new simulations or mechanics until he chooses A5-family closure, an
-  active A7.2 preregistration, or a separate three-hive preregistration.
+- Recommended next step: stop A5 broadening after this fail-closed smoke and
+  ask Ben to choose the next separately preregistered scientific target.
 
 ## Blockers
 
-No engineering blocker was found. The scientific/governance blocker is that
-the guard is closed awaiting Ben's decision: existing A5-family artifacts
-improved forecast skill but did not pass preregistered residual, compression,
-and matched-null promotion criteria, so they cannot support lobe-like,
-strange-attractor-like, or semantic-dynamics claims.
+No engineering blocker was found. The scientific blocker remains interpretive:
+existing A5-family artifacts improved forecast skill but did not pass
+preregistered residual, compression, and matched-null promotion criteria, so
+they cannot support lobe-like, strange-attractor-like, or semantic-dynamics
+claims without a fresh bounded result that survives the tightened accounting
+locks.
 
 ## Latest Changes
+
+- 2026-06-28 current bounded A5 preregistration pass: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive
+  preregistration, the existing A5 comparison scaffold, the A5 smoke config,
+  and focused A5/automation tests. Updated the concise preregistration with
+  explicit determinism and accounting locks: paired seeds, same base config,
+  predictor as the intended contrast, matched arrivals/capacity/opportunity
+  and work budget, explicit prediction-work transfer when charged, and
+  budget-matched timing-broken nulls for every interpreted intermediate
+  predictor. Updated this status file so the explicit A5 request is the active
+  bounded gate for this pass while preserving fail-closed interpretation
+  constraints.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=open`, `should_noop=false`, `repo_write_allowed=true`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`18 passed, 608 deselected`), the bounded existing A5 smoke
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_20260628_current_53908/a5_predictive_control_compare`,
+  and the read-only analyzer
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir /tmp/omegasim_a5_20260628_current_53908/a5_predictive_control_compare
+  --out /tmp/omegasim_a5_20260628_current_53908/a5_residual_accounting`.
+  The smoke remained fail-closed: linear, nonlinear, and high-budget nonlinear
+  improved forecast skill versus reactive and matched shuffled nulls, but none
+  satisfied residual/null, oracle-nontriviality, compression, and guardrail
+  criteria together. `git diff --check` passed.
 
 - 2026-06-28 03:40 PDT bounded guard-closed verification: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
