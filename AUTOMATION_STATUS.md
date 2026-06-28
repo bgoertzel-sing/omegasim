@@ -30,14 +30,14 @@ lagged forecast error, artifact readiness, contradiction/risk, fatigue, and
 adaptive thresholds; and all forecast/artifact updates must be delayed or
 lagged before they can affect later action.
 
-The immediate target is a small preregistered A7.2 implementation/smoke gate,
-not a broad run. Freeze equations, delays, slopes, thresholds, costs, caps,
-schema, endpoints, nulls, and closure rules before looking at new A7.2 results.
-Promotion requires an intermediate endogenous-prediction condition to beat
-zero-budget/reactive, amplitude-matched linear, same-tick logistic,
-phase-shuffled lag-input, threshold-shuffled, source-preserving shuffle, and
-spend-only replay controls on preregistered residual endpoints while preserving
-productivity guardrails.
+The immediate A7.2 implementation/smoke gate has now run at the fixed paired
+seed `1,2` tiny smoke scale. It emitted complete schema/source-ledger artifacts
+and passed productivity preflight, but closed fail-closed at the residual/null
+gate: the intermediate endogenous-prediction condition did not beat every
+preregistered null on residual preflight contrasts. This does not support
+lobe-like, strange-attractor-like, semantic-dynamics, synchrony, or causal
+collective-structure claims, and it does not authorize A7.2 tuning without a
+new preregistration.
 
 After A7.2 closes, whether positive or negative, proceed without another Ben
 decision to a separate three-hive ring preregistration and bounded experiment
@@ -48,20 +48,60 @@ Ben informed about design decisions and results as this road advances.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the bounded A7.2 read-only comparison and
-  analyzer preflight over the ten preregistered smoke conditions, then run it
-  only on the fixed seed `1,2` tiny smoke after its schema/source-ledger tests
-  pass.
+- Recommended next step: draft the separate three-hive ring preregistration
+  with frozen target/phase nulls, delayed artifact transfer, cross-hive
+  prediction costs, transfer-opportunity controls, schema, endpoints,
+  productivity guardrails, and a tiny fixed-seed smoke plan; do not implement
+  three-hive mechanics until that preregistration is frozen.
 
 ## Blockers
 
 None. The governance blocker was resolved by Ben's explicit 2026-06-28
-A7.2-then-three-hive instruction. The remaining scientific challenge is to keep
-A7.2 bounded and prospectively frozen so any positive signal cannot be confused
-with A5-style forecast skill, backlog dwell, accounting leakage, or
-post-result rescue tuning.
+A7.2-then-three-hive instruction. The remaining scientific challenge is to
+freeze the three-hive ring design prospectively so any future positive signal
+cannot be confused with target/phase leakage, transfer-opportunity imbalance,
+queue coupling, backlog dwell, accounting leakage, or post-result rescue
+tuning.
 
 ## Latest Changes
+
+- 2026-06-28 A7.2 bounded comparison/analyzer smoke: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests surface, the superseded provisional
+  roadmap, the frozen A7.2 preregistration, current guard output, CLI-loop
+  tail, and the latest GPT-5.5-Pro strategy review before choosing the next
+  step. The review has `notify_ben: false` and `strategic_change_level:
+  minor`; its preregistration-freeze recommendation was already satisfied, so
+  this run followed the current source-of-truth next step.
+- Added `ohdyn.compare_a7_2_delayed_prediction` to run only the ten
+  preregistered single-hive A7.2 smoke conditions at fixed seeds `1,2`, with
+  no broad seed sweep, tuning, dashboards, integrations, or multi-hive
+  mechanics. Added `ohdyn.analyze_a7_2_delayed_prediction` as a read-only
+  preflight analyzer covering schema/source-ledger completeness, delay checks,
+  residual audit rows, null contrasts, and productivity guardrails. Added
+  focused tests for the fixed-seed comparison, missing-schema fail-closed
+  behavior, and full ten-condition smoke preflight.
+- Ran the bounded commands:
+  `.venv-conda/bin/python -m ohdyn.compare_a7_2_delayed_prediction --seeds 1 2
+  --out runs/a7_2_delayed_prediction_compare_seed1_2` and
+  `.venv-conda/bin/python -m ohdyn.analyze_a7_2_delayed_prediction
+  --compare-dir runs/a7_2_delayed_prediction_compare_seed1_2 --out
+  runs/a7_2_delayed_prediction_analysis_seed1_2`. The analyzer inspected 20
+  runs and closed `fail_closed_residual_null_gate`: schema/source pass rows
+  `20`, forecast delay pass rows `18`, artifact delay pass rows `20`,
+  residual row status `computed=140`, null-contrast gate status
+  `eligible_for_guardrail_and_cross_seed_review=45`,
+  `fail_closed_no_nonlinear_forecastability_advantage=25`,
+  `fail_closed_no_residual_autocorrelation_advantage=56`, and productivity
+  guardrail status `pass=18`. Tracked result note:
+  `docs/results/a7_2_delayed_prediction_smoke_preflight_seed1_2.md`.
+- Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_2' -q`
+  (`12 passed, 627 deselected`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a7_2 or a7_semantic_field_contract' -q` (`28 passed,
+  611 deselected`), `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=open`, `repo_write_allowed=true`, `notify_ben=false`, recommended
+  next action is the three-hive ring preregistration), and `git diff --check`.
 
 - 2026-06-28 11:31 PDT A5 bounded prompt verification: re-read automation
   memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive

@@ -127,6 +127,13 @@ from ohdyn.analyze_exogenous_arrival_controls import (
 from ohdyn.automation_guard import read_automation_state
 from ohdyn.a7_2_delayed_prediction_contract import (
     A7_2_ACTIONS,
+    A7_2_ANALYZER_COMPLETENESS_FIELDS,
+    A7_2_ANALYZER_GUARDRAIL_FIELDS,
+    A7_2_ANALYZER_MANIFEST_FIELDS,
+    A7_2_ANALYZER_NULL_CONTRAST_FIELDS,
+    A7_2_ANALYZER_PREFLIGHT_FIELDS,
+    A7_2_ANALYZER_RESIDUAL_FIELDS,
+    A7_2_COMPARISON_MANIFEST_FIELDS,
     A7_2_CONDITIONS,
     A7_2_CONTROL_FIELDS,
     A7_2_EVENT_FIELDS,
@@ -139,6 +146,12 @@ from ohdyn.a7_2_delayed_prediction_contract import (
     A7_2_STATE_FIELDS,
     a7_2_required_event_fields,
     a7_2_required_metric_fields,
+)
+from ohdyn.analyze_a7_2_delayed_prediction import (
+    run_a7_2_delayed_prediction_analysis,
+)
+from ohdyn.compare_a7_2_delayed_prediction import (
+    run_a7_2_delayed_prediction_comparison,
 )
 from ohdyn.a7_semantic_field_contract import (
     A7_CONDITIONS,
@@ -979,6 +992,12 @@ def test_a7_2_delayed_prediction_contract_freezes_preregistered_schema() -> None
         A7_2_PRIMARY_ENDPOINTS
     )
     assert A7_2_PRODUCTIVITY_GUARDRAILS["completion_fraction_delta_min"] == -0.05
+    assert "metrics_rows" in A7_2_COMPARISON_MANIFEST_FIELDS
+    assert "source_reconstruction_status" in A7_2_ANALYZER_COMPLETENESS_FIELDS
+    assert "forecast_delay_status" in A7_2_ANALYZER_PREFLIGHT_FIELDS
+    assert "residual_variance" in A7_2_ANALYZER_RESIDUAL_FIELDS
+    assert "gate_status" in A7_2_ANALYZER_NULL_CONTRAST_FIELDS
+    assert "status" in A7_2_ANALYZER_GUARDRAIL_FIELDS
     assert "a7_2_forecast_error_lag1" in a7_2_required_metric_fields()
     assert "source_ledger_artifact_risk_delta" in a7_2_required_event_fields()
 
@@ -1083,6 +1102,155 @@ def test_a7_2_smoke_simulator_emits_frozen_contract_fields() -> None:
         == A7_2_SMOKE_PARAMETERS["forecast_delay_ticks"]
         for event in predict_events
     )
+
+
+def test_a7_2_delayed_prediction_comparison_runs_fixed_paired_smoke(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a7_2_compare"
+
+    rows = run_a7_2_delayed_prediction_comparison(out_dir=out_dir)
+
+    assert len(rows) == len(A7_2_CONDITIONS) * 2
+    assert {row["seed"] for row in rows} == {1, 2}
+    assert {row["tick_count"] for row in rows} == {48}
+    manifest_rows = list(
+        csv.DictReader(
+            (out_dir / "a7_2_delayed_prediction_comparison_manifest.csv").open()
+        )
+    )
+    assert list(manifest_rows[0]) == list(A7_2_COMPARISON_MANIFEST_FIELDS)
+    assert {row["scientific_status"] for row in manifest_rows} == {
+        "bounded_a7_2_smoke_artifacts_only_requires_read_only_analyzer"
+    }
+    assert [row["condition"] for row in manifest_rows[::2]] == list(A7_2_CONDITIONS)
+    for row in manifest_rows:
+        run_dir = out_dir / row["run_dir"]
+        assert int(row["metrics_rows"]) == 48
+        assert int(row["events_rows"]) > 0
+        assert (run_dir / "config.yaml").exists()
+        assert (run_dir / "manifest.yaml").exists()
+        assert (run_dir / "metrics.csv").exists()
+        assert (run_dir / "events.csv").exists()
+    assert "Horizon: 48 ticks" in (out_dir / "summary.md").read_text()
+
+
+def test_a7_2_delayed_prediction_comparison_rejects_unregistered_seeds(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
+        run_a7_2_delayed_prediction_comparison(seeds=(1,), out_dir=tmp_path / "bad")
+
+
+def test_a7_2_delayed_prediction_analyzer_fails_closed_on_missing_schema(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_2_compare"
+    run_dir = compare_dir / "intermediate_endogenous_delayed_prediction_seed1"
+    out_dir = tmp_path / "a7_2_analysis"
+    run_dir.mkdir(parents=True)
+    (run_dir / "manifest.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "seed": 1,
+                "config": {
+                    "a7_2_delayed_prediction": {
+                        "condition": "intermediate_endogenous_delayed_prediction",
+                    }
+                },
+            },
+            sort_keys=True,
+        )
+    )
+    (run_dir / "metrics.csv").write_text("tick,queue_depth\n0,1\n")
+    (run_dir / "events.csv").write_text("tick,event_type\n0,task_created\n")
+
+    result = run_a7_2_delayed_prediction_analysis(compare_dir, out_dir)
+
+    assert result["status"] == "fail_closed_missing_conditions"
+    completeness_rows = list(
+        csv.DictReader((out_dir / "a7_2_delayed_prediction_completeness.csv").open())
+    )
+    manifest_rows = list(
+        csv.DictReader((out_dir / "a7_2_delayed_prediction_manifest.csv").open())
+    )
+    preflight_rows = list(
+        csv.DictReader((out_dir / "a7_2_delayed_prediction_preflight.csv").open())
+    )
+    residual_rows = list(
+        csv.DictReader((out_dir / "a7_2_delayed_prediction_residual_metrics.csv").open())
+    )
+    guardrail_rows = list(
+        csv.DictReader(
+            (out_dir / "a7_2_delayed_prediction_productivity_guardrails.csv").open()
+        )
+    )
+    assert list(completeness_rows[0]) == list(A7_2_ANALYZER_COMPLETENESS_FIELDS)
+    assert list(manifest_rows[0]) == list(A7_2_ANALYZER_MANIFEST_FIELDS)
+    assert list(preflight_rows[0]) == list(A7_2_ANALYZER_PREFLIGHT_FIELDS)
+    assert list(residual_rows[0]) == list(A7_2_ANALYZER_RESIDUAL_FIELDS)
+    assert list(guardrail_rows[0]) == list(A7_2_ANALYZER_GUARDRAIL_FIELDS)
+    assert completeness_rows[0]["status"] == "fail_closed"
+    assert "a7_2_forecast_error_lag1" in completeness_rows[0]["missing_required_fields"]
+    assert manifest_rows[0]["status"] == "fail_closed_missing_conditions"
+    assert "Positive interpretation remains blocked" in (
+        out_dir / "summary.md"
+    ).read_text()
+
+
+def test_a7_2_delayed_prediction_analyzer_reports_fixed_smoke_preflight(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_2_compare"
+    analysis_dir = tmp_path / "a7_2_analysis"
+    run_a7_2_delayed_prediction_comparison(out_dir=compare_dir)
+
+    result = run_a7_2_delayed_prediction_analysis(compare_dir, analysis_dir)
+
+    assert result["run_count"] == len(A7_2_CONDITIONS) * 2
+    assert result["seed_count"] == 2
+    assert result["condition_count"] == len(A7_2_CONDITIONS)
+    assert result["status"].startswith("fail_closed_") or result["status"].startswith(
+        "computed_"
+    )
+    completeness_rows = list(
+        csv.DictReader((analysis_dir / "a7_2_delayed_prediction_completeness.csv").open())
+    )
+    preflight_rows = list(
+        csv.DictReader((analysis_dir / "a7_2_delayed_prediction_preflight.csv").open())
+    )
+    residual_rows = list(
+        csv.DictReader(
+            (analysis_dir / "a7_2_delayed_prediction_residual_metrics.csv").open()
+        )
+    )
+    contrast_rows = list(
+        csv.DictReader(
+            (analysis_dir / "a7_2_delayed_prediction_null_contrasts.csv").open()
+        )
+    )
+    guardrail_rows = list(
+        csv.DictReader(
+            (analysis_dir / "a7_2_delayed_prediction_productivity_guardrails.csv").open()
+        )
+    )
+    assert {row["status"] for row in completeness_rows} == {"pass"}
+    assert {row["source_reconstruction_status"] for row in completeness_rows} == {"pass"}
+    assert len(preflight_rows) == len(A7_2_CONDITIONS) * 2
+    assert all(int(row["varying_state_field_count"]) > 0 for row in preflight_rows)
+    assert all(row["forecast_delay_status"] in {"pass", "no_predict_events"} for row in preflight_rows)
+    assert all(row["artifact_delay_status"] in {"pass", "no_artifact_events"} for row in preflight_rows)
+    assert {row["scientific_interpretation_status"] for row in preflight_rows} == {
+        "preflight_only_no_a7_2_promotion_claim"
+    }
+    assert list(residual_rows[0]) == list(A7_2_ANALYZER_RESIDUAL_FIELDS)
+    assert len(residual_rows) == len(A7_2_CONDITIONS) * 2 * 7
+    assert {row["status"] for row in residual_rows} == {"computed"}
+    assert list(contrast_rows[0]) == list(A7_2_ANALYZER_NULL_CONTRAST_FIELDS)
+    assert len(contrast_rows) == len(A7_2_NULL_CONDITIONS) * 2 * 7
+    assert list(guardrail_rows[0]) == list(A7_2_ANALYZER_GUARDRAIL_FIELDS)
+    assert len(guardrail_rows) == len(A7_2_NULL_CONDITIONS) * 2
+    assert "read-only" in (analysis_dir / "summary.md").read_text()
 
 
 def test_a7_analyzer_fails_closed_on_missing_schema(tmp_path: Path) -> None:

@@ -138,6 +138,88 @@ A7_2_PRODUCTIVITY_GUARDRAILS = {
     "prediction_spend_volatility_delta_max": 0.15,
     "work_budget_volatility_delta_max": 0.15,
 }
+A7_2_COMPARISON_MANIFEST_FIELDS = (
+    "condition",
+    "seed",
+    "config",
+    "run_dir",
+    "tick_count",
+    "metrics_rows",
+    "events_rows",
+    "scientific_status",
+)
+A7_2_ANALYZER_COMPLETENESS_FIELDS = (
+    "condition",
+    "seed",
+    "metrics_path",
+    "events_path",
+    "row_count",
+    "required_field_status",
+    "missing_required_fields",
+    "source_reconstruction_status",
+    "status",
+    "interpretation",
+)
+A7_2_ANALYZER_MANIFEST_FIELDS = (
+    "compare_dir",
+    "condition_count",
+    "seed_count",
+    "run_count",
+    "status",
+)
+A7_2_ANALYZER_PREFLIGHT_FIELDS = (
+    "condition",
+    "seed",
+    "field_variation_status",
+    "varying_state_field_count",
+    "prediction_spend_ticks",
+    "work_budget_reduction_ticks",
+    "forecast_delay_status",
+    "artifact_delay_status",
+    "source_reconstruction_status",
+    "scientific_interpretation_status",
+)
+A7_2_ANALYZER_RESIDUAL_FIELDS = (
+    "condition",
+    "seed",
+    "target_field",
+    "row_count",
+    "missing_required_fields",
+    "control_fields_used",
+    "residualization_status",
+    "residual_variance",
+    "lag1_autocorrelation",
+    "nearest_neighbor_forecast_mae",
+    "status",
+    "interpretation",
+)
+A7_2_ANALYZER_NULL_CONTRAST_FIELDS = (
+    "contrast",
+    "seed",
+    "control_condition",
+    "target_field",
+    "paired",
+    "status",
+    "positive_status",
+    "control_status",
+    "residual_variance_delta",
+    "lag1_autocorrelation_delta",
+    "nearest_neighbor_forecast_mae_delta",
+    "gate_status",
+    "interpretation",
+)
+A7_2_ANALYZER_GUARDRAIL_FIELDS = (
+    "seed",
+    "control_condition",
+    "completion_fraction_delta",
+    "backlog_delta",
+    "queued_age_delta",
+    "starvation_delta",
+    "prediction_spend_volatility_delta",
+    "work_budget_volatility_delta",
+    "status",
+    "interpretation",
+)
 
 
 def a7_2_required_metric_fields() -> tuple[str, ...]:
