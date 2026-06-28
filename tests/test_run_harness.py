@@ -3215,6 +3215,7 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
         "residual_state_return_time_mean",
         "residual_state_return_time_entropy",
         "attention_starvation_count_final",
+        "residual_state_compression_ratio",
     } <= {row["endpoint"] for row in metric_rows}
     assert any(
         row["contrast"] == "linear_minus_reactive"
@@ -3242,6 +3243,7 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
     )
     assert "- scope: read-only single-hive A5 diagnostics" in summary
     assert "## Promotion Rule Audit" in summary
+    assert "full accounting compression ratio" in summary
     assert "Preregistered confirmatory guardrails" in summary
     assert any(
         row["endpoint"] == "attention_near_term_external_completed_final"

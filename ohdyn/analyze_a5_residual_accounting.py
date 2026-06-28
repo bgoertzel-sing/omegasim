@@ -798,12 +798,23 @@ def _summary(
             )
             if row is None:
                 continue
+            compression_row = rows_by_endpoint.get(
+                (contrast, "full_accounting", "residual_state_compression_ratio")
+            )
+            compression_text = ""
+            if compression_row is not None:
+                compression_text = (
+                    "; full accounting compression ratio "
+                    f"delta={_format_number(compression_row['mean_delta'])}, "
+                    f"{compression_row['interpretation']}"
+                )
             lines.append(
                 "- "
                 f"{condition} vs {baseline}, full accounting predictability: "
                 f"delta={_format_number(row['mean_delta'])}, "
                 f"positive_rate={_format_number(row['positive_delta_rate'])}, "
                 f"{row['interpretation']}"
+                f"{compression_text}"
             )
     lines.extend(
         [
