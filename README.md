@@ -30,8 +30,9 @@ summary.md
 
 A5 has an explicit bounded single-hive anticipatory predictive-control gate in
 `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-That concise preregistration is the active reference for the requested A5
-single-hive smoke/scaffold stage. The seed `5,6` smoke result is recorded in
+That concise preregistration is the historical reference for the requested A5
+single-hive smoke/scaffold stage, which has now closed fail-closed. The seed
+`5,6` smoke result is recorded in
 `docs/results/a5_single_hive_reopened_smoke_seed5_6.md` and remains
 conservative: forecast skill improved, but residual/null promotion failed. The
 older detailed design record remains in

@@ -53,6 +53,21 @@ opened.
 
 ## Latest Changes
 
+- 2026-06-27 bounded documentation alignment pass: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, the configs/tests surface, the provisional roadmap,
+  the non-active A7.2 decision preregistration, Ben notification notes, and the
+  latest GPT-5.5-Pro strategy review before choosing the next step. The guard
+  is closed with `strategic_change_level: major` and `notify_ben: true`, so
+  this run did not add simulator mechanics, configs, analyzers, simulations,
+  dashboards, integrations, seed sweeps, A5-family reruns, A7.2 mechanics, or
+  multi-hive coupling.
+- Updated `README.md` to stop describing the concise A5 preregistration as the
+  active A5 smoke reference. It is now explicitly historical because the
+  reopened seed `5,6` smoke has closed fail-closed.
+- Added a supersession note to
+  `docs/omegasim_provisional_experiment_roadmap.md` so its older A7 immediate
+  next-step wording does not override the current status-file posture: closed
+  awaiting Ben's decision.
 - 2026-06-27 bounded no-op/status consistency pass: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests surface, the provisional roadmap, the
   non-active A7.2 decision preregistration, the A7 Ben notification note, and
@@ -269,6 +284,24 @@ opened.
 
 ## Verification
 
+- `git status --short --branch` passed at the start of the 2026-06-27 bounded
+  documentation alignment pass and reported `main...origin/main` with no
+  uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed at the start of
+  this run and reported `state=closed_awaiting_preregistration`,
+  `should_noop=true`, closed reason `automation_status_next_step_noop`,
+  `strategic_change_level=major`, `notify_ben=true`, and the single next step
+  to remain in no-op/awaiting-preregistration state pending Ben's decision.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed recent automation loops
+  completed successfully and that the latest strategy review requested Ben
+  notification.
+- `git diff --check` passed after the documentation alignment edits.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the edits and
+  still reported `state=closed_awaiting_preregistration`, `should_noop=true`,
+  closed reason `automation_status_next_step_noop`,
+  `strategic_change_level=major`, and `notify_ben=true`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed after the edits: `14 passed, 612 deselected`.
 - `git status --short --branch` passed at the start of the 2026-06-27 bounded
   no-op/status consistency pass and reported `main...origin/main` with no
   uncommitted changes.

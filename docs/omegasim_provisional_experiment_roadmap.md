@@ -7,6 +7,12 @@ proceeding to A7 as the next preregistered direction. A7 is a new
 semantic-field design gate, not a promotion of A6.2 and not permission to
 broaden A6.2 seeds.
 
+Supersession note 2026-06-27: this older accepted roadmap has been superseded
+by the current source-of-truth automation status after the reopened A5,
+A5.1a, and A7 long-horizon gates closed conservatively. The current posture is
+closed awaiting Ben's decision; the non-active A7.2 decision document does not
+authorize new runs or mechanics.
+
 This roadmap replaces the closed A5 no-op posture as the provisional direction
 for OmegaSim experimentation. It does not authorize an unbounded rewrite or a
 large simulation sweep. The immediate next task is now to convert A7 into a
