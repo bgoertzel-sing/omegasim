@@ -14,7 +14,7 @@ support lobe-like, strange-attractor-like, semantic-dynamics, or causal
 collective-structure claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state again on 2026-06-28 12:32 PDT: the
+rechecked against the current repo state again on 2026-06-28 13:32 PDT: the
 concise single-hive A5 preregistration and smallest deterministic scaffold
 already exist and still match that request. The current paired-seed smoke
 reproduces the A5-family boundary: forecast skill improves in intermediate
@@ -71,6 +71,30 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 13:32 PDT A5 bounded prompt revalidation: re-read automation
+  memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive
+  preregistration, the structured strange-attractor research note, current A5
+  scaffold references, the reopened A5 smoke note, recent git history, and the
+  already-frozen three-hive ring preregistration. Confirmed that the requested
+  A5 preregistration/scaffold stage remains satisfied: deterministic
+  single-hive setup, resource-bounded prediction hypothesis, matched task-
+  arrival/service-capacity/action-opportunity/work-budget controls,
+  reactive/linear/nonlinear/high-budget/oracle/timing-broken null conditions,
+  primary endpoints, and fail-closed strange-attractor/lobe interpretation
+  rules are all present.
+- No A5 preregistration, scaffold, or smoke gap was found. No simulator
+  mechanics, configs, analyzers, simulation runs, dashboards, integrations,
+  seed sweeps, A7.2 changes, or multi-hive mechanics were added. The single
+  recommended next step remains the contract-only three-hive ring schema
+  module and focused tests already named above.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` (`state=open`,
+  `a5_preregistration_active=true`, `repo_write_allowed=true`,
+  `notify_ben=false`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`20 passed, 619 deselected`), and `git diff --check`.
 
 - 2026-06-28 13:01 PDT three-hive ring preregistration: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests surface, the superseded provisional
