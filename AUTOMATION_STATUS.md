@@ -13,6 +13,13 @@ current posture is closed to new simulator mechanics, new simulation runs,
 A7.2 mechanics, and multi-hive coupling until Ben chooses the next
 preregistered gate.
 
+The 2026-06-28 00:21 PDT pass rechecked the concise A5 preregistration, the
+resource-bounded residual-compression preregistration/report, the Ben
+A5-exit/A7.2 decision request, and the automation guard. No unhandled A5
+preregistration gap was found; the explicitly requested preregistration and
+small deterministic smoke scaffold already exist, and later audits remain
+fail-closed.
+
 The compression-enforced audit tightens the existing A5 analyzer: any A5
 promotion candidate must now pass the preregistered full-accounting
 `residual_state_compression_ratio` contrast as well as residual
@@ -61,17 +68,17 @@ pending Ben's explicit decision.
 
 ## Latest Changes
 
-- 2026-06-28 00:21 PDT bounded guard-closed verification: re-read
-  `README.md`, `AUTOMATION_STATUS.md`, the config/test surface, the superseded
-  provisional roadmap, the latest GPT-5.5-Pro strategy review, the Ben
-  decision request, and the completed A5 residual-compression report before
-  choosing the next step. The guard remains closed with
-  `state=closed_awaiting_preregistration`, `should_noop=true`, and
+- 2026-06-28 00:21 PDT bounded A5 closure verification: re-read the concise
+  A5 single-hive preregistration, the resource-bounded residual-compression
+  preregistration/report, the Ben A5-exit/A7.2 decision request, and the
+  automation guard output before choosing the next step. The guard remains
+  closed with `state=closed_awaiting_preregistration`, `should_noop=true`, and
   `notify_ben=true`.
 - The Ben decision request already includes the newer
   `closure_confirmed` residual-compression evidence, so no notification text,
-  simulator mechanics, configs, analyzers, simulations, dashboards,
-  integrations, A7.2 mechanics, or multi-hive coupling were added. The
+  simulator mechanics, configs, analyzers, simulation runs, dashboards,
+  integrations, seed sweeps, A7.2 mechanics, or multi-hive coupling were
+  added. The
   GPT-5.5-Pro recommendation to notify Ben and keep automation guard-closed is
   accepted as scientifically sensible. Its recommendation to avoid further
   status-only commits is deferred for this bounded pass only because the
@@ -273,6 +280,10 @@ pending Ben's explicit decision.
   chosen among A5-family closure, active A7.2 preregistration, or a separate
   three-hive preregistration after the compression-enforced A5 fail-closed
   update.
+- 2026-06-28 00:21 PDT check: the blocker is unchanged. The explicit A5
+  preregistration request has already been satisfied, and the guard-closed
+  status prevents scientifically meaningful additional mechanics or runs until
+  Ben chooses the next preregistered gate.
 
 - 2026-06-27 22:36 PDT bounded residual-compression preregistration pass:
   re-read `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the
