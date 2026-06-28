@@ -14,7 +14,7 @@ support lobe-like, strange-attractor-like, semantic-dynamics, or causal
 collective-structure claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state again on 2026-06-28 15:35 PDT: the
+rechecked against the current repo state again on 2026-06-28 16:35 PDT: the
 concise single-hive A5 preregistration and smallest deterministic scaffold
 already exist and still match that request. The current paired-seed smoke
 reproduces the A5-family boundary: forecast skill improves in intermediate
@@ -83,6 +83,28 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 16:35 PDT A5 bounded prompt revalidation: re-read automation
+  memory, `README.md`, `AUTOMATION_STATUS.md`, the concise single-hive A5
+  preregistration, current A5 comparison/analyzer scaffold references, the
+  automation guard, recent git history, and focused A5 test surface. Confirmed
+  that the explicitly requested A5 preregistration/scaffold stage remains
+  satisfied: deterministic single-hive setup, resource-bounded prediction
+  hypothesis, matched task-arrival/service-capacity/action-opportunity/work
+  budget controls, reactive/linear/nonlinear/high-budget/oracle/timing-broken
+  null conditions, primary endpoints, and fail-closed strange-attractor/lobe
+  interpretation rules are all present.
+- Ran the bounded A5 single-hive verification without changing mechanics:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `a5_preregistration_active=true`, `repo_write_allowed=true`, and
+  `notify_ben=false`; focused pytest passed with `20 passed, 626 deselected`;
+  and a temporary seed `5,6` smoke plus read-only residual accounting analyzer
+  under `/tmp/omegasim_a5_current_WLrPvy` reproduced the fail-closed promotion
+  audit. Forecast skill improved for intermediate predictors, but no
+  intermediate condition passed all residual/null, oracle-nontriviality,
+  compression, and guardrail criteria. No A5 preregistration, simulator
+  mechanics, configs, analyzers, dashboards, integrations, seed sweeps, or
+  multi-hive coupling were added.
 
 - 2026-06-28 16:23 PDT three-hive ring preflight analyzer: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests, the superseded
