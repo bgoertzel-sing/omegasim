@@ -14,7 +14,7 @@ support lobe-like, strange-attractor-like, semantic-dynamics, or causal
 collective-structure claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state again on 2026-06-28 11:31 PDT: the
+rechecked against the current repo state again on 2026-06-28 12:32 PDT: the
 concise single-hive A5 preregistration and smallest deterministic scaffold
 already exist and still match that request. The current paired-seed smoke
 reproduces the A5-family boundary: forecast skill improves in intermediate
@@ -71,6 +71,29 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 12:32 PDT A5 bounded prompt verification: re-read automation
+  memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive
+  preregistration, the structured strange-attractor research note, current
+  guard logic, focused test references, and recent git history. Confirmed that
+  the A5 preregistration already covers the requested deterministic
+  single-hive anticipatory predictive-control setup, resource-bounded
+  prediction hypothesis, matched task-arrival/service-capacity/action-
+  opportunity/work-budget accounting, reactive/linear/nonlinear/high-budget/
+  oracle/timing-broken null conditions, primary endpoints, and fail-closed
+  strange-attractor/lobe interpretation rules.
+- No A5 preregistration or smallest-scaffold gap was found. No simulator
+  mechanics, configs, analyzers, simulation runs, dashboards, integrations,
+  seed sweeps, A7.2 changes, or multi-hive coupling were added. The current
+  source-of-truth next step remains the separate three-hive ring
+  preregistration, not A5 broadening.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` (`state=open`,
+  `a5_preregistration_active=true`, `repo_write_allowed=true`,
+  `notify_ben=false`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`20 passed, 619 deselected`), and `git diff --check`.
 
 - 2026-06-28 A7.2 bounded comparison/analyzer smoke: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests surface, the superseded provisional
