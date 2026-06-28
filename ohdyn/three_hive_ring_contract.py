@@ -206,6 +206,20 @@ THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS = {
     "accepted_transfer_volume_min_per_directed_edge": 1,
     "source_ledger_reconstruction_status_required": "pass",
 }
+THREE_HIVE_RING_SCHEMA_SMOKE_MANIFEST_FIELDS = (
+    "condition",
+    "seed",
+    "config",
+    "run_dir",
+    "tick_count",
+    "hive_count",
+    "edge_count",
+    "metric_schema_fields",
+    "event_schema_fields",
+    "source_ledger_schema_fields",
+    "artifact_status",
+    "scientific_status",
+)
 
 
 def _unique_fields(fields: tuple[str, ...]) -> tuple[str, ...]:

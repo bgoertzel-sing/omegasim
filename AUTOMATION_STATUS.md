@@ -14,7 +14,7 @@ support lobe-like, strange-attractor-like, semantic-dynamics, or causal
 collective-structure claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state again on 2026-06-28 13:32 PDT: the
+rechecked against the current repo state again on 2026-06-28 15:35 PDT: the
 concise single-hive A5 preregistration and smallest deterministic scaffold
 already exist and still match that request. The current paired-seed smoke
 reproduces the A5-family boundary: forecast skill improves in intermediate
@@ -53,12 +53,19 @@ amplifier, emphasize cross-hive artifact readiness plus contradiction/risk over
 demand prediction alone, and preserve a possible later one-hive dimensionless
 delayed-dynamics sweep rather than retro-tuning A7.2.
 
+The post-A7.2 three-hive ring is now past the contract/config-validation gate
+and has a smallest deterministic schema/source-ledger smoke scaffold. The
+helper `ohdyn.compare_three_hive_ring` loads the frozen contract fixture and
+emits fixed seed `1,2` artifacts for the thirteen preregistered conditions:
+config, manifest, metric schema, event schema, source-ledger schema, and
+summary only. It does not call the simulator, emit metrics/events, add an
+analyzer, or create three-hive scientific evidence.
+
 ## Recommended Next Step
 
-- Recommended next step: implement the smallest deterministic three-hive ring
-  smoke scaffold that loads the frozen contract fixture and emits only the
-  preregistered fixed-seed schema/source-ledger artifacts needed for a later
-  preflight. Do not add analyzers, scientific promotion claims, broad seed
+- Recommended next step: add a read-only three-hive ring preflight analyzer
+  over the schema/source-ledger smoke artifacts. It must fail closed until real
+  simulator metrics/events exist and must not add promotion claims, broad seed
   sweeps, dashboards, integrations, parameter sweeps, or hives beyond the
   frozen ring.
 
@@ -72,6 +79,32 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 15:35 PDT three-hive ring schema/source-ledger smoke scaffold:
+  re-read automation memory, the A5 single-hive preregistration, `README.md`,
+  `AUTOMATION_STATUS.md`, the frozen three-hive ring preregistration,
+  contract/config-validation fixture, comparison-helper patterns, and focused
+  tests. Confirmed again that the explicit A5 preregistration/scaffold request
+  remains satisfied and that the current source-of-truth next bounded action
+  was the post-A7.2 three-hive ring schema/source-ledger smoke scaffold.
+- Added `ohdyn.compare_three_hive_ring` and the frozen manifest-field constant
+  in `ohdyn/three_hive_ring_contract.py`. The helper loads
+  `configs/three_hive_ring_contract_validation.yaml`, refuses non-fixed seeds,
+  and emits one artifact directory per frozen condition and seed `1,2` with
+  `config.yaml`, `manifest.yaml`, `metrics_schema.csv`, `events_schema.csv`,
+  `source_ledger_schema.csv`, and `summary.md`. No simulator mechanics,
+  metrics/events, analyzers, result claims, dashboards, integrations,
+  parameter sweeps, or extra hives were added.
+- Updated `README.md` and `docs/three_hive_ring_preregistration.md` with the
+  artifact-only command and the next read-only preflight-analyzer boundary.
+  Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring' -q` (`5 passed, 639 deselected`),
+  `.venv-conda/bin/python -m py_compile ohdyn/compare_three_hive_ring.py
+  ohdyn/three_hive_ring_contract.py`, and
+  `.venv-conda/bin/python -m ohdyn.compare_three_hive_ring --out
+  /tmp/omegasim_three_hive_schema_smoke_9vIM7C` (26 artifact directories
+  emitted).
 
 - 2026-06-28 14:36 PDT three-hive ring config-validation gate: re-read the
   A5 single-hive preregistration, `README.md`, `AUTOMATION_STATUS.md`,

@@ -206,6 +206,25 @@ python -m ohdyn.compare_a7_long_horizon --seeds 1 2 --out runs/a7_long_horizon_c
 python -m ohdyn.analyze_a7_semantic_field --compare-dir runs/a7_long_horizon_compare_seed1_2 --out runs/a7_long_horizon_residual_null_analysis_seed1_2
 ```
 
+## Three-Hive Ring Schema Smoke
+
+The post-A7.2 three-hive ring gate is frozen in
+`docs/three_hive_ring_preregistration.md`,
+`ohdyn/three_hive_ring_contract.py`, and
+`configs/three_hive_ring_contract_validation.yaml`. The current checked-in
+smoke helper is artifact-only: it loads the frozen contract fixture and emits
+per-condition/per-seed config, manifest, metric-schema, event-schema, and
+source-ledger-schema artifacts. It does not call the simulator, write
+metrics/events, run an analyzer, or create three-hive scientific evidence.
+
+```bash
+python -m ohdyn.compare_three_hive_ring --seeds 1 2 --out runs/three_hive_ring_schema_smoke_seed1_2
+```
+
+The next three-hive step should be a read-only preflight analyzer over these
+schema/source-ledger artifacts, failing closed until real simulator artifacts
+exist.
+
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, low-budget linear, medium-budget nonlinear, high-budget nonlinear,
 oracle, and budget-matched timing-broken null predictors from the smoke

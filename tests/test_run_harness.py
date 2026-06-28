@@ -183,11 +183,17 @@ from ohdyn.three_hive_ring_contract import (
     THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS,
     THREE_HIVE_RING_RESIDUAL_CONTROLS,
     THREE_HIVE_RING_ROLE_BIASES,
+    THREE_HIVE_RING_SCHEMA_SMOKE_MANIFEST_FIELDS,
     THREE_HIVE_RING_SMOKE_PARAMETERS,
     THREE_HIVE_RING_SOURCE_LEDGER_FIELDS,
     THREE_HIVE_RING_STATE_FIELDS,
     three_hive_ring_required_event_fields,
     three_hive_ring_required_metric_fields,
+)
+from ohdyn.compare_three_hive_ring import (
+    THREE_HIVE_RING_ARTIFACT_STATUS,
+    THREE_HIVE_RING_SCIENTIFIC_STATUS,
+    run_three_hive_ring_schema_smoke,
 )
 from ohdyn.analyze_a7_semantic_field import (
     A7_ANALYZER_COMPLETENESS_FIELDS,
@@ -1183,6 +1189,57 @@ def test_three_hive_ring_contract_validation_fixture_rejects_schema_drift(
 
     with pytest.raises(ValueError, match="three_hive_ring.conditions"):
         load_config(bad_path)
+
+
+def test_three_hive_ring_schema_smoke_emits_fixed_artifacts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "three_hive_ring_schema_smoke"
+
+    rows = run_three_hive_ring_schema_smoke(out_dir=out_dir)
+
+    assert len(rows) == len(THREE_HIVE_RING_CONDITIONS) * 2
+    assert {row["seed"] for row in rows} == {1, 2}
+    assert {row["tick_count"] for row in rows} == {
+        THREE_HIVE_RING_SMOKE_PARAMETERS["horizon_ticks"]
+    }
+    assert {row["hive_count"] for row in rows} == {3}
+    assert {row["edge_count"] for row in rows} == {3}
+    assert {row["artifact_status"] for row in rows} == {
+        THREE_HIVE_RING_ARTIFACT_STATUS
+    }
+    assert {row["scientific_status"] for row in rows} == {
+        THREE_HIVE_RING_SCIENTIFIC_STATUS
+    }
+
+    manifest_rows = list(
+        csv.DictReader((out_dir / "three_hive_ring_schema_smoke_manifest.csv").open())
+    )
+    assert list(manifest_rows[0]) == list(THREE_HIVE_RING_SCHEMA_SMOKE_MANIFEST_FIELDS)
+    assert [row["condition"] for row in manifest_rows[::2]] == list(
+        THREE_HIVE_RING_CONDITIONS
+    )
+    for row in manifest_rows:
+        run_dir = out_dir / row["run_dir"]
+        assert (run_dir / "config.yaml").exists()
+        assert (run_dir / "manifest.yaml").exists()
+        assert (run_dir / "metrics_schema.csv").exists()
+        assert (run_dir / "events_schema.csv").exists()
+        assert (run_dir / "source_ledger_schema.csv").exists()
+        metric_fields = list(csv.DictReader((run_dir / "metrics_schema.csv").open()))
+        event_fields = list(csv.DictReader((run_dir / "events_schema.csv").open()))
+        source_ledger_fields = list(
+            csv.DictReader((run_dir / "source_ledger_schema.csv").open())
+        )
+        assert len(metric_fields) == len(three_hive_ring_required_metric_fields())
+        assert len(event_fields) == len(three_hive_ring_required_event_fields())
+        assert len(source_ledger_fields) == len(THREE_HIVE_RING_SOURCE_LEDGER_FIELDS)
+    assert "schema/source-ledger artifacts only" in (out_dir / "summary.md").read_text()
+
+
+def test_three_hive_ring_schema_smoke_rejects_unregistered_seeds(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
+        run_three_hive_ring_schema_smoke(seeds=(1,), out_dir=tmp_path / "bad")
 
 
 def test_a7_2_configs_load_in_preregistered_condition_order() -> None:

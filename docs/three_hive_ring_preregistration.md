@@ -424,8 +424,13 @@ collective-structure claims.
 
 ## Next Authorized Step
 
-The next automation step after this document is committed is contract-only:
-add a three-hive ring constants/schema module plus focused tests that validate
-the frozen condition names, hives, state fields, source-ledger fields,
-endpoints, guardrails, and smoke parameters. Do not add simulator mechanics,
-configs, analyzers, or runs in that contract step.
+The contract-only and config-validation gates are complete. The current
+authorized smoke scaffold is artifact-only: load the frozen contract fixture
+and emit fixed-seed schema/source-ledger artifacts for every preregistered
+condition, without simulator mechanics, analyzers, metrics/events, dashboards,
+integrations, parameter sweeps, or hives beyond the frozen ring.
+
+After that scaffold exists and passes tests, the next authorized step is a
+read-only preflight analyzer over those schema/source-ledger artifacts. It must
+fail closed until real simulator metrics/events exist and must not introduce
+promotion language.
