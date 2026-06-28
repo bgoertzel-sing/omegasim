@@ -74,6 +74,26 @@ pending Ben's explicit decision.
 
 ## Latest Changes
 
+- 2026-06-28 01:46 PDT bounded guard-closed stop pass: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
+  provisional roadmap, the latest GPT-5.5-Pro strategy review, the Ben
+  A5-exit/A7.2 decision request, and the automation guard before choosing the
+  next step. The review has `notify_ben: true` and
+  `strategic_change_level: minor`; its recommendation to send Ben the
+  existing decision request and stop repo-writing/status-only automation while
+  closed is accepted as scientifically sensible.
+- The guard reports `state=closed_awaiting_preregistration`,
+  `should_noop=true`, `repo_write_allowed=false`, and `notify_ben=true`. The
+  decision request already includes the newer `closure_confirmed`
+  residual-compression evidence and the three explicit decision options. No
+  callable notification integration was found in the repo, so this pass did
+  not add notification plumbing, simulator mechanics, configs, analyzers,
+  simulation runs, dashboards, integrations, A7.2 mechanics, or multi-hive
+  coupling. The GPT-5.5-Pro recommendation to avoid further status-only
+  commits is deferred for this bounded pass only because the current
+  automation instruction explicitly requires updating this status file and
+  committing local progress.
+
 - 2026-06-28 01:29 PDT bounded guard governance pass: re-read `README.md`,
   `AUTOMATION_STATUS.md`, the configs/tests surface, the superseded
   provisional roadmap, the latest GPT-5.5-Pro strategy review, the existing
@@ -274,6 +294,21 @@ pending Ben's explicit decision.
   coupling.
 
 ## Verification
+
+- `git status --short --branch` initially reported a clean branch after
+  `git update-index --refresh`: `## main...origin/main`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state: closed_awaiting_preregistration`, `should_noop: true`,
+  `repo_write_allowed: false`, `notify_ben: true`,
+  `strategic_change_level: minor`, and the single recommended next action to
+  send Ben the existing A5-exit/A7.2 decision request with the
+  compression-enforced fail-closed update.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed the latest loop still
+  using the GPT-5.5-Pro review path and requesting Ben notification; no
+  successful later simulation or mechanics run was observed in the log tail.
+- `git diff --check` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed: 14 selected tests passed, 612 deselected.
 
 - `git status --short --branch` reported a clean branch before this run:
   `## main...origin/main`.
