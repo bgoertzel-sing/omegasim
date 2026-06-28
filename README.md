@@ -50,11 +50,13 @@ controller shift work-task class priority from forecasted future pressure. Do
 not broaden A5 to new mechanics, wider seed sweeps, dashboards, integrations,
 or multi-hive coupling without another preregistration.
 
-Broader seed sweeps, new predictor knobs, rescue diagnostics, or future
-predictive-control mechanisms require a fresh preregistration before they are
-scientifically interpretable. The non-active decision document for the
-candidate delayed artifact-mediated endogenous-prediction direction is
-`docs/a5_family_exit_and_a7_2_decision_preregistration.md`.
+Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
+closed without a fresh preregistration. Ben's 2026-06-28 decision opens the
+A7.2 delayed artifact-mediated endogenous-prediction direction as the active
+next gate:
+`docs/a5_family_exit_and_a7_2_decision_preregistration.md`. After A7.2 closes,
+OmegaSim should proceed to a separately preregistered three-hive ring without
+another governance pause.
 
 The current bounded read-only follow-up is preregistered in
 `docs/a5_resource_bounded_residual_compression_preregistration.md`. It

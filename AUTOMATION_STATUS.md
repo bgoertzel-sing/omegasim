@@ -5,51 +5,60 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the current concise A5 gate is
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-That document records the explicit single-hive A5 reopening and is the active
-preregistration summary for the bounded smoke/pilot requested on 2026-06-28.
-This active pass is limited to checking the existing preregistration,
-deterministic single-hive scaffold, and read-only residual diagnostics; it
-does not authorize broad new mechanics, dashboards, integrations, live
-services, A7.2 mechanics, or multi-hive coupling.
+Source-of-truth status: Ben's 2026-06-28 instruction opens A7.2 delayed
+artifact-mediated endogenous prediction as the active next OmegaSim gate. This
+supersedes the previous A5-family decision-awaiting posture. The A5-family
+results remain an evidence boundary and interpretation constraint: forecast
+skill improved, but residual/null, compression, and accounting gates did not
+support lobe-like, strange-attractor-like, semantic-dynamics, or causal
+collective-structure claims.
 
-The resource-bounded prediction hypothesis is the current scientific focus:
-inter-agent or inter-role prediction is itself a scarce managed resource.
-Zero-budget reactivity may be too myopic, while perfect/oracle prediction may
-smooth away the dynamics of interest. The active question is whether
-intermediate prediction budgets create richer but still partially predictable
-residual collective dynamics than either zero-budget reactivity or oracle
-smoothing.
+The active A7.2 scientific focus is still the resource-bounded prediction
+hypothesis, but now with a more mechanism-rich single-hive design: agents
+choose among `predict`, `work`, `review`, and `synthesize`; prediction consumes
+scarce work opportunity; utilities are thresholded logistic functions of
+lagged forecast error, artifact readiness, contradiction/risk, fatigue, and
+adaptive thresholds; and all forecast/artifact updates must be delayed or
+lagged before they can affect later action.
 
-The existing deterministic scaffold already supports the requested matched
-conditions: reactive, low-budget linear, medium-budget nonlinear, high-budget
-nonlinear, oracle, and budget-matched shuffled/timing-broken nulls. A5 remains
-single-hive, deterministic, and abstract/numeric. All claims must preserve the
-A2/A3/A4 lessons about task-arrival totals, service capacity, action
-opportunity, work budget, prediction spend, and residual accounting. Prior
-A5-family fail-closed results remain interpretation constraints, not
-authorization for promotion language.
+The immediate target is a small preregistered A7.2 implementation/smoke gate,
+not a broad run. Freeze equations, delays, slopes, thresholds, costs, caps,
+schema, endpoints, nulls, and closure rules before looking at new A7.2 results.
+Promotion requires an intermediate endogenous-prediction condition to beat
+zero-budget/reactive, amplitude-matched linear, same-tick logistic,
+phase-shuffled lag-input, threshold-shuffled, source-preserving shuffle, and
+spend-only replay controls on preregistered residual endpoints while preserving
+productivity guardrails.
 
-Three-hive delayed anticipatory coupling remains downstream and requires a
-separate preregistration with target/phase nulls and resource-bounded
-cross-hive prediction costs.
+After A7.2 closes, whether positive or negative, proceed without another Ben
+decision to a separate three-hive ring preregistration and bounded experiment
+family. That downstream phase should use cross-hive prediction costs, delayed
+artifact transfer, target/phase nulls, transfer-opportunity controls, and the
+three-hive ring variants described in the OmegaSim experiment run-down. Keep
+Ben informed about design decisions and results as this road advances.
 
 ## Recommended Next Step
 
-- Recommended next step: stop A5 broadening after this fail-closed smoke and
-  ask Ben to choose the next separately preregistered scientific target.
+- Recommended next step: open A7.2 as the active preregistered gate by freezing
+  its mechanism equations, artifact schema, endpoints, controls/nulls, and tiny
+  smoke contract before implementing or running the first bounded smoke.
 
 ## Blockers
 
-No engineering blocker was found. The scientific blocker remains interpretive:
-existing A5-family artifacts improved forecast skill but did not pass
-preregistered residual, compression, and matched-null promotion criteria, so
-they cannot support lobe-like, strange-attractor-like, or semantic-dynamics
-claims without a fresh bounded result that survives the tightened accounting
-locks.
+None. The governance blocker was resolved by Ben's explicit 2026-06-28
+A7.2-then-three-hive instruction. The remaining scientific challenge is to keep
+A7.2 bounded and prospectively frozen so any positive signal cannot be confused
+with A5-style forecast skill, backlog dwell, accounting leakage, or
+post-result rescue tuning.
 
 ## Latest Changes
+
+- 2026-06-28 Ben decision encoded: Ben explicitly instructed OmegaSim to try
+  A7.2-style delayed artifact-mediated endogenous prediction first, then move
+  on to a three-hive ring experiment family whether A7.2 is positive or
+  negative. This status now treats A7.2 as the active next gate and the
+  three-hive ring as pre-authorized downstream work requiring its own
+  preregistration and bounded controls, without another governance pause.
 
 - 2026-06-28 09:27 PDT bounded A5 verification: re-read the automation
   memory, `README.md`, `AUTOMATION_STATUS.md`, the structured

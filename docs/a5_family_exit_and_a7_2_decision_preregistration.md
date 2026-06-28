@@ -2,27 +2,30 @@
 
 Date: 2026-06-27.
 
-Status: non-active Ben-decision document. This document does not authorize
-new simulator mechanics, simulations, analyzers, seed sweeps, dashboards,
-external integrations, real LLM calls, Lean, Slack, browser automation,
-Atomspace work, live task boards, downstream multi-hive coupling, or promotion
-language.
+Status: accepted active A7.2 direction after Ben's 2026-06-28 instruction.
+This document authorizes only the bounded work needed to turn A7.2 delayed
+artifact-mediated endogenous prediction into a frozen preregistered
+single-hive implementation/smoke gate. It does not authorize broad seed sweeps,
+dashboards, external integrations, real LLM calls, Lean, Slack, browser
+automation, Atomspace work, live task boards, immediate downstream multi-hive
+coupling, or promotion language.
 
 ## Decision Context
 
-The current automation guard is closed. A5, A5.1a, A6.2, and A7 long-horizon
-validation have all closed conservatively on their preregistered evidence
-standards. The latest GPT-5.5-Pro strategic review marks the direction shift as
-`strategic_change_level: major` and `notify_ben: true`; Ben should be notified
-before any new active experiment gate is opened.
+A5, A5.1a, A6.2, and A7 long-horizon validation all closed conservatively on
+their preregistered evidence standards. The latest GPT-5.5-Pro strategic review
+marked the direction shift as `strategic_change_level: major` and
+`notify_ben: true`, so OmegaSim paused for Ben's decision.
 
-This document records the candidate next mechanism only so Ben can decide
-whether to:
+Ben has now resolved that governance pause: proceed with A7.2 first, then move
+on to a three-hive ring whether A7.2 is positive or negative. Therefore:
 
 - close A5-family predictive-control work as an evidence boundary;
-- preregister A7.2 delayed artifact-mediated endogenous prediction as the next
+- open A7.2 delayed artifact-mediated endogenous prediction as the next
   single-hive mechanism-rich gate;
-- defer A7.2 and instead request a separate three-hive ring preregistration.
+- after A7.2 closes, write and execute a separate three-hive ring
+  preregistration with cross-hive prediction costs, delayed artifact transfer,
+  target/phase nulls, and transfer-opportunity controls.
 
 ## Evidence Boundary
 
@@ -39,11 +42,10 @@ deterministic artifacts, accounting controls, and null discipline. They do not
 support lobe, attractor, synchrony, semantic-dynamics, or causal collective
 structure claims.
 
-## Candidate A7.2 Mechanism
+## Active A7.2 Mechanism
 
-A7.2, if Ben accepts it, should be a new preregistered single-hive gate rather
-than another A5 seed broadening. The mechanism should make prediction
-endogenous and delayed:
+A7.2 is a new preregistered single-hive gate rather than another A5 seed
+broadening. The mechanism should make prediction endogenous and delayed:
 
 - agents choose among `predict`, `work`, `review`, and `synthesize`;
 - utilities are thresholded logistic functions of lagged forecast error,
@@ -96,14 +98,16 @@ Promotion would require an intermediate endogenous-prediction condition to beat
 the relevant controls on preregistered residual endpoints while preserving
 guardrails. Forecast skill alone is insufficient.
 
-## Closure Rules
+## Closure Rules And Accepted Roadmap
 
 Close A7.2 fail-closed if residual endpoints are explained by accounting
 controls, matched nulls, source-ledger components, backlog dwell, or work-loss
 mediation. Do not rescue a negative result by tuning slopes, thresholds,
 delays, costs, or caps after seeing residual plots.
 
-If Ben prefers multi-hive work, do not implement it from this document. Write a
-separate three-hive ring preregistration with cross-hive prediction costs,
-delayed artifact transfer, target/phase nulls, and transfer-opportunity
-controls.
+After A7.2 closes, positive or negative, proceed to the three-hive ring as a
+separate preregistration rather than implementing multi-hive coupling directly
+from this document. That preregistration should carry forward the A7.2 lessons
+about costly prediction, delay, thresholding, null discipline, and accounting
+controls while adding target and phase nulls that only become meaningful with
+three hives.

@@ -1505,6 +1505,74 @@ def test_automation_guard_closes_when_current_status_stops_a5_broadening(
     )
 
 
+def test_automation_guard_opens_when_ben_accepts_a7_2_then_three_hive(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: Ben's 2026-06-28 instruction opens "
+                "A7.2 delayed artifact-mediated endogenous prediction as the "
+                "active next OmegaSim gate.",
+                "This supersedes the previous A5-family decision-awaiting "
+                "posture.",
+                "",
+                "After A7.2 closes, whether positive or negative, proceed "
+                "without another Ben decision to a separate three-hive ring "
+                "preregistration and bounded experiment family.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: open A7.2 as the active preregistered "
+                "gate by freezing its mechanism equations, artifact schema, "
+                "endpoints, controls/nulls, and tiny smoke contract.",
+                "",
+                "## Blockers",
+                "",
+                "Resolved: the old instruction to stop A5 broadening after "
+                "this fail-closed smoke was superseded by Ben's A7.2 decision.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: true",
+                "recommended_next_action: Send Ben the existing A5-exit/A7.2 "
+                "decision request now, then suspend repo-writing/status-loop "
+                "automation while awaiting his choice.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["repo_write_allowed"] is True
+    assert state["closed_reasons"] == []
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == (
+        "open A7.2 as the active preregistered gate by freezing its mechanism "
+        "equations, artifact schema, endpoints, controls/nulls, and tiny "
+        "smoke contract."
+    )
+
+
 def test_automation_guard_keeps_closed_for_a5_exit_ben_decision_status(
     tmp_path: Path,
 ) -> None:

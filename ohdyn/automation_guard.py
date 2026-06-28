@@ -31,6 +31,8 @@ def read_automation_state(
     review_header = _parse_review_header(review)
     a5_preregistration_active = Path(a5_preregistration_path).is_file()
     closed_reasons = _closed_reasons(status=current_status, review=review)
+    if closed_reasons and _status_opens_active_a7_2_then_three_hive(current_status):
+        closed_reasons = []
     if a5_preregistration_active and not _status_closes_active_a5(current_status):
         closed_reasons = []
     if (
@@ -210,6 +212,19 @@ def _status_reopens_active_a5(status: str) -> bool:
         "current concise a5 gate" in normalized_status
         and "explicit single-hive a5 reopening" in normalized_status
         and "active preregistration summary" in normalized_status
+    )
+
+
+def _status_opens_active_a7_2_then_three_hive(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "source-of-truth status" in normalized_status
+        and "a7.2 delayed artifact-mediated endogenous prediction" in normalized_status
+        and "active next omegasim gate" in normalized_status
+        and "supersedes the previous a5-family decision-awaiting posture"
+        in normalized_status
+        and "after a7.2 closes" in normalized_status
+        and "three-hive ring" in normalized_status
     )
 
 

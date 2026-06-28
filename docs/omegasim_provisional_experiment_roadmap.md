@@ -7,16 +7,18 @@ proceeding to A7 as the next preregistered direction. A7 is a new
 semantic-field design gate, not a promotion of A6.2 and not permission to
 broaden A6.2 seeds.
 
-Supersession note 2026-06-27: this older accepted roadmap has been superseded
-by the current source-of-truth automation status after the reopened A5,
-A5.1a, and A7 long-horizon gates closed conservatively. The current posture is
-closed awaiting Ben's decision; the non-active A7.2 decision document does not
-authorize new runs or mechanics.
+Supersession note 2026-06-28: this older accepted roadmap has been superseded
+by Ben's explicit A7.2-then-three-hive instruction after the reopened A5,
+A5.1a, and A7 long-horizon gates closed conservatively. The current
+source-of-truth posture is to open A7.2 delayed artifact-mediated endogenous
+prediction as the active single-hive gate, then proceed to a separately
+preregistered three-hive ring whether A7.2 closes positive or negative.
 
-This roadmap replaces the closed A5 no-op posture as the provisional direction
-for OmegaSim experimentation. It does not authorize an unbounded rewrite or a
-large simulation sweep. The immediate next task is now to convert A7 into a
-minimal, testable implementation gate.
+This roadmap remains historical context for the A6/A7/A8 sequence. It does not
+authorize an unbounded rewrite or a large simulation sweep. The immediate next
+task is now to convert A7.2 into a minimal, testable implementation gate; after
+that gate closes, the three-hive ring should be preregistered as a separate
+bounded experiment family.
 
 ## Roadmap Order
 
@@ -49,7 +51,7 @@ minimal, testable implementation gate.
      implementation, and synthesis/review.
    - Test phase-differentiated artifact grammar rather than mere synchrony.
 
-## Immediate Next Step
+## Historical Immediate Next Step
 
 Create an A7 implementation gate before any broad experiment:
 
@@ -80,6 +82,11 @@ Lean/Slack/browser/Atomspace integrations
 new queue-derived lobe labels as primary endpoints
 claims from raw backlog, throughput, or action counts
 ```
+
+For the active 2026-06-28 roadmap, three-hive mechanics remain a downstream
+phase rather than a first A7.2 implementation step. They are pre-authorized for
+work after A7.2 closes, but they still require their own frozen preregistration
+with target/phase nulls and transfer-opportunity controls.
 
 ## Promotion Standard
 
