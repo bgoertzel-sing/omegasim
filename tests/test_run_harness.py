@@ -180,6 +180,8 @@ from ohdyn.three_hive_ring_contract import (
     THREE_HIVE_RING_NULL_CONDITIONS,
     THREE_HIVE_RING_POSITIVE_CONDITION,
     THREE_HIVE_RING_PRIMARY_ENDPOINTS,
+    THREE_HIVE_RING_PREFLIGHT_COMPLETENESS_FIELDS,
+    THREE_HIVE_RING_PREFLIGHT_MANIFEST_FIELDS,
     THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS,
     THREE_HIVE_RING_RESIDUAL_CONTROLS,
     THREE_HIVE_RING_ROLE_BIASES,
@@ -194,6 +196,11 @@ from ohdyn.compare_three_hive_ring import (
     THREE_HIVE_RING_ARTIFACT_STATUS,
     THREE_HIVE_RING_SCIENTIFIC_STATUS,
     run_three_hive_ring_schema_smoke,
+)
+from ohdyn.analyze_three_hive_ring_preflight import (
+    THREE_HIVE_RING_PREFLIGHT_STATUS_MISSING_SOURCE_LEDGER,
+    THREE_HIVE_RING_PREFLIGHT_STATUS_NO_METRICS_EVENTS,
+    run_three_hive_ring_preflight_analysis,
 )
 from ohdyn.analyze_a7_semantic_field import (
     A7_ANALYZER_COMPLETENESS_FIELDS,
@@ -1240,6 +1247,68 @@ def test_three_hive_ring_schema_smoke_rejects_unregistered_seeds(
 ) -> None:
     with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
         run_three_hive_ring_schema_smoke(seeds=(1,), out_dir=tmp_path / "bad")
+
+
+def test_three_hive_ring_preflight_fails_closed_without_metrics_events(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "three_hive_ring_schema_smoke"
+    out_dir = tmp_path / "three_hive_ring_preflight"
+    run_three_hive_ring_schema_smoke(out_dir=compare_dir)
+
+    result = run_three_hive_ring_preflight_analysis(
+        compare_dir=compare_dir,
+        out_dir=out_dir,
+    )
+
+    assert result["run_count"] == len(THREE_HIVE_RING_CONDITIONS) * 2
+    assert result["status"] == THREE_HIVE_RING_PREFLIGHT_STATUS_NO_METRICS_EVENTS
+    manifest_rows = list(
+        csv.DictReader((out_dir / "three_hive_ring_preflight_manifest.csv").open())
+    )
+    assert list(manifest_rows[0]) == list(THREE_HIVE_RING_PREFLIGHT_MANIFEST_FIELDS)
+    assert manifest_rows[0]["status"] == THREE_HIVE_RING_PREFLIGHT_STATUS_NO_METRICS_EVENTS
+    assert int(manifest_rows[0]["schema_pass_count"]) == len(THREE_HIVE_RING_CONDITIONS) * 2
+    assert int(manifest_rows[0]["metrics_events_present_count"]) == 0
+    completeness_rows = list(
+        csv.DictReader((out_dir / "three_hive_ring_preflight_completeness.csv").open())
+    )
+    assert list(completeness_rows[0]) == list(
+        THREE_HIVE_RING_PREFLIGHT_COMPLETENESS_FIELDS
+    )
+    assert {row["status"] for row in completeness_rows} == {
+        THREE_HIVE_RING_PREFLIGHT_STATUS_NO_METRICS_EVENTS
+    }
+    assert {row["metrics_events_status"] for row in completeness_rows} == {"absent"}
+    assert "does not run the simulator" in (out_dir / "summary.md").read_text()
+
+
+def test_three_hive_ring_preflight_fails_closed_on_missing_source_ledger_schema(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "three_hive_ring_schema_smoke"
+    out_dir = tmp_path / "three_hive_ring_preflight"
+    run_three_hive_ring_schema_smoke(out_dir=compare_dir)
+    first_run = compare_dir / f"{THREE_HIVE_RING_CONDITIONS[0]}_seed1"
+    (first_run / "source_ledger_schema.csv").unlink()
+
+    result = run_three_hive_ring_preflight_analysis(
+        compare_dir=compare_dir,
+        out_dir=out_dir,
+    )
+
+    assert result["status"] == THREE_HIVE_RING_PREFLIGHT_STATUS_MISSING_SOURCE_LEDGER
+    completeness_rows = list(
+        csv.DictReader((out_dir / "three_hive_ring_preflight_completeness.csv").open())
+    )
+    affected = [
+        row
+        for row in completeness_rows
+        if row["condition"] == THREE_HIVE_RING_CONDITIONS[0] and row["seed"] == "1"
+    ]
+    assert len(affected) == 1
+    assert affected[0]["status"] == THREE_HIVE_RING_PREFLIGHT_STATUS_MISSING_SOURCE_LEDGER
+    assert "source_ledger_schema.csv" in affected[0]["required_artifact_status"]
 
 
 def test_a7_2_configs_load_in_preregistered_condition_order() -> None:

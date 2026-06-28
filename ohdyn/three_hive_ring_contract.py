@@ -220,6 +220,42 @@ THREE_HIVE_RING_SCHEMA_SMOKE_MANIFEST_FIELDS = (
     "artifact_status",
     "scientific_status",
 )
+THREE_HIVE_RING_PREFLIGHT_COMPLETENESS_FIELDS = (
+    "condition",
+    "seed",
+    "run_dir",
+    "config_path",
+    "manifest_path",
+    "metrics_schema_path",
+    "events_schema_path",
+    "source_ledger_schema_path",
+    "metrics_path",
+    "events_path",
+    "required_artifact_status",
+    "metric_schema_status",
+    "event_schema_status",
+    "source_ledger_schema_status",
+    "missing_metric_schema_fields",
+    "missing_event_schema_fields",
+    "missing_source_ledger_fields",
+    "metrics_events_status",
+    "status",
+    "interpretation",
+)
+THREE_HIVE_RING_PREFLIGHT_MANIFEST_FIELDS = (
+    "compare_dir",
+    "out_dir",
+    "expected_condition_count",
+    "observed_condition_count",
+    "expected_seed_count",
+    "observed_seed_count",
+    "expected_run_count",
+    "observed_run_count",
+    "missing_condition_seed_pairs",
+    "schema_pass_count",
+    "metrics_events_present_count",
+    "status",
+)
 
 
 def _unique_fields(fields: tuple[str, ...]) -> tuple[str, ...]:

@@ -424,13 +424,15 @@ collective-structure claims.
 
 ## Next Authorized Step
 
-The contract-only and config-validation gates are complete. The current
-authorized smoke scaffold is artifact-only: load the frozen contract fixture
-and emit fixed-seed schema/source-ledger artifacts for every preregistered
-condition, without simulator mechanics, analyzers, metrics/events, dashboards,
-integrations, parameter sweeps, or hives beyond the frozen ring.
+The contract-only, config-validation, schema/source-ledger smoke, and read-only
+preflight gates are complete. The current preflight analyzer inspects fixed
+seed `1,2` schema/source-ledger artifacts for every preregistered condition and
+fails closed as `fail_closed_no_metrics_events` until real simulator
+metrics/events exist. It does not run the simulator, compute promotion
+endpoints, or create three-hive scientific evidence.
 
-After that scaffold exists and passes tests, the next authorized step is a
-read-only preflight analyzer over those schema/source-ledger artifacts. It must
-fail closed until real simulator metrics/events exist and must not introduce
+The next authorized step is the smallest real three-hive mechanics gate:
+implement deterministic ring mechanics that emit the frozen metrics/events and
+source-ledger fields for the fixed paired-seed smoke only. Do not add broad
+seed sweeps, dashboards, integrations, parameter sweeps, extra hives, or
 promotion language.

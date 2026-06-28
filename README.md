@@ -215,15 +215,22 @@ The post-A7.2 three-hive ring gate is frozen in
 smoke helper is artifact-only: it loads the frozen contract fixture and emits
 per-condition/per-seed config, manifest, metric-schema, event-schema, and
 source-ledger-schema artifacts. It does not call the simulator, write
-metrics/events, run an analyzer, or create three-hive scientific evidence.
+metrics/events, or create three-hive scientific evidence.
 
 ```bash
 python -m ohdyn.compare_three_hive_ring --seeds 1 2 --out runs/three_hive_ring_schema_smoke_seed1_2
 ```
 
-The next three-hive step should be a read-only preflight analyzer over these
-schema/source-ledger artifacts, failing closed until real simulator artifacts
-exist.
+The checked-in read-only preflight analyzer inspects those schema/source-ledger
+artifacts and fails closed until real simulator metrics/events exist:
+
+```bash
+python -m ohdyn.analyze_three_hive_ring_preflight --compare-dir runs/three_hive_ring_schema_smoke_seed1_2 --out runs/three_hive_ring_preflight_seed1_2
+```
+
+At the artifact-only stage the expected status is
+`fail_closed_no_metrics_events`; this is a schema/source-ledger preflight, not
+three-hive scientific evidence.
 
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, low-budget linear, medium-budget nonlinear, high-budget nonlinear,

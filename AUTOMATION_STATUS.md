@@ -54,18 +54,22 @@ demand prediction alone, and preserve a possible later one-hive dimensionless
 delayed-dynamics sweep rather than retro-tuning A7.2.
 
 The post-A7.2 three-hive ring is now past the contract/config-validation gate
-and has a smallest deterministic schema/source-ledger smoke scaffold. The
-helper `ohdyn.compare_three_hive_ring` loads the frozen contract fixture and
-emits fixed seed `1,2` artifacts for the thirteen preregistered conditions:
-config, manifest, metric schema, event schema, source-ledger schema, and
-summary only. It does not call the simulator, emit metrics/events, add an
-analyzer, or create three-hive scientific evidence.
+and has a smallest deterministic schema/source-ledger smoke scaffold plus a
+read-only preflight analyzer. The helper `ohdyn.compare_three_hive_ring` loads
+the frozen contract fixture and emits fixed seed `1,2` artifacts for the
+thirteen preregistered conditions: config, manifest, metric schema, event
+schema, source-ledger schema, and summary only. The analyzer
+`ohdyn.analyze_three_hive_ring_preflight` checks condition/seed coverage,
+schema completeness, and source-ledger schema availability, then fails closed
+as `fail_closed_no_metrics_events` until real simulator metrics/events exist.
+These artifacts do not call the simulator, emit metrics/events, compute
+promotion endpoints, or create three-hive scientific evidence.
 
 ## Recommended Next Step
 
-- Recommended next step: add a read-only three-hive ring preflight analyzer
-  over the schema/source-ledger smoke artifacts. It must fail closed until real
-  simulator metrics/events exist and must not add promotion claims, broad seed
+- Recommended next step: implement the smallest deterministic three-hive ring
+  mechanics gate that emits the frozen metrics/events and source-ledger fields
+  for fixed paired seeds `1,2`. Do not add promotion claims, broad seed
   sweeps, dashboards, integrations, parameter sweeps, or hives beyond the
   frozen ring.
 
@@ -79,6 +83,41 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 16:23 PDT three-hive ring preflight analyzer: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests, the superseded
+  provisional roadmap, the frozen three-hive preregistration, the current
+  schema-smoke helper/contract, current guard output, CLI-loop status, and the
+  latest GPT-5.5-Pro strategy review before choosing the next step. The review
+  has `notify_ben: false` and `strategic_change_level: minor`; its
+  recommendation to recover from self-concurrency and add only a read-only
+  fail-closed preflight analyzer was accepted as scientifically sensible. The
+  apparent live CLI-loop/Codex process was this bounded run itself, not a
+  competing worker.
+- Added `ohdyn.analyze_three_hive_ring_preflight` plus preflight field
+  constants in `ohdyn/three_hive_ring_contract.py`. The analyzer reads only
+  existing schema-smoke artifacts, verifies condition/seed coverage, required
+  config/manifest/schema/source-ledger files, required metric/event/source
+  schema fields, and metrics/events presence. For the current artifact-only
+  smoke it emits `fail_closed_no_metrics_events`; missing source-ledger schema
+  fails closed as `fail_closed_missing_source_ledger`. No simulator mechanics,
+  metrics/events fabrication, promotion endpoints, dashboards, integrations,
+  parameter sweeps, broader seeds, or extra hives were added.
+- Updated `README.md` and `docs/three_hive_ring_preregistration.md` with the
+  analyzer command, expected fail-closed status, and the next authorized
+  mechanics boundary. Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring' -q` (`7 passed, 639 deselected`),
+  `.venv-conda/bin/python -m py_compile
+  ohdyn/analyze_three_hive_ring_preflight.py ohdyn/three_hive_ring_contract.py`,
+  and a temp CLI smoke:
+  `.venv-conda/bin/python -m ohdyn.compare_three_hive_ring --out
+  /tmp/omegasim_three_hive_preflight_ahSOeX/schema_smoke` followed by
+  `.venv-conda/bin/python -m ohdyn.analyze_three_hive_ring_preflight
+  --compare-dir /tmp/omegasim_three_hive_preflight_ahSOeX/schema_smoke --out
+  /tmp/omegasim_three_hive_preflight_ahSOeX/preflight`, whose manifest reported
+  26 runs, 26 schema-pass rows, 0 metrics/events-present rows, and status
+  `fail_closed_no_metrics_events`.
 
 - 2026-06-28 15:35 PDT three-hive ring schema/source-ledger smoke scaffold:
   re-read automation memory, the A5 single-hive preregistration, `README.md`,
