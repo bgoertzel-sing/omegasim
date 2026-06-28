@@ -55,11 +55,13 @@ delayed-dynamics sweep rather than retro-tuning A7.2.
 
 ## Recommended Next Step
 
-- Recommended next step: add a contract-only three-hive ring constants/schema
-  module plus focused tests that validate the frozen preregistered condition
-  names, hives, state fields, source-ledger fields, endpoints, guardrails, and
-  smoke parameters. Do not add simulator mechanics, configs, analyzers, or
-  runs in that contract step.
+- Recommended next step: add config-validation fixtures for the frozen
+  three-hive ring contract and focused tests proving those fixtures load the
+  preregistered hives, directed edges, condition names, smoke parameters,
+  source-ledger schema, endpoints, residual controls, and guardrails. Do not
+  add simulator mechanics, analyzers, result-bearing runs, dashboards,
+  integrations, parameter sweeps, or downstream multi-hive coupling beyond the
+  frozen three-hive ring contract.
 
 ## Blockers
 
@@ -71,6 +73,36 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 14:12 PDT three-hive ring contract gate: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests/docs surface, the superseded
+  provisional roadmap, `docs/three_hive_ring_preregistration.md`, current
+  guard output, CLI-loop status, and the latest GPT-5.5-Pro strategy review
+  before choosing the next step. The review has `notify_ben: false` and
+  `strategic_change_level: none`; its recommendation to implement only the
+  three-hive contract/constants schema tests was accepted as scientifically
+  sensible. The apparent live CLI-loop process was this bounded run itself, not
+  a separate stale worker, so no process cleanup was performed.
+- Added `ohdyn/three_hive_ring_contract.py` as a pure constants/schema module
+  freezing the preregistered hives, A->B->C->A edges, action names, role-bias
+  labels, state fields, edge/source-ledger fields, condition order, smoke
+  parameters, dimensionless manifest fields, primary endpoints, residual
+  controls, productivity guardrails, and required metric/event schema helpers.
+  Added focused tests in `tests/test_run_harness.py`. No simulator mechanics,
+  configs, analyzers, simulation runs, dashboards, integrations, parameter
+  sweeps, or additional hives were added.
+- Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring_contract or a7_2_delayed_prediction_contract or
+  a7_semantic_field_contract' -q` (`3 passed, 637 deselected`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring_contract or automation_guard' -q` (`17 passed, 623
+  deselected`), `.venv-conda/bin/python -m py_compile
+  ohdyn/three_hive_ring_contract.py`,
+  `.venv-conda/bin/python -m ohdyn.automation_guard` (`state=open`,
+  `repo_write_allowed=true`, `notify_ben=false`, recommended next action is
+  now the three-hive ring config-validation fixture step),
+  and `git diff --check`.
 
 - 2026-06-28 13:32 PDT A5 bounded prompt revalidation: re-read automation
   memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive

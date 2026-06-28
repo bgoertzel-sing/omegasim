@@ -169,6 +169,26 @@ from ohdyn.a7_semantic_field_contract import (
     a7_required_event_fields,
     a7_required_metric_fields,
 )
+from ohdyn.three_hive_ring_contract import (
+    THREE_HIVE_RING_ACTIONS,
+    THREE_HIVE_RING_CONDITIONS,
+    THREE_HIVE_RING_DIMENSIONLESS_MANIFEST_FIELDS,
+    THREE_HIVE_RING_EDGE_FIELDS,
+    THREE_HIVE_RING_EDGE_HIVES,
+    THREE_HIVE_RING_EDGES,
+    THREE_HIVE_RING_HIVES,
+    THREE_HIVE_RING_NULL_CONDITIONS,
+    THREE_HIVE_RING_POSITIVE_CONDITION,
+    THREE_HIVE_RING_PRIMARY_ENDPOINTS,
+    THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS,
+    THREE_HIVE_RING_RESIDUAL_CONTROLS,
+    THREE_HIVE_RING_ROLE_BIASES,
+    THREE_HIVE_RING_SMOKE_PARAMETERS,
+    THREE_HIVE_RING_SOURCE_LEDGER_FIELDS,
+    THREE_HIVE_RING_STATE_FIELDS,
+    three_hive_ring_required_event_fields,
+    three_hive_ring_required_metric_fields,
+)
 from ohdyn.analyze_a7_semantic_field import (
     A7_ANALYZER_COMPLETENESS_FIELDS,
     A7_ANALYZER_MANIFEST_FIELDS,
@@ -1000,6 +1020,116 @@ def test_a7_2_delayed_prediction_contract_freezes_preregistered_schema() -> None
     assert "status" in A7_2_ANALYZER_GUARDRAIL_FIELDS
     assert "a7_2_forecast_error_lag1" in a7_2_required_metric_fields()
     assert "source_ledger_artifact_risk_delta" in a7_2_required_event_fields()
+
+
+def test_three_hive_ring_contract_freezes_preregistered_schema() -> None:
+    assert THREE_HIVE_RING_HIVES == (
+        "hive_a_explore_research",
+        "hive_b_formalize_implement",
+        "hive_c_synthesize_review",
+    )
+    assert THREE_HIVE_RING_EDGES == ("A_to_B", "B_to_C", "C_to_A")
+    assert THREE_HIVE_RING_EDGE_HIVES == (
+        ("hive_a_explore_research", "hive_b_formalize_implement"),
+        ("hive_b_formalize_implement", "hive_c_synthesize_review"),
+        ("hive_c_synthesize_review", "hive_a_explore_research"),
+    )
+    assert THREE_HIVE_RING_ACTIONS == (
+        "predict_cross_hive",
+        "work_local",
+        "review_inbound_artifact",
+        "synthesize_outbound_artifact",
+        "idle",
+    )
+    assert THREE_HIVE_RING_ROLE_BIASES["hive_a_explore_research"] == (
+        "novelty_exploration",
+        "contradiction_discovery",
+    )
+    assert THREE_HIVE_RING_POSITIVE_CONDITION == "delayed_logistic_ring"
+    assert THREE_HIVE_RING_CONDITIONS == (
+        "no_coupling",
+        "delayed_logistic_ring",
+        "heterogeneous_delay_logistic_ring",
+        "amplitude_matched_linear_delayed_ring",
+        "same_tick_logistic_ring",
+        "target_shuffled_transfer",
+        "phase_shuffled_transfer",
+        "threshold_shuffled_ring",
+        "transfer_opportunity_matched_replay",
+        "spend_only_cross_hive_prediction_replay",
+        "artifact_off_source_ledger_null",
+        "source_preserving_artifact_label_shuffle",
+        "high_budget_oracle_smoothing",
+    )
+    assert THREE_HIVE_RING_NULL_CONDITIONS == (
+        "no_coupling",
+        "amplitude_matched_linear_delayed_ring",
+        "same_tick_logistic_ring",
+        "target_shuffled_transfer",
+        "phase_shuffled_transfer",
+        "threshold_shuffled_ring",
+        "transfer_opportunity_matched_replay",
+        "spend_only_cross_hive_prediction_replay",
+        "artifact_off_source_ledger_null",
+        "source_preserving_artifact_label_shuffle",
+    )
+    assert THREE_HIVE_RING_SMOKE_PARAMETERS == {
+        "seeds": (1, 2),
+        "horizon_ticks": 72,
+        "ring_hives": 3,
+        "ring_edges": ("A_to_B", "B_to_C", "C_to_A"),
+        "observation_delay_ticks": 1,
+        "transfer_delay_ticks": 3,
+        "forecast_delay_ticks": 2,
+        "artifact_relaxation_time_ticks": 6,
+        "artifact_decay": 0.12,
+        "prediction_cost_work_fraction": 0.25,
+        "max_prediction_work_fraction_per_tick": 0.35,
+        "transfer_cost_work_fraction": 0.15,
+        "max_transfer_work_fraction_per_tick": 0.25,
+        "fatigue_decay": 0.18,
+        "fatigue_increment_predict": 0.08,
+        "fatigue_increment_work": 0.05,
+        "fatigue_increment_review": 0.04,
+        "fatigue_increment_synthesize": 0.06,
+        "threshold_learning_rate_error": 0.05,
+        "threshold_recovery_rate": 0.02,
+        "threshold_min": -2.0,
+        "threshold_max": 2.0,
+        "utility_slope_cross_predict": 1.15,
+        "utility_slope_work": 1.00,
+        "utility_slope_review": 1.10,
+        "utility_slope_synthesize": 1.15,
+        "membrane_permeability": 0.55,
+        "artifact_clip_min": 0.0,
+        "artifact_clip_max": 1.0,
+    }
+    assert "artifact_revision_pressure" in THREE_HIVE_RING_STATE_FIELDS
+    assert "cross_hive_forecast_uncertainty_lag" in THREE_HIVE_RING_STATE_FIELDS
+    assert "membrane_acceptance" in THREE_HIVE_RING_EDGE_FIELDS
+    assert "source_ledger_artifact_delta" in THREE_HIVE_RING_SOURCE_LEDGER_FIELDS
+    assert "residual_phase_differentiated_motif_score" in (
+        THREE_HIVE_RING_PRIMARY_ENDPOINTS
+    )
+    assert "transfer_opportunity" in THREE_HIVE_RING_RESIDUAL_CONTROLS
+    assert "role_bias" in THREE_HIVE_RING_RESIDUAL_CONTROLS
+    assert (
+        THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS[
+            "mean_completion_fraction_min_baseline_ratio"
+        ]
+        == 0.80
+    )
+    assert (
+        THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS[
+            "source_ledger_reconstruction_status_required"
+        ]
+        == "pass"
+    )
+    assert "coupling_gain" in THREE_HIVE_RING_DIMENSIONLESS_MANIFEST_FIELDS
+    assert "delay_relaxation_ratio" in THREE_HIVE_RING_DIMENSIONLESS_MANIFEST_FIELDS
+    assert "local_backlog" in three_hive_ring_required_metric_fields()
+    assert "accepted_transfer_volume" in three_hive_ring_required_event_fields()
+    assert "source_ledger_clip_residual" in three_hive_ring_required_event_fields()
 
 
 def test_a7_2_configs_load_in_preregistered_condition_order() -> None:
