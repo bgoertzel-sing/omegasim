@@ -17,6 +17,11 @@ from ohdyn.a7_semantic_field_contract import (
     A7_RNG_STREAMS,
     A7_SOURCE_COMPONENTS,
 )
+from ohdyn.a7_2_delayed_prediction_contract import (
+    A7_2_ACTIONS,
+    A7_2_EVENT_FIELDS,
+    a7_2_required_metric_fields,
+)
 from ohdyn.config import (
     A6_ACTIONS,
     ATTENTION_CLASSES,
@@ -112,6 +117,7 @@ EVENT_FIELDS = (
     "a5_prediction_work_budget_remaining",
     *A6_ARTIFACT_UPDATE_SOURCE_FIELDS,
     *tuple(field for field in A7_EVENT_FIELDS if field not in {"tick", "agent_id", "event_type"}),
+    *tuple(field for field in A7_2_EVENT_FIELDS if field not in {"tick", "agent_id", "event_type"}),
 )
 
 HIVE_EVENT_FIELDS = ("hive_id", *EVENT_FIELDS)
@@ -192,6 +198,7 @@ def metrics_fieldnames(
     include_predictive_control: bool = False,
     include_logistic_appraisal: bool = False,
     include_semantic_field: bool = False,
+    include_a7_2_delayed_prediction: bool = False,
 ) -> tuple[str, ...]:
     return (
         "tick",
@@ -218,6 +225,11 @@ def metrics_fieldnames(
         *(predictive_control_metric_fields() if include_predictive_control else ()),
         *(logistic_appraisal_metric_fields() if include_logistic_appraisal else ()),
         *(semantic_field_metric_fields() if include_semantic_field else ()),
+        *(
+            a7_2_delayed_prediction_metric_fields()
+            if include_a7_2_delayed_prediction
+            else ()
+        ),
         "idle_tick",
         *role_action_metric_fields(actions),
         "mean_agent_bias",
@@ -377,6 +389,13 @@ def semantic_field_metric_fields() -> tuple[str, ...]:
     )
 
 
+def a7_2_delayed_prediction_metric_fields() -> tuple[str, ...]:
+    baseline_metric_fields = set(metrics_fieldnames((), include_a7_2_delayed_prediction=False))
+    return tuple(
+        field for field in a7_2_required_metric_fields() if field not in baseline_metric_fields
+    )
+
+
 @dataclass(frozen=True)
 class AgentState:
     agent_id: str
@@ -412,6 +431,17 @@ class _A7TickState:
     handoff_successes: int = 0
     handoff_failures: int = 0
     near_threshold_count: int = 0
+
+
+@dataclass
+class _A7_2TickState:
+    prediction_spend: float = 0.0
+    lost_work_opportunity: float = 0.0
+    selected_actions: Counter[str] | None = None
+    utilities: dict[str, float] | None = None
+    source_ledger_forecast_error: float = 0.0
+    source_ledger_artifact: float = 0.0
+    source_ledger_queue_accounting: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -511,6 +541,13 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
     a7_shuffle_rng = _a7_stream_rng(config, seed, "semantic_control_shuffle_stream")
     a7_agent_state = _initial_a7_agent_state(agents, config, a7_update_rng)
     a7_field = _initial_a7_field(config)
+    a7_2_action_rng = _a7_2_stream_rng(config, seed, "action")
+    a7_2_prediction_rng = _a7_2_stream_rng(config, seed, "prediction")
+    a7_2_shuffle_rng = _a7_2_stream_rng(config, seed, "shuffle")
+    a7_2_agent_state = _initial_a7_2_agent_state(agents, config)
+    a7_2_artifact = _initial_a7_2_artifact(config)
+    a7_2_forecast_updates: deque[dict[str, float | int]] = deque()
+    a7_2_artifact_updates: deque[dict[str, float | int]] = deque()
     a5_prediction_charge_bank = 0.0
 
     for tick in range(config.run.ticks):
@@ -531,6 +568,17 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
             a5_prediction_charge_bank += a5_prediction_work_charge_target_tick
         a6_tick = _A6TickState()
         a7_tick = _A7TickState()
+        a7_2_tick = _A7_2TickState(selected_actions=Counter(), utilities={})
+        if config.a7_2_delayed_prediction is not None:
+            _advance_a7_2_delayed_state(
+                config=config,
+                artifact=a7_2_artifact,
+                forecast_updates=a7_2_forecast_updates,
+                artifact_updates=a7_2_artifact_updates,
+                tick=tick,
+                events=events,
+                tick_state=a7_2_tick,
+            )
         if config.logistic_appraisal is not None:
             _advance_a6_background_state(
                 config=config,
@@ -585,7 +633,20 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                     )
                 )
         for agent in agents:
-            if config.semantic_field is not None:
+            if config.a7_2_delayed_prediction is not None:
+                assert a7_2_action_rng is not None
+                action = _choose_a7_2_action(
+                    config=config,
+                    has_queued_tasks=bool(task_queue),
+                    agent=agent,
+                    rng=a7_2_action_rng,
+                    agent_state=a7_2_agent_state[agent.agent_id],
+                    artifact=a7_2_artifact,
+                    queue_depth=queue_depth_start,
+                    tick=tick,
+                    tick_state=a7_2_tick,
+                )
+            elif config.semantic_field is not None:
                 assert a7_action_rng is not None
                 action = _choose_semantic_field_action(
                     config=config,
@@ -740,8 +801,33 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                         task_class=task.task_class,
                     )
                 )
+                if config.a7_2_delayed_prediction is not None:
+                    _apply_a7_2_work_action(
+                        config=config,
+                        tick=tick,
+                        agent=agent,
+                        agent_state=a7_2_agent_state[agent.agent_id],
+                        artifact=a7_2_artifact,
+                        tick_state=a7_2_tick,
+                        events=events,
+                    )
             elif action in A6_ACTIONS:
-                if config.semantic_field is not None:
+                if config.a7_2_delayed_prediction is not None:
+                    _apply_a7_2_action(
+                        config=config,
+                        tick=tick,
+                        agent=agent,
+                        action=action,
+                        agent_state=a7_2_agent_state[agent.agent_id],
+                        artifact=a7_2_artifact,
+                        forecast_updates=a7_2_forecast_updates,
+                        artifact_updates=a7_2_artifact_updates,
+                        prediction_rng=a7_2_prediction_rng,
+                        shuffle_rng=a7_2_shuffle_rng,
+                        tick_state=a7_2_tick,
+                        events=events,
+                    )
+                elif config.semantic_field is not None:
                     _apply_semantic_field_action(
                         config=config,
                         tick=tick,
@@ -818,6 +904,22 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
             tasks_completed_total=completed_tasks,
             action_opportunity=len(agents),
         )
+        a7_2_metrics = _a7_2_delayed_prediction_metrics(
+            config=config,
+            agent_state=a7_2_agent_state,
+            artifact=a7_2_artifact,
+            tick_state=a7_2_tick,
+            forecast_queue_length=len(a7_2_forecast_updates),
+            artifact_queue_length=len(a7_2_artifact_updates),
+            tick=tick,
+            queue_depth=queue_depth_end,
+            queue_age_metrics=queue_age_metrics,
+            completed_this_tick=completed_this_tick,
+            completed_total=completed_tasks,
+            task_arrivals=action_counts["create_task"] + exogenous_created_this_tick,
+            action_opportunity=len(agents),
+            work_actions=action_counts["work_task"],
+        )
         baseline_lobe_label = _baseline_lobe_label(
             action_counts=action_counts,
             queue_depth_start=queue_depth_start,
@@ -875,6 +977,7 @@ def _simulate_single(config: OmegaConfig, seed: int) -> SimulationResult:
                 **predictive_metrics,
                 **a6_metrics,
                 **a7_metrics,
+                **a7_2_metrics,
                 "idle_tick": action_counts["idle"],
                 **_role_action_metrics(config.model.actions, role_action_counts),
                 "mean_agent_bias": round(float(np.mean([agent.bias for agent in agents])), 6),
@@ -3280,6 +3383,540 @@ def _a7_agent_mean(agent_state: dict[str, dict[str, float]], field: str) -> floa
     return round(float(np.mean([state[field] for state in agent_state.values()])), 6)
 
 
+def _a7_2_stream_rng(
+    config: OmegaConfig,
+    seed: int,
+    stream_name: str,
+) -> np.random.Generator | None:
+    if config.a7_2_delayed_prediction is None:
+        return None
+    stream_offsets = {
+        "action": 0xA720,
+        "prediction": 0xA721,
+        "shuffle": 0xA722,
+    }
+    return np.random.default_rng(np.random.SeedSequence([seed, stream_offsets[stream_name]]))
+
+
+def _initial_a7_2_agent_state(
+    agents: tuple[AgentState, ...],
+    config: OmegaConfig,
+) -> dict[str, dict[str, float]]:
+    if config.a7_2_delayed_prediction is None:
+        return {}
+    return {
+        agent.agent_id: {
+            "fatigue": 0.10,
+            "adaptive_prediction_threshold": 0.15,
+            "adaptive_work_threshold": 0.05,
+            "adaptive_review_threshold": 0.10,
+            "adaptive_synthesis_threshold": 0.12,
+        }
+        for agent in agents
+    }
+
+
+def _initial_a7_2_artifact(config: OmegaConfig) -> dict[str, float]:
+    if config.a7_2_delayed_prediction is None:
+        return {}
+    return {
+        "forecast_error_lag1": 0.25,
+        "forecast_uncertainty_lag1": 0.20,
+        "artifact_readiness": 0.30,
+        "artifact_coherence": 0.35,
+        "artifact_contradiction": 0.25,
+        "artifact_risk": 0.22,
+        "artifact_revision_pressure": 0.17,
+    }
+
+
+def _advance_a7_2_delayed_state(
+    *,
+    config: OmegaConfig,
+    artifact: dict[str, float],
+    forecast_updates: deque[dict[str, float | int]],
+    artifact_updates: deque[dict[str, float | int]],
+    tick: int,
+    events: list[dict[str, Any]],
+    tick_state: _A7_2TickState,
+) -> None:
+    assert config.a7_2_delayed_prediction is not None
+    cfg = config.a7_2_delayed_prediction
+    visible_forecast_error = 0.0
+    visible_uncertainty = 0.0
+    while forecast_updates and int(forecast_updates[0]["visible_tick"]) <= tick:
+        update = forecast_updates.popleft()
+        visible_forecast_error += float(update["forecast_error_delta"])
+        visible_uncertainty += float(update["forecast_uncertainty_delta"])
+    if visible_forecast_error or visible_uncertainty:
+        artifact["forecast_error_lag1"] = _a7_2_clip(
+            config,
+            artifact["forecast_error_lag1"] + visible_forecast_error,
+        )
+        artifact["forecast_uncertainty_lag1"] = _a7_2_clip(
+            config,
+            artifact["forecast_uncertainty_lag1"] + visible_uncertainty,
+        )
+        tick_state.source_ledger_forecast_error += visible_forecast_error
+    source = {
+        "readiness": 0.0,
+        "coherence": 0.0,
+        "contradiction": 0.0,
+        "risk": 0.0,
+    }
+    while artifact_updates and int(artifact_updates[0]["visible_tick"]) <= tick:
+        update = artifact_updates.popleft()
+        for key in source:
+            source[key] += float(update.get(key, 0.0))
+    if any(source.values()) or config.a7_2_delayed_prediction.condition != "zero_budget_reactive":
+        if cfg.condition == "artifact_off_source_ledger_null":
+            source = {key: 0.0 for key in source}
+        before = dict(artifact)
+        artifact["artifact_readiness"] = _a7_2_clip(
+            config,
+            (1.0 - cfg.artifact_decay) * artifact["artifact_readiness"]
+            + source["readiness"]
+            - max(source["contradiction"], 0.0) * 0.25,
+        )
+        artifact["artifact_coherence"] = _a7_2_clip(
+            config,
+            (1.0 - cfg.artifact_decay) * artifact["artifact_coherence"] + source["coherence"]
+        )
+        artifact["artifact_contradiction"] = _a7_2_clip(
+            config,
+            (1.0 - cfg.artifact_decay) * artifact["artifact_contradiction"]
+            + source["contradiction"]
+            + max(visible_forecast_error, 0.0) * 0.2,
+        )
+        artifact["artifact_risk"] = _a7_2_clip(
+            config,
+            (1.0 - cfg.artifact_decay) * artifact["artifact_risk"] + source["risk"]
+        )
+        artifact["artifact_revision_pressure"] = _a7_2_clip(
+            config,
+            artifact["artifact_contradiction"]
+            + artifact["artifact_risk"]
+            - artifact["artifact_readiness"],
+        )
+        deltas = {
+            "source_ledger_artifact_readiness_delta": artifact["artifact_readiness"]
+            - before["artifact_readiness"],
+            "source_ledger_artifact_coherence_delta": artifact["artifact_coherence"]
+            - before["artifact_coherence"],
+            "source_ledger_artifact_contradiction_delta": artifact["artifact_contradiction"]
+            - before["artifact_contradiction"],
+            "source_ledger_artifact_risk_delta": artifact["artifact_risk"] - before["artifact_risk"],
+        }
+        tick_state.source_ledger_artifact += sum(abs(value) for value in deltas.values())
+        events.append(
+            _event(
+                tick=tick,
+                event_type="a7_2_delayed_artifact_update",
+                agent_id="",
+                action="delayed_update",
+                a7_2_condition=cfg.condition,
+                selected_action="delayed_update",
+                source_ledger_forecast_error=round(visible_forecast_error, 6),
+                source_ledger_artifact=round(tick_state.source_ledger_artifact, 6),
+                source_ledger_queue_accounting=0.0,
+                **{key: round(float(value), 6) for key, value in deltas.items()},
+            )
+        )
+
+
+def _choose_a7_2_action(
+    *,
+    config: OmegaConfig,
+    has_queued_tasks: bool,
+    agent: AgentState,
+    rng: np.random.Generator,
+    agent_state: dict[str, float],
+    artifact: dict[str, float],
+    queue_depth: int,
+    tick: int,
+    tick_state: _A7_2TickState,
+) -> str:
+    assert config.a7_2_delayed_prediction is not None
+    cfg = config.a7_2_delayed_prediction
+    utilities = _a7_2_utilities(config, agent_state, artifact, queue_depth, tick)
+    if not has_queued_tasks:
+        utilities["work"] = 0.0
+    if cfg.condition == "zero_budget_reactive":
+        utilities["predict"] = 0.0
+        utilities["review"] *= 0.25
+        utilities["synthesize"] *= 0.25
+    if cfg.condition == "high_budget_oracle_smoothing":
+        utilities["predict"] *= 1.5
+    if cfg.condition == "threshold_shuffled":
+        utilities = {
+            action: utilities[action]
+            for action in ("work", "predict", "synthesize", "review")
+        }
+    if cfg.condition == "source_preserving_artifact_label_shuffle":
+        utilities["review"], utilities["synthesize"] = utilities["synthesize"], utilities["review"]
+    total = sum(max(value, 0.0) for value in utilities.values())
+    if total <= 0.0:
+        selected = "work" if has_queued_tasks else "synthesize"
+    else:
+        probabilities = [max(utilities[action], 0.0) / total for action in A7_2_ACTIONS]
+        selected = str(rng.choice(list(A7_2_ACTIONS), p=probabilities))
+    assert tick_state.selected_actions is not None
+    assert tick_state.utilities is not None
+    tick_state.selected_actions[selected] += 1
+    for action, utility in utilities.items():
+        tick_state.utilities[action] = tick_state.utilities.get(action, 0.0) + utility
+    if selected == "work":
+        return "work_task"
+    return selected
+
+
+def _a7_2_utilities(
+    config: OmegaConfig,
+    agent_state: dict[str, float],
+    artifact: dict[str, float],
+    queue_depth: int,
+    tick: int,
+) -> dict[str, float]:
+    assert config.a7_2_delayed_prediction is not None
+    cfg = config.a7_2_delayed_prediction
+    forecast_error = artifact["forecast_error_lag1"]
+    uncertainty = artifact["forecast_uncertainty_lag1"]
+    revision_pressure = artifact["artifact_revision_pressure"]
+    readiness = artifact["artifact_readiness"]
+    coherence = artifact["artifact_coherence"]
+    contradiction = artifact["artifact_contradiction"]
+    risk = artifact["artifact_risk"]
+    if cfg.condition == "same_tick_logistic_prediction":
+        forecast_error = _a7_2_clip(config, forecast_error + 0.02 * np.sin(tick + 1))
+    if cfg.condition == "phase_shuffled_lag_input":
+        forecast_error = _a7_2_clip(config, forecast_error + 0.05 * np.sin((tick + 5) / 2.0))
+    backlog_pressure = min(queue_depth / 12.0, 1.0)
+    fatigue = agent_state["fatigue"]
+    if cfg.condition == "amplitude_matched_linear_delayed_prediction":
+        gate = lambda value: _clamp01(0.5 + 0.5 * value)
+    else:
+        gate = _sigmoid
+    return {
+        "predict": cfg.utility_slope_predict
+        * gate(
+            forecast_error
+            + uncertainty
+            + revision_pressure
+            - agent_state["adaptive_prediction_threshold"]
+            - fatigue
+        ),
+        "work": cfg.utility_slope_work
+        * gate(backlog_pressure + readiness - agent_state["adaptive_work_threshold"] - fatigue),
+        "review": cfg.utility_slope_review
+        * gate(contradiction + risk - agent_state["adaptive_review_threshold"] - fatigue),
+        "synthesize": cfg.utility_slope_synthesize
+        * gate(
+            readiness
+            + coherence
+            - contradiction
+            - agent_state["adaptive_synthesis_threshold"]
+            - fatigue
+        ),
+    }
+
+
+def _apply_a7_2_action(
+    *,
+    config: OmegaConfig,
+    tick: int,
+    agent: AgentState,
+    action: str,
+    agent_state: dict[str, float],
+    artifact: dict[str, float],
+    forecast_updates: deque[dict[str, float | int]],
+    artifact_updates: deque[dict[str, float | int]],
+    prediction_rng: np.random.Generator | None,
+    shuffle_rng: np.random.Generator | None,
+    tick_state: _A7_2TickState,
+    events: list[dict[str, Any]],
+) -> None:
+    assert config.a7_2_delayed_prediction is not None
+    assert prediction_rng is not None
+    cfg = config.a7_2_delayed_prediction
+    if action == "predict":
+        spend = 1.0 / max(config.model.agent_count, 1)
+        work_cost = min(
+            cfg.prediction_cost_work_fraction * spend,
+            cfg.max_prediction_work_fraction_per_tick,
+        )
+        tick_state.prediction_spend += spend
+        tick_state.lost_work_opportunity += work_cost
+        if cfg.condition == "spend_only_replay":
+            forecast_delta = 0.0
+            uncertainty_delta = 0.0
+        else:
+            forecast_delta = -abs(float(prediction_rng.normal(0.035, 0.01)))
+            uncertainty_delta = -abs(float(prediction_rng.normal(0.018, 0.006)))
+        forecast_updates.append(
+            {
+                "visible_tick": tick + cfg.forecast_delay_ticks,
+                "forecast_error_delta": forecast_delta,
+                "forecast_uncertainty_delta": uncertainty_delta,
+            }
+        )
+        agent_state["fatigue"] = _a7_2_clip(
+            config,
+            agent_state["fatigue"] + cfg.fatigue_increment_predict,
+        )
+        _adapt_a7_2_thresholds(config, agent_state, "adaptive_prediction_threshold")
+        events.append(
+            _event(
+                tick=tick,
+                event_type="a7_2_action_selected",
+                agent_id=agent.agent_id,
+                action=action,
+                a7_2_condition=cfg.condition,
+                selected_action=action,
+                forecast_update_created_tick=tick,
+                forecast_update_visible_tick=tick + cfg.forecast_delay_ticks,
+                prediction_work_cost=round(work_cost, 6),
+                source_ledger_forecast_error=round(forecast_delta, 6),
+            )
+        )
+        return
+    if action in {"review", "synthesize"}:
+        _apply_a7_2_artifact_action(
+            config=config,
+            tick=tick,
+            agent=agent,
+            action=action,
+            agent_state=agent_state,
+            artifact=artifact,
+            artifact_updates=artifact_updates,
+            shuffle_rng=shuffle_rng,
+            tick_state=tick_state,
+            events=events,
+        )
+
+
+def _apply_a7_2_work_action(
+    *,
+    config: OmegaConfig,
+    tick: int,
+    agent: AgentState,
+    agent_state: dict[str, float],
+    artifact: dict[str, float],
+    tick_state: _A7_2TickState,
+    events: list[dict[str, Any]],
+) -> None:
+    assert config.a7_2_delayed_prediction is not None
+    cfg = config.a7_2_delayed_prediction
+    agent_state["fatigue"] = _a7_2_clip(config, agent_state["fatigue"] + cfg.fatigue_increment_work)
+    _adapt_a7_2_thresholds(config, agent_state, "adaptive_work_threshold")
+    tick_state.source_ledger_queue_accounting += 1.0
+    events.append(
+        _event(
+            tick=tick,
+            event_type="a7_2_action_selected",
+            agent_id=agent.agent_id,
+            action="work",
+            a7_2_condition=cfg.condition,
+            selected_action="work",
+            source_ledger_queue_accounting=1.0,
+        )
+    )
+
+
+def _apply_a7_2_artifact_action(
+    *,
+    config: OmegaConfig,
+    tick: int,
+    agent: AgentState,
+    action: str,
+    agent_state: dict[str, float],
+    artifact: dict[str, float],
+    artifact_updates: deque[dict[str, float | int]],
+    shuffle_rng: np.random.Generator | None,
+    tick_state: _A7_2TickState,
+    events: list[dict[str, Any]],
+) -> None:
+    assert config.a7_2_delayed_prediction is not None
+    cfg = config.a7_2_delayed_prediction
+    if action == "review":
+        update = {
+            "readiness": 0.012,
+            "coherence": 0.006,
+            "contradiction": 0.025,
+            "risk": -0.012,
+        }
+        fatigue_increment = cfg.fatigue_increment_review
+        threshold = "adaptive_review_threshold"
+    else:
+        update = {
+            "readiness": 0.030,
+            "coherence": 0.026,
+            "contradiction": -0.020,
+            "risk": -0.008,
+        }
+        fatigue_increment = cfg.fatigue_increment_synthesize
+        threshold = "adaptive_synthesis_threshold"
+    if cfg.condition == "source_preserving_artifact_label_shuffle" and shuffle_rng is not None:
+        values = list(update.values())
+        shuffled_keys = list(update)
+        shuffle_rng.shuffle(shuffled_keys)
+        update = dict(zip(shuffled_keys, values))
+    if cfg.condition == "artifact_off_source_ledger_null":
+        update = {key: 0.0 for key in update}
+    artifact_updates.append(
+        {
+            "visible_tick": tick + cfg.artifact_delay_ticks,
+            **update,
+        }
+    )
+    agent_state["fatigue"] = _a7_2_clip(config, agent_state["fatigue"] + fatigue_increment)
+    _adapt_a7_2_thresholds(config, agent_state, threshold)
+    tick_state.source_ledger_artifact += sum(abs(value) for value in update.values())
+    events.append(
+        _event(
+            tick=tick,
+            event_type="a7_2_action_selected",
+            agent_id=agent.agent_id,
+            action=action,
+            a7_2_condition=cfg.condition,
+            selected_action=action,
+            artifact_update_created_tick=tick,
+            artifact_update_visible_tick=tick + cfg.artifact_delay_ticks,
+            source_ledger_artifact=round(sum(abs(value) for value in update.values()), 6),
+            source_ledger_artifact_readiness_delta=round(update["readiness"], 6),
+            source_ledger_artifact_coherence_delta=round(update["coherence"], 6),
+            source_ledger_artifact_contradiction_delta=round(update["contradiction"], 6),
+            source_ledger_artifact_risk_delta=round(update["risk"], 6),
+        )
+    )
+
+
+def _adapt_a7_2_thresholds(
+    config: OmegaConfig,
+    agent_state: dict[str, float],
+    active_threshold: str,
+) -> None:
+    assert config.a7_2_delayed_prediction is not None
+    cfg = config.a7_2_delayed_prediction
+    for key in (
+        "adaptive_prediction_threshold",
+        "adaptive_work_threshold",
+        "adaptive_review_threshold",
+        "adaptive_synthesis_threshold",
+    ):
+        delta = cfg.threshold_learning_rate_error if key == active_threshold else -cfg.threshold_recovery_rate
+        agent_state[key] = _clamp(
+            agent_state[key] + delta,
+            cfg.threshold_min,
+            cfg.threshold_max,
+        )
+    agent_state["fatigue"] = _a7_2_clip(
+        config,
+        agent_state["fatigue"] * (1.0 - cfg.fatigue_decay),
+    )
+
+
+def _a7_2_delayed_prediction_metrics(
+    *,
+    config: OmegaConfig,
+    agent_state: dict[str, dict[str, float]],
+    artifact: dict[str, float],
+    tick_state: _A7_2TickState,
+    forecast_queue_length: int,
+    artifact_queue_length: int,
+    tick: int,
+    queue_depth: int,
+    queue_age_metrics: dict[str, float],
+    completed_this_tick: int,
+    completed_total: int,
+    task_arrivals: int,
+    action_opportunity: int,
+    work_actions: int,
+) -> dict[str, int | float | str]:
+    if config.a7_2_delayed_prediction is None:
+        return {}
+    cfg = config.a7_2_delayed_prediction
+    selected_actions = tick_state.selected_actions or Counter()
+    utilities = tick_state.utilities or {}
+    remaining_work_budget = max(action_opportunity - tick_state.lost_work_opportunity, 0.0)
+    completion_fraction = completed_this_tick / max(action_opportunity, 1)
+    selected_action = selected_actions.most_common(1)[0][0] if selected_actions else ""
+    metrics: dict[str, int | float | str] = {
+        "a7_2_forecast_error_lag1": round(artifact["forecast_error_lag1"], 6),
+        "a7_2_forecast_uncertainty_lag1": round(artifact["forecast_uncertainty_lag1"], 6),
+        "a7_2_prediction_spend": round(tick_state.prediction_spend, 6),
+        "a7_2_lost_work_opportunity_from_prediction": round(
+            tick_state.lost_work_opportunity,
+            6,
+        ),
+        "a7_2_fatigue": _a7_agent_mean(agent_state, "fatigue"),
+        "a7_2_adaptive_prediction_threshold": _a7_agent_mean(
+            agent_state,
+            "adaptive_prediction_threshold",
+        ),
+        "a7_2_adaptive_work_threshold": _a7_agent_mean(
+            agent_state,
+            "adaptive_work_threshold",
+        ),
+        "a7_2_adaptive_review_threshold": _a7_agent_mean(
+            agent_state,
+            "adaptive_review_threshold",
+        ),
+        "a7_2_adaptive_synthesis_threshold": _a7_agent_mean(
+            agent_state,
+            "adaptive_synthesis_threshold",
+        ),
+        "a7_2_artifact_readiness": round(artifact["artifact_readiness"], 6),
+        "a7_2_artifact_coherence": round(artifact["artifact_coherence"], 6),
+        "a7_2_artifact_contradiction": round(artifact["artifact_contradiction"], 6),
+        "a7_2_artifact_risk": round(artifact["artifact_risk"], 6),
+        "a7_2_artifact_revision_pressure": round(
+            artifact["artifact_revision_pressure"],
+            6,
+        ),
+        "a7_2_selected_action": selected_action,
+        "a7_2_predict_utility": round(utilities.get("predict", 0.0) / max(action_opportunity, 1), 6),
+        "a7_2_work_utility": round(utilities.get("work", 0.0) / max(action_opportunity, 1), 6),
+        "a7_2_review_utility": round(utilities.get("review", 0.0) / max(action_opportunity, 1), 6),
+        "a7_2_synthesize_utility": round(
+            utilities.get("synthesize", 0.0) / max(action_opportunity, 1),
+            6,
+        ),
+        "a7_2_delayed_forecast_update_queue": forecast_queue_length,
+        "a7_2_delayed_artifact_update_queue": artifact_queue_length,
+        "a7_2_source_ledger_forecast_error": round(tick_state.source_ledger_forecast_error, 6),
+        "a7_2_source_ledger_artifact": round(tick_state.source_ledger_artifact, 6),
+        "a7_2_source_ledger_queue_accounting": round(
+            tick_state.source_ledger_queue_accounting,
+            6,
+        ),
+        "tick": tick,
+        "demand_phase": round(float(np.sin((tick + 1) / 3.0)), 6),
+        "task_arrivals": task_arrivals,
+        "service_capacity": config.model.work_service_capacity,
+        "action_opportunity": action_opportunity,
+        "work_budget": action_opportunity,
+        "prediction_spend": round(tick_state.prediction_spend, 6),
+        "remaining_work_budget": round(remaining_work_budget, 6),
+        "backlog": queue_depth,
+        "queued_age": queue_age_metrics.get("queued_task_age_mean_tick", 0.0),
+        "completion_fraction": round(completion_fraction, 6),
+        "starvation": int(queue_depth > 0 and work_actions == 0),
+        "prediction_spend_volatility": 0.0,
+        "work_budget_volatility": round(
+            float(tick_state.lost_work_opportunity / max(action_opportunity, 1)),
+            6,
+        ),
+        "source_ledger_queue_accounting": round(tick_state.source_ledger_queue_accounting, 6),
+    }
+    return metrics
+
+
+def _a7_2_clip(config: OmegaConfig, value: float) -> float:
+    assert config.a7_2_delayed_prediction is not None
+    cfg = config.a7_2_delayed_prediction
+    return _clamp(value, cfg.artifact_clip_min, cfg.artifact_clip_max)
+
+
 def _softmax_probabilities(values: list[float], *, temperature: float) -> np.ndarray:
     scaled = np.array(values, dtype=float) / temperature
     shifted = scaled - np.max(scaled)
@@ -3466,6 +4103,21 @@ def _event(
     a7_delta_queue_work_accounting: float | str = "",
     a7_delta_semantic_noise: float | str = "",
     a7_delta_clip_residual: float | str = "",
+    a7_2_condition: str = "",
+    selected_action: str = "",
+    forecast_update_created_tick: int | str = "",
+    forecast_update_visible_tick: int | str = "",
+    artifact_update_created_tick: int | str = "",
+    artifact_update_visible_tick: int | str = "",
+    prediction_work_cost: float | str = "",
+    source_ledger_forecast_error: float | str = "",
+    source_ledger_artifact: float | str = "",
+    source_ledger_queue_accounting: float | str = "",
+    source_ledger_artifact_readiness_delta: float | str = "",
+    source_ledger_artifact_coherence_delta: float | str = "",
+    source_ledger_artifact_contradiction_delta: float | str = "",
+    source_ledger_artifact_risk_delta: float | str = "",
+    source_ledger_clip_residual: float | str = "",
 ) -> dict[str, Any]:
     return {
         "tick": tick,
@@ -3508,4 +4160,19 @@ def _event(
         "a7_delta_queue_work_accounting": a7_delta_queue_work_accounting,
         "a7_delta_semantic_noise": a7_delta_semantic_noise,
         "a7_delta_clip_residual": a7_delta_clip_residual,
+        "a7_2_condition": a7_2_condition,
+        "selected_action": selected_action,
+        "forecast_update_created_tick": forecast_update_created_tick,
+        "forecast_update_visible_tick": forecast_update_visible_tick,
+        "artifact_update_created_tick": artifact_update_created_tick,
+        "artifact_update_visible_tick": artifact_update_visible_tick,
+        "prediction_work_cost": prediction_work_cost,
+        "source_ledger_forecast_error": source_ledger_forecast_error,
+        "source_ledger_artifact": source_ledger_artifact,
+        "source_ledger_queue_accounting": source_ledger_queue_accounting,
+        "source_ledger_artifact_readiness_delta": source_ledger_artifact_readiness_delta,
+        "source_ledger_artifact_coherence_delta": source_ledger_artifact_coherence_delta,
+        "source_ledger_artifact_contradiction_delta": source_ledger_artifact_contradiction_delta,
+        "source_ledger_artifact_risk_delta": source_ledger_artifact_risk_delta,
+        "source_ledger_clip_residual": source_ledger_clip_residual,
     }

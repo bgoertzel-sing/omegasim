@@ -1052,6 +1052,39 @@ def test_a7_2_config_schema_rejects_changed_frozen_parameters(tmp_path: Path) ->
         load_config(bad_path)
 
 
+def test_a7_2_smoke_simulator_emits_frozen_contract_fields() -> None:
+    config = load_config(A7_2_INTERMEDIATE_ENDOGENOUS_DELAYED)
+    result = simulate(config, seed=1)
+
+    assert len(result.metrics) == A7_2_SMOKE_PARAMETERS["horizon_ticks"]
+    first_metric = result.metrics[0]
+    for field in a7_2_required_metric_fields():
+        assert field in first_metric
+    assert first_metric["a7_2_selected_action"] in A7_2_ACTIONS
+    assert first_metric["a7_2_delayed_forecast_update_queue"] >= 0
+    assert first_metric["a7_2_delayed_artifact_update_queue"] >= 0
+
+    a7_2_events = [
+        event for event in result.events if event["event_type"] == "a7_2_action_selected"
+    ]
+    assert a7_2_events
+    for field in a7_2_required_event_fields():
+        assert field in a7_2_events[0]
+    predict_events = [
+        event
+        for event in a7_2_events
+        if event["selected_action"] == "predict"
+        and event["forecast_update_created_tick"] != ""
+    ]
+    assert predict_events
+    assert all(
+        int(event["forecast_update_visible_tick"])
+        - int(event["forecast_update_created_tick"])
+        == A7_2_SMOKE_PARAMETERS["forecast_delay_ticks"]
+        for event in predict_events
+    )
+
+
 def test_a7_analyzer_fails_closed_on_missing_schema(tmp_path: Path) -> None:
     compare_dir = tmp_path / "a7_compare"
     run_dir = compare_dir / "a7_logistic_semantic_coupling_seed1"

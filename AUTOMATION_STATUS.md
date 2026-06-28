@@ -45,10 +45,9 @@ Ben informed about design decisions and results as this road advances.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the minimal A7.2 simulator/source-ledger
-  mechanics needed to emit the frozen contract fields for the ten
-  preregistered smoke conditions, with focused tests first; do not run the
-  paired A7.2 smoke or interpret results until those mechanics/schema tests
+- Recommended next step: implement the bounded A7.2 read-only comparison and
+  analyzer preflight over the ten preregistered smoke conditions, then run it
+  only on the fixed seed `1,2` tiny smoke after its schema/source-ledger tests
   pass.
 
 ## Blockers
@@ -60,6 +59,37 @@ with A5-style forecast skill, backlog dwell, accounting leakage, or
 post-result rescue tuning.
 
 ## Latest Changes
+
+- 2026-06-28 current bounded A7.2 mechanics pass: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests surface, the superseded provisional
+  roadmap, the frozen A7.2 preregistration, current guard output, CLI-loop
+  tail, and the latest GPT-5.5-Pro strategy review before choosing the next
+  step. The review has `notify_ben: false` and `strategic_change_level:
+  minor`; its preregistration-freeze recommendation was already satisfied by
+  the prior A7.2 contract/config pass, so this run followed the current
+  source-of-truth status next step and added only minimal simulator/output
+  mechanics needed to emit the frozen A7.2 fields.
+- Added isolated A7.2 delayed prediction mechanics in `ohdyn.sim`: deterministic
+  A7.2 action selection among `predict`, `work`, `review`, and `synthesize`;
+  prediction work-opportunity charging; delayed forecast/artifact update
+  queues; fatigue/adaptive-threshold updates; source-ledger event rows; and
+  per-tick metrics for the frozen contract fields. Wired A7.2 metric/event
+  fieldnames and manifest metadata in `ohdyn.io`. Added focused simulator-path
+  regression coverage proving the intermediate A7.2 smoke fixture emits the
+  required metric/event schema and delayed forecast timing. No paired A7.2
+  scientific smoke, analyzer interpretation, dashboards, integrations, broad
+  seed sweeps, or multi-hive coupling were added.
+- Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_2' -q`
+  (`8 passed, 627 deselected`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a7_2 or a7_semantic_field_contract' -q` (`24 passed,
+  611 deselected`), a temporary single-seed write-path smoke
+  `.venv-conda/bin/python -m ohdyn.run --config
+  configs/a7_2_intermediate_endogenous_delayed_prediction_smoke.yaml --seed 1
+  --out /tmp/.../run` with inspected `metrics.csv` and `events.csv` headers,
+  `.venv-conda/bin/python -m ohdyn.automation_guard` (`state=open`,
+  `repo_write_allowed=true`, `notify_ben=false`), and `git diff --check`.
 
 - 2026-06-28 10:29 PDT A5 prompt-replay verification: re-read automation
   memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive

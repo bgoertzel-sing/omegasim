@@ -19,6 +19,10 @@ from ohdyn.a7_semantic_field_contract import (
     A7_RNG_STREAMS,
     a7_required_metric_fields,
 )
+from ohdyn.a7_2_delayed_prediction_contract import (
+    A7_2_EVENT_FIELDS,
+    a7_2_required_metric_fields,
+)
 from ohdyn.sim import (
     A5_EVENT_TYPES,
     A6_ARTIFACT_FIELDS,
@@ -46,6 +50,7 @@ from ohdyn.sim import (
     predictive_control_metric_fields,
     role_action_metric_fields,
     semantic_field_metric_fields,
+    a7_2_delayed_prediction_metric_fields,
 )
 
 
@@ -211,6 +216,19 @@ def _manifest(result: SimulationResult) -> dict[str, Any]:
             "rng_streams": list(A7_RNG_STREAMS),
             "prediction_budget_competes_with_work": True,
         }
+    if result.config.a7_2_delayed_prediction is not None:
+        manifest["model"]["a7_2_delayed_prediction"] = {
+            "condition": result.config.a7_2_delayed_prediction.condition,
+            "single_hive_only": True,
+            "execution_mode": "real_simulator_schema_smoke",
+            "scientific_status": "implementation_smoke_only_no_result_interpretation",
+            "actions": ["predict", "work", "review", "synthesize"],
+            "event_fields": list(A7_2_EVENT_FIELDS),
+            "metric_fields": list(a7_2_required_metric_fields()),
+            "prediction_budget_competes_with_work": True,
+            "delayed_forecast_updates": True,
+            "delayed_artifact_updates": True,
+        }
     if _exogenous_arrivals_enabled(result) and result.config.exogenous_arrivals is not None:
         assert result.config.exogenous_arrivals is not None
         manifest["model"]["exogenous_arrivals"] = {
@@ -336,6 +354,9 @@ def _metrics_fieldnames(result: SimulationResult) -> tuple[str, ...]:
         include_predictive_control=result.config.predictive_control is not None,
         include_logistic_appraisal=result.config.logistic_appraisal is not None,
         include_semantic_field=result.config.semantic_field is not None,
+        include_a7_2_delayed_prediction=(
+            result.config.a7_2_delayed_prediction is not None
+        ),
     )
     if _multi_hive_enabled(result):
         return (*fields, *MULTI_HIVE_QUEUE_FLOW_METRIC_FIELDS)
@@ -357,6 +378,8 @@ def _event_types(result: SimulationResult) -> tuple[str, ...]:
         event_types.extend(A6_EVENT_TYPES)
     if result.config.semantic_field is not None:
         event_types.extend(("a7_semantic_field_update",))
+    if result.config.a7_2_delayed_prediction is not None:
+        event_types.extend(("a7_2_action_selected", "a7_2_delayed_artifact_update"))
     return tuple(event_types)
 
 
@@ -603,6 +626,14 @@ def _artifact_schema_provenance(result: SimulationResult) -> list[str]:
         *(
             [f"- A7 semantic-field fields: {len(semantic_field_metric_fields())}"]
             if result.config.semantic_field is not None
+            else []
+        ),
+        *(
+            [
+                "- A7.2 delayed-prediction fields: "
+                f"{len(a7_2_delayed_prediction_metric_fields())}"
+            ]
+            if result.config.a7_2_delayed_prediction is not None
             else []
         ),
         *(
