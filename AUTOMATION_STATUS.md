@@ -19,6 +19,14 @@ automation guard. The guard now reports `repo_write_allowed=false` whenever
 `should_noop=true`, including the current
 `closed_awaiting_preregistration` state.
 
+The 2026-06-28 02:23 PDT pass rechecked Ben's explicit A5
+single-hive anticipatory predictive-control request against the checked-in
+preregistration, README scope, deterministic scaffold, and focused tests. The
+requested preregistration and minimal smoke scaffold already exist; the
+current guard remains closed to additional simulator mechanics, configs,
+analyzers, simulation runs, dashboards, integrations, A7.2 mechanics, and
+multi-hive coupling.
+
 The 2026-06-28 01:21 PDT pass rechecked the concise A5 preregistration, the
 resource-bounded residual-compression preregistration/report, the Ben
 A5-exit/A7.2 decision request, and the automation guard. No unhandled A5
@@ -73,6 +81,21 @@ pending Ben's explicit decision.
   active A7.2 preregistration, or a separate three-hive preregistration.
 
 ## Latest Changes
+
+- 2026-06-28 02:23 PDT bounded A5 status verification: re-read the
+  automation memory, the concise A5 single-hive preregistration, `README.md`,
+  `AUTOMATION_STATUS.md`, the existing reopened smoke note, the A5 comparison
+  scaffold, focused A5/automation tests, and the automation guard. No
+  unhandled A5 preregistration or scaffold gap was found.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `notify_ben=true`) and focused pytest
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`18 passed, 608 deselected`). No simulator mechanics, configs, analyzers,
+  simulation runs, dashboards, integrations, seed sweeps, A7.2 mechanics, or
+  multi-hive coupling were added.
 
 - 2026-06-28 01:46 PDT bounded guard-closed stop pass: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
@@ -295,6 +318,15 @@ pending Ben's explicit decision.
 
 ## Verification
 
+- 2026-06-28 02:23 PDT check: `.venv-conda/bin/python -m
+  ohdyn.automation_guard` passed and reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, and `notify_ben=true`.
+- 2026-06-28 02:23 PDT focused tests passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  reported `18 passed, 608 deselected`.
+
 - `git status --short --branch` initially reported a clean branch after
   `git update-index --refresh`: `## main...origin/main`.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` reported
@@ -455,6 +487,12 @@ pending Ben's explicit decision.
   `runs/`, so A5.1a was treated as result-note coverage only.
 
 ## Blockers
+
+- 2026-06-28 02:23 PDT check: no local code or environment blocker. The
+  active blocker remains scientific/governance scope: the requested A5
+  preregistration and minimal smoke scaffold already exist, later residual and
+  compression audits failed closed, and Ben has not yet chosen the next
+  preregistered gate.
 
 - No code or environment blocker. Governance blocker remains: Ben has not yet
   chosen among A5-family closure, active A7.2 preregistration, or a separate
