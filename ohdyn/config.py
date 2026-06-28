@@ -8,6 +8,10 @@ from typing import Any
 
 import yaml
 
+from ohdyn.a7_2_delayed_prediction_contract import (
+    A7_2_CONDITIONS,
+    A7_2_SMOKE_PARAMETERS,
+)
 from ohdyn.a7_semantic_field_contract import A7_CONDITIONS
 
 
@@ -50,6 +54,7 @@ LOGISTIC_APPRAISAL_CONDITIONS = (
 )
 
 SEMANTIC_FIELD_CONDITIONS = A7_CONDITIONS
+A7_2_DELAYED_PREDICTION_CONDITIONS = A7_2_CONDITIONS
 
 A6_ACTIONS = (
     "synthesize",
@@ -159,6 +164,34 @@ class SemanticFieldConfig:
 
 
 @dataclass(frozen=True)
+class A7_2DelayedPredictionConfig:
+    condition: str
+    forecast_delay_ticks: int
+    artifact_delay_ticks: int
+    prediction_cost_work_fraction: float
+    max_prediction_work_fraction_per_tick: float
+    fatigue_decay: float
+    fatigue_increment_predict: float
+    fatigue_increment_work: float
+    fatigue_increment_review: float
+    fatigue_increment_synthesize: float
+    threshold_learning_rate_error: float
+    threshold_recovery_rate: float
+    threshold_min: float
+    threshold_max: float
+    utility_slope_predict: float
+    utility_slope_work: float
+    utility_slope_review: float
+    utility_slope_synthesize: float
+    artifact_clip_min: float
+    artifact_clip_max: float
+    artifact_decay: float
+    same_tick_feedback_allowed: bool = False
+    spend_only_replay_preserves_prediction_work_deductions: bool = False
+    artifact_off_preserves_queue_accounting_controls: bool = False
+
+
+@dataclass(frozen=True)
 class HiveConfig:
     hive_id: str
     seed_offset: int
@@ -184,6 +217,7 @@ class OmegaConfig:
     predictive_control: PredictiveControlConfig | None = None
     logistic_appraisal: LogisticAppraisalConfig | None = None
     semantic_field: SemanticFieldConfig | None = None
+    a7_2_delayed_prediction: A7_2DelayedPredictionConfig | None = None
     hives: tuple[HiveConfig, ...] = ()
     coupling: CouplingConfig | None = None
 
@@ -213,6 +247,8 @@ class OmegaConfig:
             data.pop("logistic_appraisal")
         if self.semantic_field is None:
             data.pop("semantic_field")
+        if self.a7_2_delayed_prediction is None:
+            data.pop("a7_2_delayed_prediction")
         if not self.hives:
             data.pop("hives")
             data.pop("coupling")
@@ -239,6 +275,9 @@ def load_config(path: str | Path) -> OmegaConfig:
     predictive_control = _optional_predictive_control(raw.get("predictive_control"))
     logistic_appraisal = _optional_logistic_appraisal(raw.get("logistic_appraisal"))
     semantic_field = _optional_semantic_field(raw.get("semantic_field"))
+    a7_2_delayed_prediction = _optional_a7_2_delayed_prediction(
+        raw.get("a7_2_delayed_prediction")
+    )
     hives = _optional_hives(raw.get("hives"))
     coupling = _optional_coupling(raw.get("coupling"), hives)
 
@@ -271,16 +310,22 @@ def load_config(path: str | Path) -> OmegaConfig:
         predictive_control=predictive_control,
         logistic_appraisal=logistic_appraisal,
         semantic_field=semantic_field,
+        a7_2_delayed_prediction=a7_2_delayed_prediction,
         hives=hives,
         coupling=coupling,
     )
     _validate_actions(
         cfg.model.actions,
-        allow_a6=cfg.logistic_appraisal is not None or cfg.semantic_field is not None,
+        allow_a6=(
+            cfg.logistic_appraisal is not None
+            or cfg.semantic_field is not None
+            or cfg.a7_2_delayed_prediction is not None
+        ),
     )
     _validate_predictive_control_scope(cfg)
     _validate_logistic_appraisal_scope(cfg)
     _validate_semantic_field_scope(cfg)
+    _validate_a7_2_delayed_prediction_scope(cfg)
     _validate_hive_seed_streams(cfg.hives, cfg.coupling)
     return cfg
 
@@ -605,6 +650,149 @@ def _optional_semantic_field(value: Any) -> SemanticFieldConfig | None:
     )
 
 
+def _optional_a7_2_delayed_prediction(
+    value: Any,
+) -> A7_2DelayedPredictionConfig | None:
+    if value is None:
+        return None
+    section = _expect_mapping(value, "a7_2_delayed_prediction")
+    supported_keys = {
+        "condition",
+        "forecast_delay_ticks",
+        "artifact_delay_ticks",
+        "prediction_cost_work_fraction",
+        "max_prediction_work_fraction_per_tick",
+        "fatigue_decay",
+        "fatigue_increment_predict",
+        "fatigue_increment_work",
+        "fatigue_increment_review",
+        "fatigue_increment_synthesize",
+        "threshold_learning_rate_error",
+        "threshold_recovery_rate",
+        "threshold_min",
+        "threshold_max",
+        "utility_slope_predict",
+        "utility_slope_work",
+        "utility_slope_review",
+        "utility_slope_synthesize",
+        "artifact_clip_min",
+        "artifact_clip_max",
+        "artifact_decay",
+        "same_tick_feedback_allowed",
+        "spend_only_replay_preserves_prediction_work_deductions",
+        "artifact_off_preserves_queue_accounting_controls",
+    }
+    unknown = set(section) - supported_keys
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"a7_2_delayed_prediction contains unsupported keys: {names}")
+
+    condition = _a7_2_delayed_prediction_condition(
+        section.get("condition"),
+        "a7_2_delayed_prediction.condition",
+    )
+    cfg = A7_2DelayedPredictionConfig(
+        condition=condition,
+        forecast_delay_ticks=_nonnegative_int(
+            section.get("forecast_delay_ticks"),
+            "a7_2_delayed_prediction.forecast_delay_ticks",
+        ),
+        artifact_delay_ticks=_nonnegative_int(
+            section.get("artifact_delay_ticks"),
+            "a7_2_delayed_prediction.artifact_delay_ticks",
+        ),
+        prediction_cost_work_fraction=_probability(
+            section.get("prediction_cost_work_fraction"),
+            "a7_2_delayed_prediction.prediction_cost_work_fraction",
+        ),
+        max_prediction_work_fraction_per_tick=_probability(
+            section.get("max_prediction_work_fraction_per_tick"),
+            "a7_2_delayed_prediction.max_prediction_work_fraction_per_tick",
+        ),
+        fatigue_decay=_probability(
+            section.get("fatigue_decay"),
+            "a7_2_delayed_prediction.fatigue_decay",
+        ),
+        fatigue_increment_predict=_probability(
+            section.get("fatigue_increment_predict"),
+            "a7_2_delayed_prediction.fatigue_increment_predict",
+        ),
+        fatigue_increment_work=_probability(
+            section.get("fatigue_increment_work"),
+            "a7_2_delayed_prediction.fatigue_increment_work",
+        ),
+        fatigue_increment_review=_probability(
+            section.get("fatigue_increment_review"),
+            "a7_2_delayed_prediction.fatigue_increment_review",
+        ),
+        fatigue_increment_synthesize=_probability(
+            section.get("fatigue_increment_synthesize"),
+            "a7_2_delayed_prediction.fatigue_increment_synthesize",
+        ),
+        threshold_learning_rate_error=_probability(
+            section.get("threshold_learning_rate_error"),
+            "a7_2_delayed_prediction.threshold_learning_rate_error",
+        ),
+        threshold_recovery_rate=_probability(
+            section.get("threshold_recovery_rate"),
+            "a7_2_delayed_prediction.threshold_recovery_rate",
+        ),
+        threshold_min=_float(
+            section.get("threshold_min"),
+            "a7_2_delayed_prediction.threshold_min",
+        ),
+        threshold_max=_float(
+            section.get("threshold_max"),
+            "a7_2_delayed_prediction.threshold_max",
+        ),
+        utility_slope_predict=_positive_float(
+            section.get("utility_slope_predict"),
+            "a7_2_delayed_prediction.utility_slope_predict",
+        ),
+        utility_slope_work=_positive_float(
+            section.get("utility_slope_work"),
+            "a7_2_delayed_prediction.utility_slope_work",
+        ),
+        utility_slope_review=_positive_float(
+            section.get("utility_slope_review"),
+            "a7_2_delayed_prediction.utility_slope_review",
+        ),
+        utility_slope_synthesize=_positive_float(
+            section.get("utility_slope_synthesize"),
+            "a7_2_delayed_prediction.utility_slope_synthesize",
+        ),
+        artifact_clip_min=_probability(
+            section.get("artifact_clip_min"),
+            "a7_2_delayed_prediction.artifact_clip_min",
+        ),
+        artifact_clip_max=_probability(
+            section.get("artifact_clip_max"),
+            "a7_2_delayed_prediction.artifact_clip_max",
+        ),
+        artifact_decay=_probability(
+            section.get("artifact_decay"),
+            "a7_2_delayed_prediction.artifact_decay",
+        ),
+        same_tick_feedback_allowed=_bool(
+            section.get("same_tick_feedback_allowed", False),
+            "a7_2_delayed_prediction.same_tick_feedback_allowed",
+        ),
+        spend_only_replay_preserves_prediction_work_deductions=_bool(
+            section.get("spend_only_replay_preserves_prediction_work_deductions", False),
+            (
+                "a7_2_delayed_prediction."
+                "spend_only_replay_preserves_prediction_work_deductions"
+            ),
+        ),
+        artifact_off_preserves_queue_accounting_controls=_bool(
+            section.get("artifact_off_preserves_queue_accounting_controls", False),
+            "a7_2_delayed_prediction.artifact_off_preserves_queue_accounting_controls",
+        ),
+    )
+    _validate_a7_2_preregistered_values(cfg)
+    return cfg
+
+
 def _optional_hives(value: Any) -> tuple[HiveConfig, ...]:
     if value is None:
         return ()
@@ -704,6 +892,12 @@ def _nonnegative_float(value: Any, name: str) -> float:
     return parsed
 
 
+def _float(value: Any, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"Config value {name!r} must be a number.")
+    return float(value)
+
+
 def _positive_float(value: Any, name: str) -> float:
     parsed = _nonnegative_float(value, name)
     if parsed <= 0.0:
@@ -769,6 +963,102 @@ def _semantic_field_condition(value: Any, name: str) -> str:
     return value
 
 
+def _a7_2_delayed_prediction_condition(value: Any, name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"Config value {name!r} must be a string.")
+    if value not in A7_2_DELAYED_PREDICTION_CONDITIONS:
+        names = ", ".join(A7_2_DELAYED_PREDICTION_CONDITIONS)
+        raise ValueError(f"Config value {name!r} must be one of: {names}.")
+    return value
+
+
+def _validate_a7_2_preregistered_values(
+    config: A7_2DelayedPredictionConfig,
+) -> None:
+    actual = {
+        "forecast_delay_ticks": config.forecast_delay_ticks,
+        "artifact_delay_ticks": config.artifact_delay_ticks,
+        "prediction_cost_work_fraction": config.prediction_cost_work_fraction,
+        "max_prediction_work_fraction_per_tick": config.max_prediction_work_fraction_per_tick,
+        "fatigue_decay": config.fatigue_decay,
+        "fatigue_increment_predict": config.fatigue_increment_predict,
+        "fatigue_increment_work": config.fatigue_increment_work,
+        "fatigue_increment_review": config.fatigue_increment_review,
+        "fatigue_increment_synthesize": config.fatigue_increment_synthesize,
+        "threshold_learning_rate_error": config.threshold_learning_rate_error,
+        "threshold_recovery_rate": config.threshold_recovery_rate,
+        "threshold_min": config.threshold_min,
+        "threshold_max": config.threshold_max,
+        "utility_slope_predict": config.utility_slope_predict,
+        "utility_slope_work": config.utility_slope_work,
+        "utility_slope_review": config.utility_slope_review,
+        "utility_slope_synthesize": config.utility_slope_synthesize,
+        "artifact_clip_min": config.artifact_clip_min,
+        "artifact_clip_max": config.artifact_clip_max,
+        "artifact_decay": config.artifact_decay,
+    }
+    frozen = {
+        key: value
+        for key, value in A7_2_SMOKE_PARAMETERS.items()
+        if key != "horizon_ticks"
+    }
+    for key, expected in frozen.items():
+        if actual[key] != expected:
+            raise ValueError(
+                f"a7_2_delayed_prediction.{key} must remain preregistered at {expected}."
+            )
+    if config.threshold_min >= config.threshold_max:
+        raise ValueError("a7_2_delayed_prediction threshold_min must be < threshold_max.")
+    if config.artifact_clip_min >= config.artifact_clip_max:
+        raise ValueError(
+            "a7_2_delayed_prediction artifact_clip_min must be < artifact_clip_max."
+        )
+    if (
+        config.condition == "same_tick_logistic_prediction"
+        and not config.same_tick_feedback_allowed
+    ):
+        raise ValueError(
+            "same_tick_logistic_prediction must explicitly allow same-tick feedback."
+        )
+    if (
+        config.condition != "same_tick_logistic_prediction"
+        and config.same_tick_feedback_allowed
+    ):
+        raise ValueError(
+            "A7.2 same-tick feedback is allowed only for same_tick_logistic_prediction."
+        )
+    if (
+        config.condition == "spend_only_replay"
+        and not config.spend_only_replay_preserves_prediction_work_deductions
+    ):
+        raise ValueError(
+            "spend_only_replay must preserve prediction-work deductions."
+        )
+    if (
+        config.condition != "spend_only_replay"
+        and config.spend_only_replay_preserves_prediction_work_deductions
+    ):
+        raise ValueError(
+            "Only spend_only_replay may set "
+            "spend_only_replay_preserves_prediction_work_deductions."
+        )
+    if (
+        config.condition == "artifact_off_source_ledger_null"
+        and not config.artifact_off_preserves_queue_accounting_controls
+    ):
+        raise ValueError(
+            "artifact_off_source_ledger_null must preserve queue/accounting controls."
+        )
+    if (
+        config.condition != "artifact_off_source_ledger_null"
+        and config.artifact_off_preserves_queue_accounting_controls
+    ):
+        raise ValueError(
+            "Only artifact_off_source_ledger_null may set "
+            "artifact_off_preserves_queue_accounting_controls."
+        )
+
+
 def _validate_coupling(coupling: CouplingConfig) -> None:
     if coupling.mode == "none":
         if coupling.transfer_probability != 0.0:
@@ -809,6 +1099,25 @@ def _validate_semantic_field_scope(config: OmegaConfig) -> None:
         raise ValueError("semantic_field must not be combined with A5 predictive_control.")
     if config.logistic_appraisal is not None:
         raise ValueError("semantic_field must not be combined with A6 logistic_appraisal.")
+
+
+def _validate_a7_2_delayed_prediction_scope(config: OmegaConfig) -> None:
+    if config.a7_2_delayed_prediction is None:
+        return
+    if config.run.ticks != A7_2_SMOKE_PARAMETERS["horizon_ticks"]:
+        raise ValueError("A7.2 smoke configs must use the preregistered 48-tick horizon.")
+    if config.hives:
+        raise ValueError(
+            "a7_2_delayed_prediction is currently preregistered for single-hive A7.2 runs only."
+        )
+    if config.predictive_control is not None:
+        raise ValueError("a7_2_delayed_prediction must not be combined with A5 predictive_control.")
+    if config.logistic_appraisal is not None:
+        raise ValueError(
+            "a7_2_delayed_prediction must not be combined with A6 logistic_appraisal."
+        )
+    if config.semantic_field is not None:
+        raise ValueError("a7_2_delayed_prediction must not be combined with A7 semantic_field.")
 
 
 def _validate_hive_seed_streams(

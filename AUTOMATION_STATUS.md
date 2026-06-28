@@ -39,10 +39,11 @@ Ben informed about design decisions and results as this road advances.
 
 ## Recommended Next Step
 
-- Recommended next step: implement only the A7.2 config/schema contract tests
-  for the frozen preregistration in
-  `docs/a7_2_delayed_artifact_endogenous_prediction_preregistration.md`; do
-  not run A7.2 simulations until those tests pass.
+- Recommended next step: implement the minimal A7.2 simulator/source-ledger
+  mechanics needed to emit the frozen contract fields for the ten
+  preregistered smoke conditions, with focused tests first; do not run the
+  paired A7.2 smoke or interpret results until those mechanics/schema tests
+  pass.
 
 ## Blockers
 
@@ -53,6 +54,36 @@ with A5-style forecast skill, backlog dwell, accounting leakage, or
 post-result rescue tuning.
 
 ## Latest Changes
+
+- 2026-06-28 10:05 PDT A7.2 config/schema contract gate: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the historical
+  provisional roadmap, the A5-family exit/A7.2 decision record, the frozen
+  A7.2 preregistration, and the latest GPT-5.5-Pro strategy review before
+  choosing the next step. The review has `notify_ben: false` and
+  `strategic_change_level: minor`; its recommendation to freeze A7.2 before
+  simulator implementation had already been incorporated in the prior
+  preregistration pass, so this run accepted the current source-of-truth next
+  step and added only config/schema contract support.
+- Added `ohdyn/a7_2_delayed_prediction_contract.py` with frozen A7.2 action,
+  condition, state, source-ledger, control, metric/event schema, endpoint,
+  productivity guardrail, and smoke-parameter constants. Added
+  `a7_2_delayed_prediction` config loading/validation, including fail-closed
+  checks for preregistered constants, same-tick feedback only in the explicit
+  same-tick control, spend-only replay accounting preservation, and
+  artifact-off queue/accounting preservation. Added ten 48-tick A7.2 smoke
+  config fixtures that load in preregistered condition order. Added focused
+  tests for the contract, fixtures, and invariant rejection paths.
+- Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_2' -q`
+  (`7 passed, 627 deselected`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a7_2 or a7_semantic_field_contract' -q` (`23 passed,
+  611 deselected`), `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=open`, `repo_write_allowed=true`, `notify_ben=false`), and
+  `git diff --check`. Full verification also passed:
+  `.venv-conda/bin/python -m pytest -q` (`634 passed in 636.36s`). No A7.2
+  simulations, analyzers, dashboards, integrations, seed sweeps, or multi-hive
+  coupling were added or run.
 
 - 2026-06-28 09:43 PDT A7.2 preregistration freeze: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded

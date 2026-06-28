@@ -125,6 +125,21 @@ from ohdyn.analyze_exogenous_arrival_controls import (
     run_exogenous_arrival_control_analysis,
 )
 from ohdyn.automation_guard import read_automation_state
+from ohdyn.a7_2_delayed_prediction_contract import (
+    A7_2_ACTIONS,
+    A7_2_CONDITIONS,
+    A7_2_CONTROL_FIELDS,
+    A7_2_EVENT_FIELDS,
+    A7_2_NULL_CONDITIONS,
+    A7_2_POSITIVE_CONDITION,
+    A7_2_PRIMARY_ENDPOINTS,
+    A7_2_PRODUCTIVITY_GUARDRAILS,
+    A7_2_SMOKE_PARAMETERS,
+    A7_2_SOURCE_LEDGER_FIELDS,
+    A7_2_STATE_FIELDS,
+    a7_2_required_event_fields,
+    a7_2_required_metric_fields,
+)
 from ohdyn.a7_semantic_field_contract import (
     A7_CONDITIONS,
     A7_CONTROL_FIELDS,
@@ -273,6 +288,36 @@ A7_SMOKE_FIXTURES = (
     A7_SOURCE_PRESERVING_LABEL_SHUFFLE,
     A7_SEMANTIC_PHASE_SHUFFLE,
     A7_PREDICTION_TIMING_BROKEN,
+)
+A7_2_ZERO_BUDGET_REACTIVE = Path("configs/a7_2_zero_budget_reactive_smoke.yaml")
+A7_2_INTERMEDIATE_ENDOGENOUS_DELAYED = Path(
+    "configs/a7_2_intermediate_endogenous_delayed_prediction_smoke.yaml"
+)
+A7_2_HIGH_BUDGET_ORACLE = Path("configs/a7_2_high_budget_oracle_smoothing_smoke.yaml")
+A7_2_AMPLITUDE_MATCHED_LINEAR = Path(
+    "configs/a7_2_amplitude_matched_linear_delayed_prediction_smoke.yaml"
+)
+A7_2_SAME_TICK_LOGISTIC = Path("configs/a7_2_same_tick_logistic_prediction_smoke.yaml")
+A7_2_PHASE_SHUFFLED_LAG_INPUT = Path("configs/a7_2_phase_shuffled_lag_input_smoke.yaml")
+A7_2_THRESHOLD_SHUFFLED = Path("configs/a7_2_threshold_shuffled_smoke.yaml")
+A7_2_SOURCE_PRESERVING_ARTIFACT_LABEL_SHUFFLE = Path(
+    "configs/a7_2_source_preserving_artifact_label_shuffle_smoke.yaml"
+)
+A7_2_SPEND_ONLY_REPLAY = Path("configs/a7_2_spend_only_replay_smoke.yaml")
+A7_2_ARTIFACT_OFF_SOURCE_LEDGER_NULL = Path(
+    "configs/a7_2_artifact_off_source_ledger_null_smoke.yaml"
+)
+A7_2_SMOKE_FIXTURES = (
+    A7_2_ZERO_BUDGET_REACTIVE,
+    A7_2_INTERMEDIATE_ENDOGENOUS_DELAYED,
+    A7_2_HIGH_BUDGET_ORACLE,
+    A7_2_AMPLITUDE_MATCHED_LINEAR,
+    A7_2_SAME_TICK_LOGISTIC,
+    A7_2_PHASE_SHUFFLED_LAG_INPUT,
+    A7_2_THRESHOLD_SHUFFLED,
+    A7_2_SOURCE_PRESERVING_ARTIFACT_LABEL_SHUFFLE,
+    A7_2_SPEND_ONLY_REPLAY,
+    A7_2_ARTIFACT_OFF_SOURCE_LEDGER_NULL,
 )
 DEFAULT_OUTPUTS = Path("configs/a0_default_outputs.yaml")
 REORDERED_ACTIONS = Path("configs/a0_reordered_actions.yaml")
@@ -874,6 +919,137 @@ def test_a7_semantic_field_contract_freezes_gate_names_and_equations() -> None:
     assert "a7_semantic_novelty_tick" in a7_required_metric_fields()
     assert "a7_prediction_error_mean_tick" in a7_required_metric_fields()
     assert "a7_semantic_field" in a7_required_event_fields()
+
+
+def test_a7_2_delayed_prediction_contract_freezes_preregistered_schema() -> None:
+    assert A7_2_ACTIONS == ("predict", "work", "review", "synthesize")
+    assert A7_2_POSITIVE_CONDITION == "intermediate_endogenous_delayed_prediction"
+    assert A7_2_CONDITIONS == (
+        "zero_budget_reactive",
+        "intermediate_endogenous_delayed_prediction",
+        "high_budget_oracle_smoothing",
+        "amplitude_matched_linear_delayed_prediction",
+        "same_tick_logistic_prediction",
+        "phase_shuffled_lag_input",
+        "threshold_shuffled",
+        "source_preserving_artifact_label_shuffle",
+        "spend_only_replay",
+        "artifact_off_source_ledger_null",
+    )
+    assert A7_2_NULL_CONDITIONS == (
+        "zero_budget_reactive",
+        "high_budget_oracle_smoothing",
+        "amplitude_matched_linear_delayed_prediction",
+        "same_tick_logistic_prediction",
+        "phase_shuffled_lag_input",
+        "threshold_shuffled",
+        "source_preserving_artifact_label_shuffle",
+        "spend_only_replay",
+        "artifact_off_source_ledger_null",
+    )
+    assert A7_2_SMOKE_PARAMETERS == {
+        "horizon_ticks": 48,
+        "forecast_delay_ticks": 2,
+        "artifact_delay_ticks": 3,
+        "prediction_cost_work_fraction": 0.25,
+        "max_prediction_work_fraction_per_tick": 0.40,
+        "fatigue_decay": 0.20,
+        "fatigue_increment_predict": 0.08,
+        "fatigue_increment_work": 0.05,
+        "fatigue_increment_review": 0.04,
+        "fatigue_increment_synthesize": 0.06,
+        "threshold_learning_rate_error": 0.05,
+        "threshold_recovery_rate": 0.02,
+        "threshold_min": -2.0,
+        "threshold_max": 2.0,
+        "utility_slope_predict": 1.20,
+        "utility_slope_work": 1.00,
+        "utility_slope_review": 1.10,
+        "utility_slope_synthesize": 1.15,
+        "artifact_clip_min": 0.0,
+        "artifact_clip_max": 1.0,
+        "artifact_decay": 0.10,
+    }
+    assert "forecast_error_lag1" in A7_2_STATE_FIELDS
+    assert "artifact_revision_pressure" in A7_2_STATE_FIELDS
+    assert "source_ledger_artifact" in A7_2_SOURCE_LEDGER_FIELDS
+    assert "source_ledger_queue_accounting" in A7_2_CONTROL_FIELDS
+    assert "forecast_update_visible_tick" in A7_2_EVENT_FIELDS
+    assert "lead_lag_mediation_error_to_spend_to_artifact_to_residual" in (
+        A7_2_PRIMARY_ENDPOINTS
+    )
+    assert A7_2_PRODUCTIVITY_GUARDRAILS["completion_fraction_delta_min"] == -0.05
+    assert "a7_2_forecast_error_lag1" in a7_2_required_metric_fields()
+    assert "source_ledger_artifact_risk_delta" in a7_2_required_event_fields()
+
+
+def test_a7_2_configs_load_in_preregistered_condition_order() -> None:
+    loaded_conditions = []
+    for config_path, condition in zip(A7_2_SMOKE_FIXTURES, A7_2_CONDITIONS, strict=True):
+        config = load_config(config_path)
+        assert config.run.ticks == A7_2_SMOKE_PARAMETERS["horizon_ticks"]
+        assert config.a7_2_delayed_prediction is not None
+        loaded_conditions.append(config.a7_2_delayed_prediction.condition)
+        assert config.a7_2_delayed_prediction.condition == condition
+        assert config.a7_2_delayed_prediction.forecast_delay_ticks == 2
+        assert config.a7_2_delayed_prediction.artifact_delay_ticks == 3
+        assert config.a7_2_delayed_prediction.prediction_cost_work_fraction == 0.25
+        assert config.semantic_field is None
+        assert config.predictive_control is None
+        assert config.logistic_appraisal is None
+        assert config.hives == ()
+
+    assert tuple(loaded_conditions) == A7_2_CONDITIONS
+
+
+def test_a7_2_config_schema_enforces_no_same_tick_feedback_except_control(
+    tmp_path: Path,
+) -> None:
+    raw = yaml.safe_load(A7_2_INTERMEDIATE_ENDOGENOUS_DELAYED.read_text())
+    raw["a7_2_delayed_prediction"]["same_tick_feedback_allowed"] = True
+    bad_path = tmp_path / "bad_same_tick.yaml"
+    bad_path.write_text(yaml.safe_dump(raw, sort_keys=True))
+
+    with pytest.raises(ValueError, match="same-tick feedback is allowed only"):
+        load_config(bad_path)
+
+
+def test_a7_2_config_schema_requires_spend_only_replay_accounting_flag(
+    tmp_path: Path,
+) -> None:
+    raw = yaml.safe_load(A7_2_SPEND_ONLY_REPLAY.read_text())
+    del raw["a7_2_delayed_prediction"][
+        "spend_only_replay_preserves_prediction_work_deductions"
+    ]
+    bad_path = tmp_path / "bad_spend_only.yaml"
+    bad_path.write_text(yaml.safe_dump(raw, sort_keys=True))
+
+    with pytest.raises(ValueError, match="preserve prediction-work deductions"):
+        load_config(bad_path)
+
+
+def test_a7_2_config_schema_requires_artifact_off_accounting_flag(
+    tmp_path: Path,
+) -> None:
+    raw = yaml.safe_load(A7_2_ARTIFACT_OFF_SOURCE_LEDGER_NULL.read_text())
+    del raw["a7_2_delayed_prediction"][
+        "artifact_off_preserves_queue_accounting_controls"
+    ]
+    bad_path = tmp_path / "bad_artifact_off.yaml"
+    bad_path.write_text(yaml.safe_dump(raw, sort_keys=True))
+
+    with pytest.raises(ValueError, match="preserve queue/accounting controls"):
+        load_config(bad_path)
+
+
+def test_a7_2_config_schema_rejects_changed_frozen_parameters(tmp_path: Path) -> None:
+    raw = yaml.safe_load(A7_2_INTERMEDIATE_ENDOGENOUS_DELAYED.read_text())
+    raw["a7_2_delayed_prediction"]["utility_slope_predict"] = 1.25
+    bad_path = tmp_path / "bad_tuned_parameter.yaml"
+    bad_path.write_text(yaml.safe_dump(raw, sort_keys=True))
+
+    with pytest.raises(ValueError, match="must remain preregistered at 1.2"):
+        load_config(bad_path)
 
 
 def test_a7_analyzer_fails_closed_on_missing_schema(tmp_path: Path) -> None:

@@ -1,0 +1,49 @@
+run:
+  experiment_id: a7_2_source_preserving_artifact_label_shuffle_smoke
+  ticks: 48
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+    - synthesize
+    - review
+    - formalize
+    - maintain
+    - predict
+    - communicate
+    - pause
+  task_creation_pressure: 1.0
+  work_service_capacity: 1.0
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+a7_2_delayed_prediction:
+  condition: source_preserving_artifact_label_shuffle
+  forecast_delay_ticks: 2
+  artifact_delay_ticks: 3
+  prediction_cost_work_fraction: 0.25
+  max_prediction_work_fraction_per_tick: 0.40
+  fatigue_decay: 0.20
+  fatigue_increment_predict: 0.08
+  fatigue_increment_work: 0.05
+  fatigue_increment_review: 0.04
+  fatigue_increment_synthesize: 0.06
+  threshold_learning_rate_error: 0.05
+  threshold_recovery_rate: 0.02
+  threshold_min: -2.0
+  threshold_max: 2.0
+  utility_slope_predict: 1.20
+  utility_slope_work: 1.00
+  utility_slope_review: 1.10
+  utility_slope_synthesize: 1.15
+  artifact_clip_min: 0.0
+  artifact_clip_max: 1.0
+  artifact_decay: 0.10
