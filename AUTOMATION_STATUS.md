@@ -11,7 +11,9 @@ resource-bounded residual-compression diagnostic, and the compression-enforced
 residual-accounting audit are now complete and closed conservatively. The
 current posture is closed to new simulator mechanics, new simulation runs,
 A7.2 mechanics, and multi-hive coupling until Ben chooses the next
-preregistered gate.
+preregistered gate. The current A5 anticipatory predictive-control loop is
+closed. Do not reopen A5 or treat the existing concise A5 preregistration as
+active authorization for more A5-family automation.
 
 The 2026-06-28 01:29 PDT pass implemented the narrow GPT-5.5-Pro governance
 recommendation to expose closed-state repo-write policy directly in the
@@ -103,7 +105,35 @@ pending Ben's explicit decision.
   to new simulations or mechanics until he chooses A5-family closure, an
   active A7.2 preregistration, or a separate three-hive preregistration.
 
+## Blockers
+
+No engineering blocker was found. The scientific/governance blocker is that
+the guard is closed awaiting Ben's decision: existing A5-family artifacts
+improved forecast skill but did not pass preregistered residual, compression,
+and matched-null promotion criteria, so they cannot support lobe-like,
+strange-attractor-like, or semantic-dynamics claims.
+
 ## Latest Changes
+
+- 2026-06-28 03:40 PDT bounded guard-closed verification: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
+  provisional roadmap, the latest GPT-5.5-Pro strategy review, the CLI-loop
+  log, the existing Ben A5-exit/A7.2 decision request, the A5 single-hive
+  preregistration, the reopened seed `5,6` A5 smoke result, and the completed
+  resource-bounded residual-compression report before choosing the next step.
+  The review has `notify_ben: true` and `strategic_change_level: minor`; its
+  recommendation to send Ben the existing decision request and stop
+  repo-writing/status-only automation while closed is accepted as
+  scientifically sensible.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `notify_ben=true`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` (`14 passed, 612 deselected`), and `git diff --check`.
+  No simulator mechanics, configs, analyzers, simulation runs, dashboards,
+  integrations, seed sweeps, A7.2 mechanics, or multi-hive coupling were
+  added.
 
 - 2026-06-28 03:08 PDT bounded guard-closed verification: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
@@ -550,7 +580,7 @@ pending Ben's explicit decision.
   `7..16`; no checked-in A5.1a reusable run CSV directories were present under
   `runs/`, so A5.1a was treated as result-note coverage only.
 
-## Blockers
+## Historical Blockers
 
 - 2026-06-28 02:23 PDT check: no local code or environment blocker. The
   active blocker remains scientific/governance scope: the requested A5
@@ -1306,7 +1336,7 @@ pending Ben's explicit decision.
   automation_guard` passed after the Ben-notification draft and status update:
   `12 passed, 612 deselected`.
 
-## Blockers
+## Historical Blockers
 
 There is no local environment blocker. The scientific/governance blocker is
 that the bounded A5 smoke still reproduces forecast-skill gains without
