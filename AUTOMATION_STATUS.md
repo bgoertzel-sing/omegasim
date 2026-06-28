@@ -39,9 +39,10 @@ Ben informed about design decisions and results as this road advances.
 
 ## Recommended Next Step
 
-- Recommended next step: open A7.2 as the active preregistered gate by freezing
-  its mechanism equations, artifact schema, endpoints, controls/nulls, and tiny
-  smoke contract before implementing or running the first bounded smoke.
+- Recommended next step: implement only the A7.2 config/schema contract tests
+  for the frozen preregistration in
+  `docs/a7_2_delayed_artifact_endogenous_prediction_preregistration.md`; do
+  not run A7.2 simulations until those tests pass.
 
 ## Blockers
 
@@ -52,6 +53,20 @@ with A5-style forecast skill, backlog dwell, accounting leakage, or
 post-result rescue tuning.
 
 ## Latest Changes
+
+- 2026-06-28 09:43 PDT A7.2 preregistration freeze: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
+  provisional roadmap, the A5-family exit/A7.2 decision record, A7/A7
+  long-horizon preregistrations, current guard output, CLI-loop tail, and the
+  latest GPT-5.5-Pro strategy review. The review has `notify_ben: false` and
+  `strategic_change_level: minor`; its recommendation to freeze A7.2 before
+  simulator implementation is accepted as scientifically sensible. Added
+  `docs/a7_2_delayed_artifact_endogenous_prediction_preregistration.md` with
+  frozen A7.2 state fields, delays, costs, thresholds, slopes, artifact update
+  equations, endpoints, nulls, productivity guardrails, closure rules, and the
+  first implementation step. No simulator mechanics, configs, analyzers,
+  simulation runs, dashboards, integrations, seed sweeps, or multi-hive
+  coupling were added.
 
 - 2026-06-28 Ben decision encoded: Ben explicitly instructed OmegaSim to try
   A7.2-style delayed artifact-mediated endogenous prediction first, then move
