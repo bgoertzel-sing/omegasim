@@ -51,6 +51,27 @@ locks.
 
 ## Latest Changes
 
+- 2026-06-28 08:26 PDT bounded A5 verification: re-read the automation
+  memory, `README.md`, `AUTOMATION_STATUS.md`, the structured
+  strange-attractor research note, the concise A5 single-hive
+  preregistration, recent git history, and the focused A5/automation test
+  surface. The preregistration already covers the explicitly requested
+  deterministic single-hive setup, resource-bounded prediction hypothesis,
+  matched accounting controls, reactive/linear/nonlinear/high-budget/oracle/
+  timing-broken null conditions, primary endpoints, and fail-closed
+  interpretation rules. No missing A5 preregistration item or smallest
+  deterministic scaffold gap was found.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `notify_ben=true`, `closed_reasons=[
+  "automation_status_a5_broadening_stopped"]`) and
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`19 passed, 608 deselected`). No simulator mechanics, configs, analyzers,
+  simulation runs, dashboards, integrations, seed sweeps, A7.2 mechanics, or
+  multi-hive coupling were added.
+
 - 2026-06-28 07:25 PDT bounded A5 verification: re-read the automation
   memory, `README.md`, `AUTOMATION_STATUS.md`, the structured
   strange-attractor research note, the concise A5 single-hive
