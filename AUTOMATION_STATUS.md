@@ -13,7 +13,7 @@ current posture is closed to new simulator mechanics, new simulation runs,
 A7.2 mechanics, and multi-hive coupling until Ben chooses the next
 preregistered gate.
 
-The 2026-06-28 01:11 PDT pass rechecked the concise A5 preregistration, the
+The 2026-06-28 01:21 PDT pass rechecked the concise A5 preregistration, the
 resource-bounded residual-compression preregistration/report, the Ben
 A5-exit/A7.2 decision request, and the automation guard. No unhandled A5
 preregistration gap was found; the explicitly requested preregistration and
@@ -67,6 +67,20 @@ pending Ben's explicit decision.
   active A7.2 preregistration, or a separate three-hive preregistration.
 
 ## Latest Changes
+
+- 2026-06-28 01:21 PDT bounded A5 verification pass: re-read the automation
+  memory, the concise A5 single-hive preregistration, `README.md`,
+  `AUTOMATION_STATUS.md`, and the reopened seed `5,6` smoke note. The explicit
+  A5 request is already represented by the checked-in preregistration and
+  deterministic scaffold; no preregistration gap, simulator-mechanics gap, or
+  authorized broader run was found.
+- The automation guard remains closed with
+  `state=closed_awaiting_preregistration`, `should_noop=true`, and
+  `notify_ben=true`. No notification text, simulator mechanics, configs,
+  analyzers, simulation runs, dashboards, integrations, seed sweeps, A7.2
+  mechanics, or multi-hive coupling were added. The recommended next step
+  remains exactly one action: send Ben the existing A5-exit/A7.2 decision
+  request with the compression-enforced fail-closed update.
 
 - 2026-06-28 01:11 PDT bounded guard-closed notification check: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
