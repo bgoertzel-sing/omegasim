@@ -51,6 +51,28 @@ locks.
 
 ## Latest Changes
 
+- 2026-06-28 05:24 PDT bounded A5 guard verification: re-read the automation
+  memory, the concise A5 single-hive preregistration, `README.md`,
+  `AUTOMATION_STATUS.md`, the structured strange-attractor research note, the
+  automation guard, focused A5/automation test surface, and recent git history.
+  No missing A5 preregistration item or deterministic single-hive scaffold gap
+  was found. The existing scaffold still covers reactive, low-budget linear,
+  medium-budget nonlinear, high-budget nonlinear, oracle, and budget-matched
+  timing-broken null conditions, and the current source-of-truth status still
+  closes further A5 broadening after the fail-closed smoke.
+- No simulator mechanics, configs, analyzers, simulation runs, dashboards,
+  integrations, seed sweeps, A7.2 mechanics, or multi-hive coupling were
+  added. Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` (`15 passed, 612 deselected`),
+  `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `notify_ben=true`, `closed_reasons=[
+  "automation_status_a5_broadening_stopped"]`), and `git diff --check`.
+  Exactly one next step remains: send Ben the existing A5-exit/A7.2 decision
+  request and keep automation closed to new simulations or mechanics until he
+  chooses the next separately preregistered scientific target.
+
 - 2026-06-28 04:37 PDT bounded guard consistency pass: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
   provisional roadmap, the latest GPT-5.5-Pro strategy review, the CLI-loop
