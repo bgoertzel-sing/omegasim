@@ -55,13 +55,12 @@ delayed-dynamics sweep rather than retro-tuning A7.2.
 
 ## Recommended Next Step
 
-- Recommended next step: add config-validation fixtures for the frozen
-  three-hive ring contract and focused tests proving those fixtures load the
-  preregistered hives, directed edges, condition names, smoke parameters,
-  source-ledger schema, endpoints, residual controls, and guardrails. Do not
-  add simulator mechanics, analyzers, result-bearing runs, dashboards,
-  integrations, parameter sweeps, or downstream multi-hive coupling beyond the
-  frozen three-hive ring contract.
+- Recommended next step: implement the smallest deterministic three-hive ring
+  smoke scaffold that loads the frozen contract fixture and emits only the
+  preregistered fixed-seed schema/source-ledger artifacts needed for a later
+  preflight. Do not add analyzers, scientific promotion claims, broad seed
+  sweeps, dashboards, integrations, parameter sweeps, or hives beyond the
+  frozen ring.
 
 ## Blockers
 
@@ -73,6 +72,35 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 14:36 PDT three-hive ring config-validation gate: re-read the
+  A5 single-hive preregistration, `README.md`, `AUTOMATION_STATUS.md`,
+  `docs/three_hive_ring_preregistration.md`, the frozen three-hive ring
+  contract, config loader patterns, existing A7/A7.2 fixture tests, and recent
+  git history. Confirmed again that the explicit A5 preregistration/scaffold
+  requirement remains satisfied and that the source-of-truth next bounded
+  action had moved to the post-A7.2 three-hive ring contract/config gate.
+- Added a simulator-free `three_hive_ring` config-validation path in
+  `ohdyn/config.py` plus `configs/three_hive_ring_contract_validation.yaml`.
+  The fixture loads the frozen hives, A->B->C->A directed edges, condition
+  order, smoke parameters, role-bias labels, state fields, edge fields,
+  source-ledger schema, dimensionless manifest fields, primary endpoints,
+  residual controls, and productivity guardrails. It rejects schema drift
+  against `ohdyn/three_hive_ring_contract.py`. No simulator mechanics,
+  analyzers, result-bearing runs, dashboards, integrations, parameter sweeps,
+  or additional hives were added.
+- Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring_contract' -q` (`3 passed, 639 deselected`) and
+  `.venv-conda/bin/python -m py_compile ohdyn/config.py
+  ohdyn/three_hive_ring_contract.py`; after this status update,
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring_contract or automation_guard' -q` (`19 passed, 623
+  deselected`), `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=open`, `a5_preregistration_active=true`,
+  `repo_write_allowed=true`, `notify_ben=false`, recommended next action is
+  the smallest deterministic three-hive ring smoke scaffold), and
+  `git diff --check`.
 
 - 2026-06-28 14:12 PDT three-hive ring contract gate: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests/docs surface, the superseded

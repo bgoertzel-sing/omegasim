@@ -13,6 +13,22 @@ from ohdyn.a7_2_delayed_prediction_contract import (
     A7_2_SMOKE_PARAMETERS,
 )
 from ohdyn.a7_semantic_field_contract import A7_CONDITIONS
+from ohdyn.three_hive_ring_contract import (
+    THREE_HIVE_RING_ACTIONS,
+    THREE_HIVE_RING_CONDITIONS,
+    THREE_HIVE_RING_DIMENSIONLESS_MANIFEST_FIELDS,
+    THREE_HIVE_RING_EDGE_FIELDS,
+    THREE_HIVE_RING_EDGE_HIVES,
+    THREE_HIVE_RING_EDGES,
+    THREE_HIVE_RING_HIVES,
+    THREE_HIVE_RING_PRIMARY_ENDPOINTS,
+    THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS,
+    THREE_HIVE_RING_RESIDUAL_CONTROLS,
+    THREE_HIVE_RING_ROLE_BIASES,
+    THREE_HIVE_RING_SMOKE_PARAMETERS,
+    THREE_HIVE_RING_SOURCE_LEDGER_FIELDS,
+    THREE_HIVE_RING_STATE_FIELDS,
+)
 
 
 ATTENTION_CLASSES = (
@@ -55,6 +71,7 @@ LOGISTIC_APPRAISAL_CONDITIONS = (
 
 SEMANTIC_FIELD_CONDITIONS = A7_CONDITIONS
 A7_2_DELAYED_PREDICTION_CONDITIONS = A7_2_CONDITIONS
+THREE_HIVE_RING_CONDITION_NAMES = THREE_HIVE_RING_CONDITIONS
 
 A6_ACTIONS = (
     "synthesize",
@@ -192,6 +209,29 @@ class A7_2DelayedPredictionConfig:
 
 
 @dataclass(frozen=True)
+class ThreeHiveRingEdgeConfig:
+    edge_id: str
+    source_hive: str
+    target_hive: str
+
+
+@dataclass(frozen=True)
+class ThreeHiveRingConfig:
+    conditions: tuple[str, ...]
+    hives: tuple[str, ...]
+    edges: tuple[ThreeHiveRingEdgeConfig, ...]
+    smoke_parameters: dict[str, Any]
+    role_biases: dict[str, tuple[str, ...]]
+    state_fields: tuple[str, ...]
+    edge_fields: tuple[str, ...]
+    source_ledger_fields: tuple[str, ...]
+    dimensionless_manifest_fields: tuple[str, ...]
+    primary_endpoints: tuple[str, ...]
+    residual_controls: tuple[str, ...]
+    productivity_guardrails: dict[str, Any]
+
+
+@dataclass(frozen=True)
 class HiveConfig:
     hive_id: str
     seed_offset: int
@@ -218,6 +258,7 @@ class OmegaConfig:
     logistic_appraisal: LogisticAppraisalConfig | None = None
     semantic_field: SemanticFieldConfig | None = None
     a7_2_delayed_prediction: A7_2DelayedPredictionConfig | None = None
+    three_hive_ring: ThreeHiveRingConfig | None = None
     hives: tuple[HiveConfig, ...] = ()
     coupling: CouplingConfig | None = None
 
@@ -249,6 +290,8 @@ class OmegaConfig:
             data.pop("semantic_field")
         if self.a7_2_delayed_prediction is None:
             data.pop("a7_2_delayed_prediction")
+        if self.three_hive_ring is None:
+            data.pop("three_hive_ring")
         if not self.hives:
             data.pop("hives")
             data.pop("coupling")
@@ -278,6 +321,7 @@ def load_config(path: str | Path) -> OmegaConfig:
     a7_2_delayed_prediction = _optional_a7_2_delayed_prediction(
         raw.get("a7_2_delayed_prediction")
     )
+    three_hive_ring = _optional_three_hive_ring(raw.get("three_hive_ring"))
     hives = _optional_hives(raw.get("hives"))
     coupling = _optional_coupling(raw.get("coupling"), hives)
 
@@ -311,6 +355,7 @@ def load_config(path: str | Path) -> OmegaConfig:
         logistic_appraisal=logistic_appraisal,
         semantic_field=semantic_field,
         a7_2_delayed_prediction=a7_2_delayed_prediction,
+        three_hive_ring=three_hive_ring,
         hives=hives,
         coupling=coupling,
     )
@@ -320,12 +365,14 @@ def load_config(path: str | Path) -> OmegaConfig:
             cfg.logistic_appraisal is not None
             or cfg.semantic_field is not None
             or cfg.a7_2_delayed_prediction is not None
+            or cfg.three_hive_ring is not None
         ),
     )
     _validate_predictive_control_scope(cfg)
     _validate_logistic_appraisal_scope(cfg)
     _validate_semantic_field_scope(cfg)
     _validate_a7_2_delayed_prediction_scope(cfg)
+    _validate_three_hive_ring_scope(cfg)
     _validate_hive_seed_streams(cfg.hives, cfg.coupling)
     return cfg
 
@@ -793,6 +840,104 @@ def _optional_a7_2_delayed_prediction(
     return cfg
 
 
+def _optional_three_hive_ring(value: Any) -> ThreeHiveRingConfig | None:
+    if value is None:
+        return None
+    section = _expect_mapping(value, "three_hive_ring")
+    supported_keys = {
+        "conditions",
+        "hives",
+        "edges",
+        "smoke_parameters",
+        "role_biases",
+        "state_fields",
+        "edge_fields",
+        "source_ledger_fields",
+        "dimensionless_manifest_fields",
+        "primary_endpoints",
+        "residual_controls",
+        "productivity_guardrails",
+    }
+    unknown = set(section) - supported_keys
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"three_hive_ring contains unsupported keys: {names}")
+
+    cfg = ThreeHiveRingConfig(
+        conditions=_string_tuple(section.get("conditions"), "three_hive_ring.conditions"),
+        hives=_string_tuple(section.get("hives"), "three_hive_ring.hives"),
+        edges=_three_hive_ring_edges(section.get("edges")),
+        smoke_parameters=_expect_mapping(
+            section.get("smoke_parameters"),
+            "three_hive_ring.smoke_parameters",
+        ),
+        role_biases=_three_hive_ring_role_biases(section.get("role_biases")),
+        state_fields=_string_tuple(
+            section.get("state_fields"),
+            "three_hive_ring.state_fields",
+        ),
+        edge_fields=_string_tuple(
+            section.get("edge_fields"),
+            "three_hive_ring.edge_fields",
+        ),
+        source_ledger_fields=_string_tuple(
+            section.get("source_ledger_fields"),
+            "three_hive_ring.source_ledger_fields",
+        ),
+        dimensionless_manifest_fields=_string_tuple(
+            section.get("dimensionless_manifest_fields"),
+            "three_hive_ring.dimensionless_manifest_fields",
+        ),
+        primary_endpoints=_string_tuple(
+            section.get("primary_endpoints"),
+            "three_hive_ring.primary_endpoints",
+        ),
+        residual_controls=_string_tuple(
+            section.get("residual_controls"),
+            "three_hive_ring.residual_controls",
+        ),
+        productivity_guardrails=_expect_mapping(
+            section.get("productivity_guardrails"),
+            "three_hive_ring.productivity_guardrails",
+        ),
+    )
+    _validate_three_hive_ring_preregistered_values(cfg)
+    return cfg
+
+
+def _three_hive_ring_edges(value: Any) -> tuple[ThreeHiveRingEdgeConfig, ...]:
+    if not isinstance(value, list):
+        raise ValueError("Config section 'three_hive_ring.edges' must be a list.")
+    edges = []
+    for index, raw_edge in enumerate(value):
+        name = f"three_hive_ring.edges[{index}]"
+        edge = _expect_mapping(raw_edge, name)
+        supported_keys = {"edge_id", "source_hive", "target_hive"}
+        unknown = set(edge) - supported_keys
+        if unknown:
+            names = ", ".join(sorted(unknown))
+            raise ValueError(f"{name} contains unsupported keys: {names}")
+        edges.append(
+            ThreeHiveRingEdgeConfig(
+                edge_id=_nonempty_str(edge.get("edge_id"), f"{name}.edge_id"),
+                source_hive=_nonempty_str(edge.get("source_hive"), f"{name}.source_hive"),
+                target_hive=_nonempty_str(edge.get("target_hive"), f"{name}.target_hive"),
+            )
+        )
+    return tuple(edges)
+
+
+def _three_hive_ring_role_biases(value: Any) -> dict[str, tuple[str, ...]]:
+    biases = _expect_mapping(value, "three_hive_ring.role_biases")
+    parsed = {}
+    for hive, raw_biases in biases.items():
+        parsed[_nonempty_str(hive, "three_hive_ring.role_biases key")] = _string_tuple(
+            raw_biases,
+            f"three_hive_ring.role_biases.{hive}",
+        )
+    return parsed
+
+
 def _optional_hives(value: Any) -> tuple[HiveConfig, ...]:
     if value is None:
         return ()
@@ -872,6 +1017,15 @@ def _optional_coupling(value: Any, hives: tuple[HiveConfig, ...]) -> CouplingCon
     )
     _validate_coupling(cfg)
     return cfg
+
+
+def _string_tuple(value: Any, name: str) -> tuple[str, ...]:
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"Config value {name!r} must be a non-empty list.")
+    parsed = []
+    for index, item in enumerate(value):
+        parsed.append(_nonempty_str(item, f"{name}[{index}]"))
+    return tuple(parsed)
 
 
 def _share(value: Any, name: str) -> float:
@@ -1059,6 +1213,60 @@ def _validate_a7_2_preregistered_values(
         )
 
 
+def _validate_three_hive_ring_preregistered_values(
+    config: ThreeHiveRingConfig,
+) -> None:
+    expected_edges = tuple(
+        ThreeHiveRingEdgeConfig(edge_id=edge_id, source_hive=source, target_hive=target)
+        for edge_id, (source, target) in zip(
+            THREE_HIVE_RING_EDGES,
+            THREE_HIVE_RING_EDGE_HIVES,
+            strict=True,
+        )
+    )
+    expected = {
+        "conditions": THREE_HIVE_RING_CONDITION_NAMES,
+        "hives": THREE_HIVE_RING_HIVES,
+        "edges": expected_edges,
+        "smoke_parameters": _jsonish_contract_mapping(THREE_HIVE_RING_SMOKE_PARAMETERS),
+        "role_biases": THREE_HIVE_RING_ROLE_BIASES,
+        "state_fields": THREE_HIVE_RING_STATE_FIELDS,
+        "edge_fields": THREE_HIVE_RING_EDGE_FIELDS,
+        "source_ledger_fields": THREE_HIVE_RING_SOURCE_LEDGER_FIELDS,
+        "dimensionless_manifest_fields": THREE_HIVE_RING_DIMENSIONLESS_MANIFEST_FIELDS,
+        "primary_endpoints": THREE_HIVE_RING_PRIMARY_ENDPOINTS,
+        "residual_controls": THREE_HIVE_RING_RESIDUAL_CONTROLS,
+        "productivity_guardrails": THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS,
+    }
+    actual = {
+        "conditions": config.conditions,
+        "hives": config.hives,
+        "edges": config.edges,
+        "smoke_parameters": _jsonish_contract_mapping(config.smoke_parameters),
+        "role_biases": config.role_biases,
+        "state_fields": config.state_fields,
+        "edge_fields": config.edge_fields,
+        "source_ledger_fields": config.source_ledger_fields,
+        "dimensionless_manifest_fields": config.dimensionless_manifest_fields,
+        "primary_endpoints": config.primary_endpoints,
+        "residual_controls": config.residual_controls,
+        "productivity_guardrails": config.productivity_guardrails,
+    }
+    for key, expected_value in expected.items():
+        if actual[key] != expected_value:
+            raise ValueError(f"three_hive_ring.{key} must match the frozen contract.")
+
+
+def _jsonish_contract_mapping(value: dict[str, Any]) -> dict[str, Any]:
+    normalized = {}
+    for key, item in value.items():
+        if isinstance(item, tuple):
+            normalized[key] = list(item)
+        else:
+            normalized[key] = item
+    return normalized
+
+
 def _validate_coupling(coupling: CouplingConfig) -> None:
     if coupling.mode == "none":
         if coupling.transfer_probability != 0.0:
@@ -1120,6 +1328,36 @@ def _validate_a7_2_delayed_prediction_scope(config: OmegaConfig) -> None:
         raise ValueError("a7_2_delayed_prediction must not be combined with A7 semantic_field.")
 
 
+def _validate_three_hive_ring_scope(config: OmegaConfig) -> None:
+    if config.three_hive_ring is None:
+        return
+    if config.run.ticks != THREE_HIVE_RING_SMOKE_PARAMETERS["horizon_ticks"]:
+        raise ValueError(
+            "Three-hive ring contract fixtures must use the preregistered 72-tick horizon."
+        )
+    if config.hives:
+        raise ValueError(
+            "three_hive_ring contract fixtures must use three_hive_ring.hives, "
+            "not simulator hives."
+        )
+    if config.coupling is not None:
+        raise ValueError(
+            "three_hive_ring contract fixtures must not enable simulator coupling."
+        )
+    if config.predictive_control is not None:
+        raise ValueError("three_hive_ring must not be combined with A5 predictive_control.")
+    if config.logistic_appraisal is not None:
+        raise ValueError(
+            "three_hive_ring must not be combined with A6 logistic_appraisal."
+        )
+    if config.semantic_field is not None:
+        raise ValueError("three_hive_ring must not be combined with A7 semantic_field.")
+    if config.a7_2_delayed_prediction is not None:
+        raise ValueError(
+            "three_hive_ring must not be combined with A7.2 delayed prediction."
+        )
+
+
 def _validate_hive_seed_streams(
     hives: tuple[HiveConfig, ...],
     coupling: CouplingConfig | None,
@@ -1135,7 +1373,11 @@ def _validate_hive_seed_streams(
 
 def _validate_actions(actions: tuple[str, ...], *, allow_a6: bool = False) -> None:
     required = {"idle", "message", "create_task", "work_task"}
-    allowed = required | (set(A6_ACTIONS) if allow_a6 else set())
+    optional_actions = set()
+    if allow_a6:
+        optional_actions.update(A6_ACTIONS)
+        optional_actions.update(THREE_HIVE_RING_ACTIONS)
+    allowed = required | optional_actions
     configured = set(actions)
     missing = required - configured
     if missing:

@@ -340,6 +340,9 @@ A7_2_SPEND_ONLY_REPLAY = Path("configs/a7_2_spend_only_replay_smoke.yaml")
 A7_2_ARTIFACT_OFF_SOURCE_LEDGER_NULL = Path(
     "configs/a7_2_artifact_off_source_ledger_null_smoke.yaml"
 )
+THREE_HIVE_RING_CONTRACT_VALIDATION = Path(
+    "configs/three_hive_ring_contract_validation.yaml"
+)
 A7_2_SMOKE_FIXTURES = (
     A7_2_ZERO_BUDGET_REACTIVE,
     A7_2_INTERMEDIATE_ENDOGENOUS_DELAYED,
@@ -1130,6 +1133,56 @@ def test_three_hive_ring_contract_freezes_preregistered_schema() -> None:
     assert "local_backlog" in three_hive_ring_required_metric_fields()
     assert "accepted_transfer_volume" in three_hive_ring_required_event_fields()
     assert "source_ledger_clip_residual" in three_hive_ring_required_event_fields()
+
+
+def test_three_hive_ring_contract_validation_fixture_loads_frozen_schema() -> None:
+    config = load_config(THREE_HIVE_RING_CONTRACT_VALIDATION)
+
+    assert config.run.experiment_id == "three_hive_ring_contract_validation"
+    assert config.run.ticks == THREE_HIVE_RING_SMOKE_PARAMETERS["horizon_ticks"]
+    assert config.three_hive_ring is not None
+    assert config.three_hive_ring.conditions == THREE_HIVE_RING_CONDITIONS
+    assert config.three_hive_ring.hives == THREE_HIVE_RING_HIVES
+    assert tuple(edge.edge_id for edge in config.three_hive_ring.edges) == (
+        THREE_HIVE_RING_EDGES
+    )
+    assert tuple(
+        (edge.source_hive, edge.target_hive) for edge in config.three_hive_ring.edges
+    ) == THREE_HIVE_RING_EDGE_HIVES
+    assert set(THREE_HIVE_RING_ACTIONS).issubset(set(config.model.actions))
+    assert config.three_hive_ring.smoke_parameters["ring_edges"] == list(
+        THREE_HIVE_RING_EDGES
+    )
+    assert config.three_hive_ring.smoke_parameters["seeds"] == [1, 2]
+    assert config.three_hive_ring.role_biases == THREE_HIVE_RING_ROLE_BIASES
+    assert config.three_hive_ring.state_fields == THREE_HIVE_RING_STATE_FIELDS
+    assert config.three_hive_ring.edge_fields == THREE_HIVE_RING_EDGE_FIELDS
+    assert config.three_hive_ring.source_ledger_fields == (
+        THREE_HIVE_RING_SOURCE_LEDGER_FIELDS
+    )
+    assert config.three_hive_ring.primary_endpoints == THREE_HIVE_RING_PRIMARY_ENDPOINTS
+    assert config.three_hive_ring.residual_controls == THREE_HIVE_RING_RESIDUAL_CONTROLS
+    assert config.three_hive_ring.productivity_guardrails == (
+        THREE_HIVE_RING_PRODUCTIVITY_GUARDRAILS
+    )
+    assert config.hives == ()
+    assert config.coupling is None
+    assert config.predictive_control is None
+    assert config.logistic_appraisal is None
+    assert config.semantic_field is None
+    assert config.a7_2_delayed_prediction is None
+
+
+def test_three_hive_ring_contract_validation_fixture_rejects_schema_drift(
+    tmp_path: Path,
+) -> None:
+    raw = yaml.safe_load(THREE_HIVE_RING_CONTRACT_VALIDATION.read_text())
+    raw["three_hive_ring"]["conditions"][0] = "renamed_no_coupling"
+    bad_path = tmp_path / "bad_three_hive_ring_contract.yaml"
+    bad_path.write_text(yaml.safe_dump(raw, sort_keys=True))
+
+    with pytest.raises(ValueError, match="three_hive_ring.conditions"):
+        load_config(bad_path)
 
 
 def test_a7_2_configs_load_in_preregistered_condition_order() -> None:
