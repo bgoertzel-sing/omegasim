@@ -13,6 +13,12 @@ skill improved, but residual/null, compression, and accounting gates did not
 support lobe-like, strange-attractor-like, semantic-dynamics, or causal
 collective-structure claims.
 
+The recurring A5 anticipatory predictive-control automation prompt has been
+rechecked against the current repo state: the concise single-hive A5
+preregistration and smallest deterministic scaffold already exist and still
+match that request. This does not reopen broad A5 mechanics, broader seed
+sweeps, dashboards, integrations, or three-hive coupling.
+
 The active A7.2 scientific focus is still the resource-bounded prediction
 hypothesis, but now with a more mechanism-rich single-hive design: agents
 choose among `predict`, `work`, `review`, and `synthesize`; prediction consumes
@@ -54,6 +60,27 @@ with A5-style forecast skill, backlog dwell, accounting leakage, or
 post-result rescue tuning.
 
 ## Latest Changes
+
+- 2026-06-28 10:29 PDT A5 prompt-replay verification: re-read automation
+  memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive
+  preregistration, the structured strange-attractor research note, the A5
+  comparison/analyzer scaffold, focused test references, and recent git
+  history. Confirmed that the A5 preregistration already covers the requested
+  deterministic single-hive anticipatory predictive-control setup,
+  resource-bounded prediction hypothesis, matched task-arrival/service-
+  capacity/action-opportunity/work-budget accounting, reactive/linear/
+  nonlinear/high-budget/oracle/null conditions, primary endpoints, and
+  fail-closed strange-attractor/lobe interpretation rules. No missing A5
+  preregistration or minimal-scaffold gap was found; the newer A7.2 status
+  remains the single active next gate.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` (`state=open`,
+  `repo_write_allowed=true`, `notify_ben=false`) and
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`20 passed, 614 deselected`). `git diff --check` passed before this status
+  edit. No simulator mechanics, configs, analyzers, simulation runs,
+  dashboards, integrations, seed sweeps, or multi-hive coupling were added.
 
 - 2026-06-28 10:05 PDT A7.2 config/schema contract gate: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the historical
