@@ -55,11 +55,11 @@ delayed-dynamics sweep rather than retro-tuning A7.2.
 
 ## Recommended Next Step
 
-- Recommended next step: draft the separate three-hive ring preregistration
-  with frozen target/phase nulls, delayed artifact transfer, cross-hive
-  prediction costs, transfer-opportunity controls, schema, endpoints,
-  productivity guardrails, and a tiny fixed-seed smoke plan; do not implement
-  three-hive mechanics until that preregistration is frozen.
+- Recommended next step: add a contract-only three-hive ring constants/schema
+  module plus focused tests that validate the frozen preregistered condition
+  names, hives, state fields, source-ledger fields, endpoints, guardrails, and
+  smoke parameters. Do not add simulator mechanics, configs, analyzers, or
+  runs in that contract step.
 
 ## Blockers
 
@@ -71,6 +71,29 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 13:01 PDT three-hive ring preregistration: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests surface, the superseded provisional
+  roadmap, the research transition directive, the experiment rundown, the
+  Hyperseed delayed-dynamics note, the A7.2 preregistration, current guard
+  output, CLI-loop status, and the latest GPT-5.5-Pro strategy review before
+  choosing the next step. The review has `notify_ben: false` and
+  `strategic_change_level: none`; its recommendation to freeze a three-hive
+  preregistration before mechanics was accepted as scientifically sensible.
+- Added `docs/three_hive_ring_preregistration.md`, freezing the post-A7.2
+  three-hive ring as a relational diagnostic amplifier rather than an
+  ontological requirement for complexity. The preregistration fixes the three
+  biased hives, A->B->C->A ring topology, cross-hive prediction and transfer
+  costs, delayed artifact transfer, membrane acceptance, artifact update
+  equations, dimensionless smoke parameters, target/phase/transfer-
+  opportunity/spend/source-ledger nulls, residual endpoints, productivity
+  guardrails, closure rules, and the next contract-only step. No simulator
+  mechanics, configs, analyzers, simulation runs, dashboards, integrations, or
+  seed sweeps were added.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` (`state=open`,
+  `repo_write_allowed=true`, `notify_ben=false`, recommended next action is
+  the contract-only three-hive ring schema step) and `git diff --check`.
 
 - 2026-06-28 12:32 PDT A5 bounded prompt verification: re-read automation
   memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive
