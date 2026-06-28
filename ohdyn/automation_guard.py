@@ -180,6 +180,7 @@ def _status_closes_active_a5(status: str) -> bool:
             "current a5" in normalized_status
             or "current concise a5 gate" in normalized_status
             or "the current a5 anticipatory predictive-control loop" in normalized_status
+            or "a5-family automation" in normalized_status
         )
         and "closed" in normalized_status
         and (
@@ -190,6 +191,8 @@ def _status_closes_active_a5(status: str) -> bool:
             or "recommended next step: design one preregistered resource-bounded residual diagnostic"
             in normalized_status
             or "do not reopen a5" in normalized_status
+            or "not an active authorization for more a5-family automation"
+            in normalized_status
         )
     )
 
@@ -204,7 +207,8 @@ def _status_reopens_active_a5(status: str) -> bool:
 
 
 def _status_next_action(status: str) -> str:
-    for line in status.splitlines():
+    lines = status.splitlines()
+    for index, line in enumerate(lines):
         stripped = line.strip()
         normalized = stripped.lower()
         for prefix in (
@@ -214,7 +218,19 @@ def _status_next_action(status: str) -> str:
             "next step:",
         ):
             if normalized.startswith(prefix):
-                return stripped.split(":", 1)[1].strip()
+                action_parts = [stripped.split(":", 1)[1].strip()]
+                for continuation in lines[index + 1 :]:
+                    continuation_stripped = continuation.strip()
+                    if not continuation_stripped:
+                        break
+                    if continuation_stripped.startswith("## "):
+                        break
+                    if continuation_stripped.startswith("- "):
+                        break
+                    if not continuation.startswith((" ", "\t")):
+                        break
+                    action_parts.append(continuation_stripped)
+                return " ".join(action_parts)
     return _status_section_text(status, "Recommended Next Step")
 
 
@@ -235,6 +251,7 @@ def _status_supersedes_roadmap(status: str) -> bool:
     normalized_status = _normalize(status)
     return (
         "source of truth" in normalized_status
+        or "source-of-truth" in normalized_status
         or (
             "a5.1a" in normalized_status
             and "closed" in normalized_status

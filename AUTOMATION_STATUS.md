@@ -5,12 +5,11 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: this 2026-06-27 automation pass follows Ben's explicit
-A5 request and treats the concise single-hive preregistration as the active
-bounded gate for this stage:
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-That document records the explicit single-hive A5 reopening and remains the
-active preregistration summary for anticipatory predictive-control smoke work.
+Source-of-truth status: the explicit 2026-06-27 concise single-hive A5
+reopening has now been run and closed fail-closed. The concise preregistration
+remains a historical record for that bounded gate:
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`, not
+an active authorization for more A5-family automation.
 
 The already-run reopened A5 seed `5,6` smoke reproduced forecast-skill gains
 but failed closed on residual/null promotion. That failure is an interpretation
@@ -36,14 +35,36 @@ anticipatory coupling remains downstream and requires a separate
 preregistration with target/phase nulls and resource-bounded cross-hive
 prediction costs.
 
-The latest GPT-5.5-Pro strategy review still has `strategic_change_level:
-major` and `notify_ben: true`; its A5-exit recommendation remains useful
-context but is superseded here by Ben's explicit A5 preregistration/scaffold
-directive. The non-active A7.2 decision document remains non-active during this
-single-hive A5 pass.
+The latest GPT-5.5-Pro strategy review has `strategic_change_level: major` and
+`notify_ben: true`. Its A5-exit recommendation is accepted as scientifically
+sensible: keep the guard closed and treat
+`docs/a5_family_exit_and_a7_2_decision_preregistration.md` as a non-active
+Ben-decision document, not an active experiment gate. Ben should be notified of
+the direction shift before any new active A7.2 or three-hive preregistration is
+opened.
+
+## Recommended Next Step
+
+- Recommended next step: remain in no-op/awaiting-preregistration state and
+  have Ben decide whether A5-family work should stay closed, A7.2 delayed
+  artifact-mediated endogenous prediction should become the next active
+  preregistered gate, or a separate three-hive ring preregistration should be
+  drafted.
 
 ## Latest Changes
 
+- 2026-06-27 bounded guard/status correction: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests surface, the provisional roadmap, the
+  non-active A7.2 decision preregistration, the Ben decision request, and the
+  latest GPT-5.5-Pro strategy review before choosing the next step. The newest
+  review's `strategic_change_level: major` and `notify_ben: true` direction is
+  recorded as accepted. This run did not add simulator mechanics, configs,
+  analyzers, dashboards, integrations, seed sweeps, A5-family reruns, or
+  multi-hive coupling.
+- Updated the current focus so the already-run concise A5 reopening is no
+  longer treated as active authorization. The current posture is closed
+  awaiting Ben's decision among A5-family closure, a new active A7.2
+  preregistration, or a separate three-hive preregistration.
 - 2026-06-27 17:16 PDT explicit A5 alignment pass: re-read automation memory,
   `README.md`, `AUTOMATION_STATUS.md`, the active concise A5 preregistration,
   the residual-accounting diagnostic design, the reopened A5 seed `5,6`
@@ -235,6 +256,16 @@ single-hive A5 pass.
 
 ## Verification
 
+- `git diff --check` passed after the bounded guard/status correction.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the
+  bounded guard/status correction and reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  closed reasons `automation_status_next_step_noop` and
+  `automation_status_a5_reopened_smoke_failed_closed`,
+  `strategic_change_level=major`, and `notify_ben=true`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed after the bounded guard/status correction:
+  `14 passed, 612 deselected`.
 - `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed
   after the scoped current-status parser update.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported

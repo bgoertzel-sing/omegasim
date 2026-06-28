@@ -1317,6 +1317,7 @@ def test_automation_guard_ignores_historical_a5_closure_when_current_gate_reopen
 ) -> None:
     status_path = tmp_path / "AUTOMATION_STATUS.md"
     review_path = tmp_path / "latest-review.md"
+    roadmap_path = tmp_path / "docs" / "omegasim_provisional_experiment_roadmap.md"
     a5_path = (
         tmp_path
         / "docs"
@@ -1324,6 +1325,25 @@ def test_automation_guard_ignores_historical_a5_closure_when_current_gate_reopen
     )
     a5_path.parent.mkdir()
     a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    roadmap_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Provisional Experiment Roadmap",
+                "",
+                "Accepted by Ben on 2026-06-27.",
+                "",
+                "Update 2026-06-27: A6/A6.1/A6.2 are now closed conservatively. "
+                "Ben accepted proceeding to A7 as the next preregistered direction.",
+                "",
+                "This roadmap replaces the closed A5 no-op posture as the "
+                "provisional direction for OmegaSim experimentation.",
+                "",
+                "## Immediate Next Step",
+                "",
+                "Create an A7 implementation gate before any broad experiment.",
+            ]
+        )
+    )
     status_path.write_text(
         "\n".join(
             [
@@ -1360,7 +1380,7 @@ def test_automation_guard_ignores_historical_a5_closure_when_current_gate_reopen
         )
     )
 
-    state = read_automation_state(status_path, review_path, a5_path)
+    state = read_automation_state(status_path, review_path, a5_path, roadmap_path)
 
     assert state["state"] == "open"
     assert state["should_noop"] is False
@@ -1422,6 +1442,99 @@ def test_automation_guard_closes_after_reopened_a5_smoke_fail_closed(
         "design one preregistered resource-bounded residual diagnostic that "
         "can separate useful anticipation from accounting/null effects before "
         "adding any new mechanics."
+    )
+
+
+def test_automation_guard_keeps_closed_for_a5_exit_ben_decision_status(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    roadmap_path = tmp_path / "docs" / "omegasim_provisional_experiment_roadmap.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    roadmap_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Provisional Experiment Roadmap",
+                "",
+                "Accepted by Ben on 2026-06-27.",
+                "",
+                "Update 2026-06-27: A6/A6.1/A6.2 are now closed conservatively. "
+                "Ben accepted proceeding to A7 as the next preregistered direction.",
+                "",
+                "This roadmap replaces the closed A5 no-op posture as the "
+                "provisional direction for OmegaSim experimentation.",
+                "",
+                "## Immediate Next Step",
+                "",
+                "Create an A7 implementation gate before any broad experiment.",
+            ]
+        )
+    )
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: the explicit 2026-06-27 concise "
+                "single-hive A5 reopening has now been run and closed "
+                "fail-closed.",
+                "The concise preregistration remains a historical record for "
+                "that bounded gate, not an active authorization for more "
+                "A5-family automation.",
+                "",
+                "The latest GPT-5.5-Pro strategy review has "
+                "`strategic_change_level: major` and `notify_ben: true`.",
+                "Its A5-exit recommendation is accepted as scientifically "
+                "sensible.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: remain in no-op/awaiting-preregistration "
+                "state and have Ben decide whether A5-family work should stay "
+                "closed, A7.2 delayed artifact-mediated endogenous prediction "
+                "should become the next active preregistered gate, or a separate "
+                "three-hive ring preregistration should be drafted.",
+                "",
+                "## Latest Changes",
+                "",
+                "- Historical note: Current concise A5 gate recorded an explicit "
+                "single-hive A5 reopening.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                "recommended_next_action: Keep the guard closed and draft a "
+                "non-active Ben-decision preregistration.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path, roadmap_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["closed_reasons"] == ["automation_status_next_step_noop"]
+    assert state["a5_preregistration_active"] is True
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == (
+        "remain in no-op/awaiting-preregistration state and have Ben decide "
+        "whether A5-family work should stay closed, A7.2 delayed "
+        "artifact-mediated endogenous prediction should become the next active "
+        "preregistered gate, or a separate three-hive ring preregistration "
+        "should be drafted."
     )
 
 
