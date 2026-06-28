@@ -53,25 +53,25 @@ amplifier, emphasize cross-hive artifact readiness plus contradiction/risk over
 demand prediction alone, and preserve a possible later one-hive dimensionless
 delayed-dynamics sweep rather than retro-tuning A7.2.
 
-The post-A7.2 three-hive ring is now past the contract/config-validation gate
-and has a smallest deterministic schema/source-ledger smoke scaffold plus a
-read-only preflight analyzer. The helper `ohdyn.compare_three_hive_ring` loads
-the frozen contract fixture and emits fixed seed `1,2` artifacts for the
-thirteen preregistered conditions: config, manifest, metric schema, event
-schema, source-ledger schema, and summary only. The analyzer
-`ohdyn.analyze_three_hive_ring_preflight` checks condition/seed coverage,
-schema completeness, and source-ledger schema availability, then fails closed
-as `fail_closed_no_metrics_events` until real simulator metrics/events exist.
-These artifacts do not call the simulator, emit metrics/events, compute
-promotion endpoints, or create three-hive scientific evidence.
+The post-A7.2 three-hive ring is now past the contract/config-validation,
+schema/source-ledger smoke, read-only preflight, and smallest deterministic
+mechanics-smoke gates. The helper `ohdyn.compare_three_hive_ring` remains
+artifact-only and still fails closed as `fail_closed_no_metrics_events` under
+the preflight analyzer. The new helper `ohdyn.compare_three_hive_ring_mechanics`
+emits fixed seed `1,2` metrics, events, and source-ledger rows for all thirteen
+preregistered conditions; the existing preflight marks those artifacts
+`eligible_for_mechanics_gate` because metrics/events are present. This is still
+not a residual/null analyzer, does not compute promotion endpoints, and does
+not create three-hive scientific evidence.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the smallest deterministic three-hive ring
-  mechanics gate that emits the frozen metrics/events and source-ledger fields
-  for fixed paired seeds `1,2`. Do not add promotion claims, broad seed
-  sweeps, dashboards, integrations, parameter sweeps, or hives beyond the
-  frozen ring.
+- Recommended next step: add the read-only three-hive residual/null and
+  source-ledger analyzer over the existing fixed seed `1,2` mechanics
+  artifacts. It should fail closed unless source ledgers, productivity
+  guardrails, paired-seed direction, and all preregistered null contrasts pass.
+  Do not add promotion claims, broad seed sweeps, dashboards, integrations,
+  parameter sweeps, post-result tuning, or hives beyond the frozen ring.
 
 ## Blockers
 
@@ -83,6 +83,41 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 16:45 PDT three-hive ring mechanics smoke gate: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests, the superseded
+  provisional roadmap, `docs/three_hive_ring_preregistration.md`, current
+  guard output, CLI-loop status, and the latest GPT-5.5-Pro strategy review
+  before choosing the next step. The review still has `notify_ben: false` and
+  `strategic_change_level: minor`; its preflight-analyzer recommendation had
+  already been completed in the prior run, so this run followed the newer
+  source-of-truth status recommendation to implement the bounded mechanics
+  gate.
+- Added `ohdyn.compare_three_hive_ring_mechanics` plus mechanics/source-ledger
+  manifest constants in `ohdyn/three_hive_ring_contract.py`. The helper loads
+  the frozen contract fixture, refuses non-fixed seeds, and emits one artifact
+  directory per preregistered condition and seed `1,2` with deterministic
+  per-hive `metrics.csv`, per-edge `events.csv`, per-hive `source_ledger.csv`,
+  schemas, config, manifest, and summary. Each run has 216 metrics rows, 216
+  event rows, and 216 source-ledger rows. It includes delayed transfer,
+  cross-hive prediction/work-cost accounting, membrane acceptance, source
+  ledgers, and the preregistered null/control condition variants at smoke
+  scale. It does not compute residual endpoints, promotion labels, broad seed
+  sweeps, dashboards, integrations, parameter sweeps, post-result tuning, or
+  hives beyond the frozen ring.
+- Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring' -q` (`11 passed, 639 deselected`),
+  `.venv-conda/bin/python -m py_compile
+  ohdyn/compare_three_hive_ring_mechanics.py ohdyn/three_hive_ring_contract.py`,
+  and a temp CLI smoke:
+  `.venv-conda/bin/python -m ohdyn.compare_three_hive_ring_mechanics --out
+  /tmp/omegasim_three_hive_mechanics_MAvujR/mechanics` followed by
+  `.venv-conda/bin/python -m ohdyn.analyze_three_hive_ring_preflight
+  --compare-dir /tmp/omegasim_three_hive_mechanics_MAvujR/mechanics --out
+  /tmp/omegasim_three_hive_mechanics_MAvujR/preflight`, whose manifest
+  reported 26 observed runs, 26 schema-pass rows, 26 metrics/events-present
+  rows, and status `eligible_for_mechanics_gate`.
 
 - 2026-06-28 16:35 PDT A5 bounded prompt revalidation: re-read automation
   memory, `README.md`, `AUTOMATION_STATUS.md`, the concise single-hive A5

@@ -256,6 +256,27 @@ THREE_HIVE_RING_PREFLIGHT_MANIFEST_FIELDS = (
     "metrics_events_present_count",
     "status",
 )
+THREE_HIVE_RING_MECHANICS_MANIFEST_FIELDS = (
+    "condition",
+    "seed",
+    "config",
+    "run_dir",
+    "tick_count",
+    "hive_count",
+    "edge_count",
+    "metrics_rows",
+    "events_rows",
+    "source_ledger_rows",
+    "mechanics_status",
+    "scientific_status",
+)
+THREE_HIVE_RING_SOURCE_LEDGER_CSV_FIELDS = (
+    "tick",
+    "condition",
+    "seed",
+    "hive_id",
+    *THREE_HIVE_RING_SOURCE_LEDGER_FIELDS,
+)
 
 
 def _unique_fields(fields: tuple[str, ...]) -> tuple[str, ...]:

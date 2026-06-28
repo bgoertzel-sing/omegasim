@@ -177,6 +177,7 @@ from ohdyn.three_hive_ring_contract import (
     THREE_HIVE_RING_EDGE_HIVES,
     THREE_HIVE_RING_EDGES,
     THREE_HIVE_RING_HIVES,
+    THREE_HIVE_RING_MECHANICS_MANIFEST_FIELDS,
     THREE_HIVE_RING_NULL_CONDITIONS,
     THREE_HIVE_RING_POSITIVE_CONDITION,
     THREE_HIVE_RING_PRIMARY_ENDPOINTS,
@@ -187,10 +188,16 @@ from ohdyn.three_hive_ring_contract import (
     THREE_HIVE_RING_ROLE_BIASES,
     THREE_HIVE_RING_SCHEMA_SMOKE_MANIFEST_FIELDS,
     THREE_HIVE_RING_SMOKE_PARAMETERS,
+    THREE_HIVE_RING_SOURCE_LEDGER_CSV_FIELDS,
     THREE_HIVE_RING_SOURCE_LEDGER_FIELDS,
     THREE_HIVE_RING_STATE_FIELDS,
     three_hive_ring_required_event_fields,
     three_hive_ring_required_metric_fields,
+)
+from ohdyn.compare_three_hive_ring_mechanics import (
+    THREE_HIVE_RING_MECHANICS_SCIENTIFIC_STATUS,
+    THREE_HIVE_RING_MECHANICS_STATUS,
+    run_three_hive_ring_mechanics_smoke,
 )
 from ohdyn.compare_three_hive_ring import (
     THREE_HIVE_RING_ARTIFACT_STATUS,
@@ -198,6 +205,7 @@ from ohdyn.compare_three_hive_ring import (
     run_three_hive_ring_schema_smoke,
 )
 from ohdyn.analyze_three_hive_ring_preflight import (
+    THREE_HIVE_RING_PREFLIGHT_STATUS_ELIGIBLE,
     THREE_HIVE_RING_PREFLIGHT_STATUS_MISSING_SOURCE_LEDGER,
     THREE_HIVE_RING_PREFLIGHT_STATUS_NO_METRICS_EVENTS,
     run_three_hive_ring_preflight_analysis,
@@ -1309,6 +1317,100 @@ def test_three_hive_ring_preflight_fails_closed_on_missing_source_ledger_schema(
     assert len(affected) == 1
     assert affected[0]["status"] == THREE_HIVE_RING_PREFLIGHT_STATUS_MISSING_SOURCE_LEDGER
     assert "source_ledger_schema.csv" in affected[0]["required_artifact_status"]
+
+
+def test_three_hive_ring_mechanics_smoke_emits_metrics_events_and_ledgers(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "three_hive_ring_mechanics"
+
+    rows = run_three_hive_ring_mechanics_smoke(out_dir=out_dir)
+
+    assert len(rows) == len(THREE_HIVE_RING_CONDITIONS) * 2
+    assert {row["seed"] for row in rows} == {1, 2}
+    assert {row["tick_count"] for row in rows} == {
+        THREE_HIVE_RING_SMOKE_PARAMETERS["horizon_ticks"]
+    }
+    assert {row["hive_count"] for row in rows} == {3}
+    assert {row["edge_count"] for row in rows} == {3}
+    assert {row["metrics_rows"] for row in rows} == {
+        THREE_HIVE_RING_SMOKE_PARAMETERS["horizon_ticks"] * 3
+    }
+    assert {row["events_rows"] for row in rows} == {
+        THREE_HIVE_RING_SMOKE_PARAMETERS["horizon_ticks"] * 3
+    }
+    assert {row["source_ledger_rows"] for row in rows} == {
+        THREE_HIVE_RING_SMOKE_PARAMETERS["horizon_ticks"] * 3
+    }
+    assert {row["mechanics_status"] for row in rows} == {
+        THREE_HIVE_RING_MECHANICS_STATUS
+    }
+    assert {row["scientific_status"] for row in rows} == {
+        THREE_HIVE_RING_MECHANICS_SCIENTIFIC_STATUS
+    }
+
+    manifest_rows = list(
+        csv.DictReader((out_dir / "three_hive_ring_mechanics_manifest.csv").open())
+    )
+    assert list(manifest_rows[0]) == list(THREE_HIVE_RING_MECHANICS_MANIFEST_FIELDS)
+    first_run = out_dir / f"{THREE_HIVE_RING_CONDITIONS[1]}_seed1"
+    metric_rows = list(csv.DictReader((first_run / "metrics.csv").open()))
+    event_rows = list(csv.DictReader((first_run / "events.csv").open()))
+    ledger_rows = list(csv.DictReader((first_run / "source_ledger.csv").open()))
+    assert list(metric_rows[0])[:3] == ["condition", "seed", "hive_id"]
+    assert set(three_hive_ring_required_metric_fields()).issubset(metric_rows[0])
+    assert list(event_rows[0]) == list(three_hive_ring_required_event_fields())
+    assert list(ledger_rows[0]) == list(THREE_HIVE_RING_SOURCE_LEDGER_CSV_FIELDS)
+    assert {row["selected_action"] for row in metric_rows}.issubset(
+        set(THREE_HIVE_RING_ACTIONS)
+    )
+    assert sum(float(row["accepted_transfer_volume"]) for row in event_rows) > 0.0
+    assert "does not compute promotion endpoints" in (out_dir / "summary.md").read_text()
+
+
+def test_three_hive_ring_mechanics_smoke_is_deterministic(tmp_path: Path) -> None:
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+
+    run_three_hive_ring_mechanics_smoke(out_dir=first)
+    run_three_hive_ring_mechanics_smoke(out_dir=second)
+
+    run_name = f"{THREE_HIVE_RING_CONDITIONS[1]}_seed1"
+    assert (first / run_name / "metrics.csv").read_text() == (
+        second / run_name / "metrics.csv"
+    ).read_text()
+    assert (first / run_name / "events.csv").read_text() == (
+        second / run_name / "events.csv"
+    ).read_text()
+
+
+def test_three_hive_ring_mechanics_smoke_rejects_unregistered_seeds(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
+        run_three_hive_ring_mechanics_smoke(seeds=(1,), out_dir=tmp_path / "bad")
+
+
+def test_three_hive_ring_preflight_accepts_mechanics_metrics_events(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "three_hive_ring_mechanics"
+    out_dir = tmp_path / "three_hive_ring_preflight"
+    run_three_hive_ring_mechanics_smoke(out_dir=compare_dir)
+
+    result = run_three_hive_ring_preflight_analysis(
+        compare_dir=compare_dir,
+        out_dir=out_dir,
+    )
+
+    assert result["status"] == THREE_HIVE_RING_PREFLIGHT_STATUS_ELIGIBLE
+    manifest_rows = list(
+        csv.DictReader((out_dir / "three_hive_ring_preflight_manifest.csv").open())
+    )
+    assert manifest_rows[0]["status"] == THREE_HIVE_RING_PREFLIGHT_STATUS_ELIGIBLE
+    assert int(manifest_rows[0]["metrics_events_present_count"]) == (
+        len(THREE_HIVE_RING_CONDITIONS) * 2
+    )
 
 
 def test_a7_2_configs_load_in_preregistered_condition_order() -> None:

@@ -206,7 +206,7 @@ python -m ohdyn.compare_a7_long_horizon --seeds 1 2 --out runs/a7_long_horizon_c
 python -m ohdyn.analyze_a7_semantic_field --compare-dir runs/a7_long_horizon_compare_seed1_2 --out runs/a7_long_horizon_residual_null_analysis_seed1_2
 ```
 
-## Three-Hive Ring Schema Smoke
+## Three-Hive Ring Schema And Mechanics Smoke
 
 The post-A7.2 three-hive ring gate is frozen in
 `docs/three_hive_ring_preregistration.md`,
@@ -231,6 +231,19 @@ python -m ohdyn.analyze_three_hive_ring_preflight --compare-dir runs/three_hive_
 At the artifact-only stage the expected status is
 `fail_closed_no_metrics_events`; this is a schema/source-ledger preflight, not
 three-hive scientific evidence.
+
+The bounded mechanics smoke emits deterministic metrics, events, and
+source-ledger rows for the same frozen thirteen-condition, paired-seed grid:
+
+```bash
+python -m ohdyn.compare_three_hive_ring_mechanics --seeds 1 2 --out runs/three_hive_ring_mechanics_smoke_seed1_2
+python -m ohdyn.analyze_three_hive_ring_preflight --compare-dir runs/three_hive_ring_mechanics_smoke_seed1_2 --out runs/three_hive_ring_mechanics_preflight_seed1_2
+```
+
+For those mechanics artifacts the preflight status is
+`eligible_for_mechanics_gate`, meaning schemas and metrics/events are present.
+It is still not a residual/null analyzer and does not create promotion
+evidence.
 
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, low-budget linear, medium-budget nonlinear, high-budget nonlinear,
