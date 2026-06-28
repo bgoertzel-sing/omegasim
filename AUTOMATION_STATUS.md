@@ -13,6 +13,12 @@ current posture is closed to new simulator mechanics, new simulation runs,
 A7.2 mechanics, and multi-hive coupling until Ben chooses the next
 preregistered gate.
 
+The 2026-06-28 01:29 PDT pass implemented the narrow GPT-5.5-Pro governance
+recommendation to expose closed-state repo-write policy directly in the
+automation guard. The guard now reports `repo_write_allowed=false` whenever
+`should_noop=true`, including the current
+`closed_awaiting_preregistration` state.
+
 The 2026-06-28 01:21 PDT pass rechecked the concise A5 preregistration, the
 resource-bounded residual-compression preregistration/report, the Ben
 A5-exit/A7.2 decision request, and the automation guard. No unhandled A5
@@ -67,6 +73,24 @@ pending Ben's explicit decision.
   active A7.2 preregistration, or a separate three-hive preregistration.
 
 ## Latest Changes
+
+- 2026-06-28 01:29 PDT bounded guard governance pass: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, the configs/tests surface, the superseded
+  provisional roadmap, the latest GPT-5.5-Pro strategy review, the existing
+  Ben A5-exit/A7.2 decision request, and the automation guard before choosing
+  the next step. The review had `notify_ben: true` and
+  `strategic_change_level: minor`; its recommendation to notify Ben and stop
+  repo-writing/status-only automation while closed is accepted as
+  scientifically sensible.
+- Updated `ohdyn.automation_guard` to emit `repo_write_allowed=false` for
+  closed/no-op states and `true` for open states, with focused regression
+  coverage. This is a governance-surface change only. No notification text,
+  simulator mechanics, configs, analyzers, simulation runs, dashboards,
+  integrations, seed sweeps, A7.2 mechanics, or multi-hive coupling were
+  added. The GPT-5.5-Pro recommendation to avoid further status-only commits
+  is deferred for this bounded pass only because the current automation
+  instruction explicitly requires updating this status file and committing
+  local progress.
 
 - 2026-06-28 01:21 PDT bounded A5 verification pass: re-read the automation
   memory, the concise A5 single-hive preregistration, `README.md`,
@@ -250,6 +274,20 @@ pending Ben's explicit decision.
   coupling.
 
 ## Verification
+
+- `git status --short --branch` reported a clean branch before this run:
+  `## main...origin/main`.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` now reports
+  `state: closed_awaiting_preregistration`, `should_noop: true`,
+  `repo_write_allowed: false`, `notify_ben: true`,
+  `strategic_change_level: minor`, and the single recommended next action to
+  send Ben the existing A5-exit/A7.2 decision request with the
+  compression-enforced fail-closed update.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed the latest loop using
+  the GPT-5.5-Pro review path and requesting Ben notification; no successful
+  later simulation or mechanics run was observed in the log tail.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed: 14 selected tests passed, 612 deselected.
 
 - `git status --short --branch` reported a clean branch before this status
   update: `## main...origin/main`.

@@ -54,9 +54,12 @@ def read_automation_state(
         "recommended_next_action", ""
     ) or roadmap_next_action
 
+    should_noop = bool(closed_reasons)
+
     return {
         "state": state,
-        "should_noop": bool(closed_reasons),
+        "should_noop": should_noop,
+        "repo_write_allowed": not should_noop,
         "closed_reasons": closed_reasons,
         "a5_preregistration_active": a5_preregistration_active,
         "strategic_change_level": review_header.get("strategic_change_level", ""),

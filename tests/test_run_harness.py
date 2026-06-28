@@ -673,6 +673,7 @@ def test_automation_guard_reports_closed_state_from_status_and_review(tmp_path: 
 
     assert state["state"] == "closed_awaiting_preregistration"
     assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
     assert state["strategic_change_level"] == "minor"
     assert state["notify_ben"] is False
     assert state["closed_reasons"] == [
@@ -702,6 +703,7 @@ def test_automation_guard_reports_open_without_closed_status(tmp_path: Path) -> 
 
     assert state["state"] == "open"
     assert state["should_noop"] is False
+    assert state["repo_write_allowed"] is True
     assert state["closed_reasons"] == []
     assert state["notify_ben"] is True
     assert state["recommended_next_action"] == "run A0 smoke."
@@ -1526,6 +1528,7 @@ def test_automation_guard_keeps_closed_for_a5_exit_ben_decision_status(
 
     assert state["state"] == "closed_awaiting_preregistration"
     assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
     assert state["closed_reasons"] == ["automation_status_next_step_noop"]
     assert state["a5_preregistration_active"] is True
     assert state["notify_ben"] is True
