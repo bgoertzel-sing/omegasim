@@ -45,6 +45,19 @@ a non-active decision document, not as an active experiment gate.
 
 ## Latest Changes
 
+- 2026-06-27 17:05 PDT bounded Ben-notification run: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests surface, the provisional roadmap, the
+  non-active A7.2 decision preregistration, and the latest GPT-5.5-Pro strategy
+  review before choosing a next step. The guard was closed, so this run did not
+  add simulator mechanics, configs, analyzers, simulations, dashboards,
+  integrations, seed sweeps, or multi-hive coupling.
+- Added notification draft
+  `docs/results/ben_decision_request_a5_exit_a7_2_20260627.md` to make the
+  required Ben decision explicit: close A5-family work as an evidence boundary,
+  open the non-active A7.2 delayed artifact-mediated endogenous-prediction
+  preregistration as an active gate, or request a separate three-hive ring
+  preregistration. This accepts the latest GPT-5.5-Pro recommendation as
+  scientifically sensible but keeps it non-active pending Ben's decision.
 - 2026-06-27 17:10 PDT bounded decision-preregistration run: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the provisional
   roadmap, current A5/A5.1/A6/A7 closure evidence, and the latest GPT-5.5-Pro
@@ -418,6 +431,26 @@ a non-active decision document, not as an active experiment gate.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   automation_guard` passed after the documentation updates: `12 passed, 612
   deselected`.
+- `git status --short --branch` passed at the start of the 2026-06-27 17:05
+  PDT bounded Ben-notification run and reported `main...origin/main` with no
+  uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed at the start of
+  the 2026-06-27 17:05 PDT bounded Ben-notification run. It reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`, closed reason
+  `automation_status_a5_closed`, `strategic_change_level=major`,
+  `notify_ben=true`, and the single next step to notify Ben and await his
+  decision.
+- `git diff --check` passed after the Ben-notification draft and status
+  update.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the
+  Ben-notification draft and status update. It reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`, closed reason
+  `automation_status_a5_closed`, `strategic_change_level=major`,
+  `notify_ben=true`, and the single next step to notify Ben and await his
+  decision.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed after the Ben-notification draft and status update:
+  `12 passed, 612 deselected`.
 
 ## Blockers
 
