@@ -14,10 +14,13 @@ support lobe-like, strange-attractor-like, semantic-dynamics, or causal
 collective-structure claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state: the concise single-hive A5
-preregistration and smallest deterministic scaffold already exist and still
-match that request. This does not reopen broad A5 mechanics, broader seed
-sweeps, dashboards, integrations, or three-hive coupling.
+rechecked against the current repo state again on 2026-06-28 11:31 PDT: the
+concise single-hive A5 preregistration and smallest deterministic scaffold
+already exist and still match that request. The current paired-seed smoke
+reproduces the A5-family boundary: forecast skill improves in intermediate
+predictors, but residual-accounting promotion fails closed. This does not
+reopen broad A5 mechanics, broader seed sweeps, dashboards, integrations, or
+three-hive coupling.
 
 The active A7.2 scientific focus is still the resource-bounded prediction
 hypothesis, but now with a more mechanism-rich single-hive design: agents
@@ -59,6 +62,31 @@ with A5-style forecast skill, backlog dwell, accounting leakage, or
 post-result rescue tuning.
 
 ## Latest Changes
+
+- 2026-06-28 11:31 PDT A5 bounded prompt verification: re-read automation
+  memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive
+  preregistration, the structured strange-attractor research note, current A5
+  comparison/analyzer code, focused test references, and recent git history.
+  Confirmed that the A5 preregistration already covers the requested
+  deterministic single-hive anticipatory predictive-control setup,
+  resource-bounded prediction hypothesis, matched task-arrival/service-
+  capacity/action-opportunity/work-budget accounting, reactive/linear/
+  nonlinear/high-budget/oracle/timing-broken null conditions, primary
+  endpoints, and fail-closed strange-attractor/lobe interpretation rules.
+  Confirmed that the existing deterministic scaffold is still the smallest
+  bounded A5 smoke path; no new mechanics, configs, analyzers, dashboards,
+  integrations, seed sweeps, A7.2 changes, or multi-hive coupling were added.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` (`state=open`,
+  `a5_preregistration_active=true`, `repo_write_allowed=true`,
+  `notify_ben=false`),
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`20 passed, 615 deselected`), and a temporary paired-seed A5 smoke plus
+  read-only residual analyzer under `/tmp/omegasim_a5_20260628_current_9uBnsr`.
+  The smoke reproduced forecast-skill gains for linear, nonlinear, and
+  high-budget nonlinear predictors, but the analyzer promotion audit failed
+  closed for every intermediate-budget condition after accounting/null checks.
 
 - 2026-06-28 current bounded A7.2 mechanics pass: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests surface, the superseded provisional
