@@ -16,6 +16,13 @@ adding mechanics.
 
 ## Analyzer Changes
 
+- 2026-06-28 update: the promotion-rule audit now requires the
+  preregistered full-accounting `residual_state_compression_ratio` contrast to
+  pass alongside residual predictability. Standard A5 conditions must compress
+  better than reactive and the budget-matched timing-broken null; A5.1a charged
+  conditions must compress better than their spend-only replay null. Lower
+  compression ratio is treated as the favorable endpoint, and this remains a
+  fail-closed criterion rather than promotion language.
 - Added missing lag-2 residual-state autocorrelation.
 - Added nearest-return-time mean and nearest-return-time entropy as scalar
   summaries of the preregistered return-time histogram requirement.

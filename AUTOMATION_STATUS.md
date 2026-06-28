@@ -5,21 +5,26 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the A5-family reopened smoke, A5.1a
-cost-calibration gate, and the read-only A5 resource-bounded
-residual-compression diagnostic are now complete and closed conservatively.
-The current posture is closed to new simulator mechanics, new simulation runs,
+Source-of-truth status: the explicit A5 single-hive preregistration, the
+reopened smoke scaffold, the A5.1a cost-calibration gate, the read-only
+resource-bounded residual-compression diagnostic, and the compression-enforced
+residual-accounting audit are now complete and closed conservatively. The
+current posture is closed to new simulator mechanics, new simulation runs,
 A7.2 mechanics, and multi-hive coupling until Ben chooses the next
 preregistered gate.
 
-The already-run reopened A5 seed `5,6` smoke reproduced forecast-skill gains
-but failed closed on residual/null promotion. That failure remains an
-interpretation boundary, not permission to broaden mechanics. The prior A5
-seed `7..16` and A5.1a results also remain binding constraints. Forecast-skill
-gains are not enough: any structured-dynamics claim must survive matched
+The compression-enforced audit tightens the existing A5 analyzer: any A5
+promotion candidate must now pass the preregistered full-accounting
+`residual_state_compression_ratio` contrast as well as residual
+predictability, forecast-skill, oracle, guardrail, and matched-null checks.
+The latest bounded seed `5,6` smoke still fails closed. Some compression
+contrasts are favorable, but no intermediate-budget condition also passes the
+full residual-predictability and preregistered promotion criteria. The prior
+A5 seed `7..16` and A5.1a results also remain binding constraints. Forecast
+skill gains are not enough: any structured-dynamics claim must survive matched
 task-arrival totals, service capacity, action opportunity, work budget,
-prediction-spend accounting, and budget-matched shuffled/phase-randomized
-nulls.
+prediction-spend accounting, compression/predictability accounting, and
+budget-matched shuffled/phase-randomized nulls.
 
 The current hypothesis is Ben's resource-bounded prediction hypothesis:
 inter-agent or inter-role prediction is itself a scarce managed resource.
@@ -50,12 +55,26 @@ pending Ben's explicit decision.
 ## Recommended Next Step
 
 - Recommended next step: send Ben the existing A5-exit/A7.2 decision request
-  and keep automation closed to new simulations or mechanics until he chooses
-  A5-family closure, an active A7.2 preregistration, or a separate three-hive
-  preregistration.
+  with the compression-enforced fail-closed update and keep automation closed
+  to new simulations or mechanics until he chooses A5-family closure, an
+  active A7.2 preregistration, or a separate three-hive preregistration.
 
 ## Latest Changes
 
+- 2026-06-28 00:34 PDT compression-enforced A5 residual audit: treated Ben's
+  explicit A5 request as authorization for a bounded analyzer/test tightening,
+  not for new simulator mechanics, configs, dashboards, integrations, seed
+  sweeps, A7.2 mechanics, or multi-hive coupling.
+- Updated `ohdyn.analyze_a5_residual_accounting` so the promotion audit now
+  requires full-accounting residual compression to pass alongside residual
+  predictability. Standard A5 conditions must compress better than reactive
+  and their budget-matched timing-broken null; A5.1a charged conditions must
+  compress better than their spend-only replay null. Lower compression ratio is
+  the favorable endpoint, and the gate remains fail-closed.
+- Updated the focused regression tests and
+  `docs/results/a5_residual_accounting_analyzer_audit.md` to record the new
+  compression gate. Reran the bounded standard A5 seed `5,6` smoke and the
+  charged A5.1a seed `5,6` analyzer path in `/tmp`; both remained fail-closed.
 - 2026-06-27 23:14 PDT guard-closed notification alignment: re-read
   `README.md`, this status file, configs/tests surface, the provisional
   roadmap, the latest GPT-5.5-Pro strategy review, the Ben decision request,
@@ -92,6 +111,22 @@ pending Ben's explicit decision.
 
 ## Verification
 
+- `.venv-conda/bin/python -m py_compile
+  ohdyn/analyze_a5_residual_accounting.py` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'a5_predictive_control or a5_residual_accounting' -q` passed: 4 selected
+  tests passed, 622 deselected.
+- Standard bounded A5 smoke passed in
+  `/tmp/omegasim_a5_20260628_compression_gate_1`: `ohdyn.run` seed `5`,
+  `compare_predictive_control` seeds `5,6`, and
+  `analyze_a5_residual_accounting`. Promotion failed closed for `linear`,
+  `nonlinear`, and `nonlinear_high_budget`.
+- Charged A5.1a analyzer smoke passed in
+  `/tmp/omegasim_a5_1a_20260628_compression_gate_1`:
+  `compare_predictive_control --base-config
+  configs/a5_1_prediction_spend_linear_smoke.yaml --seeds 5 6` and
+  `analyze_a5_residual_accounting`. Promotion failed closed for all charged
+  linear cost conditions.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` reported
   `state: closed_awaiting_preregistration`, `should_noop: true`,
   `notify_ben: true`, and the single recommended next action to send Ben the
@@ -115,7 +150,8 @@ pending Ben's explicit decision.
 
 - No code or environment blocker. Governance blocker remains: Ben has not yet
   chosen among A5-family closure, active A7.2 preregistration, or a separate
-  three-hive preregistration.
+  three-hive preregistration after the compression-enforced A5 fail-closed
+  update.
 
 - 2026-06-27 22:36 PDT bounded residual-compression preregistration pass:
   re-read `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the

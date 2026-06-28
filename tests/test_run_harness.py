@@ -3244,6 +3244,8 @@ def test_a5_residual_accounting_analyzes_existing_comparison(
     assert "- scope: read-only single-hive A5 diagnostics" in summary
     assert "## Promotion Rule Audit" in summary
     assert "full accounting compression ratio" in summary
+    assert "compression_vs_reactive=" in summary
+    assert "compression_vs_shuffled=" in summary
     assert "Preregistered confirmatory guardrails" in summary
     assert any(
         row["endpoint"] == "attention_near_term_external_completed_final"
@@ -3275,6 +3277,7 @@ def test_a5_residual_accounting_analyzes_a5_1a_cost_calibration_grid(
     summary = (tmp_path / "a5_1a_analysis" / "summary.md").read_text()
     assert "A5.1a audit: fail closed unless" in summary
     assert "skill_vs_spend_only_null=" in summary
+    assert "compression_vs_spend_only_null=" in summary
 
 
 def test_a2_exogenous_arrivals_run_records_accounting_and_reproduces(

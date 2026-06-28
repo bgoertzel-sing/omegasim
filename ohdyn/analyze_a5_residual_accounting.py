@@ -838,6 +838,7 @@ def _summary(
                 f"{row['condition']}: "
                 f"skill_vs_spend_only_null={row['skill_vs_spend_only_null']}, "
                 f"residual_vs_spend_only_null={row['residual_vs_spend_only_null']}, "
+                f"compression_vs_spend_only_null={row['compression_vs_spend_only_null']}, "
                 f"guardrails_vs_spend_only_null={row['guardrails_vs_spend_only_null']}; "
                 f"promotion_satisfied={row['promotion_satisfied']}"
             )
@@ -850,6 +851,8 @@ def _summary(
                 f"skill_vs_shuffled={row['skill_vs_shuffled']}, "
                 f"residual_vs_reactive={row['residual_vs_reactive']}, "
                 f"residual_vs_shuffled={row['residual_vs_shuffled']}, "
+                f"compression_vs_reactive={row['compression_vs_reactive']}, "
+                f"compression_vs_shuffled={row['compression_vs_shuffled']}, "
                 f"nontrivial_vs_oracle={row['nontrivial_vs_oracle']}, "
                 f"guardrails_ok={row['guardrails_ok']}; "
                 f"promotion_satisfied={row['promotion_satisfied']}"
@@ -911,6 +914,18 @@ def _promotion_rule_rows(
             "full_accounting",
             "residual_state_predictability_r2",
         )
+        compression_vs_reactive = _effect_negative_outside_null(
+            rows_by_endpoint,
+            f"{condition}_minus_reactive",
+            "full_accounting",
+            "residual_state_compression_ratio",
+        )
+        compression_vs_shuffled = _effect_negative_outside_null(
+            rows_by_endpoint,
+            f"{condition}_minus_{A5_TIMING_BROKEN_NULL_BY_CONDITION[condition]}",
+            "full_accounting",
+            "residual_state_compression_ratio",
+        )
         oracle_delta = _effect_delta(
             rows_by_endpoint,
             f"oracle_minus_{condition}",
@@ -925,6 +940,8 @@ def _promotion_rule_rows(
                 skill_vs_shuffled,
                 residual_vs_reactive,
                 residual_vs_shuffled,
+                compression_vs_reactive,
+                compression_vs_shuffled,
                 nontrivial_vs_oracle,
                 guardrails_ok,
             )
@@ -936,6 +953,8 @@ def _promotion_rule_rows(
                 "skill_vs_shuffled": skill_vs_shuffled,
                 "residual_vs_reactive": residual_vs_reactive,
                 "residual_vs_shuffled": residual_vs_shuffled,
+                "compression_vs_reactive": compression_vs_reactive,
+                "compression_vs_shuffled": compression_vs_shuffled,
                 "nontrivial_vs_oracle": nontrivial_vs_oracle,
                 "guardrails_ok": guardrails_ok,
                 "promotion_satisfied": promotion_satisfied,
@@ -963,6 +982,12 @@ def _a5_1a_audit_rows(
             "full_accounting",
             "residual_state_predictability_r2",
         )
+        compression_vs_null = _effect_negative_outside_null(
+            rows_by_endpoint,
+            contrast,
+            "full_accounting",
+            "residual_state_compression_ratio",
+        )
         guardrails_vs_null = _guardrails_ok_against_baseline(
             rows_by_endpoint,
             condition,
@@ -972,6 +997,7 @@ def _a5_1a_audit_rows(
             (
                 skill_vs_null,
                 residual_vs_null,
+                compression_vs_null,
                 guardrails_vs_null,
             )
         )
@@ -980,6 +1006,7 @@ def _a5_1a_audit_rows(
                 "condition": condition,
                 "skill_vs_spend_only_null": skill_vs_null,
                 "residual_vs_spend_only_null": residual_vs_null,
+                "compression_vs_spend_only_null": compression_vs_null,
                 "guardrails_vs_spend_only_null": guardrails_vs_null,
                 "promotion_satisfied": promotion_satisfied,
             }
@@ -1075,6 +1102,18 @@ def _effect_positive_outside_null(
     if row is None:
         return False
     return float(row["mean_delta"]) > 0.0 and bool(row["outside_label_permutation_ci"])
+
+
+def _effect_negative_outside_null(
+    rows_by_endpoint: dict[tuple[Any, Any, Any], dict[str, Any]],
+    contrast: str,
+    control_level: str,
+    endpoint: str,
+) -> bool:
+    row = rows_by_endpoint.get((contrast, control_level, endpoint))
+    if row is None:
+        return False
+    return float(row["mean_delta"]) < 0.0 and bool(row["outside_label_permutation_ci"])
 
 
 def _effect_delta(
