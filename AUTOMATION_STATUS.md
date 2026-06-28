@@ -45,6 +45,13 @@ family. That downstream phase should use cross-hive prediction costs, delayed
 artifact transfer, target/phase nulls, transfer-opportunity controls, and the
 three-hive ring variants described in the OmegaSim experiment run-down. Keep
 Ben informed about design decisions and results as this road advances.
+Ben's 2026-06-28 Hyperseed follow-up is captured in
+`docs/hyperseed_one_hive_delayed_dynamics_note.md`: three hives are
+diagnostically useful but not ontologically required for complex dynamics; the
+three-hive preregistration should treat the ring as a relational diagnostic
+amplifier, emphasize cross-hive artifact readiness plus contradiction/risk over
+demand prediction alone, and preserve a possible later one-hive dimensionless
+delayed-dynamics sweep rather than retro-tuning A7.2.
 
 ## Recommended Next Step
 
