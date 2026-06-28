@@ -5,11 +5,12 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's explicit A5 request reopens only the bounded
-single-hive anticipatory predictive-control smoke/scaffold stage recorded in
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-That preregistration is already drafted and committed, so this run is limited
-to the smallest deterministic scaffold/reporting needed to exercise it.
+Source-of-truth status: the A5-family reopened smoke, A5.1a
+cost-calibration gate, and the read-only A5 resource-bounded
+residual-compression diagnostic are now complete and closed conservatively.
+The current posture is closed to new simulator mechanics, new simulation runs,
+A7.2 mechanics, and multi-hive coupling until Ben chooses the next
+preregistered gate.
 
 The already-run reopened A5 seed `5,6` smoke reproduced forecast-skill gains
 but failed closed on residual/null promotion. That failure remains an
@@ -36,24 +37,61 @@ anticipatory coupling remains downstream and requires a separate
 preregistration with target/phase nulls and resource-bounded cross-hive
 prediction costs.
 
-The active change is the read-only resource-bounded residual-compression
-diagnostic preregistration in
-`docs/a5_resource_bounded_residual_compression_preregistration.md`. It freezes
-a no-new-runs, no-new-mechanics report over existing A5/A5.1a artifacts to
-test whether full-accounting residual compression contains any interpretable
-resource-bounded signal, or whether the prior fail-closed accounting/null
-interpretation is confirmed. It explicitly accepts the sensible GPT-5.5-Pro
-controls for prediction spend, oracle smoothing, and timing-broken nulls while
-deferring A7.2 and multi-hive recommendations pending Ben's explicit decision.
+The completed read-only resource-bounded residual-compression diagnostic is
+recorded in
+`docs/results/a5_resource_bounded_residual_compression_report.md`. It confirms
+closure: existing A5-family artifacts do not contain an interpretable
+full-accounting residual compression signal that beats reactive, oracle, and
+matched timing-broken or spend-only null expectations. It explicitly accepts
+the sensible GPT-5.5-Pro controls for prediction spend, oracle smoothing, and
+timing-broken nulls while deferring A7.2 and multi-hive recommendations
+pending Ben's explicit decision.
 
 ## Recommended Next Step
 
-- Recommended next step: produce the preregistered read-only
-  resource-bounded residual-compression report over existing A5/A5.1a
-  artifacts, without new simulator mechanics, new simulation runs, A7.2
-  mechanics, or multi-hive coupling.
+- Recommended next step: send Ben the existing A5-exit/A7.2 decision request
+  and keep automation closed to new simulations or mechanics until he chooses
+  A5-family closure, an active A7.2 preregistration, or a separate three-hive
+  preregistration.
 
 ## Latest Changes
+
+- 2026-06-27 22:55 PDT read-only residual-compression report pass: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the provisional
+  roadmap, the resource-bounded residual-compression preregistration, existing
+  A5 result notes, and the latest GPT-5.5-Pro strategy review before choosing
+  the next step. The status file and automation guard were authoritative and
+  allowed exactly the preregistered read-only A5 residual-compression report,
+  despite the external review recommending Ben notification and no further
+  status churn.
+- Added
+  `docs/results/a5_resource_bounded_residual_compression_report.md`. The
+  report consumes existing residual-accounting CSVs from the reopened seed
+  `5,6` and confirmatory seed `7..16` A5 artifacts, marks A5.1a reusable CSV
+  coverage as absent under `runs/`, and confirms closure: intermediate
+  prediction budgets do not beat reactive, oracle, and matched timing-broken
+  or spend-only null expectations on full-accounting residual compression.
+- Updated this status file so the active focus is now closed pending Ben's
+  decision. This run did not add simulator mechanics, configs, analyzers,
+  simulation runs, dashboards, integrations, A7.2 mechanics, or multi-hive
+  coupling.
+
+## Verification
+
+- `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state: open`
+  only for the read-only residual-compression report step before this update,
+  with `notify_ben: true` and the external review still recommending Ben
+  notification.
+- Existing artifact inspection found the required A5 comparison and
+  residual-accounting CSVs for reopened seed `5,6` and confirmatory seed
+  `7..16`; no checked-in A5.1a reusable run CSV directories were present under
+  `runs/`, so A5.1a was treated as result-note coverage only.
+
+## Blockers
+
+- No code or environment blocker. Governance blocker remains: Ben has not yet
+  chosen among A5-family closure, active A7.2 preregistration, or a separate
+  three-hive preregistration.
 
 - 2026-06-27 22:36 PDT bounded residual-compression preregistration pass:
   re-read `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the
