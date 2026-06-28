@@ -51,6 +51,35 @@ locks.
 
 ## Latest Changes
 
+- 2026-06-28 04:37 PDT bounded guard consistency pass: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the superseded
+  provisional roadmap, the latest GPT-5.5-Pro strategy review, the CLI-loop
+  log, the existing Ben A5-exit/A7.2 decision request, the concise A5
+  preregistration, and the completed residual-compression report before
+  choosing the next step. The review has `notify_ben: true` and
+  `strategic_change_level: minor`; its recommendation to send Ben the
+  existing decision request and stop repo-writing/status-loop automation while
+  awaiting his choice is accepted as scientifically sensible.
+- Updated `ohdyn.automation_guard` so the current source-of-truth
+  recommendation to stop A5 broadening after the fail-closed smoke closes the
+  live guard even though the historical concise A5 preregistration file still
+  exists. Added focused regression coverage for that exact status wording.
+- Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` (`15 passed, 612 deselected`),
+  `.venv-conda/bin/python -m ohdyn.automation_guard`
+  (`state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `notify_ben=true`, `closed_reasons=[
+  "automation_status_a5_broadening_stopped"]`), and `git diff --check`.
+  No simulator mechanics, configs, analyzers, simulation runs, dashboards,
+  integrations, seed sweeps, A7.2 mechanics, or multi-hive coupling were
+  added. The GPT-5.5-Pro recommendation to avoid further status-only commits
+  is deferred for this bounded pass only because the current automation
+  instruction explicitly requires updating this status file and committing
+  local progress. Exactly one next step remains: send Ben the existing
+  A5-exit/A7.2 decision request and keep automation closed to new simulations
+  or mechanics until he chooses the next preregistered target.
+
 - 2026-06-28 current bounded A5 preregistration pass: re-read
   `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive
   preregistration, the existing A5 comparison scaffold, the A5 smoke config,

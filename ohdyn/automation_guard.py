@@ -147,6 +147,8 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         status_reasons.append("automation_status_next_step_noop")
     if "do not reopen a5" in normalized_status:
         status_reasons.append("automation_status_a5_closed")
+    if "stop a5 broadening after this fail-closed smoke" in normalized_status:
+        status_reasons.append("automation_status_a5_broadening_stopped")
     if (
         not status_reasons
         and "the current a5 anticipatory predictive-control loop is closed"
@@ -194,6 +196,8 @@ def _status_closes_active_a5(status: str) -> bool:
             or "recommended next step: design one preregistered resource-bounded residual diagnostic"
             in normalized_status
             or "do not reopen a5" in normalized_status
+            or "stop a5 broadening after this fail-closed smoke"
+            in normalized_status
             or "not an active authorization for more a5-family automation"
             in normalized_status
         )

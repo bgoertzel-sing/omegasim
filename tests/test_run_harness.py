@@ -1447,6 +1447,64 @@ def test_automation_guard_closes_after_reopened_a5_smoke_fail_closed(
     )
 
 
+def test_automation_guard_closes_when_current_status_stops_a5_broadening(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: the current concise A5 gate is "
+                "`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.",
+                "That document records the explicit single-hive A5 reopening "
+                "and is the active preregistration summary for the bounded "
+                "smoke/pilot requested on 2026-06-28.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: stop A5 broadening after this "
+                "fail-closed smoke and ask Ben to choose the next separately "
+                "preregistered scientific target.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: true",
+                "recommended_next_action: Send Ben the existing A5-exit/A7.2 "
+                "decision request now, then suspend repo-writing/status-loop "
+                "automation while awaiting his choice.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == ["automation_status_a5_broadening_stopped"]
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == (
+        "stop A5 broadening after this fail-closed smoke and ask Ben to "
+        "choose the next separately preregistered scientific target."
+    )
+
+
 def test_automation_guard_keeps_closed_for_a5_exit_ben_decision_status(
     tmp_path: Path,
 ) -> None:
