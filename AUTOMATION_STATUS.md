@@ -35,13 +35,13 @@ anticipatory coupling remains downstream and requires a separate
 preregistration with target/phase nulls and resource-bounded cross-hive
 prediction costs.
 
-The latest GPT-5.5-Pro strategy review has `strategic_change_level: major` and
-`notify_ben: true`. Its A5-exit recommendation is accepted as scientifically
-sensible: keep the guard closed and treat
+The latest GPT-5.5-Pro strategy review has `strategic_change_level: none` and
+`notify_ben: true`. Its A5-exit/no-op recommendation is accepted as
+scientifically sensible: keep the guard closed, stop no-op status churn, and treat
 `docs/a5_family_exit_and_a7_2_decision_preregistration.md` as a non-active
-Ben-decision document, not an active experiment gate. Ben should be notified of
-the direction shift before any new active A7.2 or three-hive preregistration is
-opened.
+Ben-decision document, not an active experiment gate. Ben should still be
+notified of the pending A5-exit/A7.2/three-hive choice before any new active
+A7.2 or three-hive preregistration is opened.
 
 ## Recommended Next Step
 
@@ -53,6 +53,16 @@ opened.
 
 ## Latest Changes
 
+- 2026-06-27 19:07 PDT bounded guard-closed verification: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, the configs/tests surface, the
+  provisional roadmap, the non-active A7.2 decision preregistration, the Ben
+  decision request, and the latest GPT-5.5-Pro strategy review before choosing
+  the next step. The guard remains closed with `strategic_change_level: none`
+  and `notify_ben: true`; the review recommends sending Ben the existing
+  decision request and stopping further no-op status commits. This run did not
+  add simulator mechanics, configs, analyzers, simulations, dashboards,
+  integrations, seed sweeps, A5-family reruns, A7.2 mechanics, or multi-hive
+  coupling.
 - 2026-06-27 18:33 PDT bounded guard-closed no-op run: re-read
   `README.md`, `AUTOMATION_STATUS.md`, the configs/tests surface, the
   provisional roadmap, the existing non-active A7.2 decision preregistration,
@@ -305,6 +315,29 @@ opened.
 
 ## Verification
 
+- `git status --short --branch` passed at the start of the 2026-06-27 19:07
+  PDT bounded guard-closed verification and reported `main...origin/main` with
+  no uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed at the start of
+  this run. It reported `state=closed_awaiting_preregistration`,
+  `should_noop=true`, closed reason `automation_status_next_step_noop`,
+  `strategic_change_level=none`, `notify_ben=true`, and the single next step
+  to remain in no-op/awaiting-preregistration state pending Ben's decision.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed recent automation loops
+  completing successfully and the latest strategy review requesting Ben
+  notification.
+- `git diff --check` passed before this status correction.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed before this status correction: `14 passed, 612
+  deselected`.
+- `git diff --check` passed after this status correction.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after this status
+  correction and still reported `state=closed_awaiting_preregistration`,
+  `should_noop=true`, closed reason `automation_status_next_step_noop`,
+  `strategic_change_level=none`, and `notify_ben=true`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed after this status correction: `14 passed, 612
+  deselected`.
 - `git status --short --branch` passed at the start of the 2026-06-27 18:33
   PDT bounded guard-closed no-op run and reported `main...origin/main` with no
   uncommitted changes.
@@ -652,10 +685,10 @@ opened.
 
 ## Blockers
 
-There is no local environment blocker. The scientific blocker is that the
-reopened A5 smoke reproduced forecast-skill gains but did not produce
-residual/null evidence strong enough for promotion. The external review also
-marked the direction shift as major and said Ben should be notified. Avoid
-broader A5/A5.1 seed work, A7.2 mechanics, or multi-hive mechanics unless a
-fresh preregistered design or diagnostic first explains how it will overcome
-the residual/null accounting boundary.
+There is no local environment blocker. The scientific/governance blocker is
+that the reopened A5 smoke reproduced forecast-skill gains but did not produce
+residual/null evidence strong enough for promotion, while the latest external
+review says to stop further no-op status commits and send Ben the existing
+decision request. Avoid broader A5/A5.1 seed work, A7.2 mechanics, or
+multi-hive mechanics unless Ben first chooses a fresh preregistered direction
+that explains how it will overcome the residual/null accounting boundary.
