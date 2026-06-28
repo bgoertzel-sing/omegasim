@@ -36,21 +36,42 @@ anticipatory coupling remains downstream and requires a separate
 preregistration with target/phase nulls and resource-bounded cross-hive
 prediction costs.
 
-The active change is a read-only diagnostic/reporting refinement: the residual
-accounting summary now surfaces the existing full-accounting residual
-compression ratio beside residual predictability so the preregistered
-predictability/compressibility endpoint is visible in the smoke artifact. The
-bounded seed `5,6` smoke chain was rerun with that reporting and still failed
-closed: no intermediate-budget condition satisfied all preregistered
-residual/null promotion criteria.
+The active change is the read-only resource-bounded residual-compression
+diagnostic preregistration in
+`docs/a5_resource_bounded_residual_compression_preregistration.md`. It freezes
+a no-new-runs, no-new-mechanics report over existing A5/A5.1a artifacts to
+test whether full-accounting residual compression contains any interpretable
+resource-bounded signal, or whether the prior fail-closed accounting/null
+interpretation is confirmed. It explicitly accepts the sensible GPT-5.5-Pro
+controls for prediction spend, oracle smoothing, and timing-broken nulls while
+deferring A7.2 and multi-hive recommendations pending Ben's explicit decision.
 
 ## Recommended Next Step
 
-- Recommended next step: preregister one resource-bounded residual-compression
-  diagnostic before adding any new A5 simulator mechanics.
+- Recommended next step: produce the preregistered read-only
+  resource-bounded residual-compression report over existing A5/A5.1a
+  artifacts, without new simulator mechanics, new simulation runs, A7.2
+  mechanics, or multi-hive coupling.
 
 ## Latest Changes
 
+- 2026-06-27 22:36 PDT bounded residual-compression preregistration pass:
+  re-read `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the
+  provisional roadmap, the A5 residual-accounting design, the
+  forecast-skill/residual-gap diagnostic plan, the reopened A5 smoke result,
+  and the latest GPT-5.5-Pro strategy review before choosing the next step.
+  The status file and guard were authoritative: the external review still says
+  to notify Ben and avoid no-op/status churn, but the current source-of-truth
+  next step authorized one preregistered A5 residual-compression diagnostic.
+- Added
+  `docs/a5_resource_bounded_residual_compression_preregistration.md` to freeze
+  the diagnostic question, existing-artifact inputs, full-accounting residual
+  state, compression endpoints, budget/spend controls, timing-broken nulls,
+  fail-closed decision rule, and report output contract.
+- Updated `README.md` and this status file so the only current next step is the
+  preregistered read-only report over existing A5/A5.1a artifacts. This run
+  did not add simulator mechanics, configs, analyzers, simulation runs,
+  dashboards, integrations, A7.2 mechanics, or multi-hive coupling.
 - 2026-06-27 22:19 PDT explicit A5 bounded scaffold/reporting pass: re-read
   automation memory, `README.md`, `AUTOMATION_STATUS.md`, the concise A5
   preregistration, and the residual-accounting analyzer surface. Ben's current
@@ -345,6 +366,23 @@ residual/null promotion criteria.
 
 ## Verification
 
+- `git status --short --branch` passed at the start of the 2026-06-27 22:36
+  PDT bounded residual-compression preregistration pass and reported
+  `main...origin/main` with no uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed before the
+  preregistration patch and reported `state=open`, `should_noop=false`,
+  `strategic_change_level=none`, `notify_ben=true`, and the single next step
+  to preregister one resource-bounded residual-compression diagnostic before
+  new A5 simulator mechanics.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the
+  preregistration patch and reported `state=open`, `should_noop=false`,
+  `strategic_change_level=none`, `notify_ben=true`, and the single next step
+  to produce the preregistered read-only residual-compression report over
+  existing A5/A5.1a artifacts, without new mechanics or runs.
+- `git diff --check` passed after the preregistration/status update.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed after the preregistration/status update:
+  `14 passed, 612 deselected`.
 - `.venv-conda/bin/python -m py_compile
   ohdyn/analyze_a5_residual_accounting.py ohdyn/automation_guard.py` passed.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported

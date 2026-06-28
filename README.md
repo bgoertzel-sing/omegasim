@@ -56,6 +56,12 @@ scientifically interpretable. The non-active decision document for the
 candidate delayed artifact-mediated endogenous-prediction direction is
 `docs/a5_family_exit_and_a7_2_decision_preregistration.md`.
 
+The current bounded read-only follow-up is preregistered in
+`docs/a5_resource_bounded_residual_compression_preregistration.md`. It
+authorizes only a residual-compression diagnostic report over existing
+A5-family artifacts. It does not authorize new simulator mechanics, new runs,
+broader seeds, A7.2 mechanics, or multi-hive coupling.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question
