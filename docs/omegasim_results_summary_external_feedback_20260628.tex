@@ -1,0 +1,588 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{hyperref}
+
+\setlength{\emergencystretch}{3em}
+
+\title{OmegaSim Results Summary and External Feedback Brief}
+\author{Prepared for Ben Goertzel}
+\date{2026-06-28}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+OmegaSim has now produced a useful, mostly conservative body of evidence.
+The successful results are not yet evidence for structured strange attractors,
+but they are scientifically valuable: the simulator harness is reproducible;
+task pressure, service capacity, exogenous demand, and two-hive transfer
+coupling all have measurable and interpretable effects; bounded predictors
+can improve forecast skill under matched demand streams; and source-ledger
+and null-control infrastructure can now fail closed when apparent structure is
+explained by accounting variables. The main null result is equally important:
+the completed A2--A7 experiments do not yet justify claims of lobe grammar,
+semantic recurrence, strange-attractor-like dynamics, or causal collective
+structure. The active next direction is A7.2: delayed artifact-mediated
+endogenous prediction in a single hive, followed regardless of outcome by a
+separately preregistered three-hive ring experiment family.
+\end{abstract}
+
+\section{Purpose and Current Status}
+
+This document summarizes OmegaSim results to date for external feedback on
+next scientific directions. It distinguishes three categories:
+
+\begin{enumerate}
+\item successful simulator and mechanism findings;
+\item null or fail-closed results that constrain interpretation;
+\item next experiments aimed at eliciting richer nonlinear collective
+dynamics.
+\end{enumerate}
+
+The current repository state is clean and synchronized with the remote at the
+A7.2 config-contract gate. The latest source-of-truth status says:
+
+\begin{quote}
+Run A7.2-style delayed artifact-mediated endogenous prediction first; after
+that, whether positive or negative, move to a separately preregistered
+three-hive ring.
+\end{quote}
+
+The A7.2 preregistration and config/schema contract are already written. Full
+test verification has passed, including the focused A7.2 contract tests and
+the full harness test suite. No result-bearing A7.2 simulations have yet been
+interpreted.
+
+\section{Simulator Abstraction}
+
+OmegaSim is a deterministic abstract simulator for OmegaHive-like collective
+cognition. It does not call live LLMs, theorem provers, browsers, Slack,
+Atomspace, task boards, or external services. Instead, those are represented
+numerically through agents, queues, task classes, actions, graph connections,
+artifact fields, transfer events, budgets, and metrics.
+
+The baseline single-hive model has 15 agents divided among coordinator,
+researcher, architect, implementer, and reviewer roles. Agents operate over a
+task queue and choose actions such as idling, messaging, task creation, and
+work. Later experiments add attention policies, exogenous arrivals, service
+capacity variation, multi-hive transfer, predictive control, logistic appraisal
+state, semantic/artifact fields, and source-ledger accounting.
+
+The most important methodological lesson is that raw lobe labels are not
+sufficient evidence. Early labels such as backlog growth, execution,
+task generation, coordination, and low activity were derived from queue and
+action variables. They are useful descriptive diagnostics, but are too close to
+the manipulated variables to support attractor claims without residualization
+and strong null controls.
+
+\section{Experiment Timeline}
+
+\begin{longtable}{p{0.16\linewidth}p{0.26\linewidth}p{0.46\linewidth}}
+\hline
+Stage & Question & High-level outcome \\
+\hline
+A0/A1 & Can OmegaSim produce deterministic reproducible run artifacts? &
+Yes. Established configs, manifests, metrics, events, summaries, seeded runs,
+and test discipline. No complex-dynamics claim. \\
+\hline
+A2 & Do attention policies and task pressure create trajectory regimes? &
+Pressure robustly increases queue depth and queued age. This is a real system
+effect, but mostly queue-flow/load arithmetic. \\
+\hline
+A2 scheduler ablation & Is the pressure effect caused by the quota scheduler? &
+No. Random-available scheduling changes secondary curve shape but does not
+remove the robust pressure response. \\
+\hline
+A2 exogenous arrivals & Can backlog pressure be induced independently of
+agent task-creation pressure? & Yes. Exogenous arrivals reproduce backlog
+pressure while agent-created tasks remain near control. \\
+\hline
+A3 & Can queue-flow and service-capacity accounting explain A2 effects? &
+Yes. Demand pressure, finite service, work opportunity, completion fraction,
+and queued age explain the robust effects. Lagged synchrony remains secondary. \\
+\hline
+A4 & Does two-hive transfer coupling induce meaningful cross-hive structure? &
+Transfer coupling produces measurable completion synchronization, but the
+signal is explained by queue-flow/service/action accounting controls. \\
+\hline
+A5 & Does resource-bounded prediction create residual structured dynamics? &
+Forecast skill improves, but full-accounting residual structure and
+compression gates fail. \\
+\hline
+A6/A6.1/A6.2 & Do logistic appraisal, artifact handoff, and longer-horizon
+recurrence produce structured residual dynamics? & No promotion. Logistic
+effects fail linear/source-preserving nulls and source-accounting checks. \\
+\hline
+A7 & Does a richer semantic/artifact field create residual semantic dynamics? &
+No promotion. Field variation and source schema work, but null/residual gates
+fail and productivity degrades. \\
+\hline
+A7.2 & Can delayed artifact-mediated endogenous prediction do better? &
+Active next experiment. Preregistration and config/schema contract are frozen;
+simulator/source-ledger mechanics and smoke results are next. \\
+\hline
+\end{longtable}
+
+\section{Successful Results}
+
+\subsection{Reproducible Experimental Harness}
+
+OmegaSim now has a reproducible artifact discipline:
+
+\begin{itemize}
+\item deterministic YAML configurations;
+\item seeded runs;
+\item run manifests;
+\item metric and event tables;
+\item checked-in result summaries;
+\item fail-closed automation guards;
+\item paired-seed and null-control analyzers;
+\item source-ledger reconstruction checks for later artifact-state experiments.
+\end{itemize}
+
+This is not merely software hygiene. It has shaped the science by repeatedly
+preventing overinterpretation of attractive-looking but confounded signals.
+
+\subsection{Robust Pressure and Queue-Flow Effects}
+
+A2 found a real pressure response. In the extreme-pressure baseline over seeds
+1--69, final queue depth for the internal-improvement policy changed as:
+
+\begin{center}
+\begin{tabular}{lrrr}
+condition & normal & medium & extreme \\
+\hline
+final queue depth & 19.681159 & 45.956522 & 56.057971 \\
+\end{tabular}
+\end{center}
+
+The high-minus-normal delta was 36.376812. This was the strongest early
+effect, and it is robust as a queue/load phenomenon.
+
+The scheduler ablation showed that the effect is not primarily an artifact of
+the quota scheduler. In the seed 70--99 holdout:
+
+\begin{center}
+\begin{tabular}{lrrr}
+scheduler & normal & medium & extreme \\
+\hline
+quota balance & 21.5 & 48.2 & 57.733333 \\
+random available & 21.6 & 45.5 & 56.166667 \\
+\end{tabular}
+\end{center}
+
+The random-available scheduler changes secondary metrics, but both schedulers
+show the same qualitative pressure amplification.
+
+A3 then converted this into a cleaner mechanism interpretation. Demand
+pressure increases load-normalized backlog and queued age; service capacity
+reduces backlog and improves completion fraction; exogenous arrivals reproduce
+backlog pressure while agent-created task counts remain near control. The
+scientific conclusion is that OmegaSim has a real queue-flow/service regime,
+but this is not yet an attractor regime.
+
+\subsection{Two-Hive Coupling Produces Measurable Synchronization Diagnostics}
+
+A4 introduced a two-hive scaffold with no coupling, direct transfer, delayed
+transfer, and shuffled transfer modes. In the seed 100--129 holdout, transfer
+volume increased massively and deterministically for all transfer modes
+relative to no coupling. Delayed coupling also produced completion-fraction
+correlations that initially survived a circular-shift temporal null:
+
+\begin{center}
+\begin{tabular}{lrrr}
+endpoint & observed minus null & outside null CI & positive rate \\
+\hline
+completion fraction corr lag 0 & 0.719486 & yes & 0.966667 \\
+completion fraction corr lag 2 & 0.657053 & yes & 0.900000 \\
+\end{tabular}
+\end{center}
+
+This was the most interesting A4 signal. However, the later accounting-control
+analyzer showed that after combined non-tautological controls for clock,
+queue/load, action mix, work opportunity, and transfer timing, the residual was
+no longer outside the null interval:
+
+\begin{center}
+\begin{tabular}{lrrr}
+endpoint & observed minus null & outside null CI & positive rate \\
+\hline
+completion fraction corr lag 0 & 0.165537 & no & 0.700000 \\
+completion fraction corr lag 2 & 0.142740 & no & 0.666667 \\
+\end{tabular}
+\end{center}
+
+This is a successful diagnostic result but a null mechanism result. Delayed
+two-hive transfer does create synchronization-like traces, but the traces are
+accounting-explainable in the current setup.
+
+\subsection{Resource-Bounded Predictors Improve Forecast Skill}
+
+A5 found a real forecast-skill manipulation. In the eight-condition
+confirmatory run over seeds 7--16, predictive conditions improved forecast
+skill under matched demand streams:
+
+\begin{center}
+\begin{tabular}{lr}
+contrast & forecast-skill delta \\
+\hline
+linear minus reactive & 0.033517 \\
+nonlinear minus reactive & 0.084033 \\
+high-budget nonlinear minus reactive & 0.094796 \\
+linear minus shuffled & 0.045425 \\
+nonlinear minus nonlinear shuffled & 0.095941 \\
+high-budget nonlinear minus high-budget shuffled & 0.106704 \\
+\end{tabular}
+\end{center}
+
+This is the main positive A5 result: bounded predictors can improve forecast
+skill in the simulator. But forecast skill did not translate into
+promotion-worthy residual collective dynamics, as discussed below.
+
+\subsection{Source-Ledger and Fail-Closed Analysis Infrastructure}
+
+A6 and A7 were scientifically negative, but technically useful. They added or
+validated source-accounting ideas needed for any serious future artifact-field
+or semantic-field claim:
+
+\begin{itemize}
+\item artifact-update source fields;
+\item reconstruction checks from source components;
+\item source-preserving label shuffles;
+\item timing-broken matched-count nulls;
+\item residual recurrence analyzers;
+\item semantic/artifact field completeness checks;
+\item productivity guardrails.
+\end{itemize}
+
+A7.2 now builds directly on this infrastructure.
+
+\section{Null and Fail-Closed Results}
+
+\subsection{No Robust Evidence for Lobe Grammar from A2/A3}
+
+The early lobe-like summaries are best interpreted as queue and action
+diagnostics. A3 explicitly closed the A2 residual lobe-grammar hypothesis under
+the current single-hive simulator and label scheme. Load, service capacity,
+completion fraction, work opportunity, and queue age explain the observed
+effects well enough that no independent lobe grammar is needed.
+
+\subsection{Two-Hive A4 Does Not Yet Support Independent Cross-Hive Grammar}
+
+The A4 delayed-coupling result was interesting, but too narrow. Completion
+synchronization survived a simple temporal null but not the combined
+non-tautological accounting controls. Also, the two-hive shuffled control is
+degenerate for target-randomization purposes: with only two hives, each source
+hive has only one non-source target. Therefore direct versus shuffled is mostly
+a schema/opportunity check, not a real phase or target null.
+
+This strongly motivates moving to three hives for serious phase and target
+nulls.
+
+\subsection{A5 Forecast Skill Did Not Become Residual Structure}
+
+The A5 eight-condition closure is one of the clearest scientific boundaries.
+Forecast skill improved, but the full-accounting residual-state predictability
+contrasts stayed inside paired label-permutation intervals:
+
+\begin{center}
+\begin{tabular}{lrr}
+contrast & residual mean delta & positive rate \\
+\hline
+linear minus reactive & 0.114949 & 0.5 \\
+nonlinear minus reactive & 0.077593 & 0.7 \\
+high-budget nonlinear minus reactive & 0.162115 & 0.6 \\
+linear minus shuffled & -0.053977 & 0.5 \\
+nonlinear minus nonlinear shuffled & -0.091333 & 0.3 \\
+high-budget nonlinear minus high-budget shuffled & -0.006811 & 0.5 \\
+\end{tabular}
+\end{center}
+
+The read-only residual-compression audit confirmed closure. Intermediate
+predictors did not beat reactive, oracle smoothing, and timing-broken or
+spend-only null expectations in a way that supports structured dynamics
+language. The defensible A5 claim is narrow: resource-bounded prediction
+improves forecast skill under matched single-hive demand streams.
+
+\subsection{A6 Logistic Appraisal Did Not Pass Nulls}
+
+A6 introduced logistic appraisal and artifact handoff ideas. The initial A6
+smoke showed tiny endpoint differences, but logistic did not cleanly beat the
+amplitude-matched linear condition. For example, in the seed 1--2 A6 analysis
+gate:
+
+\begin{center}
+\begin{tabular}{lrrr}
+contrast & artifact utility delta & queue-depth delta & completion delta \\
+\hline
+logistic vs linear & 0.001707 & 1.5 & -0.018187 \\
+logistic vs phase-shuffled & 0.165515 & -2.0 & 0.059544 \\
+logistic vs threshold-shuffled & 0.035120 & -1.5 & 0.061291 \\
+\end{tabular}
+\end{center}
+
+The linear contrast had seed-sign disagreement, higher queue depth, and lower
+completion fraction.
+
+A6.1 added source-preserving nulls. All eight pilot null-gate rows were labeled
+``null removes endpoint advantage''. Logistic readiness/utility advantages did
+not survive source-label-shuffled or handoff-success timing-broken
+matched-count controls.
+
+\subsection{A6.2 Long-Horizon Validation Did Not Show Recurrence Advantage}
+
+A6.2 extended the logistic-appraisal setup to 96 ticks. The analyzer computed
+all recurrence rows, but closed conservatively:
+
+\begin{verbatim}
+overall analyzer status: conservative_closure
+delta gate status:
+  closure_no_recurrence_advantage: 98
+  eligible_for_cross_seed_direction_check: 32
+\end{verbatim}
+
+Rows labeled eligible were not promotion evidence; they only passed local
+same-seed checks against one control. The preregistered rule required the same
+target variable to beat linear and source-preserving nulls with paired
+cross-seed agreement. That did not happen. Dominant artifact-update sources
+remained tied to handoff accounting or noise.
+
+\subsection{A7 Semantic Field Did Not Pass Residual/Null Gates}
+
+A7 added richer semantic/artifact fields and long-horizon validation. This
+improved the semantic source-accounting path, but the logistic semantic-field
+condition did not beat the required controls. In the A7 long-horizon validation
+over seeds 1--2:
+
+\begin{verbatim}
+overall analyzer status: fail_closed_residual_null_gate
+required field status: pass=12
+source reconstruction status: pass=12
+field variation status: pass=12
+prediction/work-budget competition status: pass=12
+residualization status: computed=72
+null contrast status: computed=60
+\end{verbatim}
+
+Backlog-adjusted productivity for the logistic condition was worse than the
+semantic-off baseline in both seeds:
+
+\begin{center}
+\begin{tabular}{lrr}
+condition & seed 1 & seed 2 \\
+\hline
+logistic semantic coupling & 0.716667 & 0.654321 \\
+semantic-off baseline & 1.543478 & 0.707865 \\
+amplitude-matched linear & 0.689655 & 0.650000 \\
+source-preserving label shuffle & 0.854167 & 0.628205 \\
+phase shuffle & 0.661290 & 0.629630 \\
+timing-broken null & 0.537313 & 0.511628 \\
+\end{tabular}
+\end{center}
+
+No semantic/artifact target passed against all five controls in both seeds.
+Several fields were still dominated by source-ledger components such as
+semantic noise, artifact handoff, ambient decay, or clipping residuals.
+
+\section{Scientific Interpretation So Far}
+
+The evidence so far argues against a simple story in which pressure, task
+queues, or shallow logistic thresholds automatically produce attractor-like
+collective dynamics. The current conservative interpretation is:
+
+\begin{enumerate}
+\item OmegaSim has robust queue-flow/service dynamics.
+\item It has measurable synchronization diagnostics under delayed coupling.
+\item It can improve forecast skill with bounded predictors.
+\item But none of these has yet produced residual structured dynamics that
+survive accounting controls and nulls.
+\end{enumerate}
+
+This does not mean the larger hypothesis is unpromising. Rather, it sharpens
+the likely mechanism requirements. Complex structured dynamics probably need
+more than queue pressure and more than a predictor bolted onto a fixed
+workflow. They likely require:
+
+\begin{itemize}
+\item nonlinear logistic or thresholded dependence of one agent's or hive's
+activity on another's lagged state;
+\item explicit delays, so prediction and artifact updates cannot help on the
+same tick;
+\item bounded prediction cost, so prediction competes with work;
+\item imperfect anticipation, so prediction errors reshape the future state to
+be predicted;
+\item artifact fields that are not merely queue/action labels in disguise;
+\item hysteresis, fatigue, and adaptive thresholds;
+\item at least three hives for nondegenerate phase and target nulls;
+\item promotion endpoints based on residual structure, not raw throughput.
+\end{itemize}
+
+This is exactly what A7.2 and the downstream three-hive ring are designed to
+test.
+
+\section{Active Next Experiment: A7.2}
+
+\subsection{Scientific Question}
+
+A7.2 asks whether delayed, artifact-mediated, resource-bounded endogenous
+prediction creates residual prediction/artifact structure that survives full
+accounting and strong null controls.
+
+The intended mechanism is more endogenous than A5. Agents choose among:
+
+\begin{verbatim}
+predict
+work
+review
+synthesize
+\end{verbatim}
+
+Action utilities are logistic functions of lagged forecast error, lagged
+uncertainty, artifact readiness, contradiction, risk, fatigue, and adaptive
+thresholds. Prediction consumes scarce work opportunity. Forecast and artifact
+updates enter delayed queues and cannot affect action on the tick that created
+them.
+
+\subsection{Frozen Smoke Parameters}
+
+The first A7.2 smoke is intentionally small:
+
+\begin{verbatim}
+seeds: 1, 2
+horizon ticks: 48
+forecast delay ticks: 2
+artifact delay ticks: 3
+prediction cost work fraction: 0.25
+max prediction work fraction per tick: 0.40
+fatigue decay: 0.20
+fatigue increment predict: 0.08
+fatigue increment work: 0.05
+fatigue increment review: 0.04
+fatigue increment synthesize: 0.06
+threshold learning rate error: 0.05
+threshold recovery rate: 0.02
+threshold min/max: -2.0, 2.0
+\end{verbatim}
+
+These values may not be tuned after inspecting results. If they are wrong, the
+experiment should close or be replaced by a new preregistration.
+
+\subsection{A7.2 Conditions}
+
+The first smoke must include:
+
+\begin{verbatim}
+zero_budget_reactive
+intermediate_endogenous_delayed_prediction
+high_budget_oracle_smoothing
+amplitude_matched_linear_delayed_prediction
+same_tick_logistic_prediction
+phase_shuffled_lag_input
+threshold_shuffled
+source_preserving_artifact_label_shuffle
+spend_only_replay
+artifact_off_source_ledger_null
+\end{verbatim}
+
+Only the intermediate endogenous delayed-prediction condition is a candidate
+positive condition. The oracle is a positive control, not a promotion target.
+
+\subsection{A7.2 Primary Endpoints}
+
+Promotion requires residual structure, not merely forecast skill:
+
+\begin{verbatim}
+forecast_skill_per_prediction_spend
+full_accounting_residual_lag1_predictability
+nearest_neighbor_residual_forecast_error
+delay_embedding_recurrence_score
+residual_transition_compressibility
+lead_lag_mediation_error_to_spend_to_artifact_to_residual
+source_ledger_reconstruction_status
+\end{verbatim}
+
+Residual endpoints must control for tick, demand phase, arrivals, service
+capacity, action opportunity, work budget, prediction spend, remaining work
+budget, backlog, queued age, completion fraction, starvation, spend
+volatility, work-budget volatility, and source-ledger queue accounting.
+
+\subsection{A7.2 Productivity Guardrails}
+
+The candidate positive condition is ineligible for promotion if it causes
+large degradation in completion fraction, backlog, queued age, starvation,
+prediction-spend volatility, or work-budget volatility. The smoke guardrails
+are deliberately modest and conservative.
+
+\section{Downstream Three-Hive Ring}
+
+Regardless of A7.2 outcome, the next phase is a separate three-hive ring
+preregistration and bounded experiment family. This is not a rescue maneuver;
+it is a scientific recognition that two hives are structurally inadequate for
+meaningful target/phase nulls.
+
+The proposed three hives should have biased roles or task tendencies, for
+example:
+
+\begin{itemize}
+\item exploration/research;
+\item formalization/implementation;
+\item synthesis/review.
+\end{itemize}
+
+The ring should include delayed artifact transfer and cross-hive prediction
+costs. Candidate conditions include:
+
+\begin{verbatim}
+no coupling
+linear delayed coupling
+same-tick logistic coupling
+delayed logistic coupling
+heterogeneous delay coupling
+prediction-cost-feedback coupling
+adaptive-threshold coupling
+\end{verbatim}
+
+Required controls should include target shuffles, phase shuffles,
+transfer-opportunity matching, source-ledger reconstruction, spend-only replay,
+and artifact-off or semantic-label controls where appropriate.
+
+\section{External Feedback Questions}
+
+The most useful external feedback would address the following questions:
+
+\begin{enumerate}
+\item Is A7.2 the right next single-hive mechanism, or should the project move
+directly to three-hive dynamics?
+\item Are the A7.2 nulls sufficient to prevent a false positive from backlog,
+same-tick leakage, spend-only timing, oracle smoothing, or artifact labels?
+\item What residual endpoint is most likely to detect ``structured but not
+periodic'' dynamics in a short deterministic smoke?
+\item Should the A7.2 artifact state remain low-dimensional, using readiness,
+coherence, contradiction, and risk, or should a richer semantic activation
+vector be introduced before the three-hive ring?
+\item In the three-hive ring, what logistic dependency should be primary:
+cross-hive prediction of demand, cross-hive artifact readiness, cross-hive
+contradiction/risk, or cross-hive allocation pressure?
+\item What would be a convincing null for ``structured grammatical patterns in
+a strange attractor'' rather than ordinary phase-locked throughput?
+\end{enumerate}
+
+\section{Bottom Line}
+
+OmegaSim has not yet elicited the desired structured strange-attractor
+scenario. The positive results are real but bounded: robust pressure/service
+effects, interpretable transfer/synchronization diagnostics, and genuine
+forecast-skill improvements. The negative results are also informative:
+apparent lobe, recurrence, semantic, and synchronization signals have so far
+collapsed under accounting controls, source-preserving nulls, or productivity
+guardrails.
+
+The next best hypothesis is that complex dynamics require endogenous costly
+prediction with delayed artifact mediation, and then a nondegenerate multi-hive
+ring. A7.2 is the current test of the first half of that hypothesis; the
+three-hive ring is the pre-authorized test of the second half.
+
+\end{document}
