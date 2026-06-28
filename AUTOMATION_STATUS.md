@@ -53,6 +53,19 @@ opened.
 
 ## Latest Changes
 
+- 2026-06-27 bounded no-op/status consistency pass: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests surface, the provisional roadmap, the
+  non-active A7.2 decision preregistration, the A7 Ben notification note, and
+  the latest GPT-5.5-Pro strategy review before choosing the next step. The
+  guard is closed with `strategic_change_level: major` and `notify_ben: true`,
+  so this run did not add simulator mechanics, configs, analyzers,
+  simulations, dashboards, integrations, seed sweeps, A5-family reruns, A7.2
+  mechanics, or multi-hive coupling.
+- Removed the stale duplicate bottom `Recommended Next Step` entry that still
+  pointed at a residual diagnostic. The single current next step is to remain
+  in no-op/awaiting-preregistration state while Ben decides whether A5-family
+  work stays closed, A7.2 becomes an active preregistered gate, or a separate
+  three-hive ring preregistration should be drafted.
 - 2026-06-27 bounded guard/status correction: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests surface, the provisional roadmap, the
   non-active A7.2 decision preregistration, the Ben decision request, and the
@@ -256,6 +269,27 @@ opened.
 
 ## Verification
 
+- `git status --short --branch` passed at the start of the 2026-06-27 bounded
+  no-op/status consistency pass and reported `main...origin/main` with no
+  uncommitted changes.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed at the start of
+  this run and reported `state=closed_awaiting_preregistration`,
+  `should_noop=true`, closed reason `automation_status_next_step_noop`,
+  `strategic_change_level=major`, `notify_ben=true`, and the single next step
+  to remain in no-op/awaiting-preregistration state pending Ben's decision.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed recent automation loops
+  completed successfully and that the latest strategy review requested Ben
+  notification.
+- `git diff --check` passed after the status consistency update.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the status
+  consistency update and still reported `state=closed_awaiting_preregistration`,
+  `should_noop=true`, `strategic_change_level=major`, and `notify_ben=true`.
+- `grep -n "^## Recommended Next Step\\|Recommended next step:"
+  AUTOMATION_STATUS.md` showed only the top current next-step section after
+  the duplicate stale bottom section was removed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed after the status consistency update: `14 passed,
+  612 deselected`.
 - `git diff --check` passed after the bounded guard/status correction.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed after the
   bounded guard/status correction and reported
@@ -533,7 +567,3 @@ marked the direction shift as major and said Ben should be notified. Avoid
 broader A5/A5.1 seed work, A7.2 mechanics, or multi-hive mechanics unless a
 fresh preregistered design or diagnostic first explains how it will overcome
 the residual/null accounting boundary.
-
-## Recommended Next Step
-
-- Recommended next step: design one preregistered resource-bounded residual diagnostic that can separate useful anticipation from accounting/null effects before adding any new mechanics.
