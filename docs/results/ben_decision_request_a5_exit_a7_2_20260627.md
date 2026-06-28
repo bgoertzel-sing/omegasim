@@ -25,6 +25,10 @@ evidence strong enough for structured-dynamics claims.
   intermediate-budget condition passed the preregistered residual/null gates.
 - A5.1a seed `5,6`: charged predictors beat spend-only replay on forecast
   skill, but not on full-accounting residual predictability.
+- A5 resource-bounded residual-compression diagnostic: outcome
+  `closure_confirmed`; existing A5-family artifacts did not show an
+  interpretable full-accounting residual compression signal beating reactive,
+  oracle, and matched timing-broken or spend-only null expectations.
 - A6.2 seed `1,2`: source schema and recurrence computations passed, but
   logistic did not beat linear and both source-preserving nulls on the same
   target with paired agreement.

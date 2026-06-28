@@ -56,6 +56,20 @@ pending Ben's explicit decision.
 
 ## Latest Changes
 
+- 2026-06-27 23:14 PDT guard-closed notification alignment: re-read
+  `README.md`, this status file, configs/tests surface, the provisional
+  roadmap, the latest GPT-5.5-Pro strategy review, the Ben decision request,
+  and the completed A5 resource-bounded residual-compression report before
+  choosing the next step. The guard is closed with
+  `state=closed_awaiting_preregistration`, `should_noop=true`, and
+  `notify_ben=true`; no simulations, simulator mechanics, configs, analyzers,
+  dashboards, integrations, A7.2 mechanics, or multi-hive coupling were added.
+- Updated `docs/results/ben_decision_request_a5_exit_a7_2_20260627.md` so the
+  notification draft explicitly includes the newer residual-compression
+  `closure_confirmed` evidence. The GPT-5.5-Pro recommendation to notify Ben
+  is accepted as scientifically sensible; A7.2 and three-hive directions
+  remain deferred pending Ben's explicit preregistered decision.
+
 - 2026-06-27 22:55 PDT read-only residual-compression report pass: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests surface, the provisional
   roadmap, the resource-bounded residual-compression preregistration, existing
@@ -78,6 +92,16 @@ pending Ben's explicit decision.
 
 ## Verification
 
+- `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state: closed_awaiting_preregistration`, `should_noop: true`,
+  `notify_ben: true`, and the single recommended next action to send Ben the
+  existing A5-exit/A7.2 decision request.
+- `tail -40 ../outputs/omegasim-cli-loop.log` showed the latest strategy
+  review again requested Ben notification; no successful later simulation or
+  mechanics run was started by this bounded pass.
+- `git diff --check` passed.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard` passed: 14 selected tests passed, 612 deselected.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state: open`
   only for the read-only residual-compression report step before this update,
   with `notify_ben: true` and the external review still recommending Ben
