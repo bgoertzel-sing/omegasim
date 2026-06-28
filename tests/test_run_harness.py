@@ -1312,6 +1312,63 @@ def test_automation_guard_reopens_for_explicit_current_a5_preregistration(
     assert state["recommended_next_action"] == "run the bounded A5 single-hive smoke."
 
 
+def test_automation_guard_ignores_historical_a5_closure_when_current_gate_reopens(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Current concise A5 gate: "
+                "`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.",
+                "That document records the 2026-06-27 explicit single-hive A5 "
+                "reopening and is the active preregistration summary for the "
+                "bounded smoke/pilot.",
+                "",
+                "## Latest Changes",
+                "",
+                "- Historical closure note: do not reopen A5 without a new explicit "
+                "preregistration.",
+                "- Historical verification: the reopened A5 smoke remained "
+                "fail-closed.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: run the bounded A5 single-hive smoke.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                "recommended_next_action: Keep old A5 closed.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["closed_reasons"] == []
+    assert state["a5_preregistration_active"] is True
+    assert state["recommended_next_action"] == "run the bounded A5 single-hive smoke."
+
+
 def test_automation_guard_closes_after_reopened_a5_smoke_fail_closed(
     tmp_path: Path,
 ) -> None:

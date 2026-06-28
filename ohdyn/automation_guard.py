@@ -11,7 +11,7 @@ from typing import Any
 DEFAULT_STATUS_PATH = Path("AUTOMATION_STATUS.md")
 DEFAULT_REVIEW_PATH = Path("../outputs/strategy-reviews/omegasim/latest-review.md")
 DEFAULT_A5_PREREGISTRATION_PATH = Path(
-    "docs/a5_anticipatory_predictive_control_preregistration.md"
+    "docs/a5_single_hive_anticipatory_predictive_control_preregistration.md"
 )
 DEFAULT_ROADMAP_PATH = Path("docs/omegasim_provisional_experiment_roadmap.md")
 
@@ -25,27 +25,28 @@ def read_automation_state(
     """Return the current automation state from local status/review artifacts."""
 
     status = _read_optional_text(Path(status_path))
+    current_status = _current_status_scope(status)
     review = _read_optional_text(Path(review_path))
     roadmap = _read_scoped_roadmap_text(Path(status_path), Path(roadmap_path))
     review_header = _parse_review_header(review)
     a5_preregistration_active = Path(a5_preregistration_path).is_file()
-    closed_reasons = _closed_reasons(status=status, review=review)
-    if a5_preregistration_active and not _status_closes_active_a5(status):
+    closed_reasons = _closed_reasons(status=current_status, review=review)
+    if a5_preregistration_active and not _status_closes_active_a5(current_status):
         closed_reasons = []
     if (
         a5_preregistration_active
-        and _status_reopens_active_a5(status)
-        and not _status_closes_active_a5(status)
+        and _status_reopens_active_a5(current_status)
+        and not _status_closes_active_a5(current_status)
     ):
         closed_reasons = []
     roadmap_reopens_a7 = _roadmap_reopens_after_a5(roadmap) and not (
-        _status_supersedes_roadmap(status)
+        _status_supersedes_roadmap(current_status)
     )
     if closed_reasons and roadmap_reopens_a7:
         closed_reasons = []
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
-    status_next_action = _status_next_action(status)
+    status_next_action = _status_next_action(current_status)
     roadmap_next_action = _roadmap_next_action(roadmap) if roadmap_reopens_a7 else ""
     if roadmap_reopens_a7 and _is_noop_next_action(status_next_action):
         status_next_action = ""
@@ -96,6 +97,33 @@ def _parse_review_header(review: str) -> dict[str, str]:
 
 def _parse_bool(value: str) -> bool:
     return value.strip().lower() == "true"
+
+
+def _current_status_scope(status: str) -> str:
+    scoped_lines: list[str] = []
+    saw_section = False
+    included_section = False
+    include_current = True
+    for line in status.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("## "):
+            saw_section = True
+            name = stripped.removeprefix("## ").strip().lower()
+            include_current = name in {
+                "current focus",
+                "blockers",
+                "recommended next step",
+            }
+            if include_current:
+                included_section = True
+                scoped_lines.append(line)
+            continue
+        if not saw_section or include_current:
+            scoped_lines.append(line)
+
+    if included_section:
+        return "\n".join(scoped_lines).strip()
+    return status
 
 
 def _closed_reasons(*, status: str, review: str) -> list[str]:

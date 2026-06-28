@@ -28,15 +28,15 @@ summary.md
 
 ## A5 Anticipatory Predictive-Control Smoke
 
-A5 is closed conservatively after the explicitly requested bounded
-single-hive anticipatory predictive-control smoke/pilot failed residual/null
-promotion. The concise A5 gate remains recorded in
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`, and
-the smoke result is recorded in
-`docs/results/a5_single_hive_reopened_smoke_seed5_6.md`. The older detailed
-design record remains in
+A5 has an explicit bounded single-hive anticipatory predictive-control gate in
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+That concise preregistration is the active reference for the requested A5
+single-hive smoke/scaffold stage. The seed `5,6` smoke result is recorded in
+`docs/results/a5_single_hive_reopened_smoke_seed5_6.md` and remains
+conservative: forecast skill improved, but residual/null promotion failed. The
+older detailed design record remains in
 `docs/a5_anticipatory_predictive_control_preregistration.md`. The prior seed
-`7..16`, A5.1a accounting closure, and reopened A5 seed `5,6` closure all
+`7..16`, A5.1a accounting closure, and reopened A5 seed `5,6` result all
 constrain interpretation: do not make residual-structure, lobe-like, or
 strange-attractor-like claims from A5-family artifacts.
 
@@ -47,10 +47,10 @@ controller shift work-task class priority from forecasted future pressure. Do
 not broaden A5 to new mechanics, wider seed sweeps, dashboards, integrations,
 or multi-hive coupling without another preregistration.
 
-Do not reopen A5 by broader seed sweeps, new predictor knobs, or rescue
-diagnostics. A future predictive-control mechanism requires a new
-preregistration and Ben's explicit decision. The non-active decision document
-for the candidate delayed artifact-mediated endogenous-prediction direction is
+Broader seed sweeps, new predictor knobs, rescue diagnostics, or future
+predictive-control mechanisms require a fresh preregistration before they are
+scientifically interpretable. The non-active decision document for the
+candidate delayed artifact-mediated endogenous-prediction direction is
 `docs/a5_family_exit_and_a7_2_decision_preregistration.md`.
 
 The completed A5 follow-up gate is recorded in

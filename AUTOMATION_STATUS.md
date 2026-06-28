@@ -5,19 +5,20 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the reopened single-hive A5 smoke/pilot is closed
-conservatively after failing residual/null promotion. Current concise A5 gate:
+Source-of-truth status: this 2026-06-27 automation pass follows Ben's explicit
+A5 request and treats the concise single-hive preregistration as the active
+bounded gate for this stage:
 `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-That document records the 2026-06-27 explicit single-hive A5 reopening and is
-the active preregistration summary for the bounded smoke/pilot already run.
+That document records the explicit single-hive A5 reopening and remains the
+active preregistration summary for anticipatory predictive-control smoke work.
 
-This reopens A5 only for the explicitly requested anticipatory
-predictive-control smoke/pilot. It supersedes the previous no-op automation
-posture but preserves the prior A5 seed `7..16` and A5.1a fail-closed results
-as interpretation constraints. Forecast-skill gains are not enough: any
-structured-dynamics claim must survive matched task-arrival totals, service
-capacity, action opportunity, work budget, prediction-spend accounting, and
-budget-matched shuffled/phase-randomized nulls.
+The already-run reopened A5 seed `5,6` smoke reproduced forecast-skill gains
+but failed closed on residual/null promotion. That failure is an interpretation
+boundary, not permission to broaden mechanics. The prior A5 seed `7..16` and
+A5.1a results also remain binding constraints. Forecast-skill gains are not
+enough: any structured-dynamics claim must survive matched task-arrival totals,
+service capacity, action opportunity, work budget, prediction-spend accounting,
+and budget-matched shuffled/phase-randomized nulls.
 
 The current hypothesis is Ben's resource-bounded prediction hypothesis:
 inter-agent or inter-role prediction is itself a scarce managed resource.
@@ -35,16 +36,34 @@ anticipatory coupling remains downstream and requires a separate
 preregistration with target/phase nulls and resource-bounded cross-hive
 prediction costs.
 
-The latest GPT-5.5-Pro strategy review still has
-`strategic_change_level: major` and `notify_ben: true`. Ben should be notified
-that the direction has shifted again: the review recommends keeping the guard
-closed, exiting A5-family seed work, and asking Ben to decide whether to open a
-new delayed artifact-mediated endogenous-prediction preregistration. This run
-accepted that recommendation as scientifically sensible and recorded it only as
-a non-active decision document, not as an active experiment gate.
+The latest GPT-5.5-Pro strategy review still has `strategic_change_level:
+major` and `notify_ben: true`; its A5-exit recommendation remains useful
+context but is superseded here by Ben's explicit A5 preregistration/scaffold
+directive. The non-active A7.2 decision document remains non-active during this
+single-hive A5 pass.
 
 ## Latest Changes
 
+- 2026-06-27 17:16 PDT explicit A5 alignment pass: re-read automation memory,
+  `README.md`, `AUTOMATION_STATUS.md`, the active concise A5 preregistration,
+  the residual-accounting diagnostic design, the reopened A5 seed `5,6`
+  result, the deterministic A5 config, and the automation guard/tests surface.
+  This run did not add simulator mechanics, dashboards, integrations, broad
+  seed sweeps, A7.2 mechanics, or multi-hive coupling.
+- Updated `ohdyn.automation_guard` so current closure/reopening decisions come
+  from the active status sections rather than stale historical bullets in
+  `Latest Changes` or `Verification`, and so its default explicit A5
+  preregistration path points at the concise single-hive gate.
+- Added a regression test proving historical A5 closure text does not override
+  a current explicit concise-A5 reopening gate.
+- Updated `README.md` so the A5 section names the concise preregistration as
+  the active single-hive gate for this explicit stage while preserving the
+  seed `5,6` residual/null failure as an interpretation boundary.
+- Reran the bounded A5 smoke chain in `/tmp`: one low-budget linear run, the
+  paired seed `5,6` predictive-control comparison, and the read-only
+  residual-accounting analyzer. The rerun matched the prior scientific
+  outcome: forecast skill improved, but no intermediate-budget predictor
+  passed the residual/null promotion gate.
 - 2026-06-27 17:05 PDT bounded Ben-notification run: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests surface, the provisional roadmap, the
   non-active A7.2 decision preregistration, and the latest GPT-5.5-Pro strategy
@@ -216,6 +235,28 @@ a non-active decision document, not as an active experiment gate.
 
 ## Verification
 
+- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed
+  after the scoped current-status parser update.
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `should_noop=false`, no closed reasons, `notify_ben=true`, and
+  the single recommended next step to design one preregistered
+  resource-bounded residual diagnostic before adding new mechanics.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting'`
+  passed: `17 passed, 608 deselected`.
+- `.venv-conda/bin/python -m ohdyn.run --config
+  configs/a5_predictive_linear_smoke.yaml --seed 5 --out
+  /tmp/omegasim_a5_explicit_alignment_linear_seed5_20260627_1716` passed.
+- `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_explicit_alignment_compare_seed5_6_20260627_1716`
+  passed and wrote 16 run artifacts across the matched A5 predictive-control
+  conditions.
+- `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir
+  /tmp/omegasim_a5_explicit_alignment_compare_seed5_6_20260627_1716 --out
+  /tmp/omegasim_a5_explicit_alignment_residual_accounting_seed5_6_20260627_1716`
+  passed. The analyzer reported fail-closed promotion status: no
+  intermediate-budget condition satisfied all preregistered criteria.
 - `git status --short --branch` passed at the start of the 2026-06-27 16:08
   PDT bounded no-op verification and reported `main...origin/main` with no
   uncommitted changes.
@@ -457,10 +498,11 @@ a non-active decision document, not as an active experiment gate.
 There is no local environment blocker. The scientific blocker is that the
 reopened A5 smoke reproduced forecast-skill gains but did not produce
 residual/null evidence strong enough for promotion. The external review also
-marked the direction shift as major and said Ben should be notified. Do not
-reopen A5, run more A5/A5.1 seeds, or implement A7.2/multi-hive mechanics until
-Ben chooses a new preregistered direction.
+marked the direction shift as major and said Ben should be notified. Avoid
+broader A5/A5.1 seed work, A7.2 mechanics, or multi-hive mechanics unless a
+fresh preregistered design or diagnostic first explains how it will overcome
+the residual/null accounting boundary.
 
 ## Recommended Next Step
 
-- Recommended next step: notify Ben of the major direction shift and await his decision on whether to close A5-family work, open the non-active A7.2 delayed artifact-mediated endogenous-prediction preregistration, or request a separate three-hive ring preregistration.
+- Recommended next step: design one preregistered resource-bounded residual diagnostic that can separate useful anticipation from accounting/null effects before adding any new mechanics.
