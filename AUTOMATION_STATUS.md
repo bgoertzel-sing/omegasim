@@ -26,6 +26,8 @@ boundary: forecast skill alone is not support for lobe-like,
 strange-attractor-like, semantic-dynamics, or causal collective-structure
 claims. No broad A5 mechanics, broader seed sweeps, dashboards, integrations,
 result-bearing committed run artifacts, or three-hive coupling are authorized.
+The current Ben-facing decision note is
+`docs/results/ben_decision_a5_complete_failclosed_20260629.md`.
 
 Broader governance context remains relevant: the later A7.2 delayed
 artifact-mediated endogenous prediction gate and downstream three-hive ring gate
@@ -97,10 +99,8 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: prepare a Ben decision note that treats the A5
-  preregistration/scaffold as complete, reports the current A5 smoke as
-  fail-closed under residual accounting, and asks whether to preregister a
-  fresh one-hive dimensionless delayed-dynamics sweep.
+- Recommended next step: send Ben the A5 complete/fail-closed decision note and
+  wait for a fresh preregistered direction.
 
 ## Blockers
 
@@ -119,14 +119,33 @@ rules.
   passed with `21 passed, 632 deselected`.
 - Temporary smoke command passed:
   `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
-  --out /tmp/omegasim_a5_current_srLS77`.
+  --out /tmp/omegasim_a5_current_6lJo22/compare`.
 - Temporary read-only residual accounting passed as a command and failed closed
   scientifically:
   `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
-  --compare-dir /tmp/omegasim_a5_current_srLS77
-  --out /tmp/omegasim_a5_residual_current_vo3f1Q`.
+  --compare-dir /tmp/omegasim_a5_current_6lJo22/compare
+  --out /tmp/omegasim_a5_current_6lJo22/residual`.
 
 ## Latest Changes
+
+- 2026-06-29 01:43 PDT bounded A5 decision-note run under explicit A5
+  reopening: re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`,
+  the concise A5 single-hive preregistration, the existing A5 smoke result,
+  A5 comparison/analyzer scaffold, automation guard, focused test surface, and
+  recent git history. Confirmed that the requested preregistration and minimal
+  deterministic scaffold already exist and still cover the requested
+  resource-bounded prediction hypothesis, matched accounting controls,
+  predictor/null axis, primary residual endpoints, and fail-closed
+  interpretation rules.
+- Added `docs/results/ben_decision_a5_complete_failclosed_20260629.md` so Ben
+  has a concise decision artifact: A5 preregistration/scaffold are complete,
+  the current fixed seed `5,6` smoke remains fail-closed under residual
+  accounting, and any next scientific stage should require a fresh
+  preregistration. Re-ran the guard, focused A5/automation tests, and a
+  temporary A5 comparison plus read-only residual-accounting analysis. Forecast
+  skill again improved for intermediate predictors, but no intermediate
+  condition satisfied all skill, residual/null, compression,
+  oracle-nontriviality, and guardrail criteria.
 
 - 2026-06-29 00:42 PDT bounded A5 revalidation under explicit A5 reopening:
   re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`, the concise
