@@ -174,6 +174,11 @@ from ohdyn.analyze_a7_3_preflight import (
     A7_3_PREFLIGHT_STATUS_SOURCE_LEDGER,
     run_a7_3_preflight_analysis,
 )
+from ohdyn.analyze_a7_3_residual_skeleton import (
+    A7_3_RESIDUAL_STATUS_PREFLIGHT_REQUIRED,
+    A7_3_RESIDUAL_STATUS_SMOKE_SCALE,
+    run_a7_3_residual_skeleton_analysis,
+)
 from ohdyn.a7_semantic_field_contract import (
     A7_CONDITIONS,
     A7_CONTROL_FIELDS,
@@ -1901,6 +1906,71 @@ def test_a7_3_preflight_analyzer_reconstructs_delayed_lag_sources(
     )
     assert full_row["status"] == "fail_closed"
     assert full_row["peer_lag_status"] == "fail_delayed_role_reconstruction"
+
+
+def test_a7_3_residual_skeleton_requires_eligible_preflight_and_stays_fail_closed(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_3_smoke"
+    preflight_dir = tmp_path / "a7_3_preflight"
+    out_dir = tmp_path / "a7_3_residual"
+    run_a7_3_dimensionless_smoke(out_dir=compare_dir)
+    run_a7_3_preflight_analysis(compare_dir=compare_dir, out_dir=preflight_dir)
+
+    result = run_a7_3_residual_skeleton_analysis(
+        compare_dir=compare_dir,
+        preflight_dir=preflight_dir,
+        out_dir=out_dir,
+    )
+
+    assert result["status"] == A7_3_RESIDUAL_STATUS_SMOKE_SCALE
+    manifest_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_skeleton_manifest.csv").open())
+    )
+    assert manifest_rows[0]["preflight_status"] == A7_3_PREFLIGHT_STATUS_ELIGIBLE
+    assert manifest_rows[0]["status"] == A7_3_RESIDUAL_STATUS_SMOKE_SCALE
+    metric_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_skeleton_metrics.csv").open())
+    )
+    assert {row["status"] for row in metric_rows} == {A7_3_RESIDUAL_STATUS_SMOKE_SCALE}
+    assert {row["preflight_status"] for row in metric_rows} == {
+        A7_3_PREFLIGHT_STATUS_ELIGIBLE
+    }
+    assert all(float(row["delay_embedded_recurrence_rate"]) == 0.0 for row in metric_rows)
+    contrast_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_skeleton_contrasts.csv").open())
+    )
+    assert len(contrast_rows) == len(A7_3_NULL_CONDITIONS) * 2 * 8
+    assert {row["gate_status"] for row in contrast_rows} == {
+        A7_3_RESIDUAL_STATUS_SMOKE_SCALE
+    }
+    assert "no promotion endpoint" in (out_dir / "summary.md").read_text()
+
+
+def test_a7_3_residual_skeleton_fails_closed_without_preflight(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_3_smoke"
+    out_dir = tmp_path / "a7_3_residual"
+    run_a7_3_dimensionless_smoke(out_dir=compare_dir)
+
+    result = run_a7_3_residual_skeleton_analysis(
+        compare_dir=compare_dir,
+        preflight_dir=tmp_path / "missing_preflight",
+        out_dir=out_dir,
+    )
+
+    assert result["status"] == A7_3_RESIDUAL_STATUS_PREFLIGHT_REQUIRED
+    manifest_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_skeleton_manifest.csv").open())
+    )
+    assert manifest_rows[0]["preflight_status"] == "missing_preflight_manifest"
+    metric_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_skeleton_metrics.csv").open())
+    )
+    assert {row["status"] for row in metric_rows} == {
+        A7_3_RESIDUAL_STATUS_PREFLIGHT_REQUIRED
+    }
 
 
 def test_a7_2_delayed_prediction_analyzer_fails_closed_on_missing_schema(

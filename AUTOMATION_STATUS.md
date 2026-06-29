@@ -11,11 +11,11 @@ active next OmegaSim gate. This supersedes the previous
 awaiting-preregistration posture and any older A5-focused prompt, and does not
 reopen A7.2, the three-hive ring, or A5 as result-bearing lines.
 
-Current active task: tighten the isolated A7.3 deterministic smoke/preflight
-path so lifted delayed role activity and phase-shuffled peer lag inputs are
-auditable before any residual analysis or sweep. The A7.3 scaffold already has
-a preregistration, minimal contract/config/smoke/preflight path, and latest
-GPT-5.5-Pro review verdict `GO` with `notify_ben: false`.
+Current active task: keep A7.3 on the isolated read-only analysis path after
+the deterministic smoke, preflight, lag-source tightening, and residual
+skeleton gates. The A7.3 scaffold already has a preregistration, minimal
+contract/config/smoke/preflight path, smoke-scale residual/null analyzer
+wiring, and latest GPT-5.5-Pro review verdict `GO` with `notify_ben: false`.
 
 Historical A5 context: the concise A5 single-hive anticipatory predictive-control
 preregistration already exists and is committed at
@@ -108,9 +108,11 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: add the first read-only A7.3 residual-analysis
-  skeleton over existing smoke artifacts, gated by the preflight manifest and
-  still fail-closed/no-promotion at smoke scale.
+- Recommended next step: preregister the first longer-horizon A7.3
+  residual/recurrence validation gate, including fixed horizon, seeds,
+  residual targets, null contrasts, recurrence/Lyapunov-style endpoints,
+  source-ledger prerequisites, and fail-closed promotion criteria, before
+  enabling any result-bearing A7.3 analysis.
 
 ## Blockers
 
@@ -202,8 +204,54 @@ smoke/preflight implementation path.
   `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
   `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
   `notify_ben=false`, and `strategic_change_level=minor`.
+- 2026-06-29 10:21 PDT A7.3 residual-skeleton run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
+  passed with `11 passed, 653 deselected`.
+- 2026-06-29 10:21 PDT A7.3 residual-skeleton run:
+  `.venv-conda/bin/python -m py_compile
+  ohdyn/a7_3_dimensionless_contract.py
+  ohdyn/compare_a7_3_dimensionless_delayed.py
+  ohdyn/analyze_a7_3_preflight.py
+  ohdyn/analyze_a7_3_residual_skeleton.py` passed.
+- 2026-06-29 10:21 PDT temporary A7.3 smoke plus preflight plus residual
+  skeleton command passed: `.venv-conda/bin/python -m
+  ohdyn.compare_a7_3_dimensionless_delayed --seeds 1 2 --out
+  /tmp/omegasim_a7_3_residual_1g0SSr/smoke`, `.venv-conda/bin/python -m
+  ohdyn.analyze_a7_3_preflight --compare-dir
+  /tmp/omegasim_a7_3_residual_1g0SSr/smoke --out
+  /tmp/omegasim_a7_3_residual_1g0SSr/preflight`, and
+  `.venv-conda/bin/python -m ohdyn.analyze_a7_3_residual_skeleton
+  --compare-dir /tmp/omegasim_a7_3_residual_1g0SSr/smoke --preflight-dir
+  /tmp/omegasim_a7_3_residual_1g0SSr/preflight --out
+  /tmp/omegasim_a7_3_residual_1g0SSr/residual`. The residual skeleton emitted
+  144 residual metric rows and 128 null-contrast rows with
+  `status=fail_closed_smoke_scale_no_promotion`.
+- 2026-06-29 10:21 PDT A7.3 residual-skeleton run: `git diff --check`
+  passed.
+- 2026-06-29 10:21 PDT A7.3 residual-skeleton run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
+  `notify_ben=false`, `strategic_change_level=minor`, and recommended the
+  residual-analysis skeleton that this run completed.
 
 ## Latest Changes
+
+- 2026-06-29 10:21 PDT bounded A7.3 residual-skeleton run: read
+  `README.md`, `AUTOMATION_STATUS.md`,
+  `docs/omegasim_provisional_experiment_roadmap.md`, the active A7.3
+  preregistration, existing A7.3 smoke/preflight code and tests, and the
+  external strategy review. The review was `strategic_change_level: minor`,
+  `notify_ben: false`; its contract/smoke recommendation was already
+  satisfied, and the status-file next step to add a gated residual skeleton was
+  accepted as scientifically sensible. Added
+  `ohdyn.analyze_a7_3_residual_skeleton`, a read-only analyzer that requires
+  an eligible A7.3 preflight manifest, consumes existing smoke artifacts,
+  emits residual metric and null-contrast skeleton rows, and remains
+  `fail_closed_smoke_scale_no_promotion` at the fixed 64-tick smoke horizon.
+  Added focused tests for the eligible-preflight path and missing-preflight
+  fail-closed path. Updated `README.md` with the residual skeleton command and
+  interpretation boundary. No A5, A7.2, three-hive, dashboard, integration,
+  broad-seed, sweep, result promotion, or scientific-claim branch was opened.
 
 - 2026-06-29 10:01 PDT bounded A7.3 lag-source tightening run: read
   `README.md`, `AUTOMATION_STATUS.md`,
