@@ -5,35 +5,44 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the A7.2 delayed artifact-mediated endogenous
-prediction gate and the downstream three-hive ring gate have both completed at
-their bounded fixed seed `1,2` smoke scale and both closed fail-closed. The
-automation state is now `closed_awaiting_preregistration`: repo-writing
-automation should not continue result-bearing simulator/analyzer work until Ben
-chooses a fresh preregistered direction. The A5-family results remain an
-evidence boundary and interpretation constraint: forecast skill improved, but
-residual/null, compression, and accounting gates did not support lobe-like,
+Current run focus: A5 single-hive anticipatory predictive-control dynamics,
+because the recurring prompt explicitly reopens that bounded stage for
+preregistration/scaffold validation. The concise preregistration already exists
+at `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md` and
+still matches Ben's requested design: deterministic single hive, matched
+task-arrival totals, service capacity, action opportunity, work budget,
+prediction spend, reactive/linear/nonlinear/high-budget/oracle/timing-broken
+null conditions, primary residual/predictability endpoints, and fail-closed
+strange-attractor-like interpretation rules.
+
+The smallest deterministic A5 scaffold also already exists and remains the only
+authorized implementation surface for this stage:
+`configs/a5_predictive_linear_smoke.yaml`,
+`ohdyn.compare_predictive_control`, and
+`ohdyn.analyze_a5_residual_accounting`. A fresh fixed smoke at seeds `5,6`
+again improved forecast skill for intermediate predictors but failed the
+preregistered residual-accounting promotion audit. This keeps A5 at an evidence
+boundary: forecast skill alone is not support for lobe-like,
 strange-attractor-like, semantic-dynamics, or causal collective-structure
-claims.
+claims. No broad A5 mechanics, broader seed sweeps, dashboards, integrations,
+result-bearing committed run artifacts, or three-hive coupling are authorized.
 
-The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state again on 2026-06-28 21:36 PDT
-(2026-06-29 UTC): the concise single-hive A5 preregistration and smallest
-deterministic scaffold already exist and still match that request, while the
-newer governance state is `closed_awaiting_preregistration` with
-`repo_write_allowed=false` and `notify_ben=true`. The prior paired-seed A5
-smoke remains the current A5-family boundary: forecast skill improves in
-intermediate predictors, but residual-accounting promotion fails closed. This
-does not reopen broad A5 mechanics, broader seed sweeps, dashboards,
-integrations, result-bearing simulator/analyzer work, or three-hive coupling.
+Broader governance context remains relevant: the later A7.2 delayed
+artifact-mediated endogenous prediction gate and downstream three-hive ring gate
+also completed at bounded fixed seed `1,2` smoke scale and closed fail-closed.
+`ohdyn.automation_guard` still reports `closed_awaiting_preregistration`,
+`repo_write_allowed=false`, and `notify_ben=true` because those downstream gates
+failed closed. The current A5 prompt overrides that no-op posture only for
+validating the existing A5 preregistration/scaffold and recording the current
+fail-closed smoke result.
 
-The active A7.2 scientific focus is still the resource-bounded prediction
-hypothesis, but now with a more mechanism-rich single-hive design: agents
-choose among `predict`, `work`, `review`, and `synthesize`; prediction consumes
-scarce work opportunity; utilities are thresholded logistic functions of
-lagged forecast error, artifact readiness, contradiction/risk, fatigue, and
-adaptive thresholds; and all forecast/artifact updates must be delayed or
-lagged before they can affect later action.
+Historical A7.2 context: that branch tested the resource-bounded prediction
+hypothesis with a more mechanism-rich single-hive design in which agents choose
+among `predict`, `work`, `review`, and `synthesize`; prediction consumes scarce
+work opportunity; utilities are thresholded logistic functions of lagged
+forecast error, artifact readiness, contradiction/risk, fatigue, and adaptive
+thresholds; and all forecast/artifact updates must be delayed or lagged before
+they can affect later action.
 
 The immediate A7.2 implementation/smoke gate has now run at the fixed paired
 seed `1,2` tiny smoke scale. It emitted complete schema/source-ledger artifacts
@@ -88,23 +97,54 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: pause further three-hive ring expansion and prepare a
-  fresh preregistered decision note for Ben summarizing the A7.2 and
-  three-hive fail-closed results and offering exactly these choices: pause,
-  preregister a one-hive dimensionless delayed-dynamics sweep, or pivot first
-  to a minimal analytic delayed resource-bounded prediction map. Do not rescue
-  these fail-closed seed `1,2` gates with promotion claims, broad seed sweeps,
-  dashboards, integrations, parameter sweeps, post-result tuning, or extra
-  hives.
+- Recommended next step: prepare a Ben decision note that treats the A5
+  preregistration/scaffold as complete, reports the current A5 smoke as
+  fail-closed under residual accounting, and asks whether to preregister a
+  fresh one-hive dimensionless delayed-dynamics sweep.
 
 ## Blockers
 
-Awaiting Ben's next preregistered scientific direction. This is intentional
-governance closure, not an environment failure. Ben should be notified that the
-A7.2 and three-hive ring line failed closed and that automation is now closed
-awaiting preregistration.
+No environment blocker. Scientific progress is blocked on Ben's next
+preregistered direction because the current A5 smoke, A7.2 smoke, and
+three-hive ring smoke all failed closed under their preregistered promotion
+rules.
+
+## Verification
+
+- `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `a5_preregistration_active=true`, `state=closed_awaiting_preregistration`,
+  `repo_write_allowed=false`, and `notify_ben=true`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `21 passed, 632 deselected`.
+- Temporary smoke command passed:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_current_lzrIbQ`.
+- Temporary read-only residual accounting passed as a command and failed closed
+  scientifically:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir /tmp/omegasim_a5_current_lzrIbQ
+  --out /tmp/omegasim_a5_residual_current_zVDaVJ`.
 
 ## Latest Changes
+
+- 2026-06-28 22:36 PDT bounded A5 revalidation under explicit A5 reopening:
+  re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`, the concise
+  A5 single-hive preregistration, the older detailed A5 design record, the A5
+  smoke config/comparison/analyzer scaffold, focused tests, current guard
+  output, and recent git history. Confirmed that the requested A5
+  preregistration already exists and includes the deterministic single-hive
+  setup, resource-bounded prediction hypothesis, matched task-arrival/service-
+  capacity/action-opportunity/work-budget controls, reactive/linear/nonlinear/
+  high-budget/oracle/timing-broken nulls, primary endpoints, and fail-closed
+  strange-attractor/lobe interpretation rules.
+- Ran a fresh temporary A5 comparison smoke at seeds `5,6`. Forecast skill
+  improved for intermediate predictors, but the read-only residual-accounting
+  analyzer failed closed: no intermediate-budget condition satisfied all
+  preregistered skill, residual/null, compression, oracle-nontriviality, and
+  guardrail criteria. No preregistration duplicate, simulator mechanics,
+  configs, committed run artifacts, dashboards, integrations, broad seeds,
+  parameter sweeps, extra hives, or promotion claims were added.
 
 - 2026-06-28 21:36 PDT bounded A5 prompt revalidation under governance
   closure: re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`, the
