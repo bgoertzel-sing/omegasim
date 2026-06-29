@@ -5,30 +5,10 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-06-29 instruction says OmegaSim should
-proceed, not pause. This opens A7.3 one-hive dimensionless delayed dynamics as
-the active next OmegaSim gate. This supersedes the previous
-awaiting-preregistration posture and does not reopen A7.2, the three-hive ring,
-or A5 as result-bearing lines.
-
-Current active task: the minimal A7.3 one-hive dimensionless delayed-dynamics
-config/schema, deterministic smoke harness, and read-only preflight analyzer
-are now implemented from
-`docs/a7_3_one_hive_dimensionless_delayed_dynamics_preregistration.md`,
-`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
-`docs/hyperseed_one_hive_delayed_dynamics_note.md`, and Ben's logistic
-cross-agent activity idea as design guidance. A7.3 remains a fresh single-hive
-delayed nonlinear dynamics line with explicit lifted state, dimensionless
-controls, preregistered nulls, source ledgers, recurrence/Lyapunov-style
-diagnostics, and fail-closed rules before any broader sweep. The preflight
-checks only artifact/schema/source-ledger/boundedness/productivity readiness;
-it does not compute promotion endpoints or create A7.3 scientific evidence.
-The next bounded task is to add the read-only A7.3 residual/null preflight
-metrics analyzer over the emitted smoke artifacts.
-
-Historical A5 context: A5 single-hive anticipatory predictive-control dynamics
-was reopened for preregistration/scaffold validation. As of 2026-06-29 08:49
-PDT, the concise preregistration already exists at
+Current active task: Ben's explicit 2026-06-29 A5 instruction is being treated
+as the next requested bounded research-engineering loop for this run. The
+concise A5 single-hive anticipatory predictive-control preregistration already
+exists and is committed at
 `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md` and
 still matches Ben's requested design: deterministic single hive, matched
 task-arrival totals, service capacity, action opportunity, work budget,
@@ -40,15 +20,21 @@ The smallest deterministic A5 scaffold also already exists and remains the only
 authorized implementation surface for this stage:
 `configs/a5_predictive_linear_smoke.yaml`,
 `ohdyn.compare_predictive_control`, and
-`ohdyn.analyze_a5_residual_accounting`. A 2026-06-29 07:48 PDT fixed smoke at seeds `5,6`
-again improved forecast skill for intermediate predictors but failed the
-preregistered residual-accounting promotion audit. This keeps A5 at an evidence
-boundary: forecast skill alone is not support for lobe-like,
+`ohdyn.analyze_a5_residual_accounting`. A 2026-06-29 09:50 PDT fixed smoke at
+seeds `5,6` again improved forecast skill for intermediate predictors but
+failed the preregistered residual-accounting promotion audit. This keeps A5 at
+an evidence boundary: forecast skill alone is not support for lobe-like,
 strange-attractor-like, semantic-dynamics, or causal collective-structure
 claims. No broad A5 mechanics, broader seed sweeps, dashboards, integrations,
 result-bearing committed run artifacts, or three-hive coupling are authorized.
 The current Ben-facing decision note is
 `docs/results/ben_decision_a5_complete_failclosed_20260629.md`.
+
+Recent A7.3 context remains historical for this A5-focused run: A7.3 one-hive
+dimensionless delayed dynamics had been opened by a separate proceed
+instruction and now has a minimal contract/config/smoke/preflight scaffold, but
+this A5 run does not broaden A7.3, reopen A7.2, or reopen the three-hive ring
+as result-bearing lines.
 
 Broader governance context remains relevant: the later A7.2 delayed
 artifact-mediated endogenous prediction gate and downstream three-hive ring gate
@@ -118,21 +104,42 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: add a read-only A7.3 residual/null preflight metrics
-  analyzer over existing smoke artifacts that computes provisional residual
-  delay-embedding/recurrence, nonlinear-vs-linear forecastability, and
-  null-contrast rows without rerunning simulations, broadening seeds, tuning
-  parameters, or making promotion claims.
+- Recommended next step: send Ben the A5 complete/fail-closed decision note and
+  wait for a fresh preregistered direction before adding any new A5 mechanics.
 
 ## Blockers
 
-No environment blocker. Ben's 2026-06-29 proceed instruction removes the
-awaiting-preregistration blocker for A7.3. The current A5 smoke, A7.2 smoke,
-and three-hive ring smoke remain fail-closed historical results under their
-own preregistered promotion rules.
+No environment blocker. The A5 preregistration and smallest deterministic
+scaffold already exist and still run. The scientific blocker is interpretive:
+the current A5 smoke remains fail-closed under its preregistered promotion
+rules, so it does not authorize broader A5 mechanics, rescue tuning, or
+strange-attractor-like claims.
 
 ## Verification
 
+- 2026-06-29 09:50 PDT A5 requested loop:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `22 passed, 639 deselected`.
+- 2026-06-29 09:50 PDT A5 requested loop:
+  `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py
+  ohdyn/analyze_a5_residual_accounting.py ohdyn/config.py ohdyn/sim.py`
+  passed.
+- 2026-06-29 09:50 PDT A5 requested loop:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `a5_preregistration_active=true`, `state=open`,
+  `repo_write_allowed=true`, `closed_reasons=[]`, `notify_ben=false`, and
+  `strategic_change_level=minor`.
+- 2026-06-29 09:50 PDT A5 requested loop temporary smoke:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_requested_e6CENl/compare` and
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir /tmp/omegasim_a5_requested_e6CENl/compare --out
+  /tmp/omegasim_a5_requested_e6CENl/residual` passed. The analyzer emitted
+  1280 metric rows and 720 effect rows and closed fail-closed: all
+  intermediate predictors improved skill versus reactive and timing-broken
+  nulls, but none passed all residual/null, compression, oracle-nontriviality,
+  and guardrail promotion criteria.
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
   `a5_preregistration_active=true`, `state=open`, `repo_write_allowed=true`,
   `closed_reasons=[]`, `notify_ben=false`, and
@@ -172,6 +179,28 @@ own preregistered promotion rules.
   `notify_ben=false`, and `strategic_change_level=minor`.
 
 ## Latest Changes
+
+- 2026-06-29 09:50 PDT bounded A5 requested loop: read the automation memory,
+  `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive
+  preregistration, the structured strange-attractor research note, and the
+  current A5 comparison/analyzer scaffold. Confirmed that the requested
+  preregistration is already committed and still covers Ben's
+  resource-bounded prediction hypothesis, matched task-arrival,
+  service-capacity, action-opportunity, work-budget, and prediction-spend
+  controls, the reactive/linear/nonlinear/high-budget/oracle/timing-broken
+  null axis, primary residual/predictability endpoints, and fail-closed
+  strange-attractor-like interpretation rules.
+- Re-ran the bounded guard, focused A5/automation tests, py-compile, and fixed
+  seed `5,6` A5 comparison plus read-only residual-accounting analysis under
+  `/tmp/omegasim_a5_requested_e6CENl`. The guard reported `state=open`,
+  `repo_write_allowed=true`, `notify_ben=false`, and
+  `a5_preregistration_active=true`. Forecast skill again improved for
+  intermediate predictors, but no intermediate-budget condition satisfied all
+  preregistered residual/null, compression, oracle-nontriviality, and guardrail
+  criteria. No duplicate preregistration, simulator mechanics, configs,
+  committed run artifacts, dashboards, integrations, broad seed sweeps,
+  parameter sweeps, extra hives, A7.3 broadening, or promotion claims were
+  added.
 
 - 2026-06-29 09:42 PDT bounded A7.3 preflight run: read
   `README.md`, `AUTOMATION_STATUS.md`,
