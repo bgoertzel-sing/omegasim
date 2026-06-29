@@ -221,7 +221,13 @@ dynamics claims.
 
 ```bash
 python -m ohdyn.compare_a7_3_dimensionless_delayed --seeds 1 2 --out runs/a7_3_dimensionless_smoke_seed1_2
+python -m ohdyn.analyze_a7_3_preflight --compare-dir runs/a7_3_dimensionless_smoke_seed1_2 --out runs/a7_3_preflight_seed1_2
 ```
+
+The A7.3 preflight analyzer is read-only. It checks condition/seed coverage,
+schema completeness, lifted-state availability, source-ledger delay integrity,
+boundedness, and productivity guardrails. It does not rerun simulations,
+compute promotion endpoints, or create A7.3 scientific evidence.
 
 ## Three-Hive Ring Schema And Mechanics Smoke
 

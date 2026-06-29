@@ -12,16 +12,19 @@ awaiting-preregistration posture and does not reopen A7.2, the three-hive ring,
 or A5 as result-bearing lines.
 
 Current active task: the minimal A7.3 one-hive dimensionless delayed-dynamics
-config/schema and deterministic smoke harness are now implemented from
+config/schema, deterministic smoke harness, and read-only preflight analyzer
+are now implemented from
 `docs/a7_3_one_hive_dimensionless_delayed_dynamics_preregistration.md`,
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/hyperseed_one_hive_delayed_dynamics_note.md`, and Ben's logistic
 cross-agent activity idea as design guidance. A7.3 remains a fresh single-hive
 delayed nonlinear dynamics line with explicit lifted state, dimensionless
 controls, preregistered nulls, source ledgers, recurrence/Lyapunov-style
-diagnostics, and fail-closed rules before any broader sweep. The next bounded
-task is to add the read-only A7.3 preflight analyzer over the emitted smoke
-artifacts.
+diagnostics, and fail-closed rules before any broader sweep. The preflight
+checks only artifact/schema/source-ledger/boundedness/productivity readiness;
+it does not compute promotion endpoints or create A7.3 scientific evidence.
+The next bounded task is to add the read-only A7.3 residual/null preflight
+metrics analyzer over the emitted smoke artifacts.
 
 Historical A5 context: A5 single-hive anticipatory predictive-control dynamics
 was reopened for preregistration/scaffold validation. As of 2026-06-29 08:49
@@ -115,10 +118,11 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: add the read-only A7.3 preflight analyzer that
-  consumes the smoke artifacts without rerunning simulations and checks schema
-  completeness, source-ledger delay integrity, boundedness/productivity
-  guardrails, and preregistered condition/null presence.
+- Recommended next step: add a read-only A7.3 residual/null preflight metrics
+  analyzer over existing smoke artifacts that computes provisional residual
+  delay-embedding/recurrence, nonlinear-vs-linear forecastability, and
+  null-contrast rows without rerunning simulations, broadening seeds, tuning
+  parameters, or making promotion claims.
 
 ## Blockers
 
@@ -147,8 +151,45 @@ own preregistered promotion rules.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   automation_guard -q` passed with `18 passed, 641 deselected`.
 - `git diff --check` passed.
+- 2026-06-29 09:42 PDT A7.3 preflight run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
+  passed with `8 passed, 653 deselected`.
+- 2026-06-29 09:42 PDT A7.3 preflight run:
+  `.venv-conda/bin/python -m py_compile ohdyn/analyze_a7_3_preflight.py`
+  passed.
+- 2026-06-29 09:42 PDT temporary A7.3 smoke plus preflight command passed:
+  `.venv-conda/bin/python -m ohdyn.compare_a7_3_dimensionless_delayed
+  --seeds 1 2 --out /tmp/omegasim_a7_3_preflight_lWtpJo/smoke` and
+  `.venv-conda/bin/python -m ohdyn.analyze_a7_3_preflight --compare-dir
+  /tmp/omegasim_a7_3_preflight_lWtpJo/smoke --out
+  /tmp/omegasim_a7_3_preflight_lWtpJo/preflight`. The analyzer inspected 18
+  run directories and reported
+  `status=eligible_for_read_only_residual_analysis`.
+- 2026-06-29 09:42 PDT A7.3 preflight run: `git diff --check` passed.
+- 2026-06-29 09:42 PDT A7.3 preflight run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
+  `notify_ben=false`, and `strategic_change_level=minor`.
 
 ## Latest Changes
+
+- 2026-06-29 09:42 PDT bounded A7.3 preflight run: read
+  `README.md`, `AUTOMATION_STATUS.md`,
+  `docs/omegasim_provisional_experiment_roadmap.md`, the active A7.3
+  preregistration, existing A7.3 contract/smoke helper/tests, and the external
+  strategy review. The review was `strategic_change_level: minor`,
+  `notify_ben: false`; its recommendation to build isolated A7.3
+  contract/config/smoke artifacts was already satisfied and the status-file
+  next step to add preflight was accepted as scientifically sensible. Added
+  `ohdyn.analyze_a7_3_preflight`, a read-only analyzer that consumes existing
+  A7.3 smoke artifacts, checks condition/seed coverage, schema completeness,
+  lifted-state availability, source-ledger delay integrity, shuffle/null
+  provenance, boundedness, and productivity guardrails, and fails closed on
+  missing artifacts or same-tick leakage. Added focused tests for complete
+  smoke eligibility and deliberate source-ledger leakage failure. Updated
+  `README.md` with the preflight command and interpretation boundary. No A5,
+  A7.2, three-hive, dashboard, integration, broad-seed, sweep, or promotion
+  branch was opened.
 
 - 2026-06-29 09:19 PDT bounded A7.3 implementation run: read
   `README.md`, `AUTOMATION_STATUS.md`,
