@@ -17,13 +17,15 @@ strange-attractor-like, semantic-dynamics, or causal collective-structure
 claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state again on 2026-06-28 17:34 PDT: the
+rechecked against the current repo state again on 2026-06-28 18:35 PDT: the
 concise single-hive A5 preregistration and smallest deterministic scaffold
-already exist and still match that request. The current paired-seed smoke
-reproduces the A5-family boundary: forecast skill improves in intermediate
-predictors, but residual-accounting promotion fails closed. This does not
-reopen broad A5 mechanics, broader seed sweeps, dashboards, integrations, or
-three-hive coupling.
+already exist and still match that request, while the newer governance state is
+`closed_awaiting_preregistration` with `repo_write_allowed=false` and
+`notify_ben=true`. The prior paired-seed A5 smoke remains the current
+A5-family boundary: forecast skill improves in intermediate predictors, but
+residual-accounting promotion fails closed. This does not reopen broad A5
+mechanics, broader seed sweeps, dashboards, integrations, result-bearing
+simulator/analyzer work, or three-hive coupling.
 
 The active A7.2 scientific focus is still the resource-bounded prediction
 hypothesis, but now with a more mechanism-rich single-hive design: agents
@@ -93,6 +95,29 @@ A7.2 and three-hive ring line failed closed and that automation is now closed
 awaiting preregistration.
 
 ## Latest Changes
+
+- 2026-06-28 18:35 PDT bounded A5 prompt revalidation under governance
+  closure: re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`, the
+  concise single-hive A5 preregistration, the structured strange-attractor
+  research note, focused A5/automation references, current guard output, and
+  recent git history. Confirmed the explicit A5 preregistration request is
+  already satisfied: deterministic single-hive setup, resource-bounded
+  prediction hypothesis, matched task-arrival/service-capacity/action-
+  opportunity/work-budget controls, reactive/linear/nonlinear/high-budget/
+  oracle/timing-broken nulls, primary endpoints, and fail-closed
+  strange-attractor/lobe rules are present.
+- The guard now reports `state=closed_awaiting_preregistration`,
+  `repo_write_allowed=false`, and `notify_ben=true` because the later A7.2 and
+  three-hive fixed seed `1,2` gates failed closed. No simulator mechanics,
+  configs, analyzers, run artifacts, dashboards, integrations, broad seeds,
+  parameter sweeps, extra hives, or promotion claims were added. The status
+  update preserves exactly one next step: notify Ben and wait for a fresh
+  preregistered direction.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` and
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`21 passed, 632 deselected`).
 
 - 2026-06-29 bounded governance-closure run: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests, the superseded provisional roadmap,
