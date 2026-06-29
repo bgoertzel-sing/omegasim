@@ -5,12 +5,11 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the renewed bounded A5 single-hive anticipatory
-predictive-control directive has now been satisfied by preserving the concise
-A5 preregistration and rerunning the smallest deterministic seed `5,6`
-smoke/analyzer scaffold. The current A5 post-smoke state is closed/no-op for
-repo-writing automation unless Ben explicitly authorizes a new preregistered
-scientific axis or a larger A5 holdout.
+Source-of-truth status: Ben's current automation prompt explicitly reauthorizes
+the bounded A5 single-hive anticipatory predictive-control stage. The concise
+A5 preregistration remains the active source of truth, and the already
+checked-in deterministic seed `5,6` smoke/analyzer scaffold is the only
+authorized implementation surface for this run.
 
 Current concise A5 gate: explicit single-hive A5 reopening and active
 preregistration summary are recorded in
@@ -20,24 +19,35 @@ nonlinear/high-budget/oracle/timing-broken predictor conditions, resource-
 bounded prediction hypothesis, matched accounting locks, primary endpoints,
 guardrails, and fail-closed decision rules requested for A5.
 
-Current A5 interpretation boundary: forecast skill improved in the bounded
-seed `5,6` smoke/analyzer, but no intermediate predictor passed all
-residual/null, oracle-nontriviality, compression, and guardrail promotion
-criteria. A5 remains fail-closed for residual-structure,
-strange-attractor-like, lobe-like, or phase-structure claims. A7.3 remains
+Current A5 interpretation boundary: the current bounded seed `5,6`
+smoke/analyzer rerun improved forecast skill for intermediate predictors, but
+no intermediate predictor passed all residual/null, oracle-nontriviality,
+compression, and guardrail promotion criteria. A5 remains fail-closed for
+residual-structure,
+strange-attractor-like, lobe-like, or phase-structure claims unless the current
+bounded scaffold and preregistered controls say otherwise. A7.3 remains
 historical context, not an active line for this A5 automation request.
 
-External GPT-5.5-Pro strategy review direction accepted on 2026-06-29: the
-review is marked `strategic_change_level: major` and `notify_ben: true`. Its
-recommendation to close A5 at the repeated seed `5,6` fail-closed boundary is
-scientifically sensible because another A5 rerun would mainly repeat the
-exogenous demand-control result rather than test an endogenous delayed
-prediction-spend mechanism. Ben should be notified that this is a direction
-shift from "review before any larger holdout" to closed/no-op pending a fresh
-preregistered decision.
+External GPT-5.5-Pro strategy review direction accepted on 2026-06-29 remains
+historical context: it recommended closing A5 after repeated fail-closed seed
+`5,6` evidence. The current explicit Ben/A5 automation prompt overrides that
+closed/no-op posture only for preserving the preregistration, exercising the
+small deterministic single-hive smoke scaffold, and reporting the result.
 
 ## Latest Changes
 
+- 2026-06-29 14:54 PDT A5 explicit-directive reconciliation run: restored the
+  status file from post-smoke closed/no-op wording to the current explicitly
+  requested bounded A5 stage. No new simulator mechanics were added; the
+  checked-in single-hive scaffold remains the sole authorized A5 smoke surface.
+- 2026-06-29 14:54 PDT A5 explicit-directive reconciliation run: reran the
+  bounded seed `5,6` smoke/analyzer under
+  `/tmp/omegasim_a5_current_20260629_QtKZDL`. The analyzer emitted 1280
+  residual metric rows and 720 effect rows. `linear`, `nonlinear`, and
+  `nonlinear_high_budget` improved forecast skill versus reactive and
+  timing-broken nulls, but no intermediate predictor satisfied all
+  residual/null, oracle-nontriviality, compression, and guardrail promotion
+  criteria.
 - 2026-06-29 14:16 PDT A5 post-smoke closure/guard run: accepted the latest
   GPT-5.5-Pro review direction (`strategic_change_level: major`,
   `notify_ben: true`) to close A5 at the repeated seed `5,6` fail-closed
@@ -149,22 +159,42 @@ preregistered decision.
 
 ## Recommended Next Step
 
-- Recommended next step: ask Ben whether to preregister a mechanism-rich
-  endogenous delayed prediction-spend axis, explicitly authorize a larger A5
-  holdout despite the fail-closed seed `5,6` gates, or keep OmegaSim
-  closed/no-op for now.
+- Recommended next step: review the current bounded A5 seed `5,6`
+  smoke/analyzer result before authorizing any larger A5 holdout.
 
 ## Blockers
 
-No environment blocker. The current scientific blocker is governance: A5's
-existing seed `5,6` smoke improved forecast skill but stayed fail-closed for
-residual structure after preregistered accounting controls and surrogate nulls,
-and the latest major review recommends no further A5 simulator runs without a
-fresh Ben/preregistration decision. A7.3 validation and downstream multi-hive
+No environment blocker. The current scientific blocker is evidential: existing
+A5 seed `5,6` smoke runs improved forecast skill but stayed fail-closed for
+residual structure after preregistered accounting controls and surrogate nulls.
+A7.3 validation, broad A5 tuning, longer seed sweeps, and downstream multi-hive
 coupling remain out of scope for this A5 automation run.
 
 ## Verification
 
+- 2026-06-29 14:54 PDT A5 explicit-directive reconciliation run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `27 passed, 647 deselected`.
+- 2026-06-29 14:54 PDT A5 explicit-directive reconciliation run:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  ohdyn/compare_predictive_control.py ohdyn/analyze_a5_residual_accounting.py
+  ohdyn/config.py ohdyn/sim.py tests/test_run_harness.py` passed.
+- 2026-06-29 14:54 PDT A5 explicit-directive reconciliation run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `a5_preregistration_active=true`, `state=open`, `should_noop=false`,
+  `repo_write_allowed=true`, `closed_reasons=[]`, `notify_ben=true`,
+  `strategic_change_level=major`, and the current bounded A5 seed `5,6`
+  smoke/analyzer review next action.
+- 2026-06-29 14:54 PDT A5 explicit-directive reconciliation run: temporary
+  smoke/analyzer command passed:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_current_20260629_QtKZDL/compare` and
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir /tmp/omegasim_a5_current_20260629_QtKZDL/compare --out
+  /tmp/omegasim_a5_current_20260629_QtKZDL/residual`. The analyzer emitted
+  1280 metric rows and 720 effect rows; promotion remained fail-closed for all
+  intermediate predictors.
 - 2026-06-29 14:16 PDT A5 post-smoke closure/guard run:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   automation_guard -q` passed with `23 passed, 651 deselected`.
