@@ -42,7 +42,6 @@ def read_automation_state(
     closed_after_a7_2_three_hive = _status_closes_after_a7_2_three_hive(
         current_status
     )
-    stale_a5_after_closed_branch = status_reopens_a5 and closed_after_a7_2_three_hive
     current_line_closed = closed_after_a7_2_three_hive and not active_a7_3
     if closed_reasons and active_a7_3:
         closed_reasons = []
@@ -71,9 +70,7 @@ def read_automation_state(
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
     status_next_action = _status_next_action(current_status)
-    if review_opens_a7_3 and not status_opens_a7_3 and (
-        not status_reopens_a5 or stale_a5_after_closed_branch
-    ):
+    if review_opens_a7_3 and not status_opens_a7_3:
         status_next_action = ""
     roadmap_next_action = _roadmap_next_action(roadmap) if roadmap_reopens_a7 else ""
     if roadmap_reopens_a7 and _is_noop_next_action(status_next_action):

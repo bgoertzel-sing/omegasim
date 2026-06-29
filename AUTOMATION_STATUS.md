@@ -5,28 +5,27 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the current concise A5 gate is
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-That document records the explicit single-hive A5 reopening and remains the
-active preregistration summary for this bounded smoke/pilot. Ben's 2026-06-29
-automation instruction explicitly sets A5 single-hive anticipatory
-predictive-control dynamics as the bounded current scientific stage. This
-overrides the older closed/no-op A5 posture and later historical branch status
-for this automation run only. It does not authorize broad A5 rescue tuning,
-committed result-bearing run artifacts, wider seed sweeps, dashboards,
-integrations, real LLM calls, or multi-hive mechanics.
+Source-of-truth status: Ben's 2026-06-29 instruction says OmegaSim should
+proceed with A7.3 for now. A7.3 one-hive dimensionless delayed dynamics is the
+active next OmegaSim gate. This supersedes the previous
+awaiting-preregistration posture and any older A5-focused prompt, and does not
+reopen A7.2, the three-hive ring, or A5 as result-bearing lines.
 
-Current active task: keep the concise A5 preregistration and smallest
-deterministic A5 scaffold aligned with the explicit A5 request, then verify the
-bounded seed `5,6` smoke/analyzer path. Delayed multi-hive anticipatory
-coupling remains downstream and would require a separate preregistration with
-target/phase nulls and explicit resource-bounded cross-hive prediction costs.
+Current active task: implement the fixed A7.3 long-horizon artifact generator
+or controlled smoke-helper extension for the preregistered 256-tick, seed
+`1,2`, nine-condition validation gate, without enabling promotion analysis or
+broadening seeds/horizon/parameters. The A7.3 scaffold already has a
+preregistration, minimal contract/config/smoke/preflight path, smoke-scale
+residual/null analyzer wiring, a frozen 256-tick residual/recurrence validation
+preregistration, and latest GPT-5.5-Pro review verdict `GO` with
+`notify_ben: false`.
 
-The concise A5 preregistration matches Ben's requested design: deterministic
-single hive, matched task-arrival totals, service capacity, action opportunity,
-work budget, prediction spend, reactive/linear/nonlinear/high-budget/oracle and
-timing-broken null conditions, primary residual/predictability endpoints, and
-fail-closed strange-attractor-like interpretation rules.
+Historical A5 context: the concise A5 preregistration matches Ben's requested
+design: deterministic single hive, matched task-arrival totals, service
+capacity, action opportunity, work budget, prediction spend,
+reactive/linear/nonlinear/high-budget/oracle and timing-broken null conditions,
+primary residual/predictability endpoints, and fail-closed
+strange-attractor-like interpretation rules.
 
 The smallest deterministic A5 scaffold also already exists and remains the only
 authorized implementation surface for this stage:
@@ -43,17 +42,31 @@ claims.
 
 ## Recommended Next Step
 
-- Recommended next step: keep A5 fail-closed and require a new preregistered
-  scientific axis before any further OmegaSim mechanics or sweeps.
+- Recommended next step: implement the fixed A7.3 long-horizon artifact
+  generator or controlled smoke-helper extension for the preregistered
+  256-tick, seed `1,2`, nine-condition validation gate, without enabling
+  promotion analysis or broadening seeds/horizon/parameters.
 
 ## Blockers
 
-No environment blocker. The only scientific blocker is evidential: previous
-bounded A5 smokes improved forecast skill but did not pass residual/null,
-oracle-nontriviality, compression, and guardrail promotion criteria.
+No environment blocker. The previous A5, A7.2, and three-hive gates remain
+fail-closed historical results, but Ben's A7.3 direction and the latest
+GPT-5.5-Pro `GO` review leave OmegaSim open for the bounded A7.3
+long-horizon artifact/preflight implementation path.
 
 ## Verification
 
+- 2026-06-29 11:08 PDT A7.3 guard/status repair:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed.
+- 2026-06-29 11:08 PDT A7.3 guard/status repair:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` passed with `21 passed, 647 deselected`.
+- 2026-06-29 11:08 PDT A7.3 guard/status repair:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
+  `notify_ben=false`, `strategic_change_level=minor`, and the A7.3
+  long-horizon artifact/preflight next action.
+- 2026-06-29 11:08 PDT A7.3 guard/status repair: `git diff --check` passed.
 - 2026-06-29 10:55 PDT A5 requested loop:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
@@ -214,30 +227,6 @@ oracle-nontriviality, compression, and guardrail promotion criteria.
   completed.
 
 ## Latest Changes
-
-- 2026-06-29 10:55 PDT bounded A5 requested loop: read the A5
-  preregistration, README/status context, A4 closure/accounting context,
-  structured strange-attractor note, A5 comparison/analyzer scaffold, focused
-  tests, and automation guard. Confirmed the concise A5 single-hive
-  preregistration covers Ben's resource-bounded prediction hypothesis, matched
-  task-arrival, service-capacity, action-opportunity, work-budget, and
-  prediction-spend controls, reactive/linear/nonlinear/high-budget/oracle and
-  timing-broken null conditions, residual/predictability endpoints, and
-  fail-closed strange-attractor-like interpretation rules.
-- Added a 2026-06-29 scope note to
-  `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`,
-  updated `README.md` and this status file to make bounded A5 the active
-  automation stage, and fixed `ohdyn.automation_guard` so an explicit active
-  A5 status next-action is not overwritten by a stale A7.3 external-review
-  recommendation unless the status also matches the closed downstream-branch
-  case. Added focused guard regression coverage. Re-ran focused tests,
-  py-compile, guard, and the fixed seed `5,6` A5 smoke/analyzer under
-  `/tmp/omegasim_a5_20260629_hff9Jk`. The smoke again improved forecast skill
-  for intermediate predictors but failed promotion: no intermediate-budget
-  condition passed all residual/null, compression, oracle-nontriviality, and
-  guardrail criteria. No broad A5 mechanics, new predictor knobs, committed
-  result artifacts, dashboards, integrations, seed sweeps, parameter sweeps, or
-  multi-hive mechanics were added.
 
 - 2026-06-29 10:39 PDT bounded A7.3 long-horizon preregistration run: read
   `README.md`, `AUTOMATION_STATUS.md`,
