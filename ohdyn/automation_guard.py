@@ -43,7 +43,7 @@ def read_automation_state(
         current_status
     )
     current_line_closed = closed_after_a7_2_three_hive and not active_a7_3
-    if closed_reasons and active_a7_3:
+    if closed_reasons and active_a7_3 and not _status_closes_active_a5(current_status):
         closed_reasons = []
     if (
         closed_reasons
@@ -70,7 +70,12 @@ def read_automation_state(
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
     status_next_action = _status_next_action(current_status)
-    if review_opens_a7_3 and not status_opens_a7_3 and not status_reopens_a5:
+    if (
+        review_opens_a7_3
+        and not status_opens_a7_3
+        and not status_reopens_a5
+        and not _status_closes_active_a5(current_status)
+    ):
         status_next_action = ""
     roadmap_next_action = _roadmap_next_action(roadmap) if roadmap_reopens_a7 else ""
     if roadmap_reopens_a7 and _is_noop_next_action(status_next_action):
@@ -204,6 +209,8 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         and "fail-closed" in normalized_status
     ):
         status_reasons.append("automation_status_a5_reopened_smoke_failed_closed")
+    if not status_reasons and _status_closes_active_a5(status):
+        status_reasons.append("automation_status_a5_closed")
     if _status_closes_after_a7_2_three_hive(status):
         status_reasons.append("automation_status_a7_2_three_hive_failed_closed")
 
@@ -264,6 +271,18 @@ def _status_closes_active_a5(status: str) -> bool:
             in normalized_status
             or "not an active authorization for more a5-family automation"
             in normalized_status
+            or (
+                (
+                    "require a fresh preregistered scientific axis"
+                    in normalized_status
+                    or "require a new preregistered scientific axis"
+                    in normalized_status
+                )
+                and (
+                    "before any further mechanics" in normalized_status
+                    or "before any further omegasim mechanics" in normalized_status
+                )
+            )
         )
     )
 

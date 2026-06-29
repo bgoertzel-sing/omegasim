@@ -3091,7 +3091,7 @@ def test_automation_guard_current_a5_status_overrides_go_a7_3_review(
     assert state["review_recommended_next_action"] == review_action
 
 
-def test_automation_guard_current_a5_request_overrides_go_a7_3_review(
+def test_automation_guard_current_a5_fresh_axis_requirement_closes_over_go_a7_3_review(
     tmp_path: Path,
 ) -> None:
     status_path = tmp_path / "AUTOMATION_STATUS.md"
@@ -3147,10 +3147,10 @@ def test_automation_guard_current_a5_request_overrides_go_a7_3_review(
 
     state = read_automation_state(status_path, review_path, a5_path)
 
-    assert state["state"] == "open"
-    assert state["should_noop"] is False
-    assert state["repo_write_allowed"] is True
-    assert state["closed_reasons"] == []
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == ["automation_status_a5_closed"]
     assert state["recommended_next_action"] == a5_action
     assert state["review_recommended_next_action"] == review_action
 

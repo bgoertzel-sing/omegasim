@@ -12,12 +12,12 @@ active preregistration summary for this bounded smoke/pilot. This supersedes
 the prior A7.3 automation status for this run only; A7.3 remains historical
 context and is not part of the current A5 result-bearing line.
 
-Current active task: hold OmegaSim at the A5 single-hive anticipatory
-predictive-control boundary: deterministic numeric-only scaffold, matched
-task-arrival totals, service capacity, action opportunity, work budget,
-prediction spend, reactive/linear/nonlinear/high-budget/oracle conditions,
-budget-matched timing-broken nulls, read-only residual accounting, and
-fail-closed interpretation of strange-attractor-like or lobe-like language.
+Current active task: no-op pending Ben's active-line choice. The current A5
+single-hive anticipatory predictive-control scaffold remains fail-closed at
+the seed `5,6` smoke/analyzer boundary. A concurrently started A7.3
+residual/recurrence analyzer WIP was quarantined outside the repo at
+`/tmp/omegasim_conflict_20260629_120642/` and must not be treated as committed
+evidence or an active result-bearing line.
 
 The smallest deterministic A5 scaffold already exists and remains the only
 authorized implementation surface for this stage:
@@ -29,6 +29,15 @@ boards, or three-hive mechanics.
 
 ## Latest Changes
 
+- 2026-06-29 12:08 PDT recovery run: urgent GPT-5.5-Pro review returned
+  `strategic_change_level: major`, `notify_ben: true`, and `verdict:
+  PAUSE-RECOVER` because the active status changed from A7.3 to A5 during the
+  run. Quarantined the uncommitted A7.3 residual/recurrence analyzer WIP at
+  `/tmp/omegasim_conflict_20260629_120642/`, removed it from the worktree, and
+  patched `ohdyn.automation_guard` so the current A5 fail-closed “fresh
+  preregistered scientific axis required” state is
+  `closed_awaiting_preregistration`, `should_noop=true`, and
+  `repo_write_allowed=false` even when a stale A7.3 `GO` review exists.
 - 2026-06-29 11:52 PDT A5 requested loop: tightened the concise A5
   preregistration so it explicitly records itself as the active bounded
   single-hive predictive-control gate for this automation request and locks the
@@ -47,19 +56,34 @@ boards, or three-hive mechanics.
 
 ## Recommended Next Step
 
-- Recommended next step: keep A5 bounded at the fail-closed seed `5,6`
-  smoke/analyzer result and require a fresh preregistered scientific axis
-  before any further mechanics or sweep.
+- Recommended next step: remain in no-op/awaiting-preregistration state and
+  notify Ben that A5 is fail-closed, A7.3 is artifact/preflight-valid only, and
+  Ben should choose exactly one active line before any further mechanics,
+  analyzer, seed, horizon, or parameter work.
 
 ## Blockers
 
-No environment blocker. The only scientific blocker is evidential: A5 forecast
-skill alone is not sufficient for structured dynamics claims; promotion still
-requires the preregistered residual, null, oracle-nontriviality, compression,
-and guardrail criteria.
+No environment blocker. The current blocker is governance: the active line
+changed during this run, and the urgent strategy review requested Ben
+notification. A5 forecast skill alone remains insufficient for structured
+dynamics claims, and uncommitted A7.3 analyzer WIP is quarantined rather than
+committed.
 
 ## Verification
 
+- 2026-06-29 12:08 PDT recovery run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` passed with `21 passed, 649 deselected`.
+- 2026-06-29 12:08 PDT recovery run:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  tests/test_run_harness.py` passed.
+- 2026-06-29 12:08 PDT recovery run: `git diff --check` passed.
+- 2026-06-29 12:08 PDT recovery run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`,
+  `closed_reasons=[automation_status_next_step_noop]`, `notify_ben=true`, and
+  `strategic_change_level=major`.
 - 2026-06-29 11:55 PDT A5 requested loop:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
