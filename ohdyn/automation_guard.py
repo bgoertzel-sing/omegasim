@@ -318,6 +318,16 @@ def _status_closes_active_a5(status: str) -> bool:
                 "keep omegasim automation closed/no-op" in normalized_status
                 and "a5 fail-closed" in normalized_status
             )
+            or (
+                "fresh preregistered mechanism-rich endogenous delayed prediction-spend"
+                in normalized_status
+                and "before any further a5 simulator runs" in normalized_status
+            )
+            or (
+                "preregister a mechanism-rich endogenous delayed prediction-spend axis"
+                in normalized_status
+                and "before any further a5 simulator runs" in normalized_status
+            )
             or "current a5 post-smoke state is closed/no-op"
             in normalized_status
             or (

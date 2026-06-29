@@ -5,25 +5,28 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's current automation prompt again explicitly
-reauthorizes the bounded A5 single-hive anticipatory predictive-control stage
-for this run. That authorization is narrow: preserve and verify the concise A5
+Source-of-truth status: the bounded A5 single-hive anticipatory predictive-
+control verification requested by Ben's current automation prompt has been
+recorded. That authorization was narrow: preserve and verify the concise A5
 preregistration, confirm the smallest deterministic checked-in scaffold, and
-do not broaden simulator mechanics.
+do not broaden simulator mechanics. It is now closed at the repeated seed `5,6`
+fail-closed boundary.
 
-Current concise A5 gate: explicit single-hive A5 reopening and active
-preregistration summary are recorded in
+Current concise A5 gate: explicit single-hive A5 reopening and preregistration
+summary are recorded in
 `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`. The
 document already defines the deterministic single-hive setup, reactive/linear/
 nonlinear/high-budget/oracle/timing-broken predictor conditions, resource-
 bounded prediction hypothesis, matched accounting locks, primary endpoints,
-guardrails, and fail-closed decision rules requested for A5.
+guardrails, and fail-closed decision rules requested for A5. That document is
+now a completed A5 record, not authorization for more A5 simulator runs.
 
 Current A5 implementation boundary: the existing single-hive deterministic
-scaffold remains the only authorized smoke/pilot surface for this prompt. It
+scaffold was the only authorized smoke/pilot surface for this prompt. It
 already compares reactive, low-budget linear, medium-budget nonlinear,
 high-budget nonlinear, oracle, and timing-broken null conditions under matched
-arrival, service-capacity, action-opportunity, and work-budget accounting.
+arrival, service-capacity, action-opportunity, and work-budget accounting. Do
+not run further A5 simulator work without a fresh preregistration.
 
 Current A5 interpretation boundary: repeated bounded seed `5,6`
 smoke/analyzer runs improved forecast skill for intermediate predictors, but
@@ -43,6 +46,14 @@ notified of this direction shift.
 
 ## Latest Changes
 
+- 2026-06-29 16:07 PDT A5 post-verification guard closure: accepted the latest
+  GPT-5.5-Pro review direction (`strategic_change_level: major`,
+  `notify_ben: true`) as scientifically sensible after the explicit A5
+  verification run stayed fail-closed. Patched `ohdyn.automation_guard` so the
+  current "fresh preregistered mechanism-rich endogenous delayed
+  prediction-spend axis before any further A5 simulator runs" wording is
+  treated as `closed_awaiting_preregistration`, `should_noop=true`, and
+  `repo_write_allowed=false`. No simulations or analyzers were rerun.
 - 2026-06-29 15:55 PDT A5 explicit-verification run: reconciled the latest
   automation prompt with the prior post-smoke closure state. The concise
   preregistration already exists and remains the active source of truth for
@@ -205,6 +216,21 @@ automation run.
 
 ## Verification
 
+- 2026-06-29 16:07 PDT A5 post-verification guard closure:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` passed with `25 passed, 651 deselected`.
+- 2026-06-29 16:07 PDT A5 post-verification guard closure:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  tests/test_run_harness.py` passed.
+- 2026-06-29 16:07 PDT A5 post-verification guard closure:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `closed_reasons=[automation_status_a5_closed]`,
+  `notify_ben=true`, `strategic_change_level=major`, and the next action to
+  preregister a mechanism-rich endogenous delayed prediction-spend axis before
+  any further A5 simulator runs.
+- 2026-06-29 16:07 PDT A5 post-verification guard closure:
+  `git diff --check` passed.
 - 2026-06-29 15:55 PDT A5 explicit-verification run:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'automation_guard or a5_predictive_control or a5_residual_accounting' -q`

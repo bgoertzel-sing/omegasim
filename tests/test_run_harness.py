@@ -3441,6 +3441,76 @@ def test_automation_guard_current_a5_ask_ben_next_axis_closes_over_major_review(
     assert state["review_recommended_next_action"] == review_action
 
 
+def test_automation_guard_closes_after_a5_verification_before_next_preregistration(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    review_action = (
+        "Close A5 at the repeated seed 5,6 fail-closed boundary and "
+        "preregister one mechanism-rich endogenous delayed prediction-spend "
+        "experiment before any further simulator runs."
+    )
+    a5_action = (
+        "preregister a mechanism-rich endogenous delayed prediction-spend "
+        "axis before any further A5 simulator runs."
+    )
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Current A5 interpretation boundary: repeated bounded seed "
+                "`5,6` smoke/analyzer runs improved forecast skill, but no "
+                "intermediate predictor passed all residual/null, "
+                "oracle-nontriviality, compression, and guardrail promotion "
+                "criteria. A5 remains fail-closed for residual-structure, "
+                "strange-attractor-like, lobe-like, or phase-structure claims.",
+                "External GPT-5.5-Pro strategy review direction accepted on "
+                "2026-06-29 remains scientifically sensible after the bounded "
+                "A5 preregistration/scaffold check: once this explicit A5 "
+                "verification run is recorded, the next scientific move should "
+                "be a fresh preregistered mechanism-rich endogenous delayed "
+                "prediction-spend axis before any further A5 simulator runs.",
+                "",
+                "## Recommended Next Step",
+                "",
+                f"- Recommended next step: {a5_action}",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                f"recommended_next_action: {review_action}",
+                "verdict: PIVOT",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == ["automation_status_a5_closed"]
+    assert state["strategic_change_level"] == "major"
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == a5_action
+    assert state["review_recommended_next_action"] == review_action
+
+
 def test_automation_guard_opens_a7_3_when_ben_says_proceed_not_pause(
     tmp_path: Path,
 ) -> None:
