@@ -14,7 +14,7 @@ support lobe-like, strange-attractor-like, semantic-dynamics, or causal
 collective-structure claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state again on 2026-06-28 16:35 PDT: the
+rechecked against the current repo state again on 2026-06-28 17:34 PDT: the
 concise single-hive A5 preregistration and smallest deterministic scaffold
 already exist and still match that request. The current paired-seed smoke
 reproduces the A5-family boundary: forecast skill improves in intermediate
@@ -90,6 +90,26 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 17:34 PDT bounded A5 prompt revalidation after three-hive closure:
+  re-read the automation memory, `README.md`, `AUTOMATION_STATUS.md`, the
+  concise single-hive A5 preregistration, the structured strange-attractor
+  research note, guard logic, focused A5/automation test references, and recent
+  git history. Confirmed again that Ben's explicit A5 single-hive request is
+  already satisfied by the existing preregistration and deterministic scaffold:
+  resource-bounded prediction, matched task-arrival/service-capacity/action-
+  opportunity/work-budget controls, reactive/linear/nonlinear/high-budget/
+  oracle/timing-broken null conditions, primary endpoints, and fail-closed
+  strange-attractor/lobe interpretation rules are present.
+- Reran bounded verification without adding mechanics, configs, dashboards,
+  integrations, broad seed sweeps, or multi-hive coupling. The guard reported
+  `state=open`, `a5_preregistration_active=true`, `repo_write_allowed=true`,
+  and `notify_ben=false`; focused A5/automation tests passed; and a temporary
+  seed `5,6` A5 comparison plus read-only residual-accounting analyzer under
+  `/tmp/omegasim_a5_current_srBySX` reproduced the fail-closed result.
+  Forecast skill improved for intermediate predictors, but no intermediate
+  condition passed all residual/null, oracle-nontriviality, compression, and
+  guardrail criteria.
 
 - 2026-06-28 17:27 PDT three-hive ring closure note: re-read `README.md`,
   `AUTOMATION_STATUS.md`, configs/tests, the superseded provisional roadmap,
