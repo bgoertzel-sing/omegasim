@@ -183,6 +183,68 @@ A7_3_PRODUCTIVITY_GUARDRAILS = {
     "prediction_spend_fraction_max": 0.45,
     "source_ledger_delay_integrity_required": "pass",
 }
+A7_3_VALIDATION_PARAMETERS = {
+    "seeds": (1, 2),
+    "horizon_ticks": 256,
+    "minimum_rows_for_recurrence": 128,
+    "train_fraction": 0.60,
+    "holdout_fraction": 0.40,
+    "embedding_lags": (1, 3, 6, 12),
+    "recurrence_radius_quantile": 0.10,
+    "surrogate_repetitions": 32,
+    "local_divergence_neighbor_count": 8,
+    "promotion_requires_all_nulls": True,
+}
+A7_3_VALIDATION_TARGET_FIELDS = (
+    "artifact_readiness",
+    "artifact_coherence",
+    "contradiction_risk",
+    "prediction_error",
+    "prediction_uncertainty",
+    "fatigue",
+    "memory_pressure",
+    "work_backlog",
+)
+A7_3_VALIDATION_RESIDUAL_CONTROLS = (
+    "demand_phase",
+    "task_arrivals",
+    "service_capacity",
+    "action_opportunity",
+    "work_budget",
+    "work_backlog",
+    "queued_age",
+    "completion_fraction",
+    "prediction_spend",
+    "lost_work_opportunity_from_prediction",
+    "memory_pressure",
+)
+A7_3_VALIDATION_ENDPOINTS = (
+    "source_ledger_delay_reconstruction_pass",
+    "bounded_lifted_state_pass",
+    "productivity_guardrail_pass",
+    "heldout_residual_forecast_improvement",
+    "delay_embedding_recurrence_rate",
+    "phase_shuffle_surrogate_contrast",
+    "threshold_shuffle_surrogate_contrast",
+    "linear_control_forecastability_contrast",
+    "finite_time_local_divergence_contrast",
+)
+A7_3_VALIDATION_PROMOTION_GATES = (
+    "preflight_manifest_status_eligible",
+    "all_conditions_and_seeds_present",
+    "all_source_ledgers_pass",
+    "boundedness_passes_without_saturation_or_blowup",
+    "productivity_passes_for_positive_and_null_conditions",
+    "full_mechanism_beats_low_gain_contraction",
+    "full_mechanism_beats_no_delay_same_tick_blocked",
+    "full_mechanism_beats_amplitude_matched_linear",
+    "full_mechanism_beats_artifact_off",
+    "full_mechanism_beats_cost_free_prediction",
+    "full_mechanism_beats_spend_only_replay",
+    "full_mechanism_beats_phase_shuffled_lag",
+    "full_mechanism_beats_threshold_shuffled",
+    "finite_time_divergence_exceeds_low_gain_baseline",
+)
 
 
 def a7_3_required_metric_fields() -> tuple[str, ...]:

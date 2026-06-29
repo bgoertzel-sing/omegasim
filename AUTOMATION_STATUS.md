@@ -11,11 +11,13 @@ active next OmegaSim gate. This supersedes the previous
 awaiting-preregistration posture and any older A5-focused prompt, and does not
 reopen A7.2, the three-hive ring, or A5 as result-bearing lines.
 
-Current active task: keep A7.3 on the isolated read-only analysis path after
-the deterministic smoke, preflight, lag-source tightening, and residual
-skeleton gates. The A7.3 scaffold already has a preregistration, minimal
+Current active task: implement the newly preregistered fixed long-horizon A7.3
+artifact generator/preflight path after the deterministic smoke, preflight,
+lag-source tightening, residual skeleton, and long-horizon preregistration
+gates. The A7.3 scaffold already has a preregistration, minimal
 contract/config/smoke/preflight path, smoke-scale residual/null analyzer
-wiring, and latest GPT-5.5-Pro review verdict `GO` with `notify_ben: false`.
+wiring, a frozen 256-tick residual/recurrence validation preregistration, and
+latest GPT-5.5-Pro review verdict `GO` with `notify_ben: false`.
 
 Historical A5 context: the concise A5 single-hive anticipatory predictive-control
 preregistration already exists and is committed at
@@ -108,11 +110,10 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: preregister the first longer-horizon A7.3
-  residual/recurrence validation gate, including fixed horizon, seeds,
-  residual targets, null contrasts, recurrence/Lyapunov-style endpoints,
-  source-ledger prerequisites, and fail-closed promotion criteria, before
-  enabling any result-bearing A7.3 analysis.
+- Recommended next step: implement the fixed A7.3 long-horizon artifact
+  generator or controlled smoke-helper extension for the preregistered
+  256-tick, seed `1,2`, nine-condition validation gate, without enabling
+  promotion analysis or broadening seeds/horizon/parameters.
 
 ## Blockers
 
@@ -233,8 +234,39 @@ smoke/preflight implementation path.
   `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
   `notify_ben=false`, `strategic_change_level=minor`, and recommended the
   residual-analysis skeleton that this run completed.
+- 2026-06-29 10:39 PDT A7.3 long-horizon preregistration run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
+  passed with `12 passed, 653 deselected`.
+- 2026-06-29 10:39 PDT A7.3 long-horizon preregistration run:
+  `.venv-conda/bin/python -m py_compile ohdyn/a7_3_dimensionless_contract.py`
+  passed.
+- 2026-06-29 10:39 PDT A7.3 long-horizon preregistration run:
+  `git diff --check` passed.
+- 2026-06-29 10:39 PDT A7.3 long-horizon preregistration run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
+  `notify_ben=false`, `strategic_change_level=minor`, and recommended the
+  long-horizon A7.3 residual/recurrence preregistration that this run
+  completed.
 
 ## Latest Changes
+
+- 2026-06-29 10:39 PDT bounded A7.3 long-horizon preregistration run: read
+  `README.md`, `AUTOMATION_STATUS.md`,
+  `docs/omegasim_provisional_experiment_roadmap.md`, the active A7.3
+  preregistration, existing A7.3 contract/smoke/preflight/residual skeleton
+  code and tests, and the external strategy review. The review was
+  `strategic_change_level: minor`, `notify_ben: false`; its contract/smoke
+  recommendation was accepted as scientifically sensible but already satisfied
+  by committed work, so the newer status-file next step was followed. Added
+  `docs/a7_3_long_horizon_residual_recurrence_preregistration.md`, freezing a
+  one-hive 256-tick seed `1,2` validation gate with residual targets, controls,
+  recurrence/surrogate/divergence endpoints, all A7.3 null contrasts,
+  source-ledger prerequisites, and fail-closed promotion criteria. Added frozen
+  validation constants to `ohdyn/a7_3_dimensionless_contract.py`, a focused
+  contract test, and a README pointer. No long-horizon run artifacts,
+  result-bearing analyzer, A5/A7.2/three-hive branch, dashboard, integration,
+  broad seed sweep, parameter sweep, or promotion claim was added.
 
 - 2026-06-29 10:21 PDT bounded A7.3 residual-skeleton run: read
   `README.md`, `AUTOMATION_STATUS.md`,

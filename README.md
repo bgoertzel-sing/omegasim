@@ -235,6 +235,13 @@ manifest. At the fixed 64-tick smoke horizon it records only residual/null
 analyzer wiring and remains fail-closed; it does not compute promotion
 endpoints or support A7.3 scientific claims.
 
+The next A7.3 gate is preregistered in
+`docs/a7_3_long_horizon_residual_recurrence_preregistration.md`. It freezes a
+one-hive, fixed `256`-tick, seed `1,2` validation plan with residual targets,
+source-ledger prerequisites, recurrence/surrogate/divergence endpoints, all
+eight null contrasts, and fail-closed promotion criteria. No long-horizon
+runner or result-bearing analyzer is enabled yet.
+
 ## Three-Hive Ring Schema And Mechanics Smoke
 
 The post-A7.2 three-hive ring gate is frozen in

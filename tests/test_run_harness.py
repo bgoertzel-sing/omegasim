@@ -155,6 +155,11 @@ from ohdyn.a7_3_dimensionless_contract import (
     A7_3_MECHANICS_MANIFEST_FIELDS,
     A7_3_NULL_CONDITIONS,
     A7_3_POSITIVE_CONDITION,
+    A7_3_VALIDATION_ENDPOINTS,
+    A7_3_VALIDATION_PARAMETERS,
+    A7_3_VALIDATION_PROMOTION_GATES,
+    A7_3_VALIDATION_RESIDUAL_CONTROLS,
+    A7_3_VALIDATION_TARGET_FIELDS,
     A7_3_SMOKE_PARAMETERS,
     A7_3_SOURCE_LEDGER_FIELDS,
     a7_3_required_event_fields,
@@ -1764,6 +1769,49 @@ def test_a7_3_dimensionless_config_loads_frozen_contract() -> None:
     assert config.a7_2_delayed_prediction is None
     assert config.three_hive_ring is None
     assert config.hives == ()
+
+
+def test_a7_3_long_horizon_validation_contract_is_preregistered() -> None:
+    assert A7_3_VALIDATION_PARAMETERS["seeds"] == A7_3_SMOKE_PARAMETERS["seeds"]
+    assert A7_3_VALIDATION_PARAMETERS["horizon_ticks"] == 256
+    assert A7_3_VALIDATION_PARAMETERS["horizon_ticks"] > A7_3_SMOKE_PARAMETERS[
+        "horizon_ticks"
+    ]
+    assert A7_3_VALIDATION_PARAMETERS["minimum_rows_for_recurrence"] >= 128
+    assert A7_3_VALIDATION_PARAMETERS["promotion_requires_all_nulls"] is True
+    assert A7_3_VALIDATION_PARAMETERS["embedding_lags"] == (1, 3, 6, 12)
+    assert {
+        "artifact_readiness",
+        "artifact_coherence",
+        "contradiction_risk",
+        "prediction_error",
+        "prediction_uncertainty",
+        "fatigue",
+        "memory_pressure",
+        "work_backlog",
+    } == set(A7_3_VALIDATION_TARGET_FIELDS)
+    assert set(A7_3_VALIDATION_RESIDUAL_CONTROLS) >= {
+        "demand_phase",
+        "task_arrivals",
+        "service_capacity",
+        "action_opportunity",
+        "work_budget",
+        "prediction_spend",
+        "lost_work_opportunity_from_prediction",
+    }
+    assert {
+        "heldout_residual_forecast_improvement",
+        "delay_embedding_recurrence_rate",
+        "phase_shuffle_surrogate_contrast",
+        "threshold_shuffle_surrogate_contrast",
+        "finite_time_local_divergence_contrast",
+    }.issubset(A7_3_VALIDATION_ENDPOINTS)
+    for null_condition in A7_3_NULL_CONDITIONS:
+        assert f"full_mechanism_beats_{null_condition}" in A7_3_VALIDATION_PROMOTION_GATES
+    assert (
+        "preflight_manifest_status_eligible"
+        in A7_3_VALIDATION_PROMOTION_GATES
+    )
 
 
 def test_a7_3_config_schema_rejects_changed_frozen_contract(tmp_path: Path) -> None:
