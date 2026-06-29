@@ -171,6 +171,12 @@ from ohdyn.a7_semantic_field_contract import (
 )
 from ohdyn.three_hive_ring_contract import (
     THREE_HIVE_RING_ACTIONS,
+    THREE_HIVE_RING_ANALYZER_COMPLETENESS_FIELDS,
+    THREE_HIVE_RING_ANALYZER_GUARDRAIL_FIELDS,
+    THREE_HIVE_RING_ANALYZER_MANIFEST_FIELDS,
+    THREE_HIVE_RING_ANALYZER_NULL_CONTRAST_FIELDS,
+    THREE_HIVE_RING_ANALYZER_RESIDUAL_FIELDS,
+    THREE_HIVE_RING_ANALYZER_SOURCE_LEDGER_FIELDS,
     THREE_HIVE_RING_CONDITIONS,
     THREE_HIVE_RING_DIMENSIONLESS_MANIFEST_FIELDS,
     THREE_HIVE_RING_EDGE_FIELDS,
@@ -209,6 +215,9 @@ from ohdyn.analyze_three_hive_ring_preflight import (
     THREE_HIVE_RING_PREFLIGHT_STATUS_MISSING_SOURCE_LEDGER,
     THREE_HIVE_RING_PREFLIGHT_STATUS_NO_METRICS_EVENTS,
     run_three_hive_ring_preflight_analysis,
+)
+from ohdyn.analyze_three_hive_ring_residual_null import (
+    run_three_hive_ring_residual_null_analysis,
 )
 from ohdyn.analyze_a7_semantic_field import (
     A7_ANALYZER_COMPLETENESS_FIELDS,
@@ -1411,6 +1420,111 @@ def test_three_hive_ring_preflight_accepts_mechanics_metrics_events(
     assert int(manifest_rows[0]["metrics_events_present_count"]) == (
         len(THREE_HIVE_RING_CONDITIONS) * 2
     )
+
+
+def test_three_hive_ring_residual_null_analyzer_fails_closed_on_smoke_artifacts(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "three_hive_ring_mechanics"
+    out_dir = tmp_path / "three_hive_ring_residual_null"
+    run_three_hive_ring_mechanics_smoke(out_dir=compare_dir)
+
+    result = run_three_hive_ring_residual_null_analysis(
+        compare_dir=compare_dir,
+        out_dir=out_dir,
+    )
+
+    assert result["run_count"] == len(THREE_HIVE_RING_CONDITIONS) * 2
+    assert result["status"].startswith("fail_closed_")
+    manifest_rows = list(
+        csv.DictReader(
+            (out_dir / "three_hive_ring_residual_null_manifest.csv").open()
+        )
+    )
+    assert list(manifest_rows[0]) == list(THREE_HIVE_RING_ANALYZER_MANIFEST_FIELDS)
+    assert manifest_rows[0]["status"] == result["status"]
+    completeness_rows = list(
+        csv.DictReader(
+            (out_dir / "three_hive_ring_residual_null_completeness.csv").open()
+        )
+    )
+    assert list(completeness_rows[0]) == list(
+        THREE_HIVE_RING_ANALYZER_COMPLETENESS_FIELDS
+    )
+    assert {row["status"] for row in completeness_rows} == {"pass"}
+    source_rows = list(
+        csv.DictReader(
+            (out_dir / "three_hive_ring_residual_null_source_ledger.csv").open()
+        )
+    )
+    assert list(source_rows[0]) == list(THREE_HIVE_RING_ANALYZER_SOURCE_LEDGER_FIELDS)
+    assert {row["status"] for row in source_rows} == {"pass"}
+    residual_rows = list(
+        csv.DictReader((out_dir / "three_hive_ring_residual_null_metrics.csv").open())
+    )
+    assert list(residual_rows[0]) == list(THREE_HIVE_RING_ANALYZER_RESIDUAL_FIELDS)
+    assert {row["status"] for row in residual_rows} == {"computed"}
+    contrast_rows = list(
+        csv.DictReader(
+            (out_dir / "three_hive_ring_residual_null_contrasts.csv").open()
+        )
+    )
+    assert list(contrast_rows[0]) == list(
+        THREE_HIVE_RING_ANALYZER_NULL_CONTRAST_FIELDS
+    )
+    assert {
+        row["gate_status"]
+        for row in contrast_rows
+        if row["gate_status"].startswith("fail_closed")
+    }
+    guardrail_rows = list(
+        csv.DictReader(
+            (
+                out_dir
+                / "three_hive_ring_residual_null_productivity_guardrails.csv"
+            ).open()
+        )
+    )
+    assert list(guardrail_rows[0]) == list(
+        THREE_HIVE_RING_ANALYZER_GUARDRAIL_FIELDS
+    )
+    assert "read-only" in (out_dir / "summary.md").read_text()
+
+
+def test_three_hive_ring_residual_null_analyzer_fails_closed_on_bad_source_ledger(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "three_hive_ring_mechanics"
+    out_dir = tmp_path / "three_hive_ring_residual_null"
+    run_three_hive_ring_mechanics_smoke(out_dir=compare_dir)
+    first_run = compare_dir / f"{THREE_HIVE_RING_POSITIVE_CONDITION}_seed1"
+    rows = list(csv.DictReader((first_run / "source_ledger.csv").open()))
+    rows[0]["source_ledger_artifact_delta"] = "999.0"
+    with (first_run / "source_ledger.csv").open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
+        writer.writeheader()
+        writer.writerows(rows)
+
+    result = run_three_hive_ring_residual_null_analysis(
+        compare_dir=compare_dir,
+        out_dir=out_dir,
+    )
+
+    assert result["status"] == "fail_closed_source_ledger"
+    source_rows = list(
+        csv.DictReader(
+            (out_dir / "three_hive_ring_residual_null_source_ledger.csv").open()
+        )
+    )
+    affected = [
+        row
+        for row in source_rows
+        if row["condition"] == THREE_HIVE_RING_POSITIVE_CONDITION
+        and row["seed"] == "1"
+    ]
+    assert len(affected) == 1
+    assert affected[0]["status"] == "fail_closed"
+    assert affected[0]["hive_ledger_status"] == "fail_hive_artifact_delta"
 
 
 def test_a7_2_configs_load_in_preregistered_condition_order() -> None:

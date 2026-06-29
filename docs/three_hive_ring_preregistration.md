@@ -2,10 +2,11 @@
 
 Date: 2026-06-28.
 
-Status: frozen design preregistration for the post-A7.2 three-hive ring gate.
-This document authorizes only a later contract/config-validation step after
-this preregistration is committed. It does not authorize simulator mechanics,
-result-bearing runs, broad seed sweeps, dashboards, or external integrations.
+Status: frozen design preregistration for the post-A7.2 three-hive ring gate,
+with contract/config, schema/preflight, mechanics-smoke, and read-only
+residual/null analyzer gates now completed at fixed seed `1,2`. It does not
+authorize broad seed sweeps, dashboards, external integrations, parameter
+tuning, extra hives, or promotion language.
 
 ## Background
 
@@ -38,18 +39,18 @@ spend, action opportunity, and service capacity.
 
 ## Scope Locks
 
-Allowed after this preregistration:
+Allowed after this preregistration, in the bounded gate sequence:
 
 - one isolated three-hive ring contract/constants file;
 - config validation for the frozen conditions below;
 - deterministic schema tests proving contracts and fixtures load;
-- only later, a tiny fixed-seed smoke if the contract/config gate passes.
+- a tiny fixed-seed mechanics smoke after contract/config gates pass;
+- read-only preflight and residual/null analyzers over existing artifacts.
 
 Disallowed in this gate:
 
 - real LLM calls, Lean, Slack, browser, Atomspace, dashboards, live task boards,
   or notification integrations;
-- implementation of multi-hive mechanics in the preregistration pass;
 - broad seed sweeps, parameter sweeps, tuning, or result-rescue changes;
 - downstream hives beyond the frozen three-hive ring;
 - promotion language from raw backlog, throughput, transfer counts, action
@@ -425,12 +426,17 @@ collective-structure claims.
 ## Next Authorized Step
 
 The contract-only, config-validation, schema/source-ledger smoke, read-only
-preflight, and smallest deterministic mechanics-smoke gates are complete. The
-mechanics helper emits fixed seed `1,2` metrics, events, and source-ledger rows
-for every preregistered condition, and the existing preflight can mark those
-artifacts `eligible_for_mechanics_gate` because metrics/events now exist.
+preflight, smallest deterministic mechanics-smoke, and read-only residual/null
+analyzer gates are complete. The fixed seed `1,2` analyzer consumes existing
+mechanics artifacts only; it does not rerun simulations or tune parameters.
 
-This is still not a promotion analysis. The next authorized step is a
-read-only residual/null and source-ledger analyzer over those existing
-mechanics artifacts. Do not add broad seed sweeps, dashboards, integrations,
-parameter sweeps, extra hives, post-result tuning, or promotion language.
+The current analyzer result is fail-closed. Schema/source-ledger
+reconstruction passes, but productivity guardrails and preregistered null
+contrasts block promotion. This does not support lobe-like,
+strange-attractor-like, synchrony, semantic-dynamics, or causal
+collective-structure claims.
+
+The next authorized step is a documentation-only closure note for the
+three-hive ring seed `1,2` mechanics/analyzer result. Do not add broad seed
+sweeps, dashboards, integrations, parameter sweeps, extra hives, post-result
+tuning, or promotion language.

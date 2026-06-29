@@ -245,6 +245,21 @@ For those mechanics artifacts the preflight status is
 It is still not a residual/null analyzer and does not create promotion
 evidence.
 
+The bounded read-only residual/null analyzer consumes existing mechanics
+artifacts, checks source-ledger reconstruction, computes residual preflight
+metrics, compares the positive condition against all preregistered nulls, and
+applies productivity guardrails:
+
+```bash
+python -m ohdyn.analyze_three_hive_ring_residual_null --compare-dir runs/three_hive_ring_mechanics_smoke_seed1_2 --out runs/three_hive_ring_residual_null_analysis_seed1_2
+```
+
+The fixed seed `1,2` mechanics smoke closes fail-closed under this analyzer.
+Schema/source-ledger reconstruction passes, but productivity guardrails and
+null contrasts block promotion. This is not three-hive scientific evidence and
+does not support lobe-like, strange-attractor-like, synchrony,
+semantic-dynamics, or causal collective-structure claims.
+
 A bounded paired-seed pilot comparison derives matched single-hive configs for
 reactive, low-budget linear, medium-budget nonlinear, high-budget nonlinear,
 oracle, and budget-matched timing-broken null predictors from the smoke

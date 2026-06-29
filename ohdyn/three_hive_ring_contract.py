@@ -270,6 +270,78 @@ THREE_HIVE_RING_MECHANICS_MANIFEST_FIELDS = (
     "mechanics_status",
     "scientific_status",
 )
+THREE_HIVE_RING_ANALYZER_COMPLETENESS_FIELDS = (
+    "condition",
+    "seed",
+    "metrics_path",
+    "events_path",
+    "source_ledger_path",
+    "metric_row_count",
+    "event_row_count",
+    "source_ledger_row_count",
+    "required_field_status",
+    "missing_required_fields",
+    "status",
+    "interpretation",
+)
+THREE_HIVE_RING_ANALYZER_SOURCE_LEDGER_FIELDS = (
+    "condition",
+    "seed",
+    "event_ledger_status",
+    "hive_ledger_status",
+    "status",
+    "interpretation",
+)
+THREE_HIVE_RING_ANALYZER_RESIDUAL_FIELDS = (
+    "condition",
+    "seed",
+    "target_field",
+    "row_count",
+    "missing_required_fields",
+    "control_fields_used",
+    "residualization_status",
+    "residual_variance",
+    "lag1_autocorrelation",
+    "nearest_neighbor_forecast_mae",
+    "transition_compressibility_proxy",
+    "status",
+    "interpretation",
+)
+THREE_HIVE_RING_ANALYZER_NULL_CONTRAST_FIELDS = (
+    "contrast",
+    "seed",
+    "control_condition",
+    "target_field",
+    "paired",
+    "status",
+    "positive_status",
+    "control_status",
+    "lag1_autocorrelation_delta",
+    "nearest_neighbor_forecast_mae_delta",
+    "transition_compressibility_delta",
+    "gate_status",
+    "interpretation",
+)
+THREE_HIVE_RING_ANALYZER_GUARDRAIL_FIELDS = (
+    "seed",
+    "baseline_condition",
+    "completion_fraction_ratio",
+    "backlog_ratio",
+    "queued_age_ratio",
+    "prediction_or_transfer_cost_fraction",
+    "accepted_transfer_volume_min_per_directed_edge",
+    "source_ledger_reconstruction_status",
+    "status",
+    "interpretation",
+)
+THREE_HIVE_RING_ANALYZER_MANIFEST_FIELDS = (
+    "compare_dir",
+    "out_dir",
+    "condition_count",
+    "seed_count",
+    "run_count",
+    "status",
+)
 THREE_HIVE_RING_SOURCE_LEDGER_CSV_FIELDS = (
     "tick",
     "condition",

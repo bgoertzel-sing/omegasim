@@ -54,24 +54,31 @@ demand prediction alone, and preserve a possible later one-hive dimensionless
 delayed-dynamics sweep rather than retro-tuning A7.2.
 
 The post-A7.2 three-hive ring is now past the contract/config-validation,
-schema/source-ledger smoke, read-only preflight, and smallest deterministic
-mechanics-smoke gates. The helper `ohdyn.compare_three_hive_ring` remains
-artifact-only and still fails closed as `fail_closed_no_metrics_events` under
-the preflight analyzer. The new helper `ohdyn.compare_three_hive_ring_mechanics`
-emits fixed seed `1,2` metrics, events, and source-ledger rows for all thirteen
-preregistered conditions; the existing preflight marks those artifacts
-`eligible_for_mechanics_gate` because metrics/events are present. This is still
-not a residual/null analyzer, does not compute promotion endpoints, and does
-not create three-hive scientific evidence.
+schema/source-ledger smoke, read-only preflight, smallest deterministic
+mechanics-smoke, and read-only residual/null analyzer gates. The helper
+`ohdyn.compare_three_hive_ring` remains artifact-only and still fails closed as
+`fail_closed_no_metrics_events` under the preflight analyzer. The helper
+`ohdyn.compare_three_hive_ring_mechanics` emits fixed seed `1,2` metrics,
+events, and source-ledger rows for all thirteen preregistered conditions; the
+preflight marks those artifacts `eligible_for_mechanics_gate` because
+metrics/events are present. The new read-only analyzer
+`ohdyn.analyze_three_hive_ring_residual_null` consumes those artifacts without
+rerunning simulations, verifies source ledgers, computes residual preflight
+metrics, checks all preregistered null contrasts, and applies productivity
+guardrails. The fixed seed `1,2` mechanics/analyzer result closes fail-closed:
+source ledgers pass, but productivity guardrails and null contrasts block
+promotion. This does not create three-hive scientific evidence and does not
+support lobe-like, strange-attractor-like, semantic-dynamics, synchrony, or
+causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: add the read-only three-hive residual/null and
-  source-ledger analyzer over the existing fixed seed `1,2` mechanics
-  artifacts. It should fail closed unless source ledgers, productivity
-  guardrails, paired-seed direction, and all preregistered null contrasts pass.
-  Do not add promotion claims, broad seed sweeps, dashboards, integrations,
-  parameter sweeps, post-result tuning, or hives beyond the frozen ring.
+- Recommended next step: add a documentation-only closure note for the
+  three-hive ring fixed seed `1,2` mechanics/analyzer result, recording the
+  fail-closed productivity-guardrail/null-contrast outcome and interpretation
+  boundary. Do not add promotion claims, broad seed sweeps, dashboards,
+  integrations, parameter sweeps, post-result tuning, or hives beyond the
+  frozen ring.
 
 ## Blockers
 
@@ -83,6 +90,47 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 17:08 PDT three-hive ring residual/null analyzer gate: re-read
+  `README.md`, `AUTOMATION_STATUS.md`, configs/tests, the superseded
+  provisional roadmap, `docs/three_hive_ring_preregistration.md`, current
+  guard output, CLI-loop status, and the latest GPT-5.5-Pro strategy review
+  before choosing the next step. The review has `notify_ben: false` and
+  `strategic_change_level: minor`; its preflight-analyzer recommendation had
+  already been completed in an earlier run, so this run followed the newer
+  source-of-truth status recommendation to implement the bounded read-only
+  residual/null/source-ledger analyzer.
+- Added `ohdyn.analyze_three_hive_ring_residual_null` and analyzer field
+  constants in `ohdyn/three_hive_ring_contract.py`. The analyzer reads only
+  existing fixed seed `1,2` mechanics artifacts; verifies metrics/events/source
+  ledger completeness; reconstructs event and per-hive source ledgers with a
+  CSV-rounding tolerance; computes residual preflight metrics for artifact and
+  forecast-error targets after accounting controls; compares
+  `delayed_logistic_ring` against every preregistered null; and applies the
+  frozen productivity guardrails. It does not run simulations, tune
+  parameters, add hives, create dashboards/integrations, broaden seeds, or make
+  promotion claims.
+- The bounded temp smoke
+  `.venv-conda/bin/python -m ohdyn.compare_three_hive_ring_mechanics --out
+  /tmp/omegasim_three_hive_residual_null_S0E8Wk/mechanics` followed by
+  `.venv-conda/bin/python -m ohdyn.analyze_three_hive_ring_residual_null
+  --compare-dir /tmp/omegasim_three_hive_residual_null_S0E8Wk/mechanics --out
+  /tmp/omegasim_three_hive_residual_null_S0E8Wk/analysis` closed
+  fail-closed with status `fail_closed_productivity_guardrails`: 26/26
+  schema/metrics/events/source-ledger rows passed, 26/26 source-ledger checks
+  passed, 156 residual rows computed, null-contrast gates were 37
+  `eligible_for_guardrail_and_cross_seed_review`, 67
+  `fail_closed_no_residual_autocorrelation_advantage`, and 16
+  `fail_closed_no_residual_predictability_advantage`, and both productivity
+  guardrail rows failed on `completion_fraction`. This is not a much-better or
+  scientifically novel result; it reinforces the preregistered fail-closed
+  interpretation boundary.
+- Verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring' -q` (`13 passed, 639 deselected`) and
+  `.venv-conda/bin/python -m py_compile
+  ohdyn/analyze_three_hive_ring_residual_null.py
+  ohdyn/three_hive_ring_contract.py`.
 
 - 2026-06-28 16:45 PDT three-hive ring mechanics smoke gate: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests, the superseded
