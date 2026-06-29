@@ -224,6 +224,14 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         and "fail-closed" in normalized_status
     ):
         status_reasons.append("automation_status_a5_reopened_smoke_failed_closed")
+    if (
+        not status_reasons
+        and "review the bounded a5 seed `5,6` smoke/analyzer outcome"
+        in normalized_status
+        and "before authorizing any larger a5 holdout" in normalized_status
+        and "fail-closed" in normalized_status
+    ):
+        status_reasons.append("automation_status_a5_post_smoke_review")
     if not status_reasons and _status_closes_active_a5(status):
         status_reasons.append("automation_status_a5_closed")
     if _status_closes_after_a7_2_three_hive(status):
@@ -272,6 +280,7 @@ def _status_closes_active_a5(status: str) -> bool:
             or "current concise a5 gate" in normalized_status
             or "the current a5 anticipatory predictive-control loop" in normalized_status
             or "a5-family automation" in normalized_status
+            or "a5 remains fail-closed" in normalized_status
         )
         and "closed" in normalized_status
         and (
@@ -287,6 +296,12 @@ def _status_closes_active_a5(status: str) -> bool:
             or "not an active authorization for more a5-family automation"
             in normalized_status
             or (
+                "review the bounded a5 seed `5,6` smoke/analyzer outcome"
+                in normalized_status
+                and "before authorizing any larger a5 holdout"
+                in normalized_status
+            )
+            or (
                 "keep a5 fail-closed" in normalized_status
                 and "ask ben for the next preregistered scientific axis"
                 in normalized_status
@@ -295,6 +310,8 @@ def _status_closes_active_a5(status: str) -> bool:
                 "keep omegasim automation closed/no-op" in normalized_status
                 and "a5 fail-closed" in normalized_status
             )
+            or "current a5 post-smoke state is closed/no-op"
+            in normalized_status
             or (
                 (
                     "require a fresh preregistered scientific axis"

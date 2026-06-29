@@ -2980,6 +2980,68 @@ def test_automation_guard_closes_when_current_status_stops_a5_broadening(
     )
 
 
+def test_automation_guard_closes_for_a5_post_smoke_review_next_step(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    action = (
+        "review the bounded A5 seed `5,6` smoke/analyzer outcome before "
+        "authorizing any larger A5 holdout."
+    )
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: the current automation prompt "
+                "explicitly reopens A5 as the bounded single-hive "
+                "anticipatory predictive-control stage.",
+                "The bounded seed `5,6` smoke/analyzer result remains an "
+                "interpretation boundary: forecast skill improved, but no "
+                "intermediate predictor passed all residual/null, "
+                "oracle-nontriviality, compression, and guardrail promotion "
+                "criteria; A5 remains fail-closed.",
+                "",
+                "## Recommended Next Step",
+                "",
+                f"- Recommended next step: {action}",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                "recommended_next_action: Close A5 at the repeated seed 5,6 "
+                "fail-closed boundary and preregister one mechanism-rich "
+                "endogenous delayed prediction-spend experiment before any "
+                "further simulator runs.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == ["automation_status_a5_post_smoke_review"]
+    assert state["strategic_change_level"] == "major"
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == action
+
+
 def test_automation_guard_opens_when_ben_accepts_a7_2_then_three_hive(
     tmp_path: Path,
 ) -> None:
