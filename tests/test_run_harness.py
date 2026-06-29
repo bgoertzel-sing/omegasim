@@ -2570,6 +2570,64 @@ def test_automation_guard_reopens_for_explicit_current_a5_preregistration(
     assert state["recommended_next_action"] == "run the bounded A5 single-hive smoke."
 
 
+def test_automation_guard_keeps_a5_status_action_over_a7_3_review(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: the current concise A5 gate is "
+                "`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.",
+                "That document records the explicit single-hive A5 reopening "
+                "and remains the active preregistration summary for this "
+                "bounded smoke/pilot.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: run the bounded A5 seed `5,6` "
+                "smoke/analyzer.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: false",
+                "recommended_next_action: Implement the isolated A7.3 "
+                "contract/config plus a deterministic smoke harness.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["repo_write_allowed"] is True
+    assert state["closed_reasons"] == []
+    assert state["recommended_next_action"] == (
+        "run the bounded A5 seed `5,6` smoke/analyzer."
+    )
+    assert state["review_recommended_next_action"] == (
+        "Implement the isolated A7.3 contract/config plus a deterministic "
+        "smoke harness."
+    )
+
+
 def test_automation_guard_ignores_historical_a5_closure_when_current_gate_reopens(
     tmp_path: Path,
 ) -> None:
@@ -2900,6 +2958,68 @@ def test_automation_guard_closes_after_a7_2_and_three_hive_fail_closed(
         "preregistered decision note only if Ben wants another scientific "
         "direction, such as a one-hive dimensionless delayed-dynamics sweep."
     )
+
+
+def test_automation_guard_go_a7_3_review_overrides_stale_a5_status_action(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    review_action = (
+        "Implement the isolated A7.3 contract/config plus a deterministic smoke "
+        "harness that emits lifted-state and source-ledger artifacts for the full "
+        "mechanism and required nulls before any sweep."
+    )
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: the current concise A5 gate is "
+                "`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.",
+                "That document records the explicit single-hive A5 reopening "
+                "and remains the active preregistration summary for this "
+                "bounded smoke/pilot.",
+                "A7.2 and the three-hive ring both failed-closed after the "
+                "residual/null gates and remain awaiting-preregistration.",
+                "Ben should be notified only if a future one-hive "
+                "dimensionless delayed-dynamics sweep needs a new decision.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: run one more bounded A5 seed `5,6` "
+                "smoke/analyzer.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: false",
+                "verdict: GO",
+                f"recommended_next_action: {review_action}",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["repo_write_allowed"] is True
+    assert state["closed_reasons"] == []
+    assert state["recommended_next_action"] == review_action
+    assert state["review_recommended_next_action"] == review_action
 
 
 def test_automation_guard_opens_a7_3_when_ben_says_proceed_not_pause(

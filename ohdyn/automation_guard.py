@@ -31,10 +31,19 @@ def read_automation_state(
     review_header = _parse_review_header(review)
     a5_preregistration_active = Path(a5_preregistration_path).is_file()
     closed_reasons = _closed_reasons(status=current_status, review=review)
-    active_a7_3 = _status_opens_active_a7_3_dimensionless(current_status)
-    current_line_closed = (
-        _status_closes_after_a7_2_three_hive(current_status) and not active_a7_3
+    status_opens_a7_3 = _status_opens_active_a7_3_dimensionless(current_status)
+    review_opens_a7_3 = _review_recommends_active_a7_3(review_header)
+    status_reopens_a5 = (
+        a5_preregistration_active
+        and _status_reopens_active_a5(current_status)
+        and not _status_closes_active_a5(current_status)
     )
+    active_a7_3 = status_opens_a7_3 or review_opens_a7_3
+    closed_after_a7_2_three_hive = _status_closes_after_a7_2_three_hive(
+        current_status
+    )
+    stale_a5_after_closed_branch = status_reopens_a5 and closed_after_a7_2_three_hive
+    current_line_closed = closed_after_a7_2_three_hive and not active_a7_3
     if closed_reasons and active_a7_3:
         closed_reasons = []
     if (
@@ -50,9 +59,7 @@ def read_automation_state(
     ):
         closed_reasons = []
     if (
-        a5_preregistration_active
-        and _status_reopens_active_a5(current_status)
-        and not _status_closes_active_a5(current_status)
+        status_reopens_a5
         and not current_line_closed
     ):
         closed_reasons = []
@@ -64,6 +71,10 @@ def read_automation_state(
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
     status_next_action = _status_next_action(current_status)
+    if review_opens_a7_3 and not status_opens_a7_3 and (
+        not status_reopens_a5 or stale_a5_after_closed_branch
+    ):
+        status_next_action = ""
     roadmap_next_action = _roadmap_next_action(roadmap) if roadmap_reopens_a7 else ""
     if roadmap_reopens_a7 and _is_noop_next_action(status_next_action):
         status_next_action = ""
@@ -117,6 +128,20 @@ def _parse_review_header(review: str) -> dict[str, str]:
 
 def _parse_bool(value: str) -> bool:
     return value.strip().lower() == "true"
+
+
+def _review_recommends_active_a7_3(review_header: dict[str, str]) -> bool:
+    normalized_action = _normalize(review_header.get("recommended_next_action", ""))
+    normalized_verdict = _normalize(review_header.get("verdict", ""))
+    return (
+        normalized_verdict == "go"
+        and "a7.3" in normalized_action
+        and (
+            "implement" in normalized_action
+            or "run" in normalized_action
+            or "preregister" in normalized_action
+        )
+    )
 
 
 def _current_status_scope(status: str) -> str:
@@ -202,7 +227,11 @@ def _status_closes_after_a7_2_three_hive(status: str) -> bool:
     return (
         "a7.2" in normalized_status
         and "three-hive ring" in normalized_status
-        and "fail-closed" in normalized_status
+        and (
+            "fail-closed" in normalized_status
+            or "failed-closed" in normalized_status
+            or "failed closed" in normalized_status
+        )
         and (
             "pause further three-hive ring expansion" in normalized_status
             or "awaiting-preregistration" in normalized_status

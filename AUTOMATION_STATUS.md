@@ -11,13 +11,14 @@ active next OmegaSim gate. This supersedes the previous
 awaiting-preregistration posture and any older A5-focused prompt, and does not
 reopen A7.2, the three-hive ring, or A5 as result-bearing lines.
 
-Current active task: implement the newly preregistered fixed long-horizon A7.3
-artifact generator/preflight path after the deterministic smoke, preflight,
-lag-source tightening, residual skeleton, and long-horizon preregistration
-gates. The A7.3 scaffold already has a preregistration, minimal
-contract/config/smoke/preflight path, smoke-scale residual/null analyzer
-wiring, a frozen 256-tick residual/recurrence validation preregistration, and
-latest GPT-5.5-Pro review verdict `GO` with `notify_ben: false`.
+Current active task: implement the fixed A7.3 long-horizon artifact generator
+or controlled smoke-helper extension for the preregistered 256-tick, seed
+`1,2`, nine-condition validation gate, without enabling promotion analysis or
+broadening seeds/horizon/parameters. The A7.3 scaffold already has a
+preregistration, minimal contract/config/smoke/preflight path, smoke-scale
+residual/null analyzer wiring, a frozen 256-tick residual/recurrence validation
+preregistration, and latest GPT-5.5-Pro review verdict `GO` with
+`notify_ben: false`.
 
 Historical A5 context: the concise A5 single-hive anticipatory predictive-control
 preregistration already exists and is committed at
@@ -120,10 +121,20 @@ causal collective-structure claims.
 No environment blocker. The previous A5, A7.2, and three-hive gates remain
 fail-closed historical results, but Ben's A7.3 direction and the latest
 GPT-5.5-Pro `GO` review leave OmegaSim open for the bounded A7.3
-smoke/preflight implementation path.
+long-horizon artifact/preflight implementation path.
 
 ## Verification
 
+- 2026-06-29 10:58 PDT A7.3 guard repair:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed.
+- 2026-06-29 10:58 PDT A7.3 guard repair:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` passed with `20 passed, 647 deselected`.
+- 2026-06-29 10:58 PDT A7.3 guard repair:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
+  `notify_ben=false`, and `strategic_change_level=minor`.
+- 2026-06-29 10:58 PDT A7.3 guard repair: `git diff --check` passed.
 - 2026-06-29 09:50 PDT A5 requested loop:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'automation_guard or a5_predictive_control or a5_residual_accounting' -q`

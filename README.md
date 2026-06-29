@@ -51,12 +51,11 @@ not broaden A5 to new mechanics, wider seed sweeps, dashboards, integrations,
 or multi-hive coupling without another preregistration.
 
 Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
-closed without a fresh preregistration. Ben's 2026-06-28 decision opens the
-A7.2 delayed artifact-mediated endogenous-prediction direction as the active
-next gate:
-`docs/a5_family_exit_and_a7_2_decision_preregistration.md`. After A7.2 closes,
-OmegaSim should proceed to a separately preregistered three-hive ring without
-another governance pause.
+closed without a fresh preregistration. Ben's 2026-06-28 decision opened the
+A7.2 delayed artifact-mediated endogenous-prediction direction, now historical:
+`docs/a5_family_exit_and_a7_2_decision_preregistration.md`. Ben's 2026-06-29
+follow-up opens A7.3 one-hive dimensionless delayed dynamics as the active
+OmegaSim direction; it does not reopen A5 rescue tuning.
 
 The current bounded read-only follow-up is preregistered in
 `docs/a5_resource_bounded_residual_compression_preregistration.md`. It
