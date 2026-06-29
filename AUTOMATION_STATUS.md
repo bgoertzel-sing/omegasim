@@ -7,10 +7,11 @@ checked from GitHub, including from a phone.
 
 Source-of-truth status: the bounded A5 single-hive anticipatory predictive-
 control verification requested by Ben's current automation prompt has been
-recorded. That authorization was narrow: preserve and verify the concise A5
-preregistration, confirm the smallest deterministic checked-in scaffold, and
-do not broaden simulator mechanics. It is now closed at the repeated seed `5,6`
-fail-closed boundary.
+rechecked on 2026-06-29 16:56 PDT. That authorization was narrow: preserve and
+verify the concise A5 preregistration, confirm the smallest deterministic
+checked-in scaffold, and do not broaden simulator mechanics. The preregistration
+and scaffold are already present, and A5 remains closed at the repeated seed
+`5,6` fail-closed boundary.
 
 Current concise A5 gate: explicit single-hive A5 reopening and preregistration
 summary are recorded in
@@ -46,6 +47,23 @@ notified of this direction shift.
 
 ## Latest Changes
 
+- 2026-06-29 16:56 PDT A5 bounded verification pass: reread the automation
+  memory, `README.md`, this status file,
+  `docs/structured_strange_attractor_research_note.md`, and
+  `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+  Confirmed the concise A5 preregistration already satisfies the current prompt:
+  deterministic single-hive setup, reactive/linear/nonlinear/high-budget/oracle/
+  timing-broken predictor grid, resource-bounded prediction-budget hypothesis,
+  matched arrival/service/action-opportunity/work-budget accounting, primary
+  residual endpoints, guardrails, and fail-closed strange-attractor/lobe-claim
+  boundary. No simulator mechanics, dashboards, external integrations,
+  A7-family work, or multi-hive coupling were added.
+- 2026-06-29 16:56 PDT A5 bounded verification pass: honored the current
+  automation guard state, which reports `closed_awaiting_preregistration`,
+  `should_noop=true`, and `repo_write_allowed=false` for further A5 simulator
+  work. Verification was limited to the A5/guard regression slice, module
+  compilation, guard status, and diff hygiene; no A5 smoke/analyzer rerun was
+  started.
 - 2026-06-29 16:07 PDT A5 post-verification guard closure: accepted the latest
   GPT-5.5-Pro review direction (`strategic_change_level: major`,
   `notify_ben: true`) as scientifically sensible after the explicit A5
@@ -216,6 +234,22 @@ automation run.
 
 ## Verification
 
+- 2026-06-29 16:56 PDT A5 bounded verification pass:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `29 passed, 647 deselected`.
+- 2026-06-29 16:56 PDT A5 bounded verification pass:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  ohdyn/compare_predictive_control.py ohdyn/analyze_a5_residual_accounting.py
+  ohdyn/config.py ohdyn/sim.py tests/test_run_harness.py` passed.
+- 2026-06-29 16:56 PDT A5 bounded verification pass:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `a5_preregistration_active=true`, `state=closed_awaiting_preregistration`,
+  `should_noop=true`, `repo_write_allowed=false`,
+  `closed_reasons=[automation_status_a5_closed]`, `notify_ben=true`,
+  `strategic_change_level=major`, and the next action to preregister a
+  mechanism-rich endogenous delayed prediction-spend axis before further A5
+  simulator runs.
 - 2026-06-29 16:07 PDT A5 post-verification guard closure:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   automation_guard -q` passed with `25 passed, 651 deselected`.
