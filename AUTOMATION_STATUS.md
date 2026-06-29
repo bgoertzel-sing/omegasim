@@ -119,14 +119,37 @@ rules.
   passed with `21 passed, 632 deselected`.
 - Temporary smoke command passed:
   `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
-  --out /tmp/omegasim_a5_current_lzrIbQ`.
+  --out /tmp/omegasim_a5_current_6AQ418`.
 - Temporary read-only residual accounting passed as a command and failed closed
   scientifically:
   `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
-  --compare-dir /tmp/omegasim_a5_current_lzrIbQ
-  --out /tmp/omegasim_a5_residual_current_zVDaVJ`.
+  --compare-dir /tmp/omegasim_a5_current_6AQ418
+  --out /tmp/omegasim_a5_residual_current_5WTM3R`.
 
 ## Latest Changes
+
+- 2026-06-28 23:37 PDT bounded A5 revalidation under explicit A5 reopening:
+  re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`, the concise
+  A5 single-hive preregistration, the older detailed A5 design record, the A5
+  smoke comparison/analyzer scaffold, current tests, current guard output, and
+  recent git history. Confirmed that the requested preregistration already
+  exists and still covers deterministic single-hive setup, resource-bounded
+  prediction, matched task-arrival/service-capacity/action-opportunity/work-
+  budget controls, reactive/linear/nonlinear/high-budget/oracle/timing-broken
+  nulls, primary residual/predictability endpoints, and fail-closed
+  strange-attractor/lobe interpretation rules.
+- Ran the focused A5/automation verification again. The guard reports
+  `state=closed_awaiting_preregistration`, `repo_write_allowed=false`, and
+  `notify_ben=true` because later A7.2 and three-hive gates failed closed, but
+  `a5_preregistration_active=true` for bounded A5 validation. Focused pytest
+  passed with `21 passed, 632 deselected`. A temporary A5 seed `5,6`
+  comparison again improved forecast skill for intermediate predictors, but
+  the read-only residual-accounting analyzer failed closed: no intermediate-
+  budget condition satisfied all preregistered skill, residual/null,
+  compression, oracle-nontriviality, and guardrail criteria. No duplicate
+  preregistration, simulator mechanics, configs, committed run artifacts,
+  dashboards, integrations, broad seed sweeps, parameter sweeps, extra hives,
+  or promotion claims were added.
 
 - 2026-06-28 22:36 PDT bounded A5 revalidation under explicit A5 reopening:
   re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`, the concise
