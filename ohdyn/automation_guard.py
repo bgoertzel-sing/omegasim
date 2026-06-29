@@ -226,8 +226,12 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         status_reasons.append("automation_status_a5_reopened_smoke_failed_closed")
     if (
         not status_reasons
-        and "review the bounded a5 seed `5,6` smoke/analyzer outcome"
-        in normalized_status
+        and (
+            "review the bounded a5 seed `5,6` smoke/analyzer outcome"
+            in normalized_status
+            or "review the current bounded a5 seed `5,6` smoke/analyzer result"
+            in normalized_status
+        )
         and "before authorizing any larger a5 holdout" in normalized_status
         and "fail-closed" in normalized_status
     ):
@@ -296,8 +300,12 @@ def _status_closes_active_a5(status: str) -> bool:
             or "not an active authorization for more a5-family automation"
             in normalized_status
             or (
-                "review the bounded a5 seed `5,6` smoke/analyzer outcome"
-                in normalized_status
+                (
+                    "review the bounded a5 seed `5,6` smoke/analyzer outcome"
+                    in normalized_status
+                    or "review the current bounded a5 seed `5,6` smoke/analyzer result"
+                    in normalized_status
+                )
                 and "before authorizing any larger a5 holdout"
                 in normalized_status
             )
