@@ -2548,6 +2548,66 @@ def test_automation_guard_closes_after_a7_2_and_three_hive_fail_closed(
     )
 
 
+def test_automation_guard_opens_a7_3_when_ben_says_proceed_not_pause(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "A7.2 and the three-hive ring remain fail-closed and "
+                "awaiting-preregistration as historical evidence.",
+                "Source-of-truth status: Ben's 2026-06-29 instruction says "
+                "OmegaSim should proceed, not pause. This opens A7.3 "
+                "one-hive dimensionless delayed dynamics as the active next "
+                "OmegaSim gate.",
+                "This supersedes the previous awaiting-preregistration "
+                "posture and does not reopen A7.2 or the three-hive ring.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: draft and freeze the A7.3 one-hive "
+                "dimensionless delayed-dynamics preregistration and minimal "
+                "implementation gate.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                "recommended_next_action: Close the automation into "
+                "awaiting-preregistration until Ben chooses a fresh "
+                "one-hive dimensionless delayed-dynamics preregistration.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "open"
+    assert state["should_noop"] is False
+    assert state["repo_write_allowed"] is True
+    assert state["closed_reasons"] == []
+    assert state["strategic_change_level"] == "major"
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == (
+        "draft and freeze the A7.3 one-hive dimensionless delayed-dynamics "
+        "preregistration and minimal implementation gate."
+    )
+
+
 def test_automation_guard_keeps_closed_for_a5_exit_ben_decision_status(
     tmp_path: Path,
 ) -> None:

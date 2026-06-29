@@ -5,10 +5,25 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Current run focus: A5 single-hive anticipatory predictive-control dynamics,
-because the recurring prompt explicitly reopens that bounded stage for
-preregistration/scaffold validation. As of 2026-06-29 08:49 PDT, the concise
-preregistration already exists at
+Source-of-truth status: Ben's 2026-06-29 instruction says OmegaSim should
+proceed, not pause. This opens A7.3 one-hive dimensionless delayed dynamics as
+the active next OmegaSim gate. This supersedes the previous
+awaiting-preregistration posture and does not reopen A7.2, the three-hive ring,
+or A5 as result-bearing lines.
+
+Current active task: implement the minimal A7.3 one-hive dimensionless
+delayed-dynamics config/schema and deterministic smoke harness from
+`docs/a7_3_one_hive_dimensionless_delayed_dynamics_preregistration.md`,
+`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
+`docs/hyperseed_one_hive_delayed_dynamics_note.md`, and Ben's logistic
+cross-agent activity idea as design guidance. A7.3 should be a fresh
+single-hive delayed nonlinear dynamics line with explicit lifted state,
+dimensionless controls, preregistered nulls, source ledgers, recurrence/
+Lyapunov-style diagnostics, and fail-closed rules before any broader sweep.
+
+Historical A5 context: A5 single-hive anticipatory predictive-control dynamics
+was reopened for preregistration/scaffold validation. As of 2026-06-29 08:49
+PDT, the concise preregistration already exists at
 `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md` and
 still matches Ben's requested design: deterministic single hive, matched
 task-arrival totals, service capacity, action opportunity, work budget,
@@ -33,11 +48,9 @@ The current Ben-facing decision note is
 Broader governance context remains relevant: the later A7.2 delayed
 artifact-mediated endogenous prediction gate and downstream three-hive ring gate
 also completed at bounded fixed seed `1,2` smoke scale and closed fail-closed.
-`ohdyn.automation_guard` still reports `closed_awaiting_preregistration`,
-`repo_write_allowed=false`, and `notify_ben=true` because those downstream gates
-failed closed. The current A5 prompt overrides that no-op posture only for
-validating the existing A5 preregistration/scaffold and recording the current
-fail-closed smoke result.
+Those downstream gates failed closed and remain closed as historical results.
+Ben's 2026-06-29 proceed instruction opens the fresh A7.3 line; it does not
+authorize post-result rescue tuning of A5, A7.2, or the three-hive ring.
 
 Historical A7.2 context: that branch tested the resource-bounded prediction
 hypothesis with a more mechanism-rich single-hive design in which agents choose
@@ -100,24 +113,25 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: send Ben the A5 complete/fail-closed decision note and
-  wait for a fresh preregistered direction.
+- Recommended next step: implement the minimal A7.3 one-hive dimensionless
+  delayed-dynamics config/schema and deterministic smoke harness.
 
 ## Blockers
 
-No environment blocker. Scientific progress is blocked on Ben's next
-preregistered direction because the current A5 smoke, A7.2 smoke, and
-three-hive ring smoke all failed closed under their preregistered promotion
-rules.
+No environment blocker. Ben's 2026-06-29 proceed instruction removes the
+awaiting-preregistration blocker for A7.3. The current A5 smoke, A7.2 smoke,
+and three-hive ring smoke remain fail-closed historical results under their
+own preregistered promotion rules.
 
 ## Verification
 
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
-  `a5_preregistration_active=true`, `state=closed_awaiting_preregistration`,
-  `repo_write_allowed=false`, and `notify_ben=true`.
+  `a5_preregistration_active=true`, `state=open`, `repo_write_allowed=true`,
+  `closed_reasons=[]`, and `notify_ben=true`.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
-  passed with `21 passed, 632 deselected`.
+  automation_guard -q` passed with `18 passed, 636 deselected`.
+- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed.
+- `git diff --check` passed.
 - Temporary smoke command passed:
   `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
   --out /tmp/omegasim_a5_current_j6XjsM/compare`.

@@ -31,7 +31,12 @@ def read_automation_state(
     review_header = _parse_review_header(review)
     a5_preregistration_active = Path(a5_preregistration_path).is_file()
     closed_reasons = _closed_reasons(status=current_status, review=review)
-    current_line_closed = _status_closes_after_a7_2_three_hive(current_status)
+    active_a7_3 = _status_opens_active_a7_3_dimensionless(current_status)
+    current_line_closed = (
+        _status_closes_after_a7_2_three_hive(current_status) and not active_a7_3
+    )
+    if closed_reasons and active_a7_3:
+        closed_reasons = []
     if (
         closed_reasons
         and _status_opens_active_a7_2_then_three_hive(current_status)
@@ -256,6 +261,17 @@ def _status_opens_active_a7_2_then_three_hive(status: str) -> bool:
         in normalized_status
         and "after a7.2 closes" in normalized_status
         and "three-hive ring" in normalized_status
+    )
+
+
+def _status_opens_active_a7_3_dimensionless(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "a7.3 one-hive dimensionless delayed dynamics" in normalized_status
+        and "active next omegasim gate" in normalized_status
+        and "supersedes the previous awaiting-preregistration posture"
+        in normalized_status
+        and "does not reopen a7.2" in normalized_status
     )
 
 
