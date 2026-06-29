@@ -43,6 +43,14 @@ remains in
 constrain interpretation: do not make residual-structure, lobe-like, or
 strange-attractor-like claims from A5-family artifacts.
 
+The renewed 2026-06-29 A5 automation directive keeps this concise single-hive
+preregistration as the active source of truth for the bounded A5 stage. That
+directive overrides the prior closed/no-op posture only for preserving this
+preregistration and exercising the smallest checked-in deterministic
+smoke/pilot scaffold. It does not authorize broad A5 tuning, A7-family
+mechanics, dashboards, external integrations, or downstream multi-hive
+coupling.
+
 The scaffold remains intentionally single-hive and deterministic. It keeps the
 existing action set and artifact contract, adds a hidden periodic demand-share
 signal over the four attention classes, and lets an opt-in predictive

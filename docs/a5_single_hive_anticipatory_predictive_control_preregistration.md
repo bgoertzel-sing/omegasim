@@ -15,6 +15,12 @@ integrations, live task boards, or three-hive mechanics. Three-hive delayed
 anticipatory coupling is downstream and requires a separate preregistration
 with target and phase nulls plus resource-bounded cross-hive prediction costs.
 
+Renewed 2026-06-29 A5 directive: this concise preregistration is the current
+source of truth for the explicitly requested A5 stage, overriding the prior
+closed/no-op automation posture only far enough to preserve this document and
+exercise the smallest checked-in single-hive smoke scaffold. It does not reopen
+broad A5 tuning, A7-family mechanics, or downstream multi-hive coupling.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -133,8 +139,9 @@ python -m ohdyn.analyze_a5_residual_accounting --compare-dir runs/a5_predictive_
 No broader seed sweep, new simulator mechanics, dashboard, integration, or
 multi-hive coupling is authorized by this preregistration.
 
-As of the 2026-06-29 A5 automation request, this document is the active
+As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The
 checked-in scaffold above is sufficient for the authorized smoke/pilot: any
-additional predictor family, longer horizon, wider seed grid, or delayed
-multi-hive coupling requires a separate preregistered scientific axis.
+additional predictor family, longer horizon, wider seed grid, resource-spend
+mechanic beyond the existing A5.1/A5.1a controls, or delayed multi-hive
+coupling requires a separate preregistered scientific axis.

@@ -5,11 +5,12 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: A5 remains the line selected by the current automation
-prompt, but the bounded A5 seed `5,6` smoke/analyzer boundary is fail-closed.
-The guard is therefore closed/no-op pending Ben's next preregistered scientific
-axis choice. Do not rerun A5, broaden A5 seeds/knobs, reopen A7.3 analysis, or
-start downstream multi-hive coupling from this state.
+Source-of-truth status: the current automation prompt explicitly reopens A5 as
+the bounded single-hive anticipatory predictive-control stage. This overrides
+the prior closed/no-op automation posture only for the concise A5
+preregistration and the smallest deterministic A5 smoke/pilot scaffold. Do not
+broaden A5 seeds/knobs, reopen A7-family analysis, or start downstream
+multi-hive coupling from this state.
 
 Current concise A5 gate: explicit single-hive A5 reopening and active
 preregistration summary are recorded in
@@ -19,15 +20,34 @@ nonlinear/high-budget/oracle/timing-broken predictor conditions, resource-
 bounded prediction hypothesis, matched accounting locks, primary endpoints,
 guardrails, and fail-closed decision rules requested for A5.
 
-Current active task: no new experiment. Preserve the concise A5
-preregistration and existing minimal deterministic smoke scaffold, with the
-prior seed `5,6` result as the interpretation boundary: forecast skill
-improved, but no intermediate predictor passed all residual/null,
+Current active task: preserve the concise A5 preregistration and existing
+minimal deterministic smoke scaffold, with no broad new mechanics. The bounded
+seed `5,6` smoke/analyzer result remains an interpretation boundary: forecast
+skill improved, but no intermediate predictor passed all residual/null,
 oracle-nontriviality, compression, and guardrail promotion criteria. A7.3
 remains historical context, not the active line for this A5 automation request.
 
 ## Latest Changes
 
+- 2026-06-29 13:54 PDT A5 renewed directive run: updated the concise A5
+  single-hive preregistration to record the renewed 2026-06-29 A5 directive as
+  the active source of truth for this bounded stage. The document keeps A2/A3/A4
+  accounting lessons binding, treats prediction spend as a scarce managed
+  resource, requires matched arrivals/service/action opportunity/work budget,
+  and keeps strange-attractor-like or lobe-like claims secondary and
+  fail-closed unless preregistered controls and surrogate nulls pass.
+- 2026-06-29 13:54 PDT A5 renewed directive run: no new mechanics were added.
+  The existing deterministic single-hive scaffold remains the authorized
+  smoke/pilot surface: reactive, low-budget linear, medium-budget nonlinear,
+  high-budget nonlinear, oracle, and budget-matched timing-broken null
+  conditions, followed by read-only residual accounting.
+- 2026-06-29 13:54 PDT A5 renewed directive run: reran the bounded seed `5,6`
+  smoke/analyzer under `/tmp/omegasim_a5_renewed_20260629_iJRDGp`. The analyzer
+  emitted 1280 residual metric rows and 720 effect rows. `linear`,
+  `nonlinear`, and `nonlinear_high_budget` improved forecast skill versus
+  reactive and timing-broken nulls, but no intermediate predictor satisfied
+  all residual/null, oracle-nontriviality, compression, and guardrail
+  promotion criteria.
 - 2026-06-29 13:09 PDT recovery run: incorporated the external GPT-5.5-Pro
   strategic review marked `strategic_change_level: major` and
   `notify_ben: true`. The review direction was accepted as scientifically
@@ -112,21 +132,42 @@ remains historical context, not the active line for this A5 automation request.
 
 ## Recommended Next Step
 
-- Recommended next step: ask Ben for the next preregistered scientific axis;
-  until then, keep OmegaSim automation closed/no-op with A5 fail-closed at the
-  seed `5,6` smoke/analyzer boundary.
+- Recommended next step: review the bounded A5 seed `5,6` smoke/analyzer
+  outcome before authorizing any larger A5 holdout.
 
 ## Blockers
 
-Blocked on research direction, not environment: Ben needs to choose the next
-preregistered scientific axis before further repo-writing automation. The main
-scientific caution is that A5's existing seed `5,6` smoke improved forecast
-skill but stayed fail-closed for residual structure after preregistered
-accounting controls and surrogate nulls. A7.3 validation and the quarantined
-A7.3 analyzer WIP remain out of scope for this A5 automation run.
+No environment blocker. The main scientific caution is that A5's existing seed
+`5,6` smoke improved forecast skill but stayed fail-closed for residual
+structure after preregistered accounting controls and surrogate nulls. A7.3
+validation and downstream multi-hive coupling remain out of scope for this A5
+automation run.
 
 ## Verification
 
+- 2026-06-29 13:54 PDT A5 renewed directive run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `26 passed, 647 deselected`.
+- 2026-06-29 13:54 PDT A5 renewed directive run:
+  `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py
+  ohdyn/analyze_a5_residual_accounting.py ohdyn/config.py ohdyn/sim.py
+  tests/test_run_harness.py` passed.
+- 2026-06-29 13:54 PDT A5 renewed directive run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `a5_preregistration_active=true`, `state=open`, `should_noop=false`,
+  `repo_write_allowed=true`, `closed_reasons=[]`, `notify_ben=true`, and the
+  bounded A5 seed `5,6` smoke/analyzer review next action.
+- 2026-06-29 13:54 PDT A5 renewed directive run: temporary smoke/analyzer
+  command passed:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_renewed_20260629_iJRDGp/compare` and
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir /tmp/omegasim_a5_renewed_20260629_iJRDGp/compare --out
+  /tmp/omegasim_a5_renewed_20260629_iJRDGp/residual`. The analyzer emitted
+  1280 metric rows and 720 effect rows; promotion remained fail-closed for all
+  intermediate predictors.
+- 2026-06-29 13:54 PDT A5 renewed directive run: `git diff --check` passed.
 - 2026-06-29 13:09 PDT recovery run:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   automation_guard -q` passed with `22 passed, 651 deselected`.
