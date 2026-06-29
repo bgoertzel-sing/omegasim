@@ -5,10 +5,11 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the current automation prompt explicitly requests A5
-anticipatory predictive-control dynamics as the bounded next scientific stage.
-It overrides the prior closed/no-op A4 boundary and supersedes the newer A7.3
-status for this automation run only.
+Source-of-truth status: A5 remains the line selected by the current automation
+prompt, but the bounded A5 seed `5,6` smoke/analyzer boundary is fail-closed.
+The guard is therefore closed/no-op pending Ben's next preregistered scientific
+axis choice. Do not rerun A5, broaden A5 seeds/knobs, reopen A7.3 analysis, or
+start downstream multi-hive coupling from this state.
 
 Current concise A5 gate: explicit single-hive A5 reopening and active
 preregistration summary are recorded in
@@ -18,15 +19,28 @@ nonlinear/high-budget/oracle/timing-broken predictor conditions, resource-
 bounded prediction hypothesis, matched accounting locks, primary endpoints,
 guardrails, and fail-closed decision rules requested for A5.
 
-Current active task: preserve the concise A5 preregistration and existing
-minimal deterministic smoke scaffold. The prior seed `5,6` A5 smoke/analyzer
-result remains an interpretation boundary: forecast skill improved, but no
-intermediate predictor passed all residual/null, oracle-nontriviality,
-compression, and guardrail promotion criteria. A7.3 remains historical context,
-not the active line for this A5 automation request.
+Current active task: no new experiment. Preserve the concise A5
+preregistration and existing minimal deterministic smoke scaffold, with the
+prior seed `5,6` result as the interpretation boundary: forecast skill
+improved, but no intermediate predictor passed all residual/null,
+oracle-nontriviality, compression, and guardrail promotion criteria. A7.3
+remains historical context, not the active line for this A5 automation request.
 
 ## Latest Changes
 
+- 2026-06-29 13:09 PDT recovery run: incorporated the external GPT-5.5-Pro
+  strategic review marked `strategic_change_level: major` and
+  `notify_ben: true`. The review direction was accepted as scientifically
+  sensible for the current contradictory A5/A7.3 governance state: no new
+  experiment, keep A5 fail-closed, close repo-writing automation pending Ben's
+  next preregistered scientific-axis choice, and notify Ben of the direction
+  shift.
+- 2026-06-29 13:09 PDT recovery run: patched `ohdyn.automation_guard` so the
+  current A5 "keep fail-closed and ask Ben for the next preregistered
+  scientific axis" wording yields `closed_awaiting_preregistration`,
+  `should_noop=true`, and `repo_write_allowed=false` even when an external
+  review or stale status text references A7.3. Added a regression for the
+  current A5 ask-Ben wording plus major review header.
 - 2026-06-29 12:54 PDT A5 requested loop: restored the automation status from
   A7.3 back to the explicitly requested bounded A5 single-hive predictive-
   control stage. Confirmed the concise A5 preregistration already contains the
@@ -98,20 +112,35 @@ not the active line for this A5 automation request.
 
 ## Recommended Next Step
 
-- Recommended next step: keep A5 fail-closed at the seed `5,6`
-  smoke/analyzer boundary and ask Ben for the next preregistered scientific
-  axis.
+- Recommended next step: ask Ben for the next preregistered scientific axis;
+  until then, keep OmegaSim automation closed/no-op with A5 fail-closed at the
+  seed `5,6` smoke/analyzer boundary.
 
 ## Blockers
 
-No environment blocker. The main scientific caution is that A5's existing
-seed `5,6` smoke improved forecast skill but stayed fail-closed for residual
-structure after preregistered accounting controls and surrogate nulls. A7.3
-validation and the quarantined A7.3 analyzer WIP remain out of scope for this
-A5 automation run.
+Blocked on research direction, not environment: Ben needs to choose the next
+preregistered scientific axis before further repo-writing automation. The main
+scientific caution is that A5's existing seed `5,6` smoke improved forecast
+skill but stayed fail-closed for residual structure after preregistered
+accounting controls and surrogate nulls. A7.3 validation and the quarantined
+A7.3 analyzer WIP remain out of scope for this A5 automation run.
 
 ## Verification
 
+- 2026-06-29 13:09 PDT recovery run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` passed with `22 passed, 651 deselected`.
+- 2026-06-29 13:09 PDT recovery run:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  tests/test_run_harness.py` passed.
+- 2026-06-29 13:09 PDT recovery run: `git diff --check` passed.
+- 2026-06-29 13:09 PDT recovery run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`,
+  `closed_reasons=[automation_status_a5_awaiting_next_axis]`,
+  `notify_ben=true`, `strategic_change_level=major`, and the A5 ask-Ben next
+  action.
 - 2026-06-29 12:54 PDT A5 requested loop:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'automation_guard or a5_predictive_control or a5_residual_accounting' -q`

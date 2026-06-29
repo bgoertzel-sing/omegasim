@@ -3247,6 +3247,75 @@ def test_automation_guard_current_a5_fresh_axis_requirement_closes_over_go_a7_3_
     assert state["review_recommended_next_action"] == review_action
 
 
+def test_automation_guard_current_a5_ask_ben_next_axis_closes_over_major_review(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    a5_action = (
+        "ask Ben for the next preregistered scientific axis; until then, keep "
+        "OmegaSim automation closed/no-op with A5 fail-closed at the seed "
+        "`5,6` smoke/analyzer boundary."
+    )
+    review_action = (
+        "Quarantine the uncommitted A7.3 residual-analyzer WIP and patch the "
+        "guard/status so the current A5 fail-closed fresh preregistration "
+        "required state is closed/no-op pending Ben's choice."
+    )
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: the current automation prompt "
+                "explicitly requests A5 anticipatory predictive-control "
+                "dynamics as the bounded next scientific stage.",
+                "Current concise A5 gate: explicit single-hive A5 reopening "
+                "and active preregistration summary are recorded in "
+                "`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.",
+                "Current active task: preserve the concise A5 preregistration "
+                "and existing minimal deterministic smoke scaffold.",
+                "",
+                "## Recommended Next Step",
+                "",
+                f"- Recommended next step: {a5_action}",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                f"recommended_next_action: {review_action}",
+                "verdict: PAUSE-RECOVER",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == [
+        "automation_status_a5_awaiting_next_axis"
+    ]
+    assert state["strategic_change_level"] == "major"
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == a5_action
+    assert state["review_recommended_next_action"] == review_action
+
+
 def test_automation_guard_opens_a7_3_when_ben_says_proceed_not_pause(
     tmp_path: Path,
 ) -> None:

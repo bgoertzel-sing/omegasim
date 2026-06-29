@@ -200,6 +200,21 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
     ):
         status_reasons.append("automation_status_a5_loop_closed")
     if (
+        not status_reasons
+        and "keep a5 fail-closed" in normalized_status
+        and "ask ben for the next preregistered scientific axis"
+        in normalized_status
+    ):
+        status_reasons.append("automation_status_a5_awaiting_next_axis")
+    if (
+        not status_reasons
+        and "keep omegasim automation closed/no-op" in normalized_status
+        and "a5 fail-closed" in normalized_status
+        and "ask ben for the next preregistered scientific axis"
+        in normalized_status
+    ):
+        status_reasons.append("automation_status_a5_awaiting_next_axis")
+    if (
         "recommended next step: design one preregistered resource-bounded residual diagnostic"
         in normalized_status
         and (
@@ -271,6 +286,15 @@ def _status_closes_active_a5(status: str) -> bool:
             in normalized_status
             or "not an active authorization for more a5-family automation"
             in normalized_status
+            or (
+                "keep a5 fail-closed" in normalized_status
+                and "ask ben for the next preregistered scientific axis"
+                in normalized_status
+            )
+            or (
+                "keep omegasim automation closed/no-op" in normalized_status
+                and "a5 fail-closed" in normalized_status
+            )
             or (
                 (
                     "require a fresh preregistered scientific axis"
