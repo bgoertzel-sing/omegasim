@@ -2475,6 +2475,79 @@ def test_automation_guard_opens_when_ben_accepts_a7_2_then_three_hive(
     )
 
 
+def test_automation_guard_closes_after_a7_2_and_three_hive_fail_closed(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: Ben's 2026-06-28 instruction opens "
+                "A7.2 delayed artifact-mediated endogenous prediction as the "
+                "active next OmegaSim gate.",
+                "After A7.2 closes, whether positive or negative, proceed "
+                "without another Ben decision to a separate three-hive ring.",
+                "The immediate A7.2 gate closed fail-closed at seed 1,2.",
+                "The post-A7.2 three-hive ring also closed fail-closed after "
+                "the residual/null analyzer.",
+                "",
+                "## Recommended Next Step",
+                "",
+                "- Recommended next step: pause further three-hive ring expansion "
+                "and prepare a fresh preregistered decision note only if Ben "
+                "wants another scientific direction, such as a one-hive "
+                "dimensionless delayed-dynamics sweep.",
+                "",
+                "## Blockers",
+                "",
+                "Ben should be notified that the A7.2 and three-hive ring "
+                "line is awaiting-preregistration after fail-closed results.",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                "recommended_next_action: Close the automation into "
+                "awaiting-preregistration, notify Ben that A7.2 and the "
+                "three-hive ring both failed closed, and offer a fresh "
+                "one-hive dimensionless delayed-dynamics preregistration as "
+                "the next scientific choice.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == [
+        "automation_status_a7_2_three_hive_failed_closed"
+    ]
+    assert state["strategic_change_level"] == "major"
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == (
+        "pause further three-hive ring expansion and prepare a fresh "
+        "preregistered decision note only if Ben wants another scientific "
+        "direction, such as a one-hive dimensionless delayed-dynamics sweep."
+    )
+
+
 def test_automation_guard_keeps_closed_for_a5_exit_ben_decision_status(
     tmp_path: Path,
 ) -> None:

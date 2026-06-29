@@ -5,13 +5,16 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-06-28 instruction opens A7.2 delayed
-artifact-mediated endogenous prediction as the active next OmegaSim gate. This
-supersedes the previous A5-family decision-awaiting posture. The A5-family
-results remain an evidence boundary and interpretation constraint: forecast
-skill improved, but residual/null, compression, and accounting gates did not
-support lobe-like, strange-attractor-like, semantic-dynamics, or causal
-collective-structure claims.
+Source-of-truth status: the A7.2 delayed artifact-mediated endogenous
+prediction gate and the downstream three-hive ring gate have both completed at
+their bounded fixed seed `1,2` smoke scale and both closed fail-closed. The
+automation state is now `closed_awaiting_preregistration`: repo-writing
+automation should not continue result-bearing simulator/analyzer work until Ben
+chooses a fresh preregistered direction. The A5-family results remain an
+evidence boundary and interpretation constraint: forecast skill improved, but
+residual/null, compression, and accounting gates did not support lobe-like,
+strange-attractor-like, semantic-dynamics, or causal collective-structure
+claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
 rechecked against the current repo state again on 2026-06-28 17:34 PDT: the
@@ -39,12 +42,12 @@ lobe-like, strange-attractor-like, semantic-dynamics, synchrony, or causal
 collective-structure claims, and it does not authorize A7.2 tuning without a
 new preregistration.
 
-After A7.2 closes, whether positive or negative, proceed without another Ben
-decision to a separate three-hive ring preregistration and bounded experiment
-family. That downstream phase should use cross-hive prediction costs, delayed
-artifact transfer, target/phase nulls, transfer-opportunity controls, and the
-three-hive ring variants described in the OmegaSim experiment run-down. Keep
-Ben informed about design decisions and results as this road advances.
+The earlier A7.2-then-three-hive launch posture has now been executed through
+the bounded gates it authorized. The latest external strategic review is
+`strategic_change_level: major` and `notify_ben: true`; its recommendation to
+close into awaiting-preregistration is accepted as scientifically sensible
+because A7.2 and the three-hive ring both failed closed and further expansion
+would become post-result rescue tuning without a new preregistration.
 Ben's 2026-06-28 Hyperseed follow-up is captured in
 `docs/hyperseed_one_hive_delayed_dynamics_note.md`: three hives are
 diagnostically useful but not ontologically required for complex dynamics; the
@@ -74,22 +77,43 @@ causal collective-structure claims.
 ## Recommended Next Step
 
 - Recommended next step: pause further three-hive ring expansion and prepare a
-  fresh preregistered decision note only if Ben wants another scientific
-  direction, such as a one-hive dimensionless delayed-dynamics sweep. Do not
-  rescue this fail-closed seed `1,2` gate with promotion claims, broad seed
-  sweeps, dashboards, integrations, parameter sweeps, post-result tuning, or
-  extra hives.
+  fresh preregistered decision note for Ben summarizing the A7.2 and
+  three-hive fail-closed results and offering exactly these choices: pause,
+  preregister a one-hive dimensionless delayed-dynamics sweep, or pivot first
+  to a minimal analytic delayed resource-bounded prediction map. Do not rescue
+  these fail-closed seed `1,2` gates with promotion claims, broad seed sweeps,
+  dashboards, integrations, parameter sweeps, post-result tuning, or extra
+  hives.
 
 ## Blockers
 
-None. The governance blocker was resolved by Ben's explicit 2026-06-28
-A7.2-then-three-hive instruction. The remaining scientific challenge is to
-freeze the three-hive ring design prospectively so any future positive signal
-cannot be confused with target/phase leakage, transfer-opportunity imbalance,
-queue coupling, backlog dwell, accounting leakage, or post-result rescue
-tuning.
+Awaiting Ben's next preregistered scientific direction. This is intentional
+governance closure, not an environment failure. Ben should be notified that the
+A7.2 and three-hive ring line failed closed and that automation is now closed
+awaiting preregistration.
 
 ## Latest Changes
+
+- 2026-06-29 bounded governance-closure run: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests, the superseded provisional roadmap,
+  current guard output, and the latest GPT-5.5-Pro strategy review before
+  choosing a next step. The review header was `strategic_change_level: major`
+  and `notify_ben: true`; accepted its recommendation to close automation into
+  awaiting-preregistration because A7.2 and the three-hive ring have both
+  completed their bounded fixed seed `1,2` gates and failed closed.
+- Updated `ohdyn.automation_guard` so completed A7.2 plus three-hive
+  fail-closed status is represented as `state=closed_awaiting_preregistration`,
+  `repo_write_allowed=false`, and `notify_ben=true` even though the stale A5
+  preregistration file still exists. Added a focused regression test for that
+  governance state.
+- Added `docs/results/ben_decision_after_a7_2_three_hive_failclosed_20260629.md`
+  as the Ben notification/decision draft. It records the evidence boundary and
+  offers exactly three choices: pause, preregister a one-hive dimensionless
+  delayed-dynamics sweep, or pivot first to an analytic delayed
+  resource-bounded prediction map. No simulator mechanics, configs, run
+  artifacts, dashboards, integrations, broad seeds, parameter sweeps, extra
+  hives, or promotion claims were added. Exactly one next step remains: notify
+  Ben and wait for a fresh preregistered direction.
 
 - 2026-06-28 18:01 PDT bounded source-of-truth recheck: re-read
   `README.md`, `AUTOMATION_STATUS.md`, config/test references, the superseded

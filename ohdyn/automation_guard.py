@@ -31,14 +31,24 @@ def read_automation_state(
     review_header = _parse_review_header(review)
     a5_preregistration_active = Path(a5_preregistration_path).is_file()
     closed_reasons = _closed_reasons(status=current_status, review=review)
-    if closed_reasons and _status_opens_active_a7_2_then_three_hive(current_status):
+    current_line_closed = _status_closes_after_a7_2_three_hive(current_status)
+    if (
+        closed_reasons
+        and _status_opens_active_a7_2_then_three_hive(current_status)
+        and not current_line_closed
+    ):
         closed_reasons = []
-    if a5_preregistration_active and not _status_closes_active_a5(current_status):
+    if (
+        a5_preregistration_active
+        and not _status_closes_active_a5(current_status)
+        and not current_line_closed
+    ):
         closed_reasons = []
     if (
         a5_preregistration_active
         and _status_reopens_active_a5(current_status)
         and not _status_closes_active_a5(current_status)
+        and not current_line_closed
     ):
         closed_reasons = []
     roadmap_reopens_a7 = _roadmap_reopens_after_a5(roadmap) and not (
@@ -167,6 +177,8 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         and "fail-closed" in normalized_status
     ):
         status_reasons.append("automation_status_a5_reopened_smoke_failed_closed")
+    if _status_closes_after_a7_2_three_hive(status):
+        status_reasons.append("automation_status_a7_2_three_hive_failed_closed")
 
     reasons = list(status_reasons)
     if not status_reasons:
@@ -178,6 +190,25 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         reasons.append("strategy_review_stop_new_work")
 
     return reasons
+
+
+def _status_closes_after_a7_2_three_hive(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "a7.2" in normalized_status
+        and "three-hive ring" in normalized_status
+        and "fail-closed" in normalized_status
+        and (
+            "pause further three-hive ring expansion" in normalized_status
+            or "awaiting-preregistration" in normalized_status
+            or "fresh preregistered decision note" in normalized_status
+        )
+        and (
+            "one-hive dimensionless delayed-dynamics sweep" in normalized_status
+            or "ben wants another scientific direction" in normalized_status
+            or "ben should be notified" in normalized_status
+        )
+    )
 
 
 def _status_closes_active_a5(status: str) -> bool:
