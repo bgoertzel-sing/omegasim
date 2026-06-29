@@ -5,30 +5,34 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the current concise A5 gate is
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-That document records the explicit single-hive A5 reopening and remains the
-active preregistration summary for this bounded smoke/pilot. This supersedes
-the prior A7.3 automation status for this run only; A7.3 remains historical
-context and is not part of the current A5 result-bearing line.
+Source-of-truth status: Ben's 2026-06-29 instruction says OmegaSim should
+proceed, not pause, and that A7.3 is good for now. This opens A7.3 one-hive
+dimensionless delayed dynamics as the active next OmegaSim gate. This
+supersedes the previous awaiting-preregistration posture and does not reopen
+A7.2, the three-hive ring, or any A5 rescue tuning.
 
-Current active task: no-op pending Ben's active-line choice. The current A5
-single-hive anticipatory predictive-control scaffold remains fail-closed at
-the seed `5,6` smoke/analyzer boundary. A concurrently started A7.3
-residual/recurrence analyzer WIP was quarantined outside the repo at
-`/tmp/omegasim_conflict_20260629_120642/` and must not be treated as committed
-evidence or an active result-bearing line.
+Current active task: continue only the preregistered A7.3 line from clean
+checked-in artifacts. The next allowed work is the long-horizon A7.3
+residual/recurrence analyzer gate in
+`docs/a7_3_long_horizon_residual_recurrence_preregistration.md`, using the
+existing fixed `256`-tick validation artifacts and eligible preflight contract.
+Do not treat the quarantined A7.3 analyzer WIP at
+`/tmp/omegasim_conflict_20260629_120642/` as committed evidence, and do not
+reuse it as an active result-bearing line.
 
-The smallest deterministic A5 scaffold already exists and remains the only
-authorized implementation surface for this stage:
-`configs/a5_predictive_linear_smoke.yaml`,
-`ohdyn.compare_predictive_control`, and
-`ohdyn.analyze_a5_residual_accounting`. It performs no real LLM calls,
-dashboards, Lean, Slack, browser automation, Atomspace integrations, live task
-boards, or three-hive mechanics.
+A5 remains fail-closed at the seed `5,6` smoke/analyzer boundary. Forecast
+skill alone remains insufficient for structured-dynamics claims, and no A5
+mechanics, seed broadening, or rescue diagnostics are authorized by this A7.3
+reopening.
 
 ## Latest Changes
 
+- 2026-06-29 12:22 PDT Ben-decision repair: resolved the PAUSE-RECOVER
+  governance conflict using Ben's latest instruction that OmegaSim should
+  proceed and that A7.3 is good for now. Restored A7.3 one-hive dimensionless
+  delayed dynamics as the active next OmegaSim gate, kept A5 fail-closed as
+  historical evidence, and kept the quarantined A7.3 analyzer WIP excluded
+  from the committed result-bearing line.
 - 2026-06-29 12:08 PDT recovery run: urgent GPT-5.5-Pro review returned
   `strategic_change_level: major`, `notify_ben: true`, and `verdict:
   PAUSE-RECOVER` because the active status changed from A7.3 to A5 during the
@@ -56,21 +60,29 @@ boards, or three-hive mechanics.
 
 ## Recommended Next Step
 
-- Recommended next step: remain in no-op/awaiting-preregistration state and
-  notify Ben that A5 is fail-closed, A7.3 is artifact/preflight-valid only, and
-  Ben should choose exactly one active line before any further mechanics,
-  analyzer, seed, horizon, or parameter work.
+- Recommended next step: implement the preregistered A7.3 long-horizon
+  residual/recurrence analyzer from clean checked-in code, consuming only
+  eligible A7.3 validation/preflight artifacts and emitting fail-closed
+  residual, recurrence, surrogate, and local-divergence rows.
 
 ## Blockers
 
-No environment blocker. The current blocker is governance: the active line
-changed during this run, and the urgent strategy review requested Ben
-notification. A5 forecast skill alone remains insufficient for structured
-dynamics claims, and uncommitted A7.3 analyzer WIP is quarantined rather than
-committed.
+No environment blocker. The prior governance blocker is resolved by Ben's
+latest A7.3 instruction. The main caution is cleanliness: A5 remains
+fail-closed, and the quarantined A7.3 analyzer WIP must stay excluded from the
+active result-bearing line.
 
 ## Verification
 
+- 2026-06-29 12:22 PDT Ben-decision repair:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `should_noop=false`, `repo_write_allowed=true`,
+  `closed_reasons=[]`, `notify_ben=true`, and the A7.3 long-horizon
+  residual/recurrence analyzer next action.
+- 2026-06-29 12:22 PDT Ben-decision repair:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` passed with `21 passed, 649 deselected`.
+- 2026-06-29 12:22 PDT Ben-decision repair: `git diff --check` passed.
 - 2026-06-29 12:08 PDT recovery run:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   automation_guard -q` passed with `21 passed, 649 deselected`.
