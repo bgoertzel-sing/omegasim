@@ -5,26 +5,41 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-06-29 instruction says OmegaSim should
-proceed, not pause, and that A7.3 is good for now. This opens A7.3 one-hive
-dimensionless delayed dynamics as the active next OmegaSim gate. This
-supersedes the previous awaiting-preregistration posture and does not reopen
-A7.2, the three-hive ring, or any A5 rescue tuning.
+Source-of-truth status: the current automation prompt explicitly requests A5
+anticipatory predictive-control dynamics as the bounded next scientific stage.
+It overrides the prior closed/no-op A4 boundary and supersedes the newer A7.3
+status for this automation run only.
 
-Current active task: A7.3 long-horizon residual/recurrence validation is now
-closed fail-closed for seeds `1,2`. The checked-in closure note is
-`docs/results/a7_3_long_horizon_residual_recurrence_validation_seed1_2.md`.
-Do not treat the quarantined A7.3 analyzer WIP at
-`/tmp/omegasim_conflict_20260629_120642/` as committed evidence, and do not
-reuse it as an active result-bearing line.
+Current concise A5 gate: explicit single-hive A5 reopening and active
+preregistration summary are recorded in
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`. The
+document already defines the deterministic single-hive setup, reactive/linear/
+nonlinear/high-budget/oracle/timing-broken predictor conditions, resource-
+bounded prediction hypothesis, matched accounting locks, primary endpoints,
+guardrails, and fail-closed decision rules requested for A5.
 
-A5 remains fail-closed at the seed `5,6` smoke/analyzer boundary. Forecast
-skill alone remains insufficient for structured-dynamics claims, and no A5
-mechanics, seed broadening, or rescue diagnostics are authorized by this A7.3
-reopening.
+Current active task: preserve the concise A5 preregistration and existing
+minimal deterministic smoke scaffold. The prior seed `5,6` A5 smoke/analyzer
+result remains an interpretation boundary: forecast skill improved, but no
+intermediate predictor passed all residual/null, oracle-nontriviality,
+compression, and guardrail promotion criteria. A7.3 remains historical context,
+not the active line for this A5 automation request.
 
 ## Latest Changes
 
+- 2026-06-29 12:54 PDT A5 requested loop: restored the automation status from
+  A7.3 back to the explicitly requested bounded A5 single-hive predictive-
+  control stage. Confirmed the concise A5 preregistration already contains the
+  requested resource-bounded prediction hypothesis, matched accounting locks,
+  predictor/null grid, primary endpoints, guardrails, and fail-closed
+  strange-attractor/lobe-claim boundary. No simulator mechanics were broadened.
+- 2026-06-29 12:54 PDT A5 requested loop: reran the bounded seed `5,6`
+  smoke/analyzer under `/tmp/omegasim_a5_20260629_status_Ao5ID8`. The analyzer
+  emitted 1280 residual metric rows and 720 effect rows. `linear`,
+  `nonlinear`, and `nonlinear_high_budget` improved forecast skill versus
+  reactive and timing-broken nulls, but no intermediate predictor satisfied
+  all residual/null, oracle-nontriviality, compression, and guardrail
+  promotion criteria.
 - 2026-06-29 12:51 PDT A7.3 closure-note run: added
   `docs/results/a7_3_long_horizon_residual_recurrence_validation_seed1_2.md`
   from the checked-in preregistration/analyzer contract and the recorded
@@ -83,22 +98,44 @@ reopening.
 
 ## Recommended Next Step
 
-- Recommended next step: notify Ben that A7.3 validation closed
-  fail-closed and ask for the next preregistered direction before any further
-  A7.3 seed broadening, parameter tuning, mechanism changes, or downstream
-  multi-hive coupling.
+- Recommended next step: keep A5 fail-closed at the seed `5,6`
+  smoke/analyzer boundary and ask Ben for the next preregistered scientific
+  axis.
 
 ## Blockers
 
-No environment blocker. The prior governance blocker is resolved by Ben's
-latest A7.3 instruction. The main caution is cleanliness: A5 remains
-fail-closed, A7.3 validation failed promotion gates, the latest external
-review still carries `strategic_change_level: major` and `notify_ben: true`,
-and the quarantined A7.3 analyzer WIP must stay excluded from the active
-result-bearing line.
+No environment blocker. The main scientific caution is that A5's existing
+seed `5,6` smoke improved forecast skill but stayed fail-closed for residual
+structure after preregistered accounting controls and surrogate nulls. A7.3
+validation and the quarantined A7.3 analyzer WIP remain out of scope for this
+A5 automation run.
 
 ## Verification
 
+- 2026-06-29 12:54 PDT A5 requested loop:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `25 passed, 647 deselected`.
+- 2026-06-29 12:54 PDT A5 requested loop:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  ohdyn/compare_predictive_control.py ohdyn/analyze_a5_residual_accounting.py
+  ohdyn/config.py ohdyn/sim.py tests/test_run_harness.py` passed.
+- 2026-06-29 12:54 PDT A5 requested loop:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `a5_preregistration_active=true`, `state=open`,
+  `repo_write_allowed=true`, `closed_reasons=[]`, `notify_ben=true`, and the
+  post-smoke A5 fail-closed next action. The stale external review still
+  reports `strategic_change_level=major`.
+- 2026-06-29 12:54 PDT A5 requested loop: temporary smoke/analyzer command
+  passed:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_20260629_status_Ao5ID8/compare` and
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir /tmp/omegasim_a5_20260629_status_Ao5ID8/compare --out
+  /tmp/omegasim_a5_20260629_status_Ao5ID8/residual`. The analyzer emitted
+  1280 residual metric rows and 720 effect rows; promotion remained
+  fail-closed for all intermediate predictors.
+- 2026-06-29 12:54 PDT A5 requested loop: `git diff --check` passed.
 - 2026-06-29 12:51 PDT A7.3 closure-note run: documentation-only change; no
   simulator or analyzer rerun was performed.
 - 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run:
