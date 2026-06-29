@@ -11,13 +11,12 @@ dimensionless delayed dynamics as the active next OmegaSim gate. This
 supersedes the previous awaiting-preregistration posture and does not reopen
 A7.2, the three-hive ring, or any A5 rescue tuning.
 
-Current active task: continue only the preregistered A7.3 line from clean
-checked-in artifacts. The long-horizon A7.3 residual/recurrence analyzer gate
-from `docs/a7_3_long_horizon_residual_recurrence_preregistration.md` is now
-implemented as a read-only analyzer over fixed `256`-tick validation artifacts
-and an eligible preflight manifest. Do not treat the quarantined A7.3 analyzer
-WIP at `/tmp/omegasim_conflict_20260629_120642/` as committed evidence, and do
-not reuse it as an active result-bearing line.
+Current active task: A7.3 long-horizon residual/recurrence validation is now
+closed fail-closed for seeds `1,2`. The checked-in closure note is
+`docs/results/a7_3_long_horizon_residual_recurrence_validation_seed1_2.md`.
+Do not treat the quarantined A7.3 analyzer WIP at
+`/tmp/omegasim_conflict_20260629_120642/` as committed evidence, and do not
+reuse it as an active result-bearing line.
 
 A5 remains fail-closed at the seed `5,6` smoke/analyzer boundary. Forecast
 skill alone remains insufficient for structured-dynamics claims, and no A5
@@ -26,6 +25,15 @@ reopening.
 
 ## Latest Changes
 
+- 2026-06-29 12:51 PDT A7.3 closure-note run: added
+  `docs/results/a7_3_long_horizon_residual_recurrence_validation_seed1_2.md`
+  from the checked-in preregistration/analyzer contract and the recorded
+  fail-closed verification output. No simulations or analyzers were rerun for
+  the note. It records `status=fail_closed_no_a7_3_promotion`, 18 validation
+  run directories, 144 residual/recurrence rows, 128 null contrast rows, and
+  12 gate rows, with preflight/coverage/minimum-row gates passing but all
+  eight preregistered null gates and the low-gain local-divergence gate failing
+  closed.
 - 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run: added the clean
   read-only `ohdyn.analyze_a7_3_residual_recurrence` gate, with regression
   tests for eligible fixed validation artifacts and missing-preflight
@@ -75,20 +83,24 @@ reopening.
 
 ## Recommended Next Step
 
-- Recommended next step: write a concise A7.3 long-horizon validation closure
-  note in `docs/results/` from the checked-in analyzer contract and the
-  fail-closed 2026-06-29 verification output, without rerunning simulations or
-  adding new mechanics.
+- Recommended next step: notify Ben that A7.3 validation closed
+  fail-closed and ask for the next preregistered direction before any further
+  A7.3 seed broadening, parameter tuning, mechanism changes, or downstream
+  multi-hive coupling.
 
 ## Blockers
 
 No environment blocker. The prior governance blocker is resolved by Ben's
 latest A7.3 instruction. The main caution is cleanliness: A5 remains
-fail-closed, A7.3 validation just failed promotion gates, and the quarantined
-A7.3 analyzer WIP must stay excluded from the active result-bearing line.
+fail-closed, A7.3 validation failed promotion gates, the latest external
+review still carries `strategic_change_level: major` and `notify_ben: true`,
+and the quarantined A7.3 analyzer WIP must stay excluded from the active
+result-bearing line.
 
 ## Verification
 
+- 2026-06-29 12:51 PDT A7.3 closure-note run: documentation-only change; no
+  simulator or analyzer rerun was performed.
 - 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
   passed with `19 passed, 653 deselected`.
