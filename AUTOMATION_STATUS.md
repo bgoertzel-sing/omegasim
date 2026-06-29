@@ -19,7 +19,7 @@ The smallest deterministic A5 scaffold also already exists and remains the only
 authorized implementation surface for this stage:
 `configs/a5_predictive_linear_smoke.yaml`,
 `ohdyn.compare_predictive_control`, and
-`ohdyn.analyze_a5_residual_accounting`. A 2026-06-29 03:45 PDT fixed smoke at seeds `5,6`
+`ohdyn.analyze_a5_residual_accounting`. A 2026-06-29 04:46 PDT fixed smoke at seeds `5,6`
 again improved forecast skill for intermediate predictors but failed the
 preregistered residual-accounting promotion audit. This keeps A5 at an evidence
 boundary: forecast skill alone is not support for lobe-like,
@@ -119,14 +119,37 @@ rules.
   passed with `21 passed, 632 deselected`.
 - Temporary smoke command passed:
   `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
-  --out /tmp/omegasim_a5_current_hED1Eb/compare`.
+  --out /tmp/omegasim_a5_current_5bma3t/compare`.
 - Temporary read-only residual accounting passed as a command and failed closed
   scientifically:
   `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
-  --compare-dir /tmp/omegasim_a5_current_hED1Eb/compare
-  --out /tmp/omegasim_a5_current_hED1Eb/residual`.
+  --compare-dir /tmp/omegasim_a5_current_5bma3t/compare
+  --out /tmp/omegasim_a5_current_5bma3t/residual`.
 
 ## Latest Changes
+
+- 2026-06-29 04:46 PDT bounded A5 verification run under explicit A5
+  reopening: re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`,
+  the concise A5 single-hive preregistration, the structured strange-attractor
+  research note, the A5 comparison/analyzer scaffold, focused tests, and recent
+  git history. Confirmed again that the requested preregistration and smallest
+  deterministic scaffold already exist and still cover Ben's resource-bounded
+  prediction hypothesis, matched task-arrival, service-capacity, action-
+  opportunity, work-budget, and prediction-spend controls, the reactive/
+  linear/nonlinear/high-budget/oracle/timing-broken null axis, primary
+  residual/predictability endpoints, and fail-closed strange-attractor-like
+  interpretation rules.
+- Re-ran the bounded guard, focused A5/automation tests, and fixed seed `5,6`
+  A5 comparison plus read-only residual-accounting analysis. The guard still
+  reports `state=closed_awaiting_preregistration`, `repo_write_allowed=false`,
+  and `notify_ben=true` because later A7.2 and three-hive gates failed closed,
+  while `a5_preregistration_active=true` remains true for this bounded
+  validation. Forecast skill again improved for intermediate predictors, but no
+  intermediate-budget condition satisfied all preregistered skill,
+  residual/null, compression, oracle-nontriviality, and guardrail criteria. No
+  duplicate preregistration, simulator mechanics, configs, committed run
+  artifacts, dashboards, integrations, broad seed sweeps, parameter sweeps,
+  extra hives, or promotion claims were added.
 
 - 2026-06-29 03:45 PDT bounded A5 verification run under explicit A5
   reopening: re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`,
