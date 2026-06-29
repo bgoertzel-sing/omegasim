@@ -5,58 +5,85 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-06-29 instruction says OmegaSim should
-proceed with A7.3 for now. A7.3 one-hive dimensionless delayed dynamics is the
-active next OmegaSim gate. This supersedes the previous
-awaiting-preregistration posture and any older A5-focused prompt, and does not
-reopen A7.2, the three-hive ring, or A5 as result-bearing lines.
+Source-of-truth status: the current concise A5 gate is
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+That document records the explicit single-hive A5 reopening and remains the
+active preregistration summary for this bounded smoke/pilot. This supersedes
+the prior A7.3 automation status for this run only; A7.3 remains historical
+context and is not part of the current A5 result-bearing line.
 
-Current active task: implement the read-only A7.3 long-horizon
-residual/recurrence analyzer that consumes the fixed 256-tick seed `1,2`
-nine-condition validation artifacts plus an eligible preflight manifest,
-without rerunning simulations, enabling promotion by default, or broadening
-seeds/horizon/parameters. The A7.3 scaffold already has a preregistration,
-minimal contract/config/smoke/preflight path, smoke-scale residual/null analyzer
-wiring, a frozen 256-tick residual/recurrence validation preregistration, a
-fixed validation artifact/preflight generator, and latest GPT-5.5-Pro review
-verdict `GO` with `notify_ben: false`.
+Current active task: hold OmegaSim at the A5 single-hive anticipatory
+predictive-control boundary: deterministic numeric-only scaffold, matched
+task-arrival totals, service capacity, action opportunity, work budget,
+prediction spend, reactive/linear/nonlinear/high-budget/oracle conditions,
+budget-matched timing-broken nulls, read-only residual accounting, and
+fail-closed interpretation of strange-attractor-like or lobe-like language.
 
-Historical A5 context: the concise A5 preregistration matches Ben's requested
-design: deterministic single hive, matched task-arrival totals, service
-capacity, action opportunity, work budget, prediction spend,
-reactive/linear/nonlinear/high-budget/oracle and timing-broken null conditions,
-primary residual/predictability endpoints, and fail-closed
-strange-attractor-like interpretation rules.
-
-The smallest deterministic A5 scaffold also already exists and remains the only
+The smallest deterministic A5 scaffold already exists and remains the only
 authorized implementation surface for this stage:
 `configs/a5_predictive_linear_smoke.yaml`,
 `ohdyn.compare_predictive_control`, and
-`ohdyn.analyze_a5_residual_accounting`. The 2026-06-29 10:55 PDT bounded rerun
-under `/tmp/omegasim_a5_20260629_hff9Jk` again closed fail-closed: `linear`,
-`nonlinear`, and `nonlinear_high_budget` all improved skill versus reactive
-and timing-broken nulls, but none satisfied residual/null, compression,
-oracle-nontriviality, and guardrail promotion criteria. This keeps A5 at an
-evidence boundary: forecast skill alone is not support for lobe-like,
-strange-attractor-like, semantic-dynamics, or causal collective-structure
-claims.
+`ohdyn.analyze_a5_residual_accounting`. It performs no real LLM calls,
+dashboards, Lean, Slack, browser automation, Atomspace integrations, live task
+boards, or three-hive mechanics.
+
+## Latest Changes
+
+- 2026-06-29 11:52 PDT A5 requested loop: tightened the concise A5
+  preregistration so it explicitly records itself as the active bounded
+  single-hive predictive-control gate for this automation request and locks the
+  checked-in scaffold as sufficient for the authorized smoke/pilot.
+- 2026-06-29 11:52 PDT A5 requested loop: restored this status file from the
+  prior A7.3 focus to the explicit A5 bounded preregistration/scaffold focus.
+- 2026-06-29 11:55 PDT A5 requested loop: patched
+  `ohdyn.automation_guard` and its regression tests so an explicit current A5
+  status action overrides an older A7.3 `GO` review action while preserving the
+  review action in guard output.
+- 2026-06-29 11:55 PDT A5 requested loop: reran the bounded seed `5,6`
+  smoke/analyzer under `/tmp/omegasim_a5_20260629_current_qxRMah`; promotion
+  remained fail-closed because no intermediate-budget predictor satisfied the
+  preregistered residual/null, oracle-nontriviality, compression, and guardrail
+  criteria.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the read-only A7.3 long-horizon
-  residual/recurrence analyzer over the fixed 256-tick validation artifacts and
-  eligible preflight manifest, without rerunning simulations, enabling
-  promotion by default, or broadening seeds/horizon/parameters.
+- Recommended next step: keep A5 bounded at the fail-closed seed `5,6`
+  smoke/analyzer result and require a fresh preregistered scientific axis
+  before any further mechanics or sweep.
 
 ## Blockers
 
-No environment blocker. The previous A5, A7.2, and three-hive gates remain
-fail-closed historical results, but Ben's A7.3 direction and the latest
-GPT-5.5-Pro `GO` review leave OmegaSim open for the bounded A7.3
-long-horizon read-only residual/recurrence analyzer path.
+No environment blocker. The only scientific blocker is evidential: A5 forecast
+skill alone is not sufficient for structured dynamics claims; promotion still
+requires the preregistered residual, null, oracle-nontriviality, compression,
+and guardrail criteria.
 
 ## Verification
 
+- 2026-06-29 11:55 PDT A5 requested loop:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `25 passed, 647 deselected`.
+- 2026-06-29 11:55 PDT A5 requested loop:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  ohdyn/compare_predictive_control.py ohdyn/analyze_a5_residual_accounting.py
+  ohdyn/config.py ohdyn/sim.py tests/test_run_harness.py` passed.
+- 2026-06-29 11:55 PDT A5 requested loop:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `a5_preregistration_active=true`, `state=open`,
+  `repo_write_allowed=true`, `closed_reasons=[]`, `notify_ben=false`, and the
+  post-smoke A5 fail-closed boundary next action.
+- 2026-06-29 11:55 PDT A5 requested loop: temporary smoke/analyzer command
+  passed:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_20260629_current_qxRMah/compare` and
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir /tmp/omegasim_a5_20260629_current_qxRMah/compare --out
+  /tmp/omegasim_a5_20260629_current_qxRMah/residual`. The analyzer emitted
+  1280 metric rows and 720 effect rows; `linear`, `nonlinear`, and
+  `nonlinear_high_budget` improved forecast skill versus reactive and
+  budget-matched timing-broken nulls, but all failed promotion.
+- 2026-06-29 11:55 PDT A5 requested loop: `git diff --check` passed.
 - 2026-06-29 11:33 PDT A7.3 validation artifact/preflight run:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
   passed with `17 passed, 653 deselected`.

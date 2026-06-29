@@ -2673,6 +2673,7 @@ def test_automation_guard_keeps_a5_status_action_over_a7_3_review(
     review_path.write_text(
         "\n".join(
             [
+                "verdict: GO",
                 "strategic_change_level: minor",
                 "notify_ben: false",
                 "recommended_next_action: Implement the isolated A7.3 "
@@ -3028,7 +3029,7 @@ def test_automation_guard_closes_after_a7_2_and_three_hive_fail_closed(
     )
 
 
-def test_automation_guard_go_a7_3_review_overrides_stale_a5_status_action(
+def test_automation_guard_current_a5_status_overrides_go_a7_3_review(
     tmp_path: Path,
 ) -> None:
     status_path = tmp_path / "AUTOMATION_STATUS.md"
@@ -3045,6 +3046,7 @@ def test_automation_guard_go_a7_3_review_overrides_stale_a5_status_action(
         "harness that emits lifted-state and source-ledger artifacts for the full "
         "mechanism and required nulls before any sweep."
     )
+    a5_action = "run one more bounded A5 seed `5,6` smoke/analyzer."
     status_path.write_text(
         "\n".join(
             [
@@ -3064,8 +3066,7 @@ def test_automation_guard_go_a7_3_review_overrides_stale_a5_status_action(
                 "",
                 "## Recommended Next Step",
                 "",
-                "- Recommended next step: run one more bounded A5 seed `5,6` "
-                "smoke/analyzer.",
+                f"- Recommended next step: {a5_action}",
             ]
         )
     )
@@ -3086,11 +3087,11 @@ def test_automation_guard_go_a7_3_review_overrides_stale_a5_status_action(
     assert state["should_noop"] is False
     assert state["repo_write_allowed"] is True
     assert state["closed_reasons"] == []
-    assert state["recommended_next_action"] == review_action
+    assert state["recommended_next_action"] == a5_action
     assert state["review_recommended_next_action"] == review_action
 
 
-def test_automation_guard_go_a7_3_review_overrides_a5_only_status_action(
+def test_automation_guard_current_a5_request_overrides_go_a7_3_review(
     tmp_path: Path,
 ) -> None:
     status_path = tmp_path / "AUTOMATION_STATUS.md"
@@ -3106,6 +3107,10 @@ def test_automation_guard_go_a7_3_review_overrides_a5_only_status_action(
         "Implement the isolated A7.3 contract/config plus a deterministic smoke "
         "harness that emits lifted-state and source-ledger artifacts for the full "
         "mechanism and required nulls before any sweep."
+    )
+    a5_action = (
+        "keep A5 fail-closed and require a new preregistered scientific axis "
+        "before any further OmegaSim mechanics or sweeps."
     )
     status_path.write_text(
         "\n".join(
@@ -3125,9 +3130,7 @@ def test_automation_guard_go_a7_3_review_overrides_a5_only_status_action(
                 "",
                 "## Recommended Next Step",
                 "",
-                "- Recommended next step: keep A5 fail-closed and require a new "
-                "preregistered scientific axis before any further OmegaSim "
-                "mechanics or sweeps.",
+                f"- Recommended next step: {a5_action}",
             ]
         )
     )
@@ -3148,7 +3151,7 @@ def test_automation_guard_go_a7_3_review_overrides_a5_only_status_action(
     assert state["should_noop"] is False
     assert state["repo_write_allowed"] is True
     assert state["closed_reasons"] == []
-    assert state["recommended_next_action"] == review_action
+    assert state["recommended_next_action"] == a5_action
     assert state["review_recommended_next_action"] == review_action
 
 

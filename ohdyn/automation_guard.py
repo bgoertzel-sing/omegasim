@@ -70,7 +70,7 @@ def read_automation_state(
     state = "closed_awaiting_preregistration" if closed_reasons else "open"
 
     status_next_action = _status_next_action(current_status)
-    if review_opens_a7_3 and not status_opens_a7_3:
+    if review_opens_a7_3 and not status_opens_a7_3 and not status_reopens_a5:
         status_next_action = ""
     roadmap_next_action = _roadmap_next_action(roadmap) if roadmap_reopens_a7 else ""
     if roadmap_reopens_a7 and _is_noop_next_action(status_next_action):

@@ -132,3 +132,9 @@ python -m ohdyn.analyze_a5_residual_accounting --compare-dir runs/a5_predictive_
 
 No broader seed sweep, new simulator mechanics, dashboard, integration, or
 multi-hive coupling is authorized by this preregistration.
+
+As of the 2026-06-29 A5 automation request, this document is the active
+single-hive preregistration for the bounded predictive-control stage. The
+checked-in scaffold above is sufficient for the authorized smoke/pilot: any
+additional predictor family, longer horizon, wider seed grid, or delayed
+multi-hive coupling requires a separate preregistered scientific axis.
