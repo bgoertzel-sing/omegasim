@@ -135,7 +135,7 @@ def _simulate_condition(
 ]:
     params = A7_3_SMOKE_PARAMETERS
     delay = 0 if condition == "no_delay_same_tick_blocked" else int(params["feedback_delay_ticks"])
-    history: deque[dict[str, float]] = deque(maxlen=max(delay + 1, 2))
+    history: deque[dict[str, float]] = deque(maxlen=max(delay, 1))
     state = _initial_state(seed)
     metrics: list[dict[str, Any]] = []
     events: list[dict[str, Any]] = []
@@ -191,11 +191,13 @@ def _advance(
     service_capacity = 1.0 + 0.08 * math.cos((tick + seed) / 7.0)
     action_opportunity = 5.0
     work_budget = 1.0 + 0.08 * math.sin((tick + 2 * seed) / 5.0)
-    peer_predict = _condition_lag(condition, lag["predict"], tick, seed)
-    peer_work = _condition_lag(condition, lag["work"], tick + 1, seed)
-    peer_review = _condition_lag(condition, lag["review"], tick + 2, seed)
-    peer_synthesize = _condition_lag(condition, lag["synthesize"], tick + 3, seed)
-    peer_rest = lag["rest"]
+    peer_activity = {
+        "predict": _condition_lag(condition, lag["predict"], tick, seed),
+        "work": _condition_lag(condition, lag["work"], tick + 1, seed),
+        "review": _condition_lag(condition, lag["review"], tick + 2, seed),
+        "synthesize": _condition_lag(condition, lag["synthesize"], tick + 3, seed),
+        "rest": lag["rest"],
+    }
     gate = _linear_gate if condition == "amplitude_matched_linear" else _sigmoid
     coupling = controls["rho"]
     artifact_factor = 0.0 if condition == "artifact_off" else 1.0
@@ -206,7 +208,7 @@ def _advance(
             * (
                 state["prediction_error"]
                 + state["prediction_uncertainty"]
-                + peer_predict
+                + peer_activity["predict"]
                 - thresholds["predict"]
                 - state["fatigue"]
             )
@@ -214,24 +216,24 @@ def _advance(
         "work": gate(
             state["work_backlog"] / 8.0
             + artifact_factor * state["artifact_readiness"]
-            + 0.3 * peer_work
+            + 0.3 * peer_activity["work"]
             - thresholds["work"]
             - state["fatigue"]
         ),
         "review": gate(
             artifact_factor * state["contradiction_risk"]
-            + 0.25 * peer_review
+            + 0.25 * peer_activity["review"]
             - thresholds["review"]
             - state["fatigue"]
         ),
         "synthesize": gate(
             artifact_factor * (state["artifact_readiness"] + state["artifact_coherence"])
-            + 0.20 * peer_synthesize
+            + 0.20 * peer_activity["synthesize"]
             - state["contradiction_risk"]
             - thresholds["synthesize"]
             - state["fatigue"]
         ),
-        "rest": gate(state["fatigue"] + peer_rest - thresholds["rest"]),
+        "rest": gate(state["fatigue"] + peer_activity["rest"] - thresholds["rest"]),
     }
     selected = max(A7_3_ACTIONS, key=lambda action: (utilities[action], action))
     role_total = sum(utilities.values()) or 1.0
@@ -326,7 +328,7 @@ def _advance(
     for action in A7_3_ACTIONS:
         row[f"agent_role_activity_{action}"] = round(role_activity[action], 6)
         row[f"delayed_agent_role_activity_{action}"] = round(lag[action], 6)
-        row[f"peer_activity_lag_{action}"] = round(lag[action], 6)
+        row[f"peer_activity_lag_{action}"] = round(peer_activity[action], 6)
         row[f"adaptive_threshold_{action}"] = round(state[f"adaptive_threshold_{action}"], 6)
     row["source_ledger_artifact_memory"] = round(
         sum(abs(state[field] - before_artifact[field]) for field in before_artifact),

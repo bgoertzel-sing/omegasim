@@ -1874,6 +1874,35 @@ def test_a7_3_preflight_analyzer_fails_closed_on_source_ledger_leakage(
     assert full_row["delay_integrity_status"] == "fail_same_tick_leakage"
 
 
+def test_a7_3_preflight_analyzer_reconstructs_delayed_lag_sources(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_3_smoke"
+    out_dir = tmp_path / "a7_3_preflight"
+    run_a7_3_dimensionless_smoke(out_dir=compare_dir)
+    metrics_path = compare_dir / "full_delayed_logistic_seed1" / "metrics.csv"
+    rows = list(csv.DictReader(metrics_path.open()))
+    rows[4]["delayed_agent_role_activity_predict"] = rows[4][
+        "agent_role_activity_predict"
+    ]
+    with metrics_path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+
+    result = run_a7_3_preflight_analysis(compare_dir=compare_dir, out_dir=out_dir)
+
+    assert result["status"] == A7_3_PREFLIGHT_STATUS_SOURCE_LEDGER
+    source_rows = list(csv.DictReader((out_dir / "a7_3_preflight_source_ledger.csv").open()))
+    full_row = next(
+        row
+        for row in source_rows
+        if row["condition"] == "full_delayed_logistic" and row["seed"] == "1"
+    )
+    assert full_row["status"] == "fail_closed"
+    assert full_row["peer_lag_status"] == "fail_delayed_role_reconstruction"
+
+
 def test_a7_2_delayed_prediction_analyzer_fails_closed_on_missing_schema(
     tmp_path: Path,
 ) -> None:

@@ -11,11 +11,11 @@ active next OmegaSim gate. This supersedes the previous
 awaiting-preregistration posture and any older A5-focused prompt, and does not
 reopen A7.2, the three-hive ring, or A5 as result-bearing lines.
 
-Current active task: implement the isolated A7.3 contract/config plus a
-deterministic smoke harness that emits lifted-state and source-ledger artifacts
-for the full mechanism and required nulls before any sweep. The A7.3 scaffold
-already has a preregistration, minimal contract/config/smoke/preflight path,
-and latest GPT-5.5-Pro review verdict `GO` with `notify_ben: false`.
+Current active task: tighten the isolated A7.3 deterministic smoke/preflight
+path so lifted delayed role activity and phase-shuffled peer lag inputs are
+auditable before any residual analysis or sweep. The A7.3 scaffold already has
+a preregistration, minimal contract/config/smoke/preflight path, and latest
+GPT-5.5-Pro review verdict `GO` with `notify_ben: false`.
 
 Historical A5 context: the concise A5 single-hive anticipatory predictive-control
 preregistration already exists and is committed at
@@ -108,9 +108,9 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: continue the A7.3 implementation path by running or
-  tightening the isolated deterministic smoke/preflight harness for the full
-  mechanism and required nulls before any sweep.
+- Recommended next step: add the first read-only A7.3 residual-analysis
+  skeleton over existing smoke artifacts, gated by the preflight manifest and
+  still fail-closed/no-promotion at smoke scale.
 
 ## Blockers
 
@@ -181,8 +181,47 @@ smoke/preflight implementation path.
   `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
   `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
   `notify_ben=false`, and `strategic_change_level=minor`.
+- 2026-06-29 10:01 PDT A7.3 lag-source tightening run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
+  passed with `9 passed, 653 deselected`.
+- 2026-06-29 10:01 PDT A7.3 lag-source tightening run:
+  `.venv-conda/bin/python -m py_compile
+  ohdyn/compare_a7_3_dimensionless_delayed.py
+  ohdyn/analyze_a7_3_preflight.py` passed.
+- 2026-06-29 10:01 PDT temporary A7.3 smoke plus preflight command passed:
+  `.venv-conda/bin/python -m ohdyn.compare_a7_3_dimensionless_delayed
+  --seeds 1 2 --out /tmp/omegasim_a7_3_lag_preflight_NamG5W/smoke` and
+  `.venv-conda/bin/python -m ohdyn.analyze_a7_3_preflight --compare-dir
+  /tmp/omegasim_a7_3_lag_preflight_NamG5W/smoke --out
+  /tmp/omegasim_a7_3_lag_preflight_NamG5W/preflight`. The analyzer inspected
+  18 run directories and reported
+  `status=eligible_for_read_only_residual_analysis`.
+- 2026-06-29 10:01 PDT A7.3 lag-source tightening run: `git diff --check`
+  passed.
+- 2026-06-29 10:01 PDT A7.3 lag-source tightening run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
+  `notify_ben=false`, and `strategic_change_level=minor`.
 
 ## Latest Changes
+
+- 2026-06-29 10:01 PDT bounded A7.3 lag-source tightening run: read
+  `README.md`, `AUTOMATION_STATUS.md`,
+  `docs/omegasim_provisional_experiment_roadmap.md`, the active A7.3
+  preregistration, existing A7.3 contract/smoke/preflight code and tests, and
+  the external strategy review. The review was `strategic_change_level: minor`,
+  `notify_ben: false`; its recommendation to guard against leakage/accounting
+  explanations was accepted as scientifically sensible. Tightened
+  `ohdyn.analyze_a7_3_preflight` so source-ledger preflight reconstructs
+  delayed role activity from prior metrics rows, verifies no-delay lag fields
+  remain zero, requires non-phase-shuffled peer lag inputs to match delayed
+  role activity, and requires the phase-shuffled condition to expose shuffled
+  peer lag inputs in the logged artifacts. Fixed the A7.3 smoke delay buffer
+  so a three-tick feedback delay logs exactly tick `t-3`, and changed the
+  smoke helper to log the effective phase-shuffled peer activity used by the
+  utilities. Added a focused fail-closed test for corrupted delayed lag
+  reconstruction. No A5, A7.2, three-hive, dashboard, integration, broad-seed,
+  sweep, result promotion, or scientific-claim branch was opened.
 
 - 2026-06-29 09:50 PDT bounded A5 requested loop: read the automation memory,
   `README.md`, `AUTOMATION_STATUS.md`, the concise A5 single-hive

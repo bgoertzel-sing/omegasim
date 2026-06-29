@@ -10,6 +10,7 @@ from typing import Any
 import yaml
 
 from ohdyn.a7_3_dimensionless_contract import (
+    A7_3_ACTIONS,
     A7_3_CONDITIONS,
     A7_3_LIFTED_STATE_FIELDS,
     A7_3_PRODUCTIVITY_GUARDRAILS,
@@ -282,7 +283,7 @@ def _source_ledger_row(run: dict[str, Any]) -> dict[str, str | int]:
     source_rows = run["source_ledger"]
     condition = str(run["condition"])
     delay_status = _delay_integrity_status(condition, source_rows, events)
-    peer_status = _range_status(metrics, ("peer_activity_lag_predict", "peer_activity_lag_work"))
+    peer_status = _peer_lag_status(condition, metrics, source_rows)
     same_tick_status = _same_tick_block_status(condition, events)
     shuffle_status = _shuffle_status(condition, source_rows)
     clip_status = _clip_residual_status(metrics, source_rows)
@@ -448,6 +449,68 @@ def _range_status(rows: list[dict[str, str]], fields: tuple[str, ...]) -> str:
             value = _float_cell(row.get(field))
             if value < 0.0 or value > 1.0:
                 return "fail"
+    return "pass"
+
+
+def _peer_lag_status(
+    condition: str,
+    metrics: list[dict[str, str]],
+    source_rows: list[dict[str, str]],
+) -> str:
+    if not metrics or not source_rows:
+        return "missing_rows"
+    if any(row.get("source_ledger_peer_activity_lag") != "pass" for row in source_rows):
+        return "fail_peer_lag_ledger"
+    fields = tuple(
+        field
+        for action in A7_3_ACTIONS
+        for field in (
+            f"delayed_agent_role_activity_{action}",
+            f"peer_activity_lag_{action}",
+        )
+    )
+    range_status = _range_status(metrics, fields)
+    if range_status != "pass":
+        return range_status
+    if condition == "no_delay_same_tick_blocked":
+        return _no_delay_lag_status(metrics)
+    return _delayed_lag_reconstruction_status(condition, metrics)
+
+
+def _no_delay_lag_status(metrics: list[dict[str, str]]) -> str:
+    for row in metrics:
+        for action in A7_3_ACTIONS:
+            delayed = _float_cell(row.get(f"delayed_agent_role_activity_{action}"))
+            peer = _float_cell(row.get(f"peer_activity_lag_{action}"))
+            if abs(delayed) > 1e-9 or abs(peer) > 1e-9:
+                return "fail_no_delay_lag"
+    return "pass"
+
+
+def _delayed_lag_reconstruction_status(
+    condition: str,
+    metrics: list[dict[str, str]],
+) -> str:
+    delay = int(A7_3_SMOKE_PARAMETERS["feedback_delay_ticks"])
+    peer_differs_from_delayed = False
+    for index, row in enumerate(metrics):
+        for action in A7_3_ACTIONS:
+            delayed = _float_cell(row.get(f"delayed_agent_role_activity_{action}"))
+            peer = _float_cell(row.get(f"peer_activity_lag_{action}"))
+            expected = (
+                0.0
+                if index < delay
+                else _float_cell(metrics[index - delay].get(f"agent_role_activity_{action}"))
+            )
+            if abs(delayed - expected) > 1e-6:
+                return "fail_delayed_role_reconstruction"
+            if condition == "phase_shuffled_lag":
+                if action != "rest" and abs(peer - delayed) > 1e-6:
+                    peer_differs_from_delayed = True
+            elif abs(peer - delayed) > 1e-6:
+                return "fail_peer_lag_reconstruction"
+    if condition == "phase_shuffled_lag" and not peer_differs_from_delayed:
+        return "fail_phase_shuffle_not_reflected"
     return "pass"
 
 
