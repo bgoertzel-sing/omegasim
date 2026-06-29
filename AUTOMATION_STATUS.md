@@ -73,12 +73,12 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: add a documentation-only closure note for the
-  three-hive ring fixed seed `1,2` mechanics/analyzer result, recording the
-  fail-closed productivity-guardrail/null-contrast outcome and interpretation
-  boundary. Do not add promotion claims, broad seed sweeps, dashboards,
-  integrations, parameter sweeps, post-result tuning, or hives beyond the
-  frozen ring.
+- Recommended next step: pause further three-hive ring expansion and prepare a
+  fresh preregistered decision note only if Ben wants another scientific
+  direction, such as a one-hive dimensionless delayed-dynamics sweep. Do not
+  rescue this fail-closed seed `1,2` gate with promotion claims, broad seed
+  sweeps, dashboards, integrations, parameter sweeps, post-result tuning, or
+  extra hives.
 
 ## Blockers
 
@@ -90,6 +90,42 @@ queue coupling, backlog dwell, accounting leakage, or post-result rescue
 tuning.
 
 ## Latest Changes
+
+- 2026-06-28 17:27 PDT three-hive ring closure note: re-read `README.md`,
+  `AUTOMATION_STATUS.md`, configs/tests, the superseded provisional roadmap,
+  `docs/three_hive_ring_preregistration.md`, current guard output, CLI-loop
+  status, and the latest GPT-5.5-Pro strategy review before choosing the next
+  step. The review has `notify_ben: false` and `strategic_change_level:
+  minor`; its preflight-analyzer recommendation is now superseded by the
+  repository source-of-truth because the preflight, mechanics smoke, and
+  residual/null analyzer gates have already been completed. This run therefore
+  followed the newer status recommendation to add only a documentation closure
+  note.
+- Added `docs/results/three_hive_ring_closure_note_seed1_2.md`, freezing the
+  fixed seed `1,2` three-hive mechanics/analyzer interpretation boundary. The
+  note records the fail-closed status, productivity-guardrail failure on
+  `completion_fraction`, null-contrast failures, and the prohibition on
+  treating harness-level artifacts as lobe-like, strange-attractor-like,
+  semantic-dynamics, synchrony, phase-grammar, or causal collective-structure
+  evidence.
+- Verification reran the fixed mechanics/analyzer smoke in `/tmp`:
+  `.venv-conda/bin/python -m ohdyn.compare_three_hive_ring_mechanics --out
+  /tmp/omegasim_three_hive_closure_0f5wEt/mechanics` followed by
+  `.venv-conda/bin/python -m ohdyn.analyze_three_hive_ring_residual_null
+  --compare-dir /tmp/omegasim_three_hive_closure_0f5wEt/mechanics --out
+  /tmp/omegasim_three_hive_closure_0f5wEt/analysis`. The analyzer reported
+  26/26 schema/metrics/events/source-ledger pass rows, 26/26 source-ledger
+  pass rows, 156 residual rows computed, null-contrast gates of 37
+  `eligible_for_guardrail_and_cross_seed_review`, 67
+  `fail_closed_no_residual_autocorrelation_advantage`, and 16
+  `fail_closed_no_residual_predictability_advantage`, plus 2/2
+  `fail_closed_completion_fraction` productivity guardrail rows. Overall
+  status remained `fail_closed_productivity_guardrails`.
+- Focused verification passed:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'three_hive_ring' -q` (`13 passed, 639 deselected`),
+  `.venv-conda/bin/python -m ohdyn.automation_guard` (`state=open`,
+  `repo_write_allowed=true`, `notify_ben=false`), and `git diff --check`.
 
 - 2026-06-28 17:08 PDT three-hive ring residual/null analyzer gate: re-read
   `README.md`, `AUTOMATION_STATUS.md`, configs/tests, the superseded
