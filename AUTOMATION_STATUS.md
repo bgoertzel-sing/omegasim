@@ -17,7 +17,7 @@ strange-attractor-like, semantic-dynamics, or causal collective-structure
 claims.
 
 The recurring A5 anticipatory predictive-control automation prompt has been
-rechecked against the current repo state again on 2026-06-28 19:36 PDT
+rechecked against the current repo state again on 2026-06-28 20:36 PDT
 (2026-06-29 UTC): the concise single-hive A5 preregistration and smallest
 deterministic scaffold already exist and still match that request, while the
 newer governance state is `closed_awaiting_preregistration` with
@@ -95,6 +95,28 @@ A7.2 and three-hive ring line failed closed and that automation is now closed
 awaiting preregistration.
 
 ## Latest Changes
+
+- 2026-06-28 20:36 PDT bounded A5 prompt revalidation under governance
+  closure: re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`, the
+  concise single-hive A5 preregistration, the current guard output, focused
+  A5/automation references, and recent git history. Confirmed again that the
+  explicit A5 preregistration request is already satisfied: deterministic
+  single-hive setup, resource-bounded prediction hypothesis, matched
+  task-arrival/service-capacity/action-opportunity/work-budget controls,
+  reactive/linear/nonlinear/high-budget/oracle/timing-broken nulls, primary
+  endpoints, and fail-closed strange-attractor/lobe rules are present.
+- The guard still reports `state=closed_awaiting_preregistration`,
+  `repo_write_allowed=false`, and `notify_ben=true` because the later A7.2 and
+  three-hive fixed seed `1,2` gates failed closed. No simulator mechanics,
+  configs, analyzers, run artifacts, dashboards, integrations, broad seeds,
+  parameter sweeps, extra hives, or promotion claims were added. The status
+  update preserves exactly one next step: notify Ben and wait for a fresh
+  preregistered direction.
+- Verification passed:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` and
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  (`21 passed, 632 deselected`).
 
 - 2026-06-28 19:36 PDT bounded A5 prompt revalidation under governance
   closure: re-read automation memory, `README.md`, `AUTOMATION_STATUS.md`, the
