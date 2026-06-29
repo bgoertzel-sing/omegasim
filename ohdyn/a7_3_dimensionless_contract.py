@@ -186,6 +186,7 @@ A7_3_PRODUCTIVITY_GUARDRAILS = {
 A7_3_VALIDATION_PARAMETERS = {
     "seeds": (1, 2),
     "horizon_ticks": 256,
+    "service_capacity_baseline": 1.45,
     "minimum_rows_for_recurrence": 128,
     "train_fraction": 0.60,
     "holdout_fraction": 0.40,

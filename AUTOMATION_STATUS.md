@@ -11,14 +11,15 @@ active next OmegaSim gate. This supersedes the previous
 awaiting-preregistration posture and any older A5-focused prompt, and does not
 reopen A7.2, the three-hive ring, or A5 as result-bearing lines.
 
-Current active task: implement the fixed A7.3 long-horizon artifact generator
-or controlled smoke-helper extension for the preregistered 256-tick, seed
-`1,2`, nine-condition validation gate, without enabling promotion analysis or
-broadening seeds/horizon/parameters. The A7.3 scaffold already has a
-preregistration, minimal contract/config/smoke/preflight path, smoke-scale
-residual/null analyzer wiring, a frozen 256-tick residual/recurrence validation
-preregistration, and latest GPT-5.5-Pro review verdict `GO` with
-`notify_ben: false`.
+Current active task: implement the read-only A7.3 long-horizon
+residual/recurrence analyzer that consumes the fixed 256-tick seed `1,2`
+nine-condition validation artifacts plus an eligible preflight manifest,
+without rerunning simulations, enabling promotion by default, or broadening
+seeds/horizon/parameters. The A7.3 scaffold already has a preregistration,
+minimal contract/config/smoke/preflight path, smoke-scale residual/null analyzer
+wiring, a frozen 256-tick residual/recurrence validation preregistration, a
+fixed validation artifact/preflight generator, and latest GPT-5.5-Pro review
+verdict `GO` with `notify_ben: false`.
 
 Historical A5 context: the concise A5 preregistration matches Ben's requested
 design: deterministic single hive, matched task-arrival totals, service
@@ -42,20 +43,46 @@ claims.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the fixed A7.3 long-horizon artifact
-  generator or controlled smoke-helper extension for the preregistered
-  256-tick, seed `1,2`, nine-condition validation gate, without enabling
-  promotion analysis or broadening seeds/horizon/parameters.
+- Recommended next step: implement the read-only A7.3 long-horizon
+  residual/recurrence analyzer over the fixed 256-tick validation artifacts and
+  eligible preflight manifest, without rerunning simulations, enabling
+  promotion by default, or broadening seeds/horizon/parameters.
 
 ## Blockers
 
 No environment blocker. The previous A5, A7.2, and three-hive gates remain
 fail-closed historical results, but Ben's A7.3 direction and the latest
 GPT-5.5-Pro `GO` review leave OmegaSim open for the bounded A7.3
-long-horizon artifact/preflight implementation path.
+long-horizon read-only residual/recurrence analyzer path.
 
 ## Verification
 
+- 2026-06-29 11:33 PDT A7.3 validation artifact/preflight run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
+  passed with `17 passed, 653 deselected`.
+- 2026-06-29 11:33 PDT A7.3 validation artifact/preflight run:
+  `.venv-conda/bin/python -m py_compile
+  ohdyn/a7_3_dimensionless_contract.py
+  ohdyn/compare_a7_3_dimensionless_delayed.py
+  ohdyn/analyze_a7_3_preflight.py tests/test_run_harness.py` passed.
+- 2026-06-29 11:33 PDT temporary A7.3 validation plus preflight command
+  passed: `.venv-conda/bin/python -m
+  ohdyn.compare_a7_3_dimensionless_delayed --validation --out
+  /tmp/omegasim_a7_3_validation_Hiarpw/compare` and `.venv-conda/bin/python
+  -m ohdyn.analyze_a7_3_preflight --compare-dir
+  /tmp/omegasim_a7_3_validation_Hiarpw/compare --out
+  /tmp/omegasim_a7_3_validation_Hiarpw/preflight`. The validation helper
+  emitted 18 run directories across nine conditions and seeds `1,2`, each with
+  256 metrics/events/source-ledger/lifted-state rows. The read-only preflight
+  reported `eligible_for_read_only_residual_analysis` with 18/18
+  completeness, source-ledger, and guardrail pass rows.
+- 2026-06-29 11:33 PDT A7.3 validation artifact/preflight run:
+  `git diff --check` passed.
+- 2026-06-29 11:33 PDT A7.3 validation artifact/preflight run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `repo_write_allowed=true`, `closed_reasons=[]`,
+  `notify_ben=false`, `strategic_change_level=minor`, and the read-only A7.3
+  long-horizon residual/recurrence analyzer next action.
 - 2026-06-29 11:08 PDT A7.3 guard/status repair:
   `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed.
 - 2026-06-29 11:08 PDT A7.3 guard/status repair:
@@ -227,6 +254,27 @@ long-horizon artifact/preflight implementation path.
   completed.
 
 ## Latest Changes
+
+- 2026-06-29 11:33 PDT bounded A7.3 validation artifact/preflight run: read
+  `README.md`, `AUTOMATION_STATUS.md`, configs, tests,
+  `docs/omegasim_provisional_experiment_roadmap.md`, the active A7.3
+  preregistrations, existing A7.3 contract/generator/preflight code, and the
+  external strategy review. The review was `strategic_change_level: minor`,
+  `notify_ben: false`; its recommendation to implement the fixed A7.3
+  256-tick seed `1,2` artifact/preflight path was accepted as scientifically
+  sensible. Added a frozen `--validation` mode to
+  `ohdyn.compare_a7_3_dimensionless_delayed`, producing exactly the nine
+  A7.3 conditions times seeds `1,2` at 256 ticks with deterministic metrics,
+  events, source-ledger, lifted-state, schema, manifest, and summary artifacts.
+  The validation path uses a fixed logged service-capacity baseline `1.45` to
+  avoid deterministic long-horizon load drift failing the artifact preflight;
+  this was recorded in the long-horizon preregistration. Extended the read-only
+  A7.3 preflight analyzer to derive expected row counts from run manifests so
+  it can validate both 64-tick smoke and 256-tick validation artifacts. Added
+  focused tests for validation artifact generation, seed override rejection,
+  and preflight eligibility. No recurrence/promotion analyzer, A5/A7.2/
+  three-hive branch, dashboard, integration, broad seed sweep, parameter sweep,
+  or scientific claim was added.
 
 - 2026-06-29 10:39 PDT bounded A7.3 long-horizon preregistration run: read
   `README.md`, `AUTOMATION_STATUS.md`,

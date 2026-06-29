@@ -21,6 +21,7 @@ from ohdyn.a7_3_dimensionless_contract import (
     A7_3_SMOKE_PARAMETERS,
     A7_3_SOURCE_LEDGER_CSV_FIELDS,
     A7_3_SOURCE_LEDGER_FIELDS,
+    A7_3_VALIDATION_PARAMETERS,
     a7_3_required_event_fields,
     a7_3_required_metric_fields,
 )
@@ -31,9 +32,14 @@ from ohdyn.config import load_config
 DEFAULT_A7_3_CONFIG = Path("configs/a7_3_dimensionless_smoke.yaml")
 DEFAULT_A7_3_SEEDS = tuple(A7_3_SMOKE_PARAMETERS["seeds"])
 DEFAULT_A7_3_SMOKE_DIR = Path("runs/a7_3_dimensionless_smoke_seed1_2")
+DEFAULT_A7_3_VALIDATION_DIR = Path("runs/a7_3_dimensionless_validation_seed1_2")
 A7_3_MECHANICS_STATUS = "deterministic_a7_3_smoke_artifacts_only"
 A7_3_SCIENTIFIC_STATUS = (
     "metrics_events_lifted_state_present_requires_future_read_only_preflight"
+)
+A7_3_VALIDATION_MECHANICS_STATUS = "deterministic_a7_3_validation_artifacts_only"
+A7_3_VALIDATION_SCIENTIFIC_STATUS = (
+    "validation_artifacts_present_analysis_disabled"
 )
 
 
@@ -45,14 +51,73 @@ def run_a7_3_dimensionless_smoke(
 ) -> list[dict[str, Any]]:
     """Run only the frozen paired-seed deterministic A7.3 smoke grid."""
 
-    if seeds != DEFAULT_A7_3_SEEDS:
-        raise ValueError("A7.3 dimensionless smoke is fixed to paired seeds 1 and 2.")
+    return _run_a7_3_dimensionless_grid(
+        config_path=config_path,
+        seeds=seeds,
+        out_dir=out_dir,
+        parameters=A7_3_SMOKE_PARAMETERS,
+        manifest_name="a7_3_dimensionless_smoke_manifest.csv",
+        run_title="A7.3 Dimensionless Delayed Smoke Artifact",
+        summary_title="A7.3 Dimensionless Delayed Smoke",
+        mechanics_status=A7_3_MECHANICS_STATUS,
+        scientific_status=A7_3_SCIENTIFIC_STATUS,
+        fixed_seed_error="A7.3 dimensionless smoke is fixed to paired seeds 1 and 2.",
+    )
+
+
+def run_a7_3_dimensionless_validation(
+    *,
+    config_path: str | Path = DEFAULT_A7_3_CONFIG,
+    seeds: tuple[int, ...] = tuple(A7_3_VALIDATION_PARAMETERS["seeds"]),
+    out_dir: str | Path = DEFAULT_A7_3_VALIDATION_DIR,
+) -> list[dict[str, Any]]:
+    """Run only the frozen 256-tick paired-seed A7.3 validation artifacts."""
+
+    validation_parameters = {
+        **A7_3_SMOKE_PARAMETERS,
+        "seeds": tuple(A7_3_VALIDATION_PARAMETERS["seeds"]),
+        "horizon_ticks": int(A7_3_VALIDATION_PARAMETERS["horizon_ticks"]),
+        "service_capacity_baseline": float(
+            A7_3_VALIDATION_PARAMETERS["service_capacity_baseline"]
+        ),
+    }
+    return _run_a7_3_dimensionless_grid(
+        config_path=config_path,
+        seeds=seeds,
+        out_dir=out_dir,
+        parameters=validation_parameters,
+        manifest_name="a7_3_dimensionless_validation_manifest.csv",
+        run_title="A7.3 Dimensionless Delayed Validation Artifact",
+        summary_title="A7.3 Dimensionless Delayed Validation",
+        mechanics_status=A7_3_VALIDATION_MECHANICS_STATUS,
+        scientific_status=A7_3_VALIDATION_SCIENTIFIC_STATUS,
+        fixed_seed_error=(
+            "A7.3 dimensionless validation is fixed to preregistered paired seeds 1 and 2."
+        ),
+    )
+
+
+def _run_a7_3_dimensionless_grid(
+    *,
+    config_path: str | Path,
+    seeds: tuple[int, ...],
+    out_dir: str | Path,
+    parameters: dict[str, Any],
+    manifest_name: str,
+    run_title: str,
+    summary_title: str,
+    mechanics_status: str,
+    scientific_status: str,
+    fixed_seed_error: str,
+) -> list[dict[str, Any]]:
+    if seeds != tuple(parameters["seeds"]):
+        raise ValueError(fixed_seed_error)
     config = load_config(config_path)
     if config.a7_3_dimensionless_delayed is None:
         raise ValueError(f"{config_path} must enable a7_3_dimensionless_delayed.")
 
     output_path = Path(out_dir)
-    _ensure_outputs_available(output_path)
+    _ensure_outputs_available(output_path, manifest_name)
     output_path.mkdir(parents=True, exist_ok=True)
 
     manifest_rows: list[dict[str, Any]] = []
@@ -63,8 +128,12 @@ def run_a7_3_dimensionless_smoke(
             metrics, events, source_ledger, lifted_state = _simulate_condition(
                 condition,
                 seed,
+                parameters,
             )
             config_dict = config.to_dict()
+            config_dict["run"]["ticks"] = int(parameters["horizon_ticks"])
+            if parameters["horizon_ticks"] != A7_3_SMOKE_PARAMETERS["horizon_ticks"]:
+                config_dict["run"]["experiment_id"] = "a7_3_dimensionless_delayed_validation"
             (run_dir / "config.yaml").write_text(
                 yaml.safe_dump(config_dict, sort_keys=True)
             )
@@ -90,50 +159,64 @@ def run_a7_3_dimensionless_smoke(
                         config_dict,
                         condition,
                         seed,
+                        parameters,
                         len(metrics),
                         len(events),
                         len(source_ledger),
                         len(lifted_state),
+                        mechanics_status,
+                        scientific_status,
                     ),
                     sort_keys=True,
                 )
             )
-            (run_dir / "summary.md").write_text(_run_summary(condition, seed))
+            (run_dir / "summary.md").write_text(
+                _run_summary(condition, seed, run_title, mechanics_status, scientific_status)
+            )
             manifest_rows.append(
                 {
                     "condition": condition,
                     "seed": seed,
                     "config": str(Path(config_path)),
                     "run_dir": run_dir.name,
-                    "tick_count": config.run.ticks,
+                    "tick_count": int(parameters["horizon_ticks"]),
                     "metrics_rows": len(metrics),
                     "events_rows": len(events),
                     "source_ledger_rows": len(source_ledger),
                     "lifted_state_rows": len(lifted_state),
-                    "mechanics_status": A7_3_MECHANICS_STATUS,
-                    "scientific_status": A7_3_SCIENTIFIC_STATUS,
+                    "mechanics_status": mechanics_status,
+                    "scientific_status": scientific_status,
                 }
             )
 
     _write_csv(
-        output_path / "a7_3_dimensionless_smoke_manifest.csv",
+        output_path / manifest_name,
         manifest_rows,
         A7_3_MECHANICS_MANIFEST_FIELDS,
     )
-    (output_path / "summary.md").write_text(_summary(manifest_rows, seeds))
+    (output_path / "summary.md").write_text(
+        _summary(
+            manifest_rows,
+            seeds,
+            parameters,
+            summary_title,
+            mechanics_status,
+            scientific_status,
+        )
+    )
     return manifest_rows
 
 
 def _simulate_condition(
     condition: str,
     seed: int,
+    params: dict[str, Any],
 ) -> tuple[
     list[dict[str, Any]],
     list[dict[str, Any]],
     list[dict[str, Any]],
     list[dict[str, Any]],
 ]:
-    params = A7_3_SMOKE_PARAMETERS
     delay = 0 if condition == "no_delay_same_tick_blocked" else int(params["feedback_delay_ticks"])
     history: deque[dict[str, float]] = deque(maxlen=max(delay, 1))
     state = _initial_state(seed)
@@ -144,7 +227,7 @@ def _simulate_condition(
 
     for tick in range(int(params["horizon_ticks"])):
         lag = history[0] if delay > 0 and len(history) >= delay else _empty_activity()
-        row = _advance(condition, seed, tick, delay, state, lag)
+        row = _advance(condition, seed, tick, delay, state, lag, params)
         history.append(_activity_snapshot(row))
         metric = {field: row.get(field, "") for field in _metric_fieldnames()}
         lifted = {field: row.get(field, "") for field in _lifted_state_fieldnames()}
@@ -183,12 +266,14 @@ def _advance(
     delay: int,
     state: dict[str, float],
     lag: dict[str, float],
+    params: dict[str, Any],
 ) -> dict[str, Any]:
-    params = A7_3_SMOKE_PARAMETERS
-    controls = _dimensionless_controls(condition)
+    controls = _dimensionless_controls(condition, params)
     demand_phase = math.sin((tick + seed) / 6.0)
     arrivals = 1 + int((tick + seed) % 4 == 0)
-    service_capacity = 1.0 + 0.08 * math.cos((tick + seed) / 7.0)
+    service_capacity = float(params.get("service_capacity_baseline", 1.0)) + 0.08 * math.cos(
+        (tick + seed) / 7.0
+    )
     action_opportunity = 5.0
     work_budget = 1.0 + 0.08 * math.sin((tick + 2 * seed) / 5.0)
     peer_activity = {
@@ -341,8 +426,7 @@ def _advance(
     return row
 
 
-def _dimensionless_controls(condition: str) -> dict[str, float]:
-    params = A7_3_SMOKE_PARAMETERS
+def _dimensionless_controls(condition: str, params: dict[str, Any]) -> dict[str, float]:
     rho = (
         params["low_gain_coupling_gain"]
         if condition == "low_gain_contraction"
@@ -446,12 +530,12 @@ def _write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: tuple[str, ..
         writer.writerows(rows)
 
 
-def _ensure_outputs_available(output_path: Path) -> None:
+def _ensure_outputs_available(output_path: Path, manifest_name: str) -> None:
     if output_path.exists() and not output_path.is_dir():
         raise FileExistsError(f"Output path {output_path} exists and is not a directory.")
-    if (output_path / "a7_3_dimensionless_smoke_manifest.csv").exists():
+    if (output_path / manifest_name).exists():
         raise FileExistsError(
-            f"Output path {output_path} already contains A7.3 smoke artifacts."
+            f"Output path {output_path} already contains A7.3 artifacts."
         )
 
 
@@ -459,16 +543,19 @@ def _run_manifest(
     config: dict[str, Any],
     condition: str,
     seed: int,
+    parameters: dict[str, Any],
     metrics_rows: int,
     events_rows: int,
     source_ledger_rows: int,
     lifted_state_rows: int,
+    mechanics_status: str,
+    scientific_status: str,
 ) -> dict[str, Any]:
     return {
         "experiment_id": config["run"]["experiment_id"],
         "condition": condition,
         "seed": seed,
-        "ticks": A7_3_SMOKE_PARAMETERS["horizon_ticks"],
+        "ticks": int(parameters["horizon_ticks"]),
         "condition_class": (
             "positive" if condition == A7_3_POSITIVE_CONDITION else "null_control"
         ),
@@ -490,42 +577,55 @@ def _run_manifest(
             "lifted_state_schema.csv",
             "summary.md",
         ],
-        "mechanics_status": A7_3_MECHANICS_STATUS,
-        "scientific_status": A7_3_SCIENTIFIC_STATUS,
+        "mechanics_status": mechanics_status,
+        "scientific_status": scientific_status,
         "config": config,
     }
 
 
-def _run_summary(condition: str, seed: int) -> str:
+def _run_summary(
+    condition: str,
+    seed: int,
+    title: str,
+    mechanics_status: str,
+    scientific_status: str,
+) -> str:
     return "\n".join(
         [
-            "# A7.3 Dimensionless Delayed Smoke Artifact",
+            f"# {title}",
             "",
             f"- Condition: `{condition}`",
             f"- Seed: `{seed}`",
-            f"- Status: `{A7_3_MECHANICS_STATUS}`",
-            f"- Scientific status: `{A7_3_SCIENTIFIC_STATUS}`",
+            f"- Status: `{mechanics_status}`",
+            f"- Scientific status: `{scientific_status}`",
             "",
-            "This directory contains deterministic smoke metrics, events, source-ledger,",
+            "This directory contains deterministic metrics, events, source-ledger,",
             "and lifted-state artifacts. It is not a promotion analysis.",
             "",
         ]
     )
 
 
-def _summary(rows: list[dict[str, Any]], seeds: tuple[int, ...]) -> str:
+def _summary(
+    rows: list[dict[str, Any]],
+    seeds: tuple[int, ...],
+    parameters: dict[str, Any],
+    title: str,
+    mechanics_status: str,
+    scientific_status: str,
+) -> str:
     return "\n".join(
         [
-            "# A7.3 Dimensionless Delayed Smoke",
+            f"# {title}",
             "",
             f"- Conditions: {len(A7_3_CONDITIONS)}",
             f"- Seeds: {', '.join(str(seed) for seed in seeds)}",
             f"- Run directories: {len(rows)}",
-            f"- Horizon: {A7_3_SMOKE_PARAMETERS['horizon_ticks']} ticks",
-            f"- Status: `{A7_3_MECHANICS_STATUS}`",
-            f"- Scientific status: `{A7_3_SCIENTIFIC_STATUS}`",
+            f"- Horizon: {parameters['horizon_ticks']} ticks",
+            f"- Status: `{mechanics_status}`",
+            f"- Scientific status: `{scientific_status}`",
             "",
-            "This helper emits the frozen A7.3 contract fields for the fixed paired-seed smoke gate.",
+            "This helper emits the frozen A7.3 contract fields for the fixed paired-seed gate.",
             "It does not compute promotion endpoints, run broad sweeps, add integrations,",
             "or reopen A5, A7.2, or three-hive results.",
             "",
@@ -554,6 +654,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(DEFAULT_A7_3_SMOKE_DIR),
         help="Output directory for A7.3 smoke artifacts.",
     )
+    parser.add_argument(
+        "--validation",
+        action="store_true",
+        help="Emit the frozen 256-tick paired-seed validation artifacts.",
+    )
     return parser
 
 
@@ -561,11 +666,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
-        run_a7_3_dimensionless_smoke(
-            config_path=args.config,
-            seeds=tuple(args.seeds),
-            out_dir=args.out,
-        )
+        if args.validation:
+            run_a7_3_dimensionless_validation(
+                config_path=args.config,
+                seeds=tuple(args.seeds),
+                out_dir=args.out,
+            )
+        else:
+            run_a7_3_dimensionless_smoke(
+                config_path=args.config,
+                seeds=tuple(args.seeds),
+                out_dir=args.out,
+            )
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))
     return 0

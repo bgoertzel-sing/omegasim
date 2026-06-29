@@ -194,6 +194,7 @@ def _read_runs(compare_path: Path) -> list[dict[str, Any]]:
                 "condition": condition,
                 "seed": seed,
                 "run_dir": run_dir,
+                "manifest": manifest,
                 "metrics_path": run_dir / "metrics.csv",
                 "events_path": run_dir / "events.csv",
                 "source_ledger_path": run_dir / "source_ledger.csv",
@@ -249,7 +250,7 @@ def _completeness_row(run: dict[str, Any]) -> dict[str, str | int]:
         *missing_fields(source_header, A7_3_SOURCE_LEDGER_CSV_FIELDS),
         *missing_fields(lifted_header, ("condition", "seed", *A7_3_LIFTED_STATE_FIELDS)),
     )
-    expected_rows = int(A7_3_SMOKE_PARAMETERS["horizon_ticks"])
+    expected_rows = _expected_rows_for_run(run)
     row_counts_ok = all(
         count == expected_rows for count in (metric_rows, event_rows, source_rows, lifted_rows)
     )
@@ -270,11 +271,16 @@ def _completeness_row(run: dict[str, Any]) -> dict[str, str | int]:
         "missing_required_fields": "|".join(missing),
         "status": status,
         "interpretation": (
-            "A7.3 smoke artifacts are complete for preflight review"
+            "A7.3 artifacts are complete for preflight review"
             if status == "pass"
-            else "A7.3 smoke artifacts are incomplete; no A7.3 interpretation is allowed"
+            else "A7.3 artifacts are incomplete; no A7.3 interpretation is allowed"
         ),
     }
+
+
+def _expected_rows_for_run(run: dict[str, Any]) -> int:
+    manifest = run.get("manifest") or {}
+    return int(manifest.get("ticks") or A7_3_SMOKE_PARAMETERS["horizon_ticks"])
 
 
 def _source_ledger_row(run: dict[str, Any]) -> dict[str, str | int]:

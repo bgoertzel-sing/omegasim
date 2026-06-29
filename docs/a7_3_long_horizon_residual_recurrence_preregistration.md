@@ -77,6 +77,9 @@ endpoints.
 
 - Seeds: `1,2`
 - Horizon: `256` ticks
+- Validation service-capacity baseline: `1.45`, fixed and logged as a control
+  to prevent deterministic long-horizon load drift from failing the artifact
+  preflight before residual/recurrence analysis.
 - Minimum rows for recurrence: `128`
 - Train/holdout split: first `60%` train, final `40%` holdout
 - Embedding lags: `1,3,6,12`

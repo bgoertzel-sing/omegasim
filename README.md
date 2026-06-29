@@ -238,8 +238,14 @@ The next A7.3 gate is preregistered in
 `docs/a7_3_long_horizon_residual_recurrence_preregistration.md`. It freezes a
 one-hive, fixed `256`-tick, seed `1,2` validation plan with residual targets,
 source-ledger prerequisites, recurrence/surrogate/divergence endpoints, all
-eight null contrasts, and fail-closed promotion criteria. No long-horizon
-runner or result-bearing analyzer is enabled yet.
+eight null contrasts, and fail-closed promotion criteria. The checked-in
+validation helper emits the fixed 256-tick artifact/preflight input set only;
+it does not enable result-bearing recurrence analysis.
+
+```bash
+python -m ohdyn.compare_a7_3_dimensionless_delayed --validation --out runs/a7_3_dimensionless_validation_seed1_2
+python -m ohdyn.analyze_a7_3_preflight --compare-dir runs/a7_3_dimensionless_validation_seed1_2 --out runs/a7_3_validation_preflight_seed1_2
+```
 
 ## Three-Hive Ring Schema And Mechanics Smoke
 

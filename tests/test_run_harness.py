@@ -172,7 +172,9 @@ from ohdyn.compare_a7_2_delayed_prediction import (
     run_a7_2_delayed_prediction_comparison,
 )
 from ohdyn.compare_a7_3_dimensionless_delayed import (
+    A7_3_VALIDATION_SCIENTIFIC_STATUS,
     run_a7_3_dimensionless_smoke,
+    run_a7_3_dimensionless_validation,
 )
 from ohdyn.analyze_a7_3_preflight import (
     A7_3_PREFLIGHT_STATUS_ELIGIBLE,
@@ -1877,6 +1879,72 @@ def test_a7_3_dimensionless_smoke_rejects_unregistered_seeds(
 ) -> None:
     with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
         run_a7_3_dimensionless_smoke(seeds=(1,), out_dir=tmp_path / "bad")
+
+
+def test_a7_3_dimensionless_validation_emits_fixed_long_horizon_artifacts(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_3_validation"
+    preflight_dir = tmp_path / "a7_3_validation_preflight"
+
+    rows = run_a7_3_dimensionless_validation(out_dir=compare_dir)
+
+    assert len(rows) == len(A7_3_CONDITIONS) * 2
+    assert {row["seed"] for row in rows} == set(A7_3_VALIDATION_PARAMETERS["seeds"])
+    assert {row["tick_count"] for row in rows} == {
+        A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+    }
+    manifest_rows = list(
+        csv.DictReader((compare_dir / "a7_3_dimensionless_validation_manifest.csv").open())
+    )
+    assert len(manifest_rows) == len(A7_3_CONDITIONS) * 2
+    assert {row["scientific_status"] for row in manifest_rows} == {
+        A7_3_VALIDATION_SCIENTIFIC_STATUS
+    }
+    assert "promotion" not in A7_3_VALIDATION_SCIENTIFIC_STATUS
+    for row in manifest_rows:
+        assert int(row["metrics_rows"]) == A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+        assert int(row["events_rows"]) == A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+        assert int(row["source_ledger_rows"]) == A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+        assert int(row["lifted_state_rows"]) == A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+        run_manifest = yaml.safe_load(
+            (compare_dir / row["run_dir"] / "manifest.yaml").read_text()
+        )
+        assert run_manifest["ticks"] == A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+        assert run_manifest["scientific_status"] == A7_3_VALIDATION_SCIENTIFIC_STATUS
+        assert "promotion" not in run_manifest["scientific_status"]
+    full_run = compare_dir / "full_delayed_logistic_seed1"
+    metric_rows = list(csv.DictReader((full_run / "metrics.csv").open()))
+    assert len(metric_rows) == A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+    first_metric = metric_rows[0]
+    for field in A7_3_LIFTED_STATE_FIELDS:
+        assert field in first_metric
+    assert first_metric["source_ledger_delay_integrity"] == "pass"
+    summary = (compare_dir / "summary.md").read_text()
+    assert "Horizon: 256 ticks" in summary
+    assert "does not compute promotion endpoints" in summary
+
+    preflight = run_a7_3_preflight_analysis(
+        compare_dir=compare_dir,
+        out_dir=preflight_dir,
+    )
+
+    assert preflight["status"] == A7_3_PREFLIGHT_STATUS_ELIGIBLE
+    preflight_manifest = list(
+        csv.DictReader((preflight_dir / "a7_3_preflight_manifest.csv").open())
+    )
+    assert int(preflight_manifest[0]["observed_run_count"]) == len(A7_3_CONDITIONS) * 2
+    completeness_rows = list(
+        csv.DictReader((preflight_dir / "a7_3_preflight_completeness.csv").open())
+    )
+    assert {int(row["metric_row_count"]) for row in completeness_rows} == {
+        A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+    }
+
+
+def test_a7_3_dimensionless_validation_rejects_seed_overrides(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="validation is fixed"):
+        run_a7_3_dimensionless_validation(seeds=(1,), out_dir=tmp_path / "bad")
 
 
 def test_a7_3_preflight_analyzer_accepts_complete_smoke_artifacts(
