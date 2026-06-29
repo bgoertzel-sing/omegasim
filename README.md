@@ -206,6 +206,23 @@ python -m ohdyn.compare_a7_long_horizon --seeds 1 2 --out runs/a7_long_horizon_c
 python -m ohdyn.analyze_a7_semantic_field --compare-dir runs/a7_long_horizon_compare_seed1_2 --out runs/a7_long_horizon_residual_null_analysis_seed1_2
 ```
 
+## A7.3 One-Hive Dimensionless Delayed Dynamics Smoke
+
+A7.3 is the fresh one-hive delayed nonlinear dynamics line opened by Ben's
+2026-06-29 proceed instruction and preregistered in
+`docs/a7_3_one_hive_dimensionless_delayed_dynamics_preregistration.md`. It does
+not reopen A5, A7.2, or the three-hive ring as result-bearing lines.
+
+The checked-in A7.3 smoke fixture and helper emit deterministic metrics,
+events, source-ledger, and lifted-state rows for the frozen nine-condition,
+paired-seed grid. This is an artifact-validity smoke only; it does not compute
+promotion endpoints or support strange-attractor-like, lobe-like, or semantic
+dynamics claims.
+
+```bash
+python -m ohdyn.compare_a7_3_dimensionless_delayed --seeds 1 2 --out runs/a7_3_dimensionless_smoke_seed1_2
+```
+
 ## Three-Hive Ring Schema And Mechanics Smoke
 
 The post-A7.2 three-hive ring gate is frozen in

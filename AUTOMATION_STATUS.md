@@ -11,15 +11,17 @@ the active next OmegaSim gate. This supersedes the previous
 awaiting-preregistration posture and does not reopen A7.2, the three-hive ring,
 or A5 as result-bearing lines.
 
-Current active task: implement the minimal A7.3 one-hive dimensionless
-delayed-dynamics config/schema and deterministic smoke harness from
+Current active task: the minimal A7.3 one-hive dimensionless delayed-dynamics
+config/schema and deterministic smoke harness are now implemented from
 `docs/a7_3_one_hive_dimensionless_delayed_dynamics_preregistration.md`,
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/hyperseed_one_hive_delayed_dynamics_note.md`, and Ben's logistic
-cross-agent activity idea as design guidance. A7.3 should be a fresh
-single-hive delayed nonlinear dynamics line with explicit lifted state,
-dimensionless controls, preregistered nulls, source ledgers, recurrence/
-Lyapunov-style diagnostics, and fail-closed rules before any broader sweep.
+cross-agent activity idea as design guidance. A7.3 remains a fresh single-hive
+delayed nonlinear dynamics line with explicit lifted state, dimensionless
+controls, preregistered nulls, source ledgers, recurrence/Lyapunov-style
+diagnostics, and fail-closed rules before any broader sweep. The next bounded
+task is to add the read-only A7.3 preflight analyzer over the emitted smoke
+artifacts.
 
 Historical A5 context: A5 single-hive anticipatory predictive-control dynamics
 was reopened for preregistration/scaffold validation. As of 2026-06-29 08:49
@@ -70,11 +72,11 @@ collective-structure claims, and it does not authorize A7.2 tuning without a
 new preregistration.
 
 The earlier A7.2-then-three-hive launch posture has now been executed through
-the bounded gates it authorized. The latest external strategic review is
+the bounded gates it authorized. A previous external strategic review was
 `strategic_change_level: major` and `notify_ben: true`; its recommendation to
-close into awaiting-preregistration is accepted as scientifically sensible
+close into awaiting-preregistration was accepted as scientifically sensible
 because A7.2 and the three-hive ring both failed closed and further expansion
-would become post-result rescue tuning without a new preregistration.
+would have become post-result rescue tuning without a new preregistration.
 Ben's 2026-06-28 Hyperseed follow-up is captured in
 `docs/hyperseed_one_hive_delayed_dynamics_note.md`: three hives are
 diagnostically useful but not ontologically required for complex dynamics; the
@@ -113,8 +115,10 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the minimal A7.3 one-hive dimensionless
-  delayed-dynamics config/schema and deterministic smoke harness.
+- Recommended next step: add the read-only A7.3 preflight analyzer that
+  consumes the smoke artifacts without rerunning simulations and checks schema
+  completeness, source-ledger delay integrity, boundedness/productivity
+  guardrails, and preregistered condition/null presence.
 
 ## Blockers
 
@@ -127,21 +131,47 @@ own preregistered promotion rules.
 
 - `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
   `a5_preregistration_active=true`, `state=open`, `repo_write_allowed=true`,
-  `closed_reasons=[]`, and `notify_ben=true`.
+  `closed_reasons=[]`, `notify_ben=false`, and
+  `strategic_change_level=minor`.
+- `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
+  passed with `6 passed, 653 deselected`.
+- `.venv-conda/bin/python -m py_compile
+  ohdyn/a7_3_dimensionless_contract.py
+  ohdyn/compare_a7_3_dimensionless_delayed.py ohdyn/config.py` passed.
+- Temporary A7.3 smoke command passed:
+  `.venv-conda/bin/python -m ohdyn.compare_a7_3_dimensionless_delayed
+  --seeds 1 2 --out /tmp/omegasim_a7_3_smoke_Fh6T2L`. It emitted 9
+  conditions, seeds `1,2`, 18 run directories, 64 ticks, metrics/events,
+  source-ledger, and lifted-state artifacts with scientific status
+  `metrics_events_lifted_state_present_requires_future_read_only_preflight`.
 - `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
-  automation_guard -q` passed with `18 passed, 636 deselected`.
-- `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py` passed.
+  automation_guard -q` passed with `18 passed, 641 deselected`.
 - `git diff --check` passed.
-- Temporary smoke command passed:
-  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
-  --out /tmp/omegasim_a5_current_j6XjsM/compare`.
-- Temporary read-only residual accounting passed as a command and failed closed
-  scientifically:
-  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
-  --compare-dir /tmp/omegasim_a5_current_j6XjsM/compare
-  --out /tmp/omegasim_a5_current_j6XjsM/residual`.
 
 ## Latest Changes
+
+- 2026-06-29 09:19 PDT bounded A7.3 implementation run: read
+  `README.md`, `AUTOMATION_STATUS.md`,
+  `docs/omegasim_provisional_experiment_roadmap.md`, the active A7.3
+  preregistration, the Hyperseed delayed-dynamics/formalization notes, tests,
+  configs, and the external strategy review. The review was
+  `strategic_change_level: minor`, `notify_ben: false`; its recommendation to
+  implement an isolated A7.3 contract/config plus deterministic smoke harness
+  was accepted as scientifically sensible. No A5, A7.2, or three-hive result
+  branch was reopened.
+- Added `ohdyn/a7_3_dimensionless_contract.py` with frozen A7.3 actions,
+  dimensionless controls (`rho`, `delta`, `mu`, `kappa`, `nu`, `chi`, `eta`),
+  nine preregistered conditions/nulls, lifted-state fields, source-ledger
+  fields, event/metric schemas, primary endpoint names, productivity
+  guardrails, and delay-source invariants. Added
+  `configs/a7_3_dimensionless_smoke.yaml`, config-loader validation that fails
+  if the fixture differs from the frozen contract or mixes with older gates,
+  and `ohdyn.compare_a7_3_dimensionless_delayed`, a deterministic paired-seed
+  smoke helper that emits metrics, events, source-ledger, lifted-state, schema,
+  manifest, config, and summary artifacts for all nine conditions. Added
+  focused tests for contract/null coverage, config validation, fixed-seed
+  discipline, and smoke artifact emission. Updated `README.md` with the A7.3
+  smoke command and interpretation boundary.
 
 - 2026-06-29 08:49 PDT bounded A5 verification run under explicit A5
   reopening: read the automation memory path (no prior memory file existed),

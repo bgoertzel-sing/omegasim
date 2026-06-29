@@ -12,6 +12,18 @@ from ohdyn.a7_2_delayed_prediction_contract import (
     A7_2_CONDITIONS,
     A7_2_SMOKE_PARAMETERS,
 )
+from ohdyn.a7_3_dimensionless_contract import (
+    A7_3_ACTIONS,
+    A7_3_CONDITIONS,
+    A7_3_CONTROL_FIELDS,
+    A7_3_DELAY_SOURCE_INVARIANTS,
+    A7_3_DIMENSIONLESS_CONTROLS,
+    A7_3_LIFTED_STATE_FIELDS,
+    A7_3_PRIMARY_ENDPOINTS,
+    A7_3_PRODUCTIVITY_GUARDRAILS,
+    A7_3_SMOKE_PARAMETERS,
+    A7_3_SOURCE_LEDGER_FIELDS,
+)
 from ohdyn.a7_semantic_field_contract import A7_CONDITIONS
 from ohdyn.three_hive_ring_contract import (
     THREE_HIVE_RING_ACTIONS,
@@ -71,6 +83,7 @@ LOGISTIC_APPRAISAL_CONDITIONS = (
 
 SEMANTIC_FIELD_CONDITIONS = A7_CONDITIONS
 A7_2_DELAYED_PREDICTION_CONDITIONS = A7_2_CONDITIONS
+A7_3_DIMENSIONLESS_CONDITION_NAMES = A7_3_CONDITIONS
 THREE_HIVE_RING_CONDITION_NAMES = THREE_HIVE_RING_CONDITIONS
 
 A6_ACTIONS = (
@@ -232,6 +245,19 @@ class ThreeHiveRingConfig:
 
 
 @dataclass(frozen=True)
+class A7_3DimensionlessDelayedConfig:
+    conditions: tuple[str, ...]
+    smoke_parameters: dict[str, Any]
+    dimensionless_controls: tuple[str, ...]
+    lifted_state_fields: tuple[str, ...]
+    source_ledger_fields: tuple[str, ...]
+    control_fields: tuple[str, ...]
+    primary_endpoints: tuple[str, ...]
+    delay_source_invariants: tuple[str, ...]
+    productivity_guardrails: dict[str, Any]
+
+
+@dataclass(frozen=True)
 class HiveConfig:
     hive_id: str
     seed_offset: int
@@ -258,6 +284,7 @@ class OmegaConfig:
     logistic_appraisal: LogisticAppraisalConfig | None = None
     semantic_field: SemanticFieldConfig | None = None
     a7_2_delayed_prediction: A7_2DelayedPredictionConfig | None = None
+    a7_3_dimensionless_delayed: A7_3DimensionlessDelayedConfig | None = None
     three_hive_ring: ThreeHiveRingConfig | None = None
     hives: tuple[HiveConfig, ...] = ()
     coupling: CouplingConfig | None = None
@@ -290,6 +317,8 @@ class OmegaConfig:
             data.pop("semantic_field")
         if self.a7_2_delayed_prediction is None:
             data.pop("a7_2_delayed_prediction")
+        if self.a7_3_dimensionless_delayed is None:
+            data.pop("a7_3_dimensionless_delayed")
         if self.three_hive_ring is None:
             data.pop("three_hive_ring")
         if not self.hives:
@@ -320,6 +349,9 @@ def load_config(path: str | Path) -> OmegaConfig:
     semantic_field = _optional_semantic_field(raw.get("semantic_field"))
     a7_2_delayed_prediction = _optional_a7_2_delayed_prediction(
         raw.get("a7_2_delayed_prediction")
+    )
+    a7_3_dimensionless_delayed = _optional_a7_3_dimensionless_delayed(
+        raw.get("a7_3_dimensionless_delayed")
     )
     three_hive_ring = _optional_three_hive_ring(raw.get("three_hive_ring"))
     hives = _optional_hives(raw.get("hives"))
@@ -355,6 +387,7 @@ def load_config(path: str | Path) -> OmegaConfig:
         logistic_appraisal=logistic_appraisal,
         semantic_field=semantic_field,
         a7_2_delayed_prediction=a7_2_delayed_prediction,
+        a7_3_dimensionless_delayed=a7_3_dimensionless_delayed,
         three_hive_ring=three_hive_ring,
         hives=hives,
         coupling=coupling,
@@ -365,13 +398,16 @@ def load_config(path: str | Path) -> OmegaConfig:
             cfg.logistic_appraisal is not None
             or cfg.semantic_field is not None
             or cfg.a7_2_delayed_prediction is not None
+            or cfg.a7_3_dimensionless_delayed is not None
             or cfg.three_hive_ring is not None
         ),
+        allow_a7_3=cfg.a7_3_dimensionless_delayed is not None,
     )
     _validate_predictive_control_scope(cfg)
     _validate_logistic_appraisal_scope(cfg)
     _validate_semantic_field_scope(cfg)
     _validate_a7_2_delayed_prediction_scope(cfg)
+    _validate_a7_3_dimensionless_delayed_scope(cfg)
     _validate_three_hive_ring_scope(cfg)
     _validate_hive_seed_streams(cfg.hives, cfg.coupling)
     return cfg
@@ -905,6 +941,70 @@ def _optional_three_hive_ring(value: Any) -> ThreeHiveRingConfig | None:
     return cfg
 
 
+def _optional_a7_3_dimensionless_delayed(
+    value: Any,
+) -> A7_3DimensionlessDelayedConfig | None:
+    if value is None:
+        return None
+    section = _expect_mapping(value, "a7_3_dimensionless_delayed")
+    supported_keys = {
+        "conditions",
+        "smoke_parameters",
+        "dimensionless_controls",
+        "lifted_state_fields",
+        "source_ledger_fields",
+        "control_fields",
+        "primary_endpoints",
+        "delay_source_invariants",
+        "productivity_guardrails",
+    }
+    unknown = set(section) - supported_keys
+    if unknown:
+        names = ", ".join(sorted(unknown))
+        raise ValueError(f"a7_3_dimensionless_delayed contains unsupported keys: {names}")
+
+    cfg = A7_3DimensionlessDelayedConfig(
+        conditions=_string_tuple(
+            section.get("conditions"),
+            "a7_3_dimensionless_delayed.conditions",
+        ),
+        smoke_parameters=_expect_mapping(
+            section.get("smoke_parameters"),
+            "a7_3_dimensionless_delayed.smoke_parameters",
+        ),
+        dimensionless_controls=_string_tuple(
+            section.get("dimensionless_controls"),
+            "a7_3_dimensionless_delayed.dimensionless_controls",
+        ),
+        lifted_state_fields=_string_tuple(
+            section.get("lifted_state_fields"),
+            "a7_3_dimensionless_delayed.lifted_state_fields",
+        ),
+        source_ledger_fields=_string_tuple(
+            section.get("source_ledger_fields"),
+            "a7_3_dimensionless_delayed.source_ledger_fields",
+        ),
+        control_fields=_string_tuple(
+            section.get("control_fields"),
+            "a7_3_dimensionless_delayed.control_fields",
+        ),
+        primary_endpoints=_string_tuple(
+            section.get("primary_endpoints"),
+            "a7_3_dimensionless_delayed.primary_endpoints",
+        ),
+        delay_source_invariants=_string_tuple(
+            section.get("delay_source_invariants"),
+            "a7_3_dimensionless_delayed.delay_source_invariants",
+        ),
+        productivity_guardrails=_expect_mapping(
+            section.get("productivity_guardrails"),
+            "a7_3_dimensionless_delayed.productivity_guardrails",
+        ),
+    )
+    _validate_a7_3_preregistered_values(cfg)
+    return cfg
+
+
 def _three_hive_ring_edges(value: Any) -> tuple[ThreeHiveRingEdgeConfig, ...]:
     if not isinstance(value, list):
         raise ValueError("Config section 'three_hive_ring.edges' must be a list.")
@@ -1257,6 +1357,38 @@ def _validate_three_hive_ring_preregistered_values(
             raise ValueError(f"three_hive_ring.{key} must match the frozen contract.")
 
 
+def _validate_a7_3_preregistered_values(
+    config: A7_3DimensionlessDelayedConfig,
+) -> None:
+    expected = {
+        "conditions": A7_3_DIMENSIONLESS_CONDITION_NAMES,
+        "smoke_parameters": _jsonish_contract_mapping(A7_3_SMOKE_PARAMETERS),
+        "dimensionless_controls": A7_3_DIMENSIONLESS_CONTROLS,
+        "lifted_state_fields": A7_3_LIFTED_STATE_FIELDS,
+        "source_ledger_fields": A7_3_SOURCE_LEDGER_FIELDS,
+        "control_fields": A7_3_CONTROL_FIELDS,
+        "primary_endpoints": A7_3_PRIMARY_ENDPOINTS,
+        "delay_source_invariants": A7_3_DELAY_SOURCE_INVARIANTS,
+        "productivity_guardrails": A7_3_PRODUCTIVITY_GUARDRAILS,
+    }
+    actual = {
+        "conditions": config.conditions,
+        "smoke_parameters": _jsonish_contract_mapping(config.smoke_parameters),
+        "dimensionless_controls": config.dimensionless_controls,
+        "lifted_state_fields": config.lifted_state_fields,
+        "source_ledger_fields": config.source_ledger_fields,
+        "control_fields": config.control_fields,
+        "primary_endpoints": config.primary_endpoints,
+        "delay_source_invariants": config.delay_source_invariants,
+        "productivity_guardrails": config.productivity_guardrails,
+    }
+    for key, expected_value in expected.items():
+        if actual[key] != expected_value:
+            raise ValueError(
+                f"a7_3_dimensionless_delayed.{key} must match the frozen contract."
+            )
+
+
 def _jsonish_contract_mapping(value: dict[str, Any]) -> dict[str, Any]:
     normalized = {}
     for key, item in value.items():
@@ -1356,6 +1488,41 @@ def _validate_three_hive_ring_scope(config: OmegaConfig) -> None:
         raise ValueError(
             "three_hive_ring must not be combined with A7.2 delayed prediction."
         )
+    if config.a7_3_dimensionless_delayed is not None:
+        raise ValueError(
+            "three_hive_ring must not be combined with A7.3 dimensionless delayed dynamics."
+        )
+
+
+def _validate_a7_3_dimensionless_delayed_scope(config: OmegaConfig) -> None:
+    if config.a7_3_dimensionless_delayed is None:
+        return
+    if config.run.ticks != A7_3_SMOKE_PARAMETERS["horizon_ticks"]:
+        raise ValueError("A7.3 smoke configs must use the preregistered 64-tick horizon.")
+    if config.hives:
+        raise ValueError(
+            "a7_3_dimensionless_delayed is preregistered for one-hive A7.3 runs only."
+        )
+    if config.predictive_control is not None:
+        raise ValueError(
+            "a7_3_dimensionless_delayed must not be combined with A5 predictive_control."
+        )
+    if config.logistic_appraisal is not None:
+        raise ValueError(
+            "a7_3_dimensionless_delayed must not be combined with A6 logistic_appraisal."
+        )
+    if config.semantic_field is not None:
+        raise ValueError(
+            "a7_3_dimensionless_delayed must not be combined with A7 semantic_field."
+        )
+    if config.a7_2_delayed_prediction is not None:
+        raise ValueError(
+            "a7_3_dimensionless_delayed must not be combined with A7.2 delayed prediction."
+        )
+    if config.three_hive_ring is not None:
+        raise ValueError(
+            "a7_3_dimensionless_delayed must not be combined with three_hive_ring."
+        )
 
 
 def _validate_hive_seed_streams(
@@ -1371,12 +1538,19 @@ def _validate_hive_seed_streams(
         )
 
 
-def _validate_actions(actions: tuple[str, ...], *, allow_a6: bool = False) -> None:
+def _validate_actions(
+    actions: tuple[str, ...],
+    *,
+    allow_a6: bool = False,
+    allow_a7_3: bool = False,
+) -> None:
     required = {"idle", "message", "create_task", "work_task"}
     optional_actions = set()
     if allow_a6:
         optional_actions.update(A6_ACTIONS)
         optional_actions.update(THREE_HIVE_RING_ACTIONS)
+    if allow_a7_3:
+        optional_actions.update(A7_3_ACTIONS)
     allowed = required | optional_actions
     configured = set(actions)
     missing = required - configured
@@ -1386,7 +1560,7 @@ def _validate_actions(actions: tuple[str, ...], *, allow_a6: bool = False) -> No
     unknown = configured - allowed
     if unknown:
         names = ", ".join(sorted(unknown))
-        scope = "A6" if allow_a6 else "baseline"
+        scope = "A6/A7.3" if allow_a6 or allow_a7_3 else "baseline"
         raise ValueError(f"model.actions contains unsupported {scope} actions: {names}")
     if len(configured) != len(actions):
         raise ValueError("model.actions must not contain duplicates.")

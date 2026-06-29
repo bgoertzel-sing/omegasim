@@ -1,0 +1,142 @@
+run:
+  experiment_id: a7_3_dimensionless_delayed_smoke
+  ticks: 64
+
+model:
+  agent_count: 15
+  actions:
+    - idle
+    - message
+    - create_task
+    - work_task
+    - predict
+    - work
+    - review
+    - synthesize
+    - rest
+  task_creation_pressure: 1.0
+  work_service_capacity: 1.0
+
+outputs:
+  write_manifest: true
+  write_metrics: true
+  write_events: true
+  write_summary: true
+
+a7_3_dimensionless_delayed:
+  conditions:
+    - low_gain_contraction
+    - full_delayed_logistic
+    - no_delay_same_tick_blocked
+    - amplitude_matched_linear
+    - artifact_off
+    - cost_free_prediction
+    - spend_only_replay
+    - phase_shuffled_lag
+    - threshold_shuffled
+  smoke_parameters:
+    seeds:
+      - 1
+      - 2
+    horizon_ticks: 64
+    agent_count: 15
+    feedback_delay_ticks: 3
+    relaxation_time_ticks: 6
+    artifact_memory_decay: 0.12
+    threshold_recovery_rate: 0.02
+    threshold_learning_rate: 0.05
+    prediction_cost_work_fraction: 0.25
+    max_prediction_work_fraction_per_tick: 0.35
+    nonlinear_coupling_gain: 1.35
+    low_gain_coupling_gain: 0.25
+    linear_gain: 0.7
+    peer_coupling_spread: 0.2
+    noise_to_signal: 0.01
+    artifact_clip_min: 0.0
+    artifact_clip_max: 1.0
+  dimensionless_controls:
+    - rho
+    - delta
+    - mu
+    - kappa
+    - nu
+    - chi
+    - eta
+  lifted_state_fields:
+    - tick
+    - agent_role_activity_predict
+    - agent_role_activity_work
+    - agent_role_activity_review
+    - agent_role_activity_synthesize
+    - agent_role_activity_rest
+    - delayed_agent_role_activity_predict
+    - delayed_agent_role_activity_work
+    - delayed_agent_role_activity_review
+    - delayed_agent_role_activity_synthesize
+    - delayed_agent_role_activity_rest
+    - peer_activity_lag_predict
+    - peer_activity_lag_work
+    - peer_activity_lag_review
+    - peer_activity_lag_synthesize
+    - peer_activity_lag_rest
+    - artifact_readiness
+    - artifact_coherence
+    - contradiction_risk
+    - prediction_error
+    - prediction_uncertainty
+    - fatigue
+    - adaptive_threshold_predict
+    - adaptive_threshold_work
+    - adaptive_threshold_review
+    - adaptive_threshold_synthesize
+    - adaptive_threshold_rest
+    - work_backlog
+    - prediction_spend
+    - lost_work_opportunity_from_prediction
+    - memory_pressure
+    - task_arrivals
+    - demand_phase
+  source_ledger_fields:
+    - source_ledger_delay_integrity
+    - source_ledger_peer_activity_lag
+    - source_ledger_artifact_memory
+    - source_ledger_prediction_cost
+    - source_ledger_queue_accounting
+    - source_ledger_threshold_update
+    - source_ledger_phase_shuffle
+    - source_ledger_threshold_shuffle
+    - source_ledger_clip_residual
+  control_fields:
+    - tick
+    - demand_phase
+    - task_arrivals
+    - service_capacity
+    - action_opportunity
+    - work_budget
+    - work_backlog
+    - queued_age
+    - completion_fraction
+    - prediction_spend
+    - lost_work_opportunity_from_prediction
+    - memory_pressure
+  primary_endpoints:
+    - residual_lifted_state_delay_embedding_recurrence
+    - nonlinear_vs_linear_residual_forecastability
+    - finite_time_divergence_low_gain_control
+    - phase_shuffle_recurrence_contrast
+    - threshold_shuffle_recurrence_contrast
+    - source_ledger_reconstruction_status
+    - boundedness_status
+    - productivity_guardrail_status
+  delay_source_invariants:
+    - feedback_visible_tick_greater_than_created_tick_unless_no_delay_control
+    - same_tick_influence_blocked_for_positive_condition
+    - peer_activity_lag_fields_populated_from_prior_tick
+    - artifact_updates_visible_only_after_feedback_delay
+    - spend_only_replay_preserves_prediction_work_deductions
+    - artifact_off_preserves_queue_accounting_controls
+  productivity_guardrails:
+    completion_fraction_min: 0.02
+    work_backlog_max: 40.0
+    prediction_spend_fraction_max: 0.45
+    source_ledger_delay_integrity_required: pass

@@ -147,11 +147,27 @@ from ohdyn.a7_2_delayed_prediction_contract import (
     a7_2_required_event_fields,
     a7_2_required_metric_fields,
 )
+from ohdyn.a7_3_dimensionless_contract import (
+    A7_3_CONDITIONS,
+    A7_3_DELAY_SOURCE_INVARIANTS,
+    A7_3_DIMENSIONLESS_CONTROLS,
+    A7_3_LIFTED_STATE_FIELDS,
+    A7_3_MECHANICS_MANIFEST_FIELDS,
+    A7_3_NULL_CONDITIONS,
+    A7_3_POSITIVE_CONDITION,
+    A7_3_SMOKE_PARAMETERS,
+    A7_3_SOURCE_LEDGER_FIELDS,
+    a7_3_required_event_fields,
+    a7_3_required_metric_fields,
+)
 from ohdyn.analyze_a7_2_delayed_prediction import (
     run_a7_2_delayed_prediction_analysis,
 )
 from ohdyn.compare_a7_2_delayed_prediction import (
     run_a7_2_delayed_prediction_comparison,
+)
+from ohdyn.compare_a7_3_dimensionless_delayed import (
+    run_a7_3_dimensionless_smoke,
 )
 from ohdyn.a7_semantic_field_contract import (
     A7_CONDITIONS,
@@ -370,6 +386,7 @@ A7_2_SPEND_ONLY_REPLAY = Path("configs/a7_2_spend_only_replay_smoke.yaml")
 A7_2_ARTIFACT_OFF_SOURCE_LEDGER_NULL = Path(
     "configs/a7_2_artifact_off_source_ledger_null_smoke.yaml"
 )
+A7_3_DIMENSIONLESS_SMOKE = Path("configs/a7_3_dimensionless_smoke.yaml")
 THREE_HIVE_RING_CONTRACT_VALIDATION = Path(
     "configs/three_hive_ring_contract_validation.yaml"
 )
@@ -1665,6 +1682,143 @@ def test_a7_2_delayed_prediction_comparison_rejects_unregistered_seeds(
 ) -> None:
     with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
         run_a7_2_delayed_prediction_comparison(seeds=(1,), out_dir=tmp_path / "bad")
+
+
+def test_a7_3_contract_freezes_required_nulls_and_delay_sources() -> None:
+    assert A7_3_POSITIVE_CONDITION == "full_delayed_logistic"
+    assert set(A7_3_NULL_CONDITIONS) == set(A7_3_CONDITIONS) - {
+        A7_3_POSITIVE_CONDITION
+    }
+    assert {
+        "low_gain_contraction",
+        "no_delay_same_tick_blocked",
+        "amplitude_matched_linear",
+        "artifact_off",
+        "cost_free_prediction",
+        "spend_only_replay",
+        "phase_shuffled_lag",
+        "threshold_shuffled",
+    }.issubset(A7_3_NULL_CONDITIONS)
+    assert tuple(A7_3_DIMENSIONLESS_CONTROLS) == (
+        "rho",
+        "delta",
+        "mu",
+        "kappa",
+        "nu",
+        "chi",
+        "eta",
+    )
+    assert {
+        "delayed_agent_role_activity_predict",
+        "peer_activity_lag_predict",
+        "artifact_readiness",
+        "artifact_coherence",
+        "contradiction_risk",
+        "prediction_error",
+        "prediction_uncertainty",
+        "adaptive_threshold_predict",
+        "lost_work_opportunity_from_prediction",
+        "memory_pressure",
+        "task_arrivals",
+    }.issubset(A7_3_LIFTED_STATE_FIELDS)
+    assert {
+        "source_ledger_delay_integrity",
+        "source_ledger_peer_activity_lag",
+        "source_ledger_artifact_memory",
+        "source_ledger_prediction_cost",
+        "source_ledger_queue_accounting",
+        "source_ledger_threshold_update",
+    }.issubset(A7_3_SOURCE_LEDGER_FIELDS)
+    assert {
+        "same_tick_influence_blocked",
+        "feedback_created_tick",
+        "feedback_visible_tick",
+    }.issubset(a7_3_required_event_fields())
+    assert set(A7_3_DELAY_SOURCE_INVARIANTS) >= {
+        "same_tick_influence_blocked_for_positive_condition",
+        "artifact_updates_visible_only_after_feedback_delay",
+    }
+
+
+def test_a7_3_dimensionless_config_loads_frozen_contract() -> None:
+    config = load_config(A7_3_DIMENSIONLESS_SMOKE)
+
+    assert config.run.ticks == A7_3_SMOKE_PARAMETERS["horizon_ticks"]
+    assert config.a7_3_dimensionless_delayed is not None
+    assert config.a7_3_dimensionless_delayed.conditions == A7_3_CONDITIONS
+    assert (
+        config.a7_3_dimensionless_delayed.smoke_parameters["horizon_ticks"]
+        == A7_3_SMOKE_PARAMETERS["horizon_ticks"]
+    )
+    assert config.a7_3_dimensionless_delayed.lifted_state_fields == A7_3_LIFTED_STATE_FIELDS
+    assert config.a7_2_delayed_prediction is None
+    assert config.three_hive_ring is None
+    assert config.hives == ()
+
+
+def test_a7_3_config_schema_rejects_changed_frozen_contract(tmp_path: Path) -> None:
+    raw = yaml.safe_load(A7_3_DIMENSIONLESS_SMOKE.read_text())
+    raw["a7_3_dimensionless_delayed"]["smoke_parameters"]["horizon_ticks"] = 65
+    bad_path = tmp_path / "bad_a7_3_contract.yaml"
+    bad_path.write_text(yaml.safe_dump(raw, sort_keys=True))
+
+    with pytest.raises(ValueError, match="must match the frozen contract"):
+        load_config(bad_path)
+
+
+def test_a7_3_dimensionless_smoke_emits_lifted_state_and_source_ledger(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "a7_3_smoke"
+
+    rows = run_a7_3_dimensionless_smoke(out_dir=out_dir)
+
+    assert len(rows) == len(A7_3_CONDITIONS) * 2
+    assert {row["seed"] for row in rows} == {1, 2}
+    assert {row["tick_count"] for row in rows} == {64}
+    manifest_rows = list(
+        csv.DictReader((out_dir / "a7_3_dimensionless_smoke_manifest.csv").open())
+    )
+    assert list(manifest_rows[0]) == list(A7_3_MECHANICS_MANIFEST_FIELDS)
+    assert [row["condition"] for row in manifest_rows[::2]] == list(A7_3_CONDITIONS)
+    for row in manifest_rows:
+        run_dir = out_dir / row["run_dir"]
+        assert int(row["metrics_rows"]) == 64
+        assert int(row["events_rows"]) == 64
+        assert int(row["source_ledger_rows"]) == 64
+        assert int(row["lifted_state_rows"]) == 64
+        for artifact in (
+            "config.yaml",
+            "manifest.yaml",
+            "metrics.csv",
+            "events.csv",
+            "source_ledger.csv",
+            "lifted_state.csv",
+            "metrics_schema.csv",
+            "events_schema.csv",
+            "source_ledger_schema.csv",
+            "lifted_state_schema.csv",
+        ):
+            assert (run_dir / artifact).exists()
+    full_run = out_dir / "full_delayed_logistic_seed1"
+    first_metric = next(csv.DictReader((full_run / "metrics.csv").open()))
+    for field in a7_3_required_metric_fields():
+        assert field in first_metric
+    assert first_metric["source_ledger_delay_integrity"] == "pass"
+    first_event = next(csv.DictReader((full_run / "events.csv").open()))
+    assert first_event["same_tick_influence_blocked"] == "True"
+    no_delay_metric = next(
+        csv.DictReader((out_dir / "no_delay_same_tick_blocked_seed1" / "metrics.csv").open())
+    )
+    assert no_delay_metric["source_ledger_delay_integrity"] == "control_no_delay"
+    assert "Horizon: 64 ticks" in (out_dir / "summary.md").read_text()
+
+
+def test_a7_3_dimensionless_smoke_rejects_unregistered_seeds(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="fixed to paired seeds 1 and 2"):
+        run_a7_3_dimensionless_smoke(seeds=(1,), out_dir=tmp_path / "bad")
 
 
 def test_a7_2_delayed_prediction_analyzer_fails_closed_on_missing_schema(
