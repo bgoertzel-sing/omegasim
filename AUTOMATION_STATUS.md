@@ -58,6 +58,16 @@ amplifier, emphasize cross-hive artifact readiness plus contradiction/risk over
 demand prediction alone, and preserve a possible later one-hive dimensionless
 delayed-dynamics sweep rather than retro-tuning A7.2.
 
+Ben's 2026-06-28 Hyperseed/dynamical formalization PDF is captured in
+`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`. It
+sharpens the prospective next-design frame: any A7.3 or analytic-map pivot
+should expose dimensionless controls (`rho`, `delta`, `mu`, `kappa`, `nu`),
+log the lifted delayed state explicitly, preserve compact boundedness, use a
+low-gain contraction baseline, and require Lyapunov/recurrence/surrogate/
+refinement/semantic-provenance gates before any strange-attractor-like claim.
+This is prospective design guidance only and does not reopen A7.2 or authorize
+post-result tuning of the fail-closed gates.
+
 The post-A7.2 three-hive ring is now past the contract/config-validation,
 schema/source-ledger smoke, read-only preflight, smallest deterministic
 mechanics-smoke, and read-only residual/null analyzer gates. The helper
