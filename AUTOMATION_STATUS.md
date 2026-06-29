@@ -5,10 +5,20 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Current active task: Ben's explicit 2026-06-29 A5 instruction is being treated
-as the next requested bounded research-engineering loop for this run. The
-concise A5 single-hive anticipatory predictive-control preregistration already
-exists and is committed at
+Source-of-truth status: Ben's 2026-06-29 instruction says OmegaSim should
+proceed with A7.3 for now. A7.3 one-hive dimensionless delayed dynamics is the
+active next OmegaSim gate. This supersedes the previous
+awaiting-preregistration posture and any older A5-focused prompt, and does not
+reopen A7.2, the three-hive ring, or A5 as result-bearing lines.
+
+Current active task: implement the isolated A7.3 contract/config plus a
+deterministic smoke harness that emits lifted-state and source-ledger artifacts
+for the full mechanism and required nulls before any sweep. The A7.3 scaffold
+already has a preregistration, minimal contract/config/smoke/preflight path,
+and latest GPT-5.5-Pro review verdict `GO` with `notify_ben: false`.
+
+Historical A5 context: the concise A5 single-hive anticipatory predictive-control
+preregistration already exists and is committed at
 `docs/a5_single_hive_anticipatory_predictive_control_preregistration.md` and
 still matches Ben's requested design: deterministic single hive, matched
 task-arrival totals, service capacity, action opportunity, work budget,
@@ -29,12 +39,6 @@ claims. No broad A5 mechanics, broader seed sweeps, dashboards, integrations,
 result-bearing committed run artifacts, or three-hive coupling are authorized.
 The current Ben-facing decision note is
 `docs/results/ben_decision_a5_complete_failclosed_20260629.md`.
-
-Recent A7.3 context remains historical for this A5-focused run: A7.3 one-hive
-dimensionless delayed dynamics had been opened by a separate proceed
-instruction and now has a minimal contract/config/smoke/preflight scaffold, but
-this A5 run does not broaden A7.3, reopen A7.2, or reopen the three-hive ring
-as result-bearing lines.
 
 Broader governance context remains relevant: the later A7.2 delayed
 artifact-mediated endogenous prediction gate and downstream three-hive ring gate
@@ -104,16 +108,16 @@ causal collective-structure claims.
 
 ## Recommended Next Step
 
-- Recommended next step: send Ben the A5 complete/fail-closed decision note and
-  wait for a fresh preregistered direction before adding any new A5 mechanics.
+- Recommended next step: continue the A7.3 implementation path by running or
+  tightening the isolated deterministic smoke/preflight harness for the full
+  mechanism and required nulls before any sweep.
 
 ## Blockers
 
-No environment blocker. The A5 preregistration and smallest deterministic
-scaffold already exist and still run. The scientific blocker is interpretive:
-the current A5 smoke remains fail-closed under its preregistered promotion
-rules, so it does not authorize broader A5 mechanics, rescue tuning, or
-strange-attractor-like claims.
+No environment blocker. The previous A5, A7.2, and three-hive gates remain
+fail-closed historical results, but Ben's A7.3 direction and the latest
+GPT-5.5-Pro `GO` review leave OmegaSim open for the bounded A7.3
+smoke/preflight implementation path.
 
 ## Verification
 
