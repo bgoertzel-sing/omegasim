@@ -186,6 +186,15 @@ from ohdyn.analyze_a7_3_residual_skeleton import (
     A7_3_RESIDUAL_STATUS_SMOKE_SCALE,
     run_a7_3_residual_skeleton_analysis,
 )
+from ohdyn.analyze_a7_3_residual_recurrence import (
+    A7_3_RECURRENCE_CONTRAST_FIELDS,
+    A7_3_RECURRENCE_GATE_FIELDS,
+    A7_3_RECURRENCE_MANIFEST_FIELDS,
+    A7_3_RECURRENCE_METRIC_FIELDS,
+    A7_3_RECURRENCE_STATUS_FAIL_CLOSED,
+    A7_3_RECURRENCE_STATUS_PREFLIGHT_REQUIRED,
+    run_a7_3_residual_recurrence_analysis,
+)
 from ohdyn.a7_semantic_field_contract import (
     A7_CONDITIONS,
     A7_CONTROL_FIELDS,
@@ -2086,6 +2095,89 @@ def test_a7_3_residual_skeleton_fails_closed_without_preflight(
     )
     assert {row["status"] for row in metric_rows} == {
         A7_3_RESIDUAL_STATUS_PREFLIGHT_REQUIRED
+    }
+
+
+def test_a7_3_residual_recurrence_analyzes_fixed_validation_and_fails_closed(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_3_validation"
+    preflight_dir = tmp_path / "a7_3_validation_preflight"
+    out_dir = tmp_path / "a7_3_residual_recurrence"
+    run_a7_3_dimensionless_validation(out_dir=compare_dir)
+    run_a7_3_preflight_analysis(compare_dir=compare_dir, out_dir=preflight_dir)
+
+    result = run_a7_3_residual_recurrence_analysis(
+        compare_dir=compare_dir,
+        preflight_dir=preflight_dir,
+        out_dir=out_dir,
+    )
+
+    assert result["status"] == A7_3_RECURRENCE_STATUS_FAIL_CLOSED
+    manifest_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_recurrence_manifest.csv").open())
+    )
+    assert list(manifest_rows[0]) == list(A7_3_RECURRENCE_MANIFEST_FIELDS)
+    assert manifest_rows[0]["preflight_status"] == A7_3_PREFLIGHT_STATUS_ELIGIBLE
+    assert int(manifest_rows[0]["run_count"]) == len(A7_3_CONDITIONS) * 2
+    metric_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_recurrence_metrics.csv").open())
+    )
+    assert list(metric_rows[0]) == list(A7_3_RECURRENCE_METRIC_FIELDS)
+    assert len(metric_rows) == len(A7_3_CONDITIONS) * 2 * len(
+        A7_3_VALIDATION_TARGET_FIELDS
+    )
+    assert {int(row["row_count"]) for row in metric_rows} == {
+        A7_3_VALIDATION_PARAMETERS["horizon_ticks"]
+    }
+    assert {row["preflight_status"] for row in metric_rows} == {
+        A7_3_PREFLIGHT_STATUS_ELIGIBLE
+    }
+    assert all(float(row["recurrence_radius"]) >= 0.0 for row in metric_rows)
+    assert all(
+        row["status"] == A7_3_RECURRENCE_STATUS_FAIL_CLOSED
+        for row in metric_rows
+    )
+    contrast_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_recurrence_contrasts.csv").open())
+    )
+    assert list(contrast_rows[0]) == list(A7_3_RECURRENCE_CONTRAST_FIELDS)
+    assert len(contrast_rows) == len(A7_3_NULL_CONDITIONS) * 2 * len(
+        A7_3_VALIDATION_TARGET_FIELDS
+    )
+    gate_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_recurrence_gates.csv").open())
+    )
+    assert list(gate_rows[0]) == list(A7_3_RECURRENCE_GATE_FIELDS)
+    assert any(row["status"] == "fail_closed" for row in gate_rows)
+    summary = (out_dir / "summary.md").read_text()
+    assert "read-only over fixed 256-tick A7.3 validation artifacts" in summary
+    assert "Promotion is fail-closed" in summary
+
+
+def test_a7_3_residual_recurrence_requires_eligible_preflight(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a7_3_validation"
+    out_dir = tmp_path / "a7_3_residual_recurrence"
+    run_a7_3_dimensionless_validation(out_dir=compare_dir)
+
+    result = run_a7_3_residual_recurrence_analysis(
+        compare_dir=compare_dir,
+        preflight_dir=tmp_path / "missing_preflight",
+        out_dir=out_dir,
+    )
+
+    assert result["status"] == A7_3_RECURRENCE_STATUS_PREFLIGHT_REQUIRED
+    manifest_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_recurrence_manifest.csv").open())
+    )
+    assert manifest_rows[0]["preflight_status"] == "missing_preflight_manifest"
+    metric_rows = list(
+        csv.DictReader((out_dir / "a7_3_residual_recurrence_metrics.csv").open())
+    )
+    assert {row["status"] for row in metric_rows} == {
+        A7_3_RECURRENCE_STATUS_PREFLIGHT_REQUIRED
     }
 
 

@@ -245,7 +245,16 @@ it does not enable result-bearing recurrence analysis.
 ```bash
 python -m ohdyn.compare_a7_3_dimensionless_delayed --validation --out runs/a7_3_dimensionless_validation_seed1_2
 python -m ohdyn.analyze_a7_3_preflight --compare-dir runs/a7_3_dimensionless_validation_seed1_2 --out runs/a7_3_validation_preflight_seed1_2
+python -m ohdyn.analyze_a7_3_residual_recurrence --compare-dir runs/a7_3_dimensionless_validation_seed1_2 --preflight-dir runs/a7_3_validation_preflight_seed1_2 --out runs/a7_3_residual_recurrence_validation_seed1_2
 ```
+
+The A7.3 residual/recurrence analyzer is read-only over the fixed validation
+artifacts and requires an eligible preflight manifest. It emits residual,
+recurrence, surrogate, local-divergence, null-contrast, gate, manifest, and
+summary artifacts. The 2026-06-29 bounded smoke verification stayed
+fail-closed: preflight, coverage, and row-count gates passed, but all
+preregistered null/divergence promotion gates failed. This does not support
+A7.3 promotion, lobe-like, semantic-dynamics, or strange-attractor-like claims.
 
 ## Three-Hive Ring Schema And Mechanics Smoke
 

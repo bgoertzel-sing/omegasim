@@ -12,13 +12,12 @@ supersedes the previous awaiting-preregistration posture and does not reopen
 A7.2, the three-hive ring, or any A5 rescue tuning.
 
 Current active task: continue only the preregistered A7.3 line from clean
-checked-in artifacts. The next allowed work is the long-horizon A7.3
-residual/recurrence analyzer gate in
-`docs/a7_3_long_horizon_residual_recurrence_preregistration.md`, using the
-existing fixed `256`-tick validation artifacts and eligible preflight contract.
-Do not treat the quarantined A7.3 analyzer WIP at
-`/tmp/omegasim_conflict_20260629_120642/` as committed evidence, and do not
-reuse it as an active result-bearing line.
+checked-in artifacts. The long-horizon A7.3 residual/recurrence analyzer gate
+from `docs/a7_3_long_horizon_residual_recurrence_preregistration.md` is now
+implemented as a read-only analyzer over fixed `256`-tick validation artifacts
+and an eligible preflight manifest. Do not treat the quarantined A7.3 analyzer
+WIP at `/tmp/omegasim_conflict_20260629_120642/` as committed evidence, and do
+not reuse it as an active result-bearing line.
 
 A5 remains fail-closed at the seed `5,6` smoke/analyzer boundary. Forecast
 skill alone remains insufficient for structured-dynamics claims, and no A5
@@ -27,6 +26,22 @@ reopening.
 
 ## Latest Changes
 
+- 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run: added the clean
+  read-only `ohdyn.analyze_a7_3_residual_recurrence` gate, with regression
+  tests for eligible fixed validation artifacts and missing-preflight
+  fail-closed behavior. The analyzer consumes existing A7.3 validation and
+  preflight artifacts only, emits residual/recurrence, surrogate, local
+  divergence, null-contrast, gate, manifest, and summary rows, and keeps
+  promotion fail-closed unless all preregistered gates pass.
+- 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run: temporary fixed
+  validation/preflight/analyzer verification under
+  `/tmp/omegasim_a7_3_recurrence_eZSsUb` emitted 18 validation run
+  directories, 144 residual/recurrence metric rows, 128 null contrast rows, and
+  12 gate rows. Overall status was `fail_closed_no_a7_3_promotion`: preflight,
+  condition/seed coverage, and minimum-row gates passed, but all eight
+  preregistered null gates and the low-gain local-divergence gate failed
+  closed. This is not support for A7.3 promotion, lobe-like,
+  semantic-dynamics, or strange-attractor-like claims.
 - 2026-06-29 12:22 PDT Ben-decision repair: resolved the PAUSE-RECOVER
   governance conflict using Ben's latest instruction that OmegaSim should
   proceed and that A7.3 is good for now. Restored A7.3 one-hive dimensionless
@@ -60,20 +75,50 @@ reopening.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the preregistered A7.3 long-horizon
-  residual/recurrence analyzer from clean checked-in code, consuming only
-  eligible A7.3 validation/preflight artifacts and emitting fail-closed
-  residual, recurrence, surrogate, and local-divergence rows.
+- Recommended next step: write a concise A7.3 long-horizon validation closure
+  note in `docs/results/` from the checked-in analyzer contract and the
+  fail-closed 2026-06-29 verification output, without rerunning simulations or
+  adding new mechanics.
 
 ## Blockers
 
 No environment blocker. The prior governance blocker is resolved by Ben's
 latest A7.3 instruction. The main caution is cleanliness: A5 remains
-fail-closed, and the quarantined A7.3 analyzer WIP must stay excluded from the
-active result-bearing line.
+fail-closed, A7.3 validation just failed promotion gates, and the quarantined
+A7.3 analyzer WIP must stay excluded from the active result-bearing line.
 
 ## Verification
 
+- 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'a7_3' -q`
+  passed with `19 passed, 653 deselected`.
+- 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run:
+  `.venv-conda/bin/python -m py_compile
+  ohdyn/analyze_a7_3_residual_recurrence.py tests/test_run_harness.py`
+  passed.
+- 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run:
+  temporary validation/preflight/analyzer command passed:
+  `.venv-conda/bin/python -m ohdyn.compare_a7_3_dimensionless_delayed
+  --validation --out /tmp/omegasim_a7_3_recurrence_eZSsUb/compare`,
+  `.venv-conda/bin/python -m ohdyn.analyze_a7_3_preflight --compare-dir
+  /tmp/omegasim_a7_3_recurrence_eZSsUb/compare --out
+  /tmp/omegasim_a7_3_recurrence_eZSsUb/preflight`, and
+  `.venv-conda/bin/python -m ohdyn.analyze_a7_3_residual_recurrence
+  --compare-dir /tmp/omegasim_a7_3_recurrence_eZSsUb/compare --preflight-dir
+  /tmp/omegasim_a7_3_recurrence_eZSsUb/preflight --out
+  /tmp/omegasim_a7_3_recurrence_eZSsUb/analysis`. The analyzer reported
+  `run_count=18`, `metric_rows=144`, `contrast_rows=128`, `gate_rows=12`,
+  and `status=fail_closed_no_a7_3_promotion`.
+- 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
+  `state=open`, `should_noop=false`, `repo_write_allowed=true`,
+  `notify_ben=true`, `strategic_change_level=major`, and the A7.3 closure-note
+  next action from the status/review reconciliation. This run records that the
+  major strategic review direction shift has already been resolved by Ben's
+  newer A7.3 proceed instruction, but Ben should still be notified of the
+  fail-closed A7.3 validation outcome.
+- 2026-06-29 12:34 PDT A7.3 residual/recurrence analyzer run:
+  `git diff --check` passed.
 - 2026-06-29 12:22 PDT Ben-decision repair:
   `.venv-conda/bin/python -m ohdyn.automation_guard` passed and reported
   `state=open`, `should_noop=false`, `repo_write_allowed=true`,
