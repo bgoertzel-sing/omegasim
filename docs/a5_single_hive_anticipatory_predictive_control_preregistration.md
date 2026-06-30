@@ -98,6 +98,14 @@ contrasts that can support it. This is an audit/provenance contract only; it
 does not add simulator mechanics, predictor families, broader seeds, or
 promotion language.
 
+2026-06-30 15:15 PDT checkpoint: the comparison design manifest must also make
+the resource-bounded prediction axis explicit. It should state that zero
+prediction is the reactive baseline, intermediate low/medium/high budgets are
+candidate conditions only after matched null and accounting checks, and oracle
+prediction is a smoothing positive control rather than target dynamics
+evidence. This is audit/provenance metadata only; it does not add simulator
+mechanics, predictor families, broader seeds, or promotion language.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -229,11 +237,14 @@ The comparison helper must also emit
 the fixed A5 condition grid, prediction-budget axis, budget-matched null
 pairings, preregistration path, fixed lead/signal/phase parameters, deterministic
 phase-shifted timing-broken null controls, oracle-positive-control role, and
-fail-closed promotion gate. It must also include an endpoint evidence map that
-links every preregistered endpoint family to the required comparison or residual
-accounting artifact fields and null/control context. This manifest is not a new
-mechanic; it is an accounting artifact that makes the preregistered design
-surface explicit before residual analysis.
+fail-closed promotion gate. It must make the resource-bounded prediction axis
+explicit by separating the zero-budget reactive baseline, intermediate-budget
+candidate conditions, their budget-matched timing-broken nulls, and oracle
+smoothing. It must also include an endpoint evidence map that links every
+preregistered endpoint family to the required comparison or residual accounting
+artifact fields and null/control context. This manifest is not a new mechanic;
+it is an accounting artifact that makes the preregistered design surface
+explicit before residual analysis.
 
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The

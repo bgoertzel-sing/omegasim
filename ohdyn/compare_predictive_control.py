@@ -584,6 +584,9 @@ def _design_manifest(
             for label, config_path in generated_configs
         ],
         "prediction_budget_axis": _prediction_budget_axis(generated_configs),
+        "resource_bounded_prediction_axis": _resource_bounded_prediction_axis(
+            generated_configs
+        ),
         "budget_matched_null_pairings": _budget_null_map(set(labels)),
         "accounting_locks": {
             "artifact": "predictive_control_accounting_locks.csv",
@@ -651,6 +654,88 @@ def _prediction_budget_axis(
             }
         )
     return axis
+
+
+def _resource_bounded_prediction_axis(
+    generated_configs: tuple[tuple[str, Path], ...],
+) -> dict[str, Any]:
+    labels = tuple(label for label, _ in generated_configs)
+    null_map = _budget_null_map(set(labels))
+    null_labels = set(null_map.values())
+    budget_levels = []
+    for label, config_path in generated_configs:
+        cfg = load_config(config_path)
+        assert cfg.predictive_control is not None
+        prediction_budget = cfg.predictive_control.prediction_budget
+        predictive_condition = cfg.predictive_control.condition
+        if predictive_condition == "oracle":
+            tier = "oracle"
+            role = "smoothing_positive_control_not_target"
+        elif prediction_budget == 0.0 or predictive_condition == "reactive":
+            tier = "none"
+            role = "zero_budget_reactive_baseline"
+        elif label in null_labels or predictive_condition == "spend_only_replay":
+            tier = _budget_tier(prediction_budget)
+            role = "budget_matched_timing_broken_null"
+        elif label in null_map:
+            tier = _budget_tier(prediction_budget)
+            role = "intermediate_budget_candidate"
+        else:
+            tier = _budget_tier(prediction_budget)
+            role = "diagnostic_or_cost_calibration_condition"
+        budget_levels.append(
+            {
+                "label": label,
+                "predictive_condition": predictive_condition,
+                "prediction_budget": prediction_budget,
+                "budget_tier": tier,
+                "promotion_role": role,
+                "matched_null": null_map.get(label, ""),
+                "requires_residual_error_after_accounting": role
+                == "intermediate_budget_candidate",
+                "interpretation_boundary": _budget_interpretation_boundary(role),
+            }
+        )
+    return {
+        "hypothesis": (
+            "Prediction is a scarce managed resource: zero budget is reactive, "
+            "oracle prediction may smooth away interesting residual dynamics, "
+            "and intermediate budgets are interpretable only if their residuals "
+            "remain structured after accounting and budget-matched timing-broken nulls."
+        ),
+        "primary_intermediate_budget_question": (
+            "Do intermediate budgets, represented by low, medium, or high "
+            "non-oracle prediction budgets, produce richer but still partially "
+            "predictable residual collective dynamics than zero-budget reactive "
+            "control or oracle smoothing?"
+        ),
+        "levels": budget_levels,
+    }
+
+
+def _budget_tier(prediction_budget: float) -> str:
+    if prediction_budget <= 0.0:
+        return "none"
+    if prediction_budget <= 0.4:
+        return "low"
+    if prediction_budget < 0.8:
+        return "medium"
+    return "high"
+
+
+def _budget_interpretation_boundary(role: str) -> str:
+    if role == "zero_budget_reactive_baseline":
+        return "baseline for no anticipatory prediction spend"
+    if role == "smoothing_positive_control_not_target":
+        return "forecast availability ceiling; not target dynamics evidence"
+    if role == "budget_matched_timing_broken_null":
+        return "control preserving budget/spend while breaking useful timing"
+    if role == "intermediate_budget_candidate":
+        return (
+            "candidate only if it beats reactive and matched nulls while retaining "
+            "nonzero structured residual errors after full accounting"
+        )
+    return "diagnostic support; not standalone residual-structure evidence"
 
 
 def _promotion_gate_manifest(

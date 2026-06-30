@@ -5779,6 +5779,37 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         "nonlinear": "nonlinear_shuffled",
         "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
     }
+    resource_axis = design_manifest["resource_bounded_prediction_axis"]
+    assert "Prediction is a scarce managed resource" in resource_axis["hypothesis"]
+    assert (
+        "intermediate budgets"
+        in resource_axis["primary_intermediate_budget_question"]
+    )
+    resource_levels = {row["label"]: row for row in resource_axis["levels"]}
+    assert resource_levels["reactive"]["promotion_role"] == (
+        "zero_budget_reactive_baseline"
+    )
+    assert resource_levels["linear"] == {
+        "label": "linear",
+        "predictive_condition": "linear",
+        "prediction_budget": 0.35,
+        "budget_tier": "low",
+        "promotion_role": "intermediate_budget_candidate",
+        "matched_null": "shuffled",
+        "requires_residual_error_after_accounting": True,
+        "interpretation_boundary": (
+            "candidate only if it beats reactive and matched nulls while retaining "
+            "nonzero structured residual errors after full accounting"
+        ),
+    }
+    assert resource_levels["nonlinear"]["budget_tier"] == "medium"
+    assert resource_levels["nonlinear_high_budget"]["budget_tier"] == "high"
+    assert resource_levels["oracle"]["promotion_role"] == (
+        "smoothing_positive_control_not_target"
+    )
+    assert resource_levels["shuffled"]["promotion_role"] == (
+        "budget_matched_timing_broken_null"
+    )
     assert design_manifest["conditions"][1]["lead_ticks"] == 2
     assert design_manifest["conditions"][1]["signal_period"] == 12
     assert design_manifest["conditions"][1]["signal_amplitude"] == 0.35

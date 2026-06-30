@@ -71,7 +71,11 @@ lead/signal/phase parameters and the deterministic phase-shifted timing-broken
 null controls, making the shuffled/phase-randomized null surface auditable
 before residual interpretation. It also maps each preregistered endpoint family
 to the concrete comparison or residual-accounting artifacts, fields, endpoint
-values, control levels, and null contrasts that would have to support it.
+values, control levels, and null contrasts that would have to support it. The
+manifest also makes the resource-bounded prediction axis explicit: reactive is
+the zero-budget baseline, intermediate budgets are candidates only after
+budget-matched null and accounting checks, and oracle is a smoothing positive
+control rather than target dynamics evidence.
 
 Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
 closed without a fresh preregistration. Ben's 2026-06-28 decision opened the
