@@ -60,6 +60,14 @@ scaffold, and fail-closed interpretation. It does not authorize broad predictor
 tuning, broader seed sweeps, dashboards, integrations, A7-family mechanics, or
 three-hive delayed anticipatory coupling.
 
+2026-06-30 09:11 PDT checkpoint: the current automation request again selects
+this bounded A5 single-hive predictive-control stage. The checked-in
+preregistration, condition grid, accounting-lock audit, and deterministic
+smoke/analyzer scaffold remain the authorized surface. This checkpoint
+reconciles status after an intervening analytic-map pivot note; it does not
+authorize new mechanics, dashboards, integrations, broader seed sweeps, A7-family
+work, or downstream multi-hive coupling.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero

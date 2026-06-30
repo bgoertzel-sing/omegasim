@@ -5,24 +5,28 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-06-30 instruction selects the analytic
-delayed-map pivot as the active next OmegaSim gate, not A5.2.
+Source-of-truth status: Ben's current 2026-06-30 automation prompt explicitly
+reopens the bounded A5 single-hive anticipatory predictive-control stage.
 
-This does not reopen A5.2 or authorize broad A5 simulator work. Prior A5
-smoke/analyzer evidence remains negative background: intermediate predictors
-improved forecast skill, but residual/null, oracle-nontriviality, compression,
-and guardrail criteria did not support residual-structure promotion.
+This overrides the prior closed/no-op recommendation for this bounded
+preregistration/scaffold stage only. The active source of truth is
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
 
-The active next work should use
-`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md` and the
-A5/A7 negative evidence to implement the smallest analytic delayed
-resource-bounded prediction map before adding simulator mechanics. The first
-map should expose the same dimensionless axes identified in the Hyperseed note:
-`rho`, `delta`, `mu`, `kappa`, and `nu`, with contraction/boundedness,
-recurrence, local-divergence, and surrogate-null diagnostics.
+The concise A5 preregistration already exists and covers the deterministic
+single-hive setup, resource-bounded prediction hypothesis, reactive/linear/
+nonlinear/oracle/null condition grid, matched accounting locks, primary
+endpoints, guardrails, and fail-closed interpretation rules. The checked-in
+scaffold remains limited to the deterministic single-hive smoke/pilot and
+read-only residual accounting. No broad A5 tuning, A7-family work, dashboards,
+external integrations, live task systems, or three-hive coupling are authorized
+by this status.
 
 ## Latest Changes
 
+- 2026-06-30 09:11 PDT A5 status reconciliation: restored the current focus to
+  the explicitly requested bounded A5 single-hive predictive-control stage after
+  an intervening analytic delayed-map pivot note, and added a preregistration
+  checkpoint without changing simulator mechanics.
 - 2026-06-30 08:55 PDT Ben direction update: Ben explicitly selected the
   analytic delayed-map pivot, not A5.2. The active next gate is now a minimal
   analytic delayed resource-bounded prediction map using the Hyperseed
@@ -62,6 +66,31 @@ recurrence, local-divergence, and surrogate-null diagnostics.
 
 ## Verification
 
+- 2026-06-30 09:11 PDT guard check after A5 status reconciliation:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `should_noop=false`, `repo_write_allowed=true`, and recommended review of the
+  bounded A5 preregistration plus accounting locks before deciding whether to
+  authorize a fresh A5.2 implementation gate.
+- 2026-06-30 09:11 PDT focused A5/guard regression set:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-06-30 09:11 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260630_0911`
+  completed.
+- 2026-06-30 09:11 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_0911`
+  completed with 16 single-hive matched-demand run artifacts and 16/16 passing
+  accounting-lock audit rows.
+- 2026-06-30 09:11 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_0911 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260630_0911`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-06-30 09:11 PDT guard regression slice:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`30 passed, 651 deselected`).
+- 2026-06-30 09:11 PDT syntax and whitespace checks:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py ohdyn/compare_predictive_control.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
 - 2026-06-30 02:05 PDT guard check before smoke:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
   `should_noop=false`, `repo_write_allowed=true`, and recommended the bounded
@@ -206,14 +235,13 @@ recurrence, local-divergence, and surrogate-null diagnostics.
 
 ## Blockers
 
-No environment blocker. Broader A5 work and A5.2 implementation are not
-authorized. The scientific challenge is now to make the analytic delayed-map
-pivot small enough to be mathematically interpretable while still exposing the
-delayed nonlinear self-coupling axes needed for strange-attractor-oriented
-search.
+No environment blocker. Broader A5 work, A5.2 implementation, A7-family work,
+dashboards, integrations, wider seed sweeps, and downstream three-hive coupling
+are not authorized by the current bounded A5 prompt. Existing bounded A5 smoke
+evidence remains fail-closed for residual-structure, lobe-like, or
+strange-attractor-like promotion.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the smallest analytic delayed
-  resource-bounded prediction map over `rho`, `delta`, `mu`, `kappa`, and `nu`
-  before adding simulator mechanics.
+- Recommended next step: review the bounded A5 preregistration plus accounting
+  locks, then decide whether to authorize a fresh A5.2 implementation gate.
