@@ -3237,7 +3237,7 @@ def test_automation_guard_closes_current_a5_reopening_under_a5_a7_3_recovery_rev
     assert state["review_recommended_next_action"] == review_action
 
 
-def test_automation_guard_opens_current_a5_when_status_overrides_recovery_review(
+def test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold(
     tmp_path: Path,
 ) -> None:
     status_path = tmp_path / "AUTOMATION_STATUS.md"
@@ -3250,13 +3250,16 @@ def test_automation_guard_opens_current_a5_when_status_overrides_recovery_review
     a5_path.parent.mkdir()
     a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
     action = (
-        "verify the existing deterministic A5 single-hive smoke scaffold and "
-        "read-only residual accounting remain green before any larger A5 holdout."
+        "notify Ben that the reopened bounded A5 pass is now closed/no-op "
+        "after repeated fail-closed seed `5,6` evidence, then ask whether to "
+        "activate A5.2 endogenous delayed prediction-spend or pivot to the "
+        "analytic delayed-map sandbox."
     )
     review_action = (
-        "Recover the stale/conflicting loop, close A5/A7.3 as fail-closed "
-        "evidence, and draft one non-active preregistration for endogenous "
-        "delayed prediction-spend before any simulator run."
+        "Recover governance by closing the reopened bounded A5 pass as "
+        "completed fail-closed, block further A5 scaffold runs, and ask Ben "
+        "whether to activate A5.2 endogenous delayed prediction-spend or the "
+        "analytic delayed-map pivot."
     )
     status_path.write_text(
         "\n".join(
@@ -3272,6 +3275,10 @@ def test_automation_guard_opens_current_a5_when_status_overrides_recovery_review
                 "bounded preregistration/scaffold stage only.",
                 "The active source of truth is "
                 "`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.",
+                "Interpretation boundary: the repeated bounded seed `5,6` "
+                "A5 smoke/analyzer results improved forecast skill, but "
+                "residual/null, oracle-nontriviality, compression, and guardrail "
+                "promotion criteria remained fail-closed.",
                 "",
                 "## Recommended Next Step",
                 "",
@@ -3292,10 +3299,10 @@ def test_automation_guard_opens_current_a5_when_status_overrides_recovery_review
 
     state = read_automation_state(status_path, review_path, a5_path)
 
-    assert state["state"] == "open"
-    assert state["should_noop"] is False
-    assert state["repo_write_allowed"] is True
-    assert state["closed_reasons"] == []
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == ["strategy_review_a5_recovery_required"]
     assert state["strategic_change_level"] == "major"
     assert state["notify_ben"] is True
     assert state["recommended_next_action"] == action

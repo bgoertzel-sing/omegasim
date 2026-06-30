@@ -57,19 +57,13 @@ def read_automation_state(
     if (
         a5_preregistration_active
         and not _status_closes_active_a5(current_status)
-        and (
-            not _review_recommends_a5_recovery_close(review_header)
-            or status_overrides_a5_recovery_close
-        )
+        and not _review_recommends_a5_recovery_close(review_header)
         and not current_line_closed
     ):
         closed_reasons = []
     if (
         status_reopens_a5
-        and (
-            not _review_recommends_a5_recovery_close(review_header)
-            or status_overrides_a5_recovery_close
-        )
+        and not _review_recommends_a5_recovery_close(review_header)
         and not current_line_closed
     ):
         closed_reasons = []
@@ -165,9 +159,16 @@ def _review_recommends_a5_recovery_close(review_header: dict[str, str]) -> bool:
         and (
             "close a5" in normalized_action
             or "close a5/a7.3" in normalized_action
+            or "closing the reopened bounded a5 pass" in normalized_action
+            or "close the reopened bounded a5 pass" in normalized_action
+            or "block further a5 scaffold runs" in normalized_action
         )
         and "fail-closed" in normalized_action
-        and "before any simulator run" in normalized_action
+        and (
+            "before any simulator run" in normalized_action
+            or "ask ben whether to activate a5.2" in normalized_action
+            or "analytic delayed-map pivot" in normalized_action
+        )
     )
 
 
