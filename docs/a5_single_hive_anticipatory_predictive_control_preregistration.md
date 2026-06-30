@@ -68,6 +68,14 @@ reconciles status after an intervening analytic-map pivot note; it does not
 authorize new mechanics, dashboards, integrations, broader seed sweeps, A7-family
 work, or downstream multi-hive coupling.
 
+2026-06-30 10:12 PDT checkpoint: the current automation request again selects
+this bounded A5 single-hive predictive-control stage after a later analytic-map
+status pivot. For this run, the explicit A5 instruction is controlling. The
+existing preregistration plus deterministic smoke/analyzer scaffold remain the
+complete authorized A5 surface; no additional predictor families, broad seed
+sweeps, dashboards, integrations, A7-family mechanics, or downstream multi-hive
+coupling are authorized.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero

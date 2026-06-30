@@ -5,32 +5,39 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-06-30 instruction selects the analytic
-delayed-map pivot as the active next OmegaSim gate, not A5.2.
+Source-of-truth status for this automation run: Ben's current 2026-06-30
+instruction explicitly selects bounded A5 single-hive anticipatory
+predictive-control dynamics. That current prompt supersedes the later
+status-file analytic delayed-map pivot for this run only.
 
-This supersedes the 2026-06-30 09:11 PDT bounded-A5 status reconciliation.
-Do not treat the bounded A5 prompt as the active next line. Prior A5
-smoke/analyzer evidence remains negative background: intermediate predictors
-improved forecast skill, but residual/null, oracle-nontriviality, compression,
-and guardrail criteria did not support residual-structure promotion.
+The active A5 surface remains narrow:
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`, the
+checked-in deterministic single-hive smoke scaffold, paired seed `5,6`
+comparison, accounting-lock audit, and read-only residual accounting analyzer.
+No broad A5 tuning, A5.2 implementation, A7-family work, dashboards, external
+integrations, broader seed sweeps, or downstream three-hive coupling are
+authorized.
 
-The active next work should use
-`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md` and the
-A5/A7 negative evidence to implement the smallest analytic delayed
-resource-bounded prediction map before adding simulator mechanics. The first
-map should expose the same dimensionless axes identified in the Hyperseed note:
-`rho`, `delta`, `mu`, `kappa`, and `nu`, with contraction/boundedness,
-recurrence, local-divergence, and surrogate-null diagnostics.
+Prior A5 smoke/analyzer evidence remains negative background: intermediate
+predictors improved forecast skill, but residual/null,
+oracle-nontriviality, compression, and guardrail criteria did not support
+residual-structure promotion. The analytic delayed-map work at 09:18-09:56 PDT
+remains prior context, not the active line for this A5 automation pass.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
-`strategic_change_level: major` and `notify_ben: true`. Its governance recovery
-recommendation is accepted as negative A5 context, but its request to pause for
-an A5.2-vs-analytic decision is superseded by Ben's newer status-file direction
-selecting the analytic delayed-map pivot. Ben should still be notified that the
-automation followed the analytic pivot despite the major review flag.
+`strategic_change_level: major` and `notify_ben: true`. Treat that as a
+governance warning and negative A5 context; do not use it to expand A5 beyond
+the preregistered bounded scaffold in the current request.
 
 ## Latest Changes
 
+- 2026-06-30 10:12 PDT bounded A5 reconciliation: the current automation
+  request again selects the single-hive anticipatory predictive-control stage
+  after a later analytic-map pivot. Added a current checkpoint to the A5
+  preregistration and restored this status file to the bounded A5
+  preregistration/scaffold focus. No simulator mechanics, new predictor
+  families, broader seeds, dashboards, integrations, A7-family mechanics, or
+  downstream multi-hive coupling were added.
 - 2026-06-30 09:56 PDT analytic null-gate preregistration: added
   `docs/analytic_delayed_map_refinement_null_gate_preregistration.md` as the
   next bounded analytic-map refinement/null gate. It freezes a four-condition
@@ -101,6 +108,33 @@ automation followed the analytic pivot despite the major review flag.
 
 ## Verification
 
+- 2026-06-30 10:12 PDT final guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `strategic_change_level=major`, and
+  `notify_ben=true`; the recommended next action is to review the A5
+  preregistration plus accounting-lock and residual-accounting evidence, then
+  decide whether to authorize a fresh A5.2 implementation gate.
+- 2026-06-30 10:12 PDT focused A5/guard regression set:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-06-30 10:12 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260630_1012`
+  completed.
+- 2026-06-30 10:12 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_1012`
+  completed with 16 single-hive matched-demand run artifacts and 16/16
+  passing accounting-lock audit rows.
+- 2026-06-30 10:12 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_1012 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260630_1012`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-06-30 10:12 PDT final guard regression slice:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`30 passed, 655 deselected`).
+- 2026-06-30 10:12 PDT syntax and whitespace checks:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py ohdyn/compare_predictive_control.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
 - 2026-06-30 09:56 PDT final guard check:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
   `should_noop=false`, `repo_write_allowed=true`,
@@ -330,15 +364,14 @@ automation followed the analytic pivot despite the major review flag.
 ## Blockers
 
 No environment blocker. Broader A5 work and A5.2 implementation are not
-authorized. The scientific challenge is now to make the analytic delayed-map
-pivot small enough to be mathematically interpretable while still exposing the
-delayed nonlinear self-coupling axes needed for strange-attractor-oriented
-search. The latest external strategy review carries a major/notify-Ben flag;
-that notification remains outstanding even though Ben's newer status-file
-direction authorizes the analytic pivot.
+authorized by the current request. The scientific blocker is interpretive:
+existing A5-family smoke/analyzer evidence remains fail-closed for residual
+structure and does not support strange-attractor-like, lobe-like, or
+phase-structure claims. The latest external strategy review carries a
+major/notify-Ben flag and remains governance context.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the preregistered four-condition standalone
-  analytic delayed-map refinement/null scaffold, without running a larger grid
-  or adding simulator mechanics.
+- Recommended next step: review the A5 preregistration plus accounting-lock and
+  residual-accounting evidence, then decide whether to authorize a fresh A5.2
+  implementation gate.
