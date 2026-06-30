@@ -202,6 +202,13 @@ opportunity, and budget-matched null prediction-spend checks. Any residual or
 strange-attractor-like interpretation is invalid if this accounting-lock audit
 fails.
 
+The comparison helper must also emit
+`predictive_control_design_manifest.yaml`, a compact replay/audit manifest for
+the fixed A5 condition grid, prediction-budget axis, budget-matched null
+pairings, preregistration path, and fail-closed residual-interpretation rule.
+This manifest is not a new mechanic; it is an accounting artifact that makes
+the preregistered design surface explicit before residual analysis.
+
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The
 checked-in scaffold above is sufficient for the authorized smoke/pilot: any

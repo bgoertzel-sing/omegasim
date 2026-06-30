@@ -148,6 +148,16 @@ def run_predictive_control_comparison(
         A5_ACCOUNTING_LOCK_FIELDS,
         accounting_rows,
     )
+    (output_path / "predictive_control_design_manifest.yaml").write_text(
+        yaml.safe_dump(
+            _design_manifest(
+                base_config=Path(base_config),
+                generated_configs=generated_configs,
+                seeds=seeds,
+            ),
+            sort_keys=False,
+        )
+    )
     (output_path / "summary.md").write_text(
         _summary(rows, effect_rows, accounting_rows, seeds)
     )
@@ -177,6 +187,7 @@ def _ensure_outputs_available(output_path: Path) -> None:
             "predictive_control_comparison_metrics.csv",
             "predictive_control_effects.csv",
             "predictive_control_accounting_locks.csv",
+            "predictive_control_design_manifest.yaml",
             "summary.md",
         )
         if (output_path / name).exists()
@@ -546,6 +557,88 @@ def _budget_null_map(conditions: set[str]) -> dict[str, str]:
         "nonlinear": "nonlinear_shuffled",
         "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
     }
+
+
+def _design_manifest(
+    *,
+    base_config: Path,
+    generated_configs: tuple[tuple[str, Path], ...],
+    seeds: tuple[int, ...],
+) -> dict[str, Any]:
+    labels = tuple(label for label, _ in generated_configs)
+    return {
+        "stage": "A5 single-hive anticipatory predictive control",
+        "preregistration": (
+            "docs/a5_single_hive_anticipatory_predictive_control_preregistration.md"
+        ),
+        "base_config": str(base_config),
+        "seeds": list(seeds),
+        "scope": {
+            "single_hive_only": True,
+            "deterministic": True,
+            "no_external_services": True,
+            "no_multi_hive_coupling": True,
+        },
+        "conditions": [
+            _condition_manifest_row(label, config_path)
+            for label, config_path in generated_configs
+        ],
+        "prediction_budget_axis": _prediction_budget_axis(generated_configs),
+        "budget_matched_null_pairings": _budget_null_map(set(labels)),
+        "accounting_locks": {
+            "artifact": "predictive_control_accounting_locks.csv",
+            "required_fields": list(A5_ACCOUNTING_LOCK_FIELDS),
+            "must_pass_before_residual_interpretation": True,
+        },
+        "residual_interpretation": {
+            "strange_attractor_like_claims": "secondary_fail_closed",
+            "requires_surrogate_nulls": True,
+        },
+    }
+
+
+def _condition_manifest_row(label: str, config_path: Path) -> dict[str, Any]:
+    cfg = load_config(config_path)
+    assert cfg.predictive_control is not None
+    return {
+        "label": label,
+        "config": str(Path("configs") / config_path.name),
+        "predictive_condition": cfg.predictive_control.condition,
+        "prediction_budget": cfg.predictive_control.prediction_budget,
+        "memory_window": cfg.predictive_control.memory_window,
+        "prediction_cost_scale": cfg.predictive_control.prediction_cost_scale,
+        "max_prediction_work_fraction_per_tick": (
+            cfg.predictive_control.max_prediction_work_fraction_per_tick
+        ),
+        "charge_prediction_to_work": cfg.predictive_control.charge_prediction_to_work,
+    }
+
+
+def _prediction_budget_axis(
+    generated_configs: tuple[tuple[str, Path], ...],
+) -> list[dict[str, Any]]:
+    axis: list[dict[str, Any]] = []
+    seen: set[tuple[str, float, bool]] = set()
+    for label, config_path in generated_configs:
+        cfg = load_config(config_path)
+        assert cfg.predictive_control is not None
+        key = (
+            cfg.predictive_control.condition,
+            cfg.predictive_control.prediction_budget,
+            cfg.predictive_control.charge_prediction_to_work,
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        axis.append(
+            {
+                "label": label,
+                "predictive_condition": cfg.predictive_control.condition,
+                "prediction_budget": cfg.predictive_control.prediction_budget,
+                "charge_prediction_to_work": cfg.predictive_control.charge_prediction_to_work,
+            }
+        )
+    return axis
 
 
 def _same_fields(

@@ -5735,6 +5735,9 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         effect_rows = list(csv.DictReader(handle))
     with (tmp_path / "first" / "predictive_control_accounting_locks.csv").open() as handle:
         accounting_rows = list(csv.DictReader(handle))
+    design_manifest = yaml.safe_load(
+        (tmp_path / "first" / "predictive_control_design_manifest.yaml").read_text()
+    )
     summary = (tmp_path / "first" / "summary.md").read_text()
     oracle_config = yaml.safe_load(
         (tmp_path / "first" / "configs" / "a5_predictive_oracle.yaml").read_text()
@@ -5754,6 +5757,36 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert len(comparison_rows) == 8
     assert len(effect_rows) == 9
     assert len(accounting_rows) == 16
+    assert design_manifest["stage"] == "A5 single-hive anticipatory predictive control"
+    assert design_manifest["scope"] == {
+        "single_hive_only": True,
+        "deterministic": True,
+        "no_external_services": True,
+        "no_multi_hive_coupling": True,
+    }
+    assert [row["label"] for row in design_manifest["conditions"]] == [
+        "reactive",
+        "linear",
+        "nonlinear",
+        "nonlinear_high_budget",
+        "oracle",
+        "shuffled",
+        "nonlinear_shuffled",
+        "nonlinear_high_budget_shuffled",
+    ]
+    assert design_manifest["budget_matched_null_pairings"] == {
+        "linear": "shuffled",
+        "nonlinear": "nonlinear_shuffled",
+        "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
+    }
+    assert (
+        design_manifest["accounting_locks"]["artifact"]
+        == "predictive_control_accounting_locks.csv"
+    )
+    assert (
+        design_manifest["residual_interpretation"]["strange_attractor_like_claims"]
+        == "secondary_fail_closed"
+    )
     assert {row["status"] for row in accounting_rows} == {"pass"}
     assert {row["matches_reactive_task_stream"] for row in accounting_rows} == {"true"}
     assert {row["matches_reactive_demand_stream"] for row in accounting_rows} == {"true"}
