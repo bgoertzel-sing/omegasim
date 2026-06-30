@@ -41,6 +41,9 @@ def read_automation_state(
     status_overrides_a5_recovery_close = _status_overrides_a5_recovery_close(
         current_status
     )
+    status_opens_analytic_pivot = _status_opens_analytic_delayed_map_pivot(
+        current_status
+    )
     active_a7_3 = status_opens_a7_3 or review_opens_a7_3
     closed_after_a7_2_three_hive = _status_closes_after_a7_2_three_hive(
         current_status
@@ -69,7 +72,7 @@ def read_automation_state(
         closed_reasons = []
     if (
         closed_reasons == ["strategy_review_a5_recovery_required"]
-        and status_overrides_a5_recovery_close
+        and (status_overrides_a5_recovery_close or status_opens_analytic_pivot)
         and not _status_closes_active_a5(current_status)
         and not current_line_closed
     ):
@@ -423,6 +426,17 @@ def _status_overrides_a5_recovery_close(status: str) -> bool:
         )
         and "for this bounded preregistration/scaffold stage only"
         in normalized_status
+    )
+
+
+def _status_opens_analytic_delayed_map_pivot(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "source-of-truth status" in normalized_status
+        and "analytic delayed-map pivot" in normalized_status
+        and "active next omegasim gate" in normalized_status
+        and "not a5.2" in normalized_status
+        and "does not reopen a5.2" in normalized_status
     )
 
 

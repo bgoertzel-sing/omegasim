@@ -5,61 +5,28 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-06-30 automation prompt explicitly reopened
-the bounded A5 single-hive anticipatory predictive-control stage for the
-preregistration/scaffold pass. That pass remains completed at the bounded
-single-hive smoke/analyzer boundary.
+Source-of-truth status: Ben's 2026-06-30 instruction selects the analytic
+delayed-map pivot as the active next OmegaSim gate, not A5.2.
 
-The active A5 source of truth remains
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-The existing deterministic single-hive smoke/pilot scaffold and read-only
-residual accounting were verified. The result remains fail-closed for
-residual-structure promotion: intermediate predictors improved forecast skill,
-but no intermediate-budget condition passed all residual/null,
-oracle-nontriviality, compression, and guardrail criteria.
+This does not reopen A5.2 or authorize broad A5 simulator work. Prior A5
+smoke/analyzer evidence remains negative background: intermediate predictors
+improved forecast skill, but residual/null, oracle-nontriviality, compression,
+and guardrail criteria did not support residual-structure promotion.
 
-Do not add broad A5 tuning, dashboards, external integrations, A7-family
-mechanics, or three-hive delayed anticipatory coupling from this result.
-
-The next bounded A5 design gate is now preregistered, but not implemented, in
-`docs/a5_2_endogenous_delayed_prediction_spend_preregistration.md`. It asks
-whether endogenous delayed prediction-spend decisions can produce useful,
-partially predictable residual collective dynamics after matched spend,
-work-budget, timing-broken, and accounting controls.
-
-2026-06-30 04:06 PDT status check: the A5 single-hive preregistration and
-minimal deterministic scaffold remain complete. No new simulator mechanics or
-scientific runs were added because the guard still closes further A5 work until
-Ben explicitly chooses whether to implement the preregistered A5.2 smoke
-scaffold.
-
-2026-06-30 05:06 PDT status check: the requested concise A5 preregistration
-already exists and remains the active bounded source of truth. The existing
-deterministic single-hive smoke/pilot scaffold was reverified under `/tmp`;
-residual accounting again failed closed. No new simulator mechanics,
-dashboards, integrations, broad seed sweeps, or multi-hive coupling were added.
-
-2026-06-30 06:08 PDT status check: the bounded A5 preregistration/scaffold
-surface was reverified without broadening scope. Forecast skill again improved
-for intermediate predictors, but residual accounting failed closed under the
-same preregistered null/accounting filters. No new simulator mechanics or
-scientific claims were added.
-
-2026-06-30 07:09 PDT status check: the concise A5 preregistration and
-checked-in deterministic single-hive scaffold were reverified again. The guard
-still closes further A5 expansion pending an explicit A5.2 decision. The fresh
-seed `5,6` smoke/comparison/analyzer pass again failed closed for residual
-promotion, so no structured-strange-attractor-like or lobe-like A5 claim is
-supported.
-
-2026-06-30 08:14 PDT status check: the bounded A5 comparison scaffold now
-writes an explicit `predictive_control_accounting_locks.csv` audit. The audit
-checks matched task-arrival streams, demand-share streams, service capacity,
-action opportunity, pre-prediction work opportunity, and budget-matched null
-prediction-spend rows before residual interpretation.
+The active next work should use
+`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md` and the
+A5/A7 negative evidence to implement the smallest analytic delayed
+resource-bounded prediction map before adding simulator mechanics. The first
+map should expose the same dimensionless axes identified in the Hyperseed note:
+`rho`, `delta`, `mu`, `kappa`, and `nu`, with contraction/boundedness,
+recurrence, local-divergence, and surrogate-null diagnostics.
 
 ## Latest Changes
 
+- 2026-06-30 08:55 PDT Ben direction update: Ben explicitly selected the
+  analytic delayed-map pivot, not A5.2. The active next gate is now a minimal
+  analytic delayed resource-bounded prediction map using the Hyperseed
+  dimensionless axes before any additional simulator mechanics.
 - 2026-06-30 02:05 PDT preregistration checkpoint: refreshed the concise A5
   single-hive anticipatory predictive-control preregistration with the current
   bounded-stage override and scope boundary.
@@ -239,12 +206,14 @@ prediction-spend rows before residual interpretation.
 
 ## Blockers
 
-Broader A5 work is blocked by the fail-closed residual/null promotion audit.
-The A5.2 preregistration exists, but implementation remains blocked until Ben
-explicitly authorizes that gate. Any broader seed sweep, A7-family extension,
-or downstream multi-hive coupling still requires a separate preregistration.
+No environment blocker. Broader A5 work and A5.2 implementation are not
+authorized. The scientific challenge is now to make the analytic delayed-map
+pivot small enough to be mathematically interpretable while still exposing the
+delayed nonlinear self-coupling axes needed for strange-attractor-oriented
+search.
 
 ## Recommended Next Step
 
-- Recommended next step: Ben should decide whether to authorize the minimal
-  deterministic A5.2 smoke scaffold from the preregistered design gate.
+- Recommended next step: implement the smallest analytic delayed
+  resource-bounded prediction map over `rho`, `delta`, `mu`, `kappa`, and `nu`
+  before adding simulator mechanics.
