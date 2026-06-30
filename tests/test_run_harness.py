@@ -285,6 +285,7 @@ from ohdyn.compare_exogenous_arrivals import (
     run_exogenous_arrival_comparison,
 )
 from ohdyn.compare_predictive_control import (
+    A5_ACCOUNTING_LOCK_FIELDS,
     A5_PREDICTIVE_COMPARISON_FIELDS,
     A5_PREDICTIVE_EFFECT_FIELDS,
     run_predictive_control_comparison,
@@ -5548,6 +5549,8 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         comparison_rows = list(csv.DictReader(handle))
     with (tmp_path / "first" / "predictive_control_effects.csv").open() as handle:
         effect_rows = list(csv.DictReader(handle))
+    with (tmp_path / "first" / "predictive_control_accounting_locks.csv").open() as handle:
+        accounting_rows = list(csv.DictReader(handle))
     summary = (tmp_path / "first" / "summary.md").read_text()
     oracle_config = yaml.safe_load(
         (tmp_path / "first" / "configs" / "a5_predictive_oracle.yaml").read_text()
@@ -5563,8 +5566,21 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
 
     assert set(comparison_rows[0]) == set(A5_PREDICTIVE_COMPARISON_FIELDS)
     assert set(effect_rows[0]) == set(A5_PREDICTIVE_EFFECT_FIELDS)
+    assert set(accounting_rows[0]) == set(A5_ACCOUNTING_LOCK_FIELDS)
     assert len(comparison_rows) == 8
     assert len(effect_rows) == 9
+    assert len(accounting_rows) == 16
+    assert {row["status"] for row in accounting_rows} == {"pass"}
+    assert {row["matches_reactive_task_stream"] for row in accounting_rows} == {"true"}
+    assert {row["matches_reactive_demand_stream"] for row in accounting_rows} == {"true"}
+    assert {row["matches_reactive_service_capacity"] for row in accounting_rows} == {"true"}
+    assert {row["matches_reactive_action_opportunity"] for row in accounting_rows} == {"true"}
+    assert {row["matches_reactive_work_opportunity"] for row in accounting_rows} == {"true"}
+    assert {
+        row["matches_budget_matched_null_prediction_spend"]
+        for row in accounting_rows
+        if row["condition"] in {"linear", "nonlinear", "nonlinear_high_budget"}
+    } == {"true"}
     assert oracle_config["predictive_control"]["condition"] == "oracle"
     assert oracle_config["predictive_control"]["prediction_budget"] == 1.0
     assert high_budget_config["predictive_control"]["condition"] == "nonlinear_high_budget"
@@ -5575,6 +5591,8 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert "oracle minus reactive" in summary
     assert "nonlinear_shuffled" in summary
     assert "nonlinear_high_budget_shuffled" in summary
+    assert "## Accounting Locks" in summary
+    assert "- pass rows: 16/16" in summary
 
 
 def test_a5_residual_accounting_analyzes_existing_comparison(

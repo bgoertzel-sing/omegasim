@@ -52,6 +52,12 @@ seed `5,6` smoke/comparison/analyzer pass again failed closed for residual
 promotion, so no structured-strange-attractor-like or lobe-like A5 claim is
 supported.
 
+2026-06-30 08:14 PDT status check: the bounded A5 comparison scaffold now
+writes an explicit `predictive_control_accounting_locks.csv` audit. The audit
+checks matched task-arrival streams, demand-share streams, service capacity,
+action opportunity, pre-prediction work opportunity, and budget-matched null
+prediction-spend rows before residual interpretation.
+
 ## Latest Changes
 
 - 2026-06-30 02:05 PDT preregistration checkpoint: refreshed the concise A5
@@ -82,6 +88,10 @@ supported.
   A5 guard, smoke, paired comparison, and read-only residual accounting surface;
   no broad A5 mechanics, dashboards, integrations, seed sweeps, A7 mechanics,
   or multi-hive coupling were added.
+- 2026-06-30 08:14 PDT scaffold hardening: added the A5 predictive-control
+  accounting-lock audit artifact to the comparison runner and preregistration,
+  without adding simulator mechanics, broader seeds, dashboards, integrations,
+  A7 mechanics, or multi-hive coupling.
 
 ## Verification
 
@@ -197,6 +207,35 @@ supported.
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
   passed (`29 passed, 651 deselected`).
 - 2026-06-30 07:09 PDT whitespace check: `git diff --check` passed.
+- 2026-06-30 08:14 PDT focused A5 comparison/analyzer tests:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_1_charged_comparison_generates_cost_calibration_replay_nulls tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`3 passed`).
+- 2026-06-30 08:14 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, and recommended Ben decide whether to authorize
+  the minimal deterministic A5.2 smoke scaffold.
+- 2026-06-30 08:14 PDT focused A5/guard regression set:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-06-30 08:14 PDT syntax check:
+  `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py tests/test_run_harness.py`
+  passed.
+- 2026-06-30 08:14 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260630_0814`
+  completed.
+- 2026-06-30 08:14 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_0814`
+  completed with 16 single-hive matched-demand run artifacts and 16/16
+  passing accounting-lock audit rows.
+- 2026-06-30 08:14 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_0814 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260630_0814`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-06-30 08:14 PDT final guard regression slice:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`29 passed, 651 deselected`).
+- 2026-06-30 08:14 PDT whitespace check: `git diff --check` passed.
 
 ## Blockers
 

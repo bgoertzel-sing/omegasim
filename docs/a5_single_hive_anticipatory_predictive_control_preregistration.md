@@ -179,6 +179,13 @@ python -m ohdyn.analyze_a5_residual_accounting --compare-dir runs/a5_predictive_
 No broader seed sweep, new simulator mechanics, dashboard, integration, or
 multi-hive coupling is authorized by this preregistration.
 
+The comparison helper must emit `predictive_control_accounting_locks.csv` with
+one row per condition/seed confirming the matched task-arrival stream,
+demand-share stream, service capacity, action opportunity, pre-prediction work
+opportunity, and budget-matched null prediction-spend checks. Any residual or
+strange-attractor-like interpretation is invalid if this accounting-lock audit
+fails.
+
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The
 checked-in scaffold above is sufficient for the authorized smoke/pilot: any

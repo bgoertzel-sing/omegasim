@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import zlib
 from pathlib import Path
 from typing import Any
 
@@ -83,6 +84,29 @@ A5_PREDICTIVE_EFFECT_FIELDS = (
     "interpretation",
 )
 
+A5_ACCOUNTING_LOCK_FIELDS = (
+    "condition",
+    "seed",
+    "tasks_created_total",
+    "agent_tasks_created_total",
+    "exogenous_tasks_created_total",
+    "task_arrival_signature",
+    "demand_stream_signature",
+    "future_demand_stream_signature",
+    "service_capacity",
+    "action_opportunity_total",
+    "work_opportunity_before_prediction_total",
+    "prediction_work_charged_total",
+    "work_budget_remaining_total",
+    "matches_reactive_task_stream",
+    "matches_reactive_demand_stream",
+    "matches_reactive_service_capacity",
+    "matches_reactive_action_opportunity",
+    "matches_reactive_work_opportunity",
+    "matches_budget_matched_null_prediction_spend",
+    "status",
+)
+
 
 def run_predictive_control_comparison(
     *,
@@ -97,14 +121,18 @@ def run_predictive_control_comparison(
 
     generated_configs = _write_condition_configs(Path(base_config), output_path / "configs")
     rows: list[dict[str, Any]] = []
+    audit_inputs: list[tuple[str, int, SimulationResult]] = []
     for condition, config_path in generated_configs:
         results: list[SimulationResult] = []
         for seed in seeds:
             run_dir = output_path / f"{condition}_seed{seed}"
-            results.append(run_experiment(config_path, seed=seed, out_dir=run_dir))
+            result = run_experiment(config_path, seed=seed, out_dir=run_dir)
+            results.append(result)
+            audit_inputs.append((condition, seed, result))
         rows.append(_aggregate_row(condition, config_path, results))
 
     effect_rows = _effect_rows(rows)
+    accounting_rows = _accounting_lock_rows(audit_inputs)
     _write_csv(
         output_path / "predictive_control_comparison_metrics.csv",
         A5_PREDICTIVE_COMPARISON_FIELDS,
@@ -115,7 +143,14 @@ def run_predictive_control_comparison(
         A5_PREDICTIVE_EFFECT_FIELDS,
         effect_rows,
     )
-    (output_path / "summary.md").write_text(_summary(rows, effect_rows, seeds))
+    _write_csv(
+        output_path / "predictive_control_accounting_locks.csv",
+        A5_ACCOUNTING_LOCK_FIELDS,
+        accounting_rows,
+    )
+    (output_path / "summary.md").write_text(
+        _summary(rows, effect_rows, accounting_rows, seeds)
+    )
     return rows
 
 
@@ -141,6 +176,7 @@ def _ensure_outputs_available(output_path: Path) -> None:
         for name in (
             "predictive_control_comparison_metrics.csv",
             "predictive_control_effects.csv",
+            "predictive_control_accounting_locks.csv",
             "summary.md",
         )
         if (output_path / name).exists()
@@ -354,6 +390,184 @@ def _interpret_effect(row: dict[str, Any]) -> str:
     return "forecast skill improves but allocation/load controls need follow-up"
 
 
+def _accounting_lock_rows(
+    audit_inputs: list[tuple[str, int, SimulationResult]],
+) -> list[dict[str, Any]]:
+    raw_rows = [
+        _accounting_lock_base_row(condition, seed, result)
+        for condition, seed, result in audit_inputs
+    ]
+    reactive_by_seed = {
+        int(row["seed"]): row for row in raw_rows if row["condition"] == "reactive"
+    }
+    reference_by_seed: dict[int, dict[str, Any]] = {}
+    for row in raw_rows:
+        seed = int(row["seed"])
+        if seed not in reference_by_seed:
+            reference_by_seed[seed] = row
+    reference_by_seed.update(reactive_by_seed)
+    by_condition_seed = {
+        (str(row["condition"]), int(row["seed"])): row for row in raw_rows
+    }
+    null_by_condition = _budget_null_map({str(row["condition"]) for row in raw_rows})
+
+    rows: list[dict[str, Any]] = []
+    for row in raw_rows:
+        seed = int(row["seed"])
+        reactive = reference_by_seed.get(seed)
+        if reactive is None:
+            raise ValueError(f"A5 comparison is missing accounting reference seed {seed}.")
+        task_match = _same_fields(
+            row,
+            reactive,
+            (
+                "tasks_created_total",
+                "agent_tasks_created_total",
+                "exogenous_tasks_created_total",
+                "task_arrival_signature",
+            ),
+        )
+        demand_match = _same_fields(
+            row,
+            reactive,
+            ("demand_stream_signature", "future_demand_stream_signature"),
+        )
+        service_match = _same_fields(row, reactive, ("service_capacity",))
+        action_match = _same_fields(row, reactive, ("action_opportunity_total",))
+        work_opportunity_match = _same_fields(
+            row,
+            reactive,
+            ("work_opportunity_before_prediction_total",),
+        )
+        null_label = null_by_condition.get(str(row["condition"]))
+        if null_label is None:
+            spend_match = "not_applicable"
+        else:
+            null_row = by_condition_seed.get((null_label, seed))
+            if null_row is None:
+                raise ValueError(
+                    f"A5 comparison is missing budget-matched null {null_label} seed {seed}."
+                )
+            spend_match = str(
+                _same_fields(
+                    row,
+                    null_row,
+                    ("prediction_work_charged_total", "work_budget_remaining_total"),
+                )
+            ).lower()
+        status = (
+            "pass"
+            if all(
+                (
+                    task_match,
+                    demand_match,
+                    service_match,
+                    action_match,
+                    work_opportunity_match,
+                    spend_match != "false",
+                )
+            )
+            else "fail"
+        )
+        rows.append(
+            {
+                **row,
+                "matches_reactive_task_stream": str(task_match).lower(),
+                "matches_reactive_demand_stream": str(demand_match).lower(),
+                "matches_reactive_service_capacity": str(service_match).lower(),
+                "matches_reactive_action_opportunity": str(action_match).lower(),
+                "matches_reactive_work_opportunity": str(work_opportunity_match).lower(),
+                "matches_budget_matched_null_prediction_spend": spend_match,
+                "status": status,
+            }
+        )
+    return rows
+
+
+def _accounting_lock_base_row(
+    condition: str,
+    seed: int,
+    result: SimulationResult,
+) -> dict[str, Any]:
+    final = result.metrics[-1]
+    return {
+        "condition": condition,
+        "seed": seed,
+        "tasks_created_total": final["tasks_created_total"],
+        "agent_tasks_created_total": final["agent_tasks_created_total"],
+        "exogenous_tasks_created_total": final["exogenous_tasks_created_total"],
+        "task_arrival_signature": _series_signature(
+            result.metrics,
+            ("tasks_created_tick", "agent_tasks_created_tick", "exogenous_tasks_created_tick"),
+        ),
+        "demand_stream_signature": _series_signature(
+            result.metrics,
+            tuple(
+                f"a5_{class_name}_demand_share_tick"
+                for class_name in ATTENTION_CLASSES
+            ),
+        ),
+        "future_demand_stream_signature": _series_signature(
+            result.metrics,
+            tuple(
+                f"a5_{class_name}_future_demand_share_tick"
+                for class_name in ATTENTION_CLASSES
+            ),
+        ),
+        "service_capacity": result.config.model.work_service_capacity,
+        "action_opportunity_total": _sum_metric(
+            result.metrics,
+            "a5_work_opportunity_before_prediction_tick",
+        ),
+        "work_opportunity_before_prediction_total": _sum_metric(
+            result.metrics,
+            "a5_work_opportunity_before_prediction_tick",
+        ),
+        "prediction_work_charged_total": _sum_metric(
+            result.metrics,
+            "a5_prediction_work_charged_tick",
+        ),
+        "work_budget_remaining_total": _sum_metric(
+            result.metrics,
+            "a5_work_budget_remaining_tick",
+        ),
+    }
+
+
+def _budget_null_map(conditions: set[str]) -> dict[str, str]:
+    if "linear_harsh_cost" in conditions:
+        return {
+            "linear_harsh_cost": "linear_harsh_cost_spend_only_replay",
+            "linear_gentle_cost": "linear_gentle_cost_spend_only_replay",
+            "linear_capped_cost": "linear_capped_cost_spend_only_replay",
+        }
+    return {
+        "linear": "shuffled",
+        "nonlinear": "nonlinear_shuffled",
+        "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
+    }
+
+
+def _same_fields(
+    left: dict[str, Any],
+    right: dict[str, Any],
+    fields: tuple[str, ...],
+) -> bool:
+    return all(str(left[field]) == str(right[field]) for field in fields)
+
+
+def _series_signature(rows: list[dict[str, Any]], fields: tuple[str, ...]) -> str:
+    payload = "|".join(
+        ",".join(str(row[field]) for field in fields)
+        for row in rows
+    )
+    return f"{zlib.crc32(payload.encode('utf-8')):08x}"
+
+
+def _sum_metric(rows: list[dict[str, Any]], field: str) -> float:
+    return round(sum(float(row[field]) for row in rows), 6)
+
+
 def _write_csv(path: Path, fields: tuple[str, ...], rows: list[dict[str, Any]]) -> None:
     with path.open("w", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
@@ -364,6 +578,7 @@ def _write_csv(path: Path, fields: tuple[str, ...], rows: list[dict[str, Any]]) 
 def _summary(
     rows: list[dict[str, Any]],
     effect_rows: list[dict[str, Any]],
+    accounting_rows: list[dict[str, Any]],
     seeds: tuple[int, ...],
 ) -> str:
     lines = [
@@ -402,6 +617,21 @@ def _summary(
             f"queue_depth_delta={_format_number(row['queue_depth_mean_delta'])}; "
             f"{row['interpretation']}"
         )
+    passed_locks = sum(1 for row in accounting_rows if row["status"] == "pass")
+    lines.extend(
+        [
+            "",
+            "## Accounting Locks",
+            "",
+            (
+                f"- pass rows: {passed_locks}/{len(accounting_rows)} "
+                "for matched task stream, demand stream, service capacity, "
+                "action opportunity, work opportunity, and budget-matched "
+                "null prediction-spend checks"
+            ),
+            "- artifact: predictive_control_accounting_locks.csv",
+        ]
+    )
     lines.extend(
         [
             "",

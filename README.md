@@ -57,6 +57,11 @@ signal over the four attention classes, and lets an opt-in predictive
 controller shift work-task class priority from forecasted future pressure. Do
 not broaden A5 to new mechanics, wider seed sweeps, dashboards, integrations,
 or multi-hive coupling without another preregistration.
+The paired A5 comparison now also writes
+`predictive_control_accounting_locks.csv` so the matched task stream, demand
+stream, service capacity, action opportunity, pre-prediction work opportunity,
+and budget-matched null prediction-spend checks are visible before residual
+interpretation.
 
 Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
 closed without a fresh preregistration. Ben's 2026-06-28 decision opened the
