@@ -1,104 +1,168 @@
-# A5.2 Endogenous Delayed Prediction-Spend Preregistration Draft
+# A5.2 Endogenous Delayed Prediction-Spend Preregistration
 
-Status: non-active draft. This document records a possible next single-hive
-scientific axis after the A5 and A7.3 fail-closed evidence. It does not
-authorize simulator runs, analyzer runs, parameter sweeps, dashboards, external
-integrations, real LLM calls, downstream multi-hive coupling, or promotion
-language. Activation requires an explicit future status update from Ben.
+Date: 2026-06-30.
 
-## Motivation
+## Purpose
 
-Prior A5-family gates showed that bounded predictors can improve forecast
-skill under matched hidden demand streams, but did not pass residual/null,
-oracle-nontriviality, compression, or productivity guardrails. A7.3 fixed
-validation also closed fail-closed against the preregistered null gates. The
-remaining scientific gap is whether prediction effort chosen endogenously by
-agents, charged against work, and coupled through delayed artifact/peer
-feedback can create nontrivial residual dynamics after accounting controls.
+This preregisters the next bounded A5 design gate after the single-hive
+anticipatory predictive-control smoke and the A5.1a cost-calibration closure.
+Those earlier gates showed that deterministic predictors can improve forecast
+skill under matched demand streams, and that prediction spend can be charged
+against work opportunity, but no A5-family condition has survived the
+preregistered residual/null promotion rules.
+
+A5.2 asks a narrower resource-bounded question before any new simulator run:
+can endogenous, delayed prediction-spend decisions create residual collective
+dynamics that remain useful and partially predictable after accounting for
+demand, service, action opportunity, work budget, charged spend, and timing
+nulls?
+
+This document is preregistration only. It does not authorize implementation,
+broader seeds, dashboards, external integrations, A7-family mechanics, or
+three-hive coupling until Ben explicitly selects this gate for implementation.
 
 ## Hypothesis
 
-An intermediate endogenous prediction-spend regime may produce delayed
-residual structure only when all of the following are true:
+Prediction is a scarce managed resource, not a free observer. Perfect
+prediction can smooth away the dynamics of interest, while zero prediction
+leaves the hive reactive. The interesting regime may require agents to decide
+when to spend limited prediction budget under delayed feedback.
 
-- prediction spend is chosen from delayed uncertainty, error, peer activity,
-  artifact readiness or risk, fatigue, and adaptive thresholds;
-- prediction consumes scarce work opportunity;
-- prediction affects future artifact state only after a fixed delay;
-- later error, fatigue, and threshold updates depend on the delayed outcome;
-- controls preserve demand, arrivals, service, backlog, queued age, action
-  opportunity, work budget, prediction spend, and lost work.
+The A5.2 hypothesis is that intermediate endogenous prediction spend, with a
+delay between spend, forecast availability, and service-priority adjustment,
+may produce richer but still partially predictable residual collective states
+than zero-spend reactivity, fixed exogenous spend, spend-only replay nulls, or
+oracle smoothing. A positive result would mean that structured forecast errors
+and delayed budget allocation create useful high-level regularities that are
+cheaper to predict than detailed task-level trajectories.
 
-The null expectation is fail-closed: apparent recurrence or synchrony is
-assumed to be demand, queue, service, action-opportunity, or accounting leakage
-unless the fixed controls and null contrasts reject that explanation.
+## Scope
 
-## Frozen Mechanism Sketch
+A5.2 remains deterministic, single-hive, and abstract/numeric:
 
-For agent `i` at tick `t`, prediction spend for `t+1` is selected by a bounded
-logistic policy:
+- one existing OmegaSim hive, queue, action set, attention classes, and artifact
+  contract;
+- no real LLM calls, Lean, Slack, browser automation, Atomspace integrations,
+  live task boards, dashboards, or human-in-the-loop task boards;
+- no two-hive or three-hive transfer, target coupling, or phase coupling;
+- paired seeds and matched deterministic demand streams across all conditions;
+- no committed result-bearing run artifacts until a later implementation
+  instruction explicitly opens this gate.
 
-```text
-P(predict_i,t+1) = sigmoid(
-  beta_0
-  + beta_u * delayed_uncertainty_i,t-d
-  + beta_e * delayed_error_i,t-d
-  + beta_p * peer_prediction_activity_t-d
-  + beta_a * artifact_readiness_or_risk_t-d
-  - beta_f * fatigue_i,t
-  - beta_theta * adaptive_threshold_i,t
-)
-```
+Three-hive delayed anticipatory coupling remains downstream. It requires a
+separate preregistration with target and phase nulls, matched transfer
+opportunity, and resource-bounded cross-hive prediction costs.
 
-Prediction spend deducts from the same per-tick work budget used for service,
-cleanup, implementation, and research actions. Any predictive advantage is
-applied only through delayed artifact or task-priority updates; same-tick
-effects are blocked.
+## Mechanism To Freeze Before Implementation
+
+The first implementation, if later authorized, must be the smallest
+deterministic scaffold that adds endogenous delayed prediction spend to the
+existing single-hive A5 surface. It should freeze these rules before running a
+pilot:
+
+- a per-tick prediction-spend decision made from observable hive state only;
+- a limited prediction budget reservoir or per-tick cap, with any spend charged
+  against the same work-opportunity ledger used by A5.1a;
+- a deterministic delay between spend and usable forecast influence;
+- a deterministic decay or expiration rule for forecasts that were bought but
+  not yet used;
+- explicit recording of spend decision inputs, pre-charge work opportunity,
+  charged prediction work units, remaining work budget, forecast availability,
+  and delayed forecast influence.
+
+The endogenous spend controller may shift attention allocation or service
+priority only through the preregistered delayed forecast channel. It must not
+silently add task arrivals, service capacity, action opportunities, agent
+count, work budget, or task-completion capacity.
 
 ## Conditions
 
-The fixed one-hive condition family should include:
+Use paired seeds and matched demand streams across:
 
-- zero-budget reactive baseline;
-- intermediate endogenous delayed prediction-spend condition;
-- high-budget or oracle-like smoothing condition;
-- no-delay or same-tick-blocked null;
-- amplitude-matched linear policy;
-- cost-free prediction null;
-- spend-only replay null with identical spend ticks and lost work;
-- phase-shuffled delayed input null;
-- threshold-shuffled null;
-- artifact-off null;
-- Markov-preserving macro-state surrogate.
+1. Reactive baseline: no prediction spend and no forecast influence.
+2. Fixed low-budget predictor: existing low-budget linear or short-memory
+   predictor with exogenous spend timing.
+3. Endogenous low-budget predictor: low spend chosen from observable state with
+   delayed forecast influence.
+4. Endogenous medium-budget nonlinear predictor: bounded nonlinear forecast,
+   endogenous spend timing, and delayed forecast influence.
+5. Endogenous high-budget nonlinear predictor: larger bounded forecast budget,
+   included as a smoothing/overfit contrast rather than the target condition.
+6. Oracle predictor: future demand known, interpreted only as a smoothing
+   positive control.
+7. Spend-only replay nulls: same charged prediction work units on the same
+   ticks as each endogenous condition, but with useful forecast timing removed.
+8. Timing-broken predictor nulls: shuffled or phase-randomized forecasts that
+   preserve marginal forecast structure and spend budget while breaking useful
+   timing.
+
+Every endogenous positive condition must have both a spend-only replay null and
+a timing-broken predictor null before any residual-structure interpretation is
+allowed.
+
+## Accounting Locks
+
+All conditions must match task-arrival totals, class-demand stream, service
+capacity, action opportunity, agent count, action set, pre-charge work budget,
+and deterministic demand process. Prediction condition may change only:
+
+- when prediction spend is charged;
+- when delayed forecast influence becomes available;
+- how attention or service priority responds to the available forecast.
+
+Analysis must explicitly control for demand phase, current backlog, queued age,
+task arrivals, service opportunity, pre-charge work budget, charged spend,
+remaining work budget, forecast availability, and spend-delay state. A5.2 fails
+closed if an apparent residual is reproduced by spend timing alone, by
+work-budget loss alone, or by a timing-broken/null forecast with matched spend.
 
 ## Primary Endpoints
 
-Primary endpoints are residual-only and must be computed after accounting for
-matched demand phase, arrivals, service capacity, backlog, queued age, action
-opportunity, work budget, prediction spend, and lost work:
+Primary endpoints are:
 
-- held-out residual nonlinear-vs-linear forecast delta;
-- recurrence/surrogate z-scores on coarse residual macro-state strings;
-- finite-time local divergence in residual lifted state;
-- compression improvement of residual macro-state strings;
-- prediction-cost fraction and lost-work fraction guardrails;
-- fatigue, threshold, saturation, and delayed-source integrity audits.
+- forecast skill per charged prediction work unit;
+- lead-lag relation between spend decisions, forecast availability, attention or
+  service allocation, and future demand;
+- residual phase structure after the full accounting locks above;
+- recurrence or return-map structure in delay embeddings of residual
+  predictive-state variables, including spend-delay state;
+- predictability or compressibility of emergent high-level collective states;
+- comparison of residual predictability against fixed-spend, spend-only replay,
+  timing-broken, reactive, and oracle controls;
+- guardrails for final backlog, queued age, completion fraction, class
+  starvation, prediction-spend volatility, remaining-work volatility, and
+  forecast-influence volatility.
 
-Queue depth, throughput, action counts, prediction spend, and timing synchrony
-are manipulation checks only, not primary promotion endpoints.
+Throughput, completion fraction, lower backlog, or higher forecast skill alone
+are guardrails or competence checks. They are not evidence for structured
+collective dynamics.
 
-## Promotion Gates
+## Decision Rules
 
-Promotion requires paired-seed agreement, source-ledger delay integrity, and
-all primary endpoints beating every fixed null without productivity guardrail
-failure. Any missing condition, missing seed, rank-deficient residual design
-matrix, spend/accounting mismatch, same-tick leakage, or failed null contrast
-closes the gate fail-closed.
+A5.2 may proceed beyond a smoke/pilot only if the same intermediate endogenous
+prediction-spend condition:
 
-## Non-Goals
+- improves forecast skill per charged work unit over reactive, fixed-spend, and
+  both matched nulls;
+- allocates spend and service ahead of future demand rather than merely
+  tracking current backlog;
+- retains nonzero, structured forecast errors;
+- shows residual recurrence or high-level predictability after all accounting
+  controls;
+- remains more dynamically nontrivial than high-budget or oracle smoothing;
+- satisfies backlog, queued-age, completion, starvation, and volatility
+  guardrails.
 
-This draft does not reopen A5 rescue tuning, A7.3 reruns, downstream multi-hive
-coupling, dashboards, Lean, Slack, browser automation, Atomspace integration,
-or real LLM calls. It also does not support lobe-like, strange-attractor-like,
-semantic-dynamics, or collective-intelligence claims before a future activated
-validation passes the frozen gates above.
+Any strange-attractor-like, lobe-like, phase-structure, or emergent-state claim
+is secondary and fails closed unless the preregistered accounting controls,
+spend-only replay nulls, timing-broken nulls, and guardrails all pass first.
+
+## Initial Implementation Boundary
+
+If Ben later authorizes A5.2 implementation, the first code change should be a
+single deterministic smoke scaffold and focused tests only. It should not add
+dashboards, external services, live integrations, multi-hive mechanics, broad
+seed sweeps, or committed scientific result artifacts.
+
+Until that explicit implementation instruction exists, this preregistration is
+the complete A5.2 artifact.

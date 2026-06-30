@@ -67,6 +67,14 @@ historical direction. The current 2026-06-30 automation prompt explicitly
 selects the bounded A5 single-hive preregistration/scaffold stage again; it
 does not reopen A5 rescue tuning beyond that surface.
 
+The next bounded A5 design gate is preregistered, but not implemented, in
+`docs/a5_2_endogenous_delayed_prediction_spend_preregistration.md`. A5.2 asks
+whether endogenous, delayed prediction-spend decisions can create useful
+partially predictable residual collective states after spend, work-budget,
+timing-broken, and accounting controls. It does not authorize simulator
+mechanics, seed sweeps, dashboards, integrations, A7 mechanics, or multi-hive
+coupling until Ben explicitly selects A5.2 for implementation.
+
 The current bounded read-only follow-up is preregistered in
 `docs/a5_resource_bounded_residual_compression_preregistration.md`. It
 authorizes only a residual-compression diagnostic report over existing

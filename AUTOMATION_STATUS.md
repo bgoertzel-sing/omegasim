@@ -6,8 +6,8 @@ checked from GitHub, including from a phone.
 ## Current Focus
 
 Source-of-truth status: Ben's 2026-06-30 automation prompt explicitly reopened
-the bounded A5 single-hive anticipatory predictive-control stage for this
-preregistration/scaffold pass. That pass is now completed at the bounded
+the bounded A5 single-hive anticipatory predictive-control stage for the
+preregistration/scaffold pass. That pass remains completed at the bounded
 single-hive smoke/analyzer boundary.
 
 The active A5 source of truth remains
@@ -21,6 +21,12 @@ oracle-nontriviality, compression, and guardrail criteria.
 Do not add broad A5 tuning, dashboards, external integrations, A7-family
 mechanics, or three-hive delayed anticipatory coupling from this result.
 
+The next bounded A5 design gate is now preregistered, but not implemented, in
+`docs/a5_2_endogenous_delayed_prediction_spend_preregistration.md`. It asks
+whether endogenous delayed prediction-spend decisions can produce useful,
+partially predictable residual collective dynamics after matched spend,
+work-budget, timing-broken, and accounting controls.
+
 ## Latest Changes
 
 - 2026-06-30 02:05 PDT preregistration checkpoint: refreshed the concise A5
@@ -33,6 +39,9 @@ mechanics, or three-hive delayed anticipatory coupling from this result.
 - 2026-06-30 02:05 PDT bounded smoke/analyzer: reran the single-hive linear
   smoke, paired seed `5,6` predictive-control comparison, and read-only
   residual-accounting analyzer under `/tmp`.
+- 2026-06-30 03:06 PDT preregistration-only checkpoint: added the A5.2
+  endogenous delayed prediction-spend preregistration as the next design gate,
+  with no simulator mechanics or new scientific runs authorized.
 
 ## Verification
 
@@ -64,14 +73,24 @@ mechanics, or three-hive delayed anticipatory coupling from this result.
   `state=closed_awaiting_preregistration`, `should_noop=true`,
   `repo_write_allowed=false`, and
   `closed_reasons=["strategy_review_a5_recovery_required"]`.
+- 2026-06-30 03:06 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, and recommended Ben decide whether to authorize
+  the minimal deterministic A5.2 smoke scaffold.
+- 2026-06-30 03:06 PDT focused guard regression slice:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`29 passed, 651 deselected`).
+- 2026-06-30 03:06 PDT whitespace check: `git diff --check` passed.
 
 ## Blockers
 
 Broader A5 work is blocked by the fail-closed residual/null promotion audit.
-Any additional simulator mechanics, broader seed sweep, A7-family extension, or
-downstream multi-hive coupling requires a separate preregistration.
+The A5.2 preregistration exists, but implementation remains blocked until Ben
+explicitly authorizes that gate. Any broader seed sweep, A7-family extension,
+or downstream multi-hive coupling still requires a separate preregistration.
 
 ## Recommended Next Step
 
-- Recommended next step: preregister the A5.2 endogenous delayed
-  prediction-spend axis before any further A5 simulator runs.
+- Recommended next step: Ben should decide whether to authorize the minimal
+  deterministic A5.2 smoke scaffold from the preregistered design gate.
