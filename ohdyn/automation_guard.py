@@ -155,7 +155,7 @@ def _current_status_scope(status: str) -> str:
         stripped = line.strip()
         if stripped.startswith("## "):
             saw_section = True
-            name = stripped.removeprefix("## ").strip().lower()
+            name = _remove_prefix(stripped, "## ").strip().lower()
             include_current = name in {
                 "current focus",
                 "blockers",
@@ -460,13 +460,19 @@ def _status_section_text(status: str, title: str) -> str:
         if in_section and normalized.startswith("## "):
             break
         if in_section and stripped:
-            lines.append(stripped.removeprefix("- ").strip())
+            lines.append(_remove_prefix(stripped, "- ").strip())
 
     return " ".join(lines)
 
 
 def _normalize(text: str) -> str:
     return " ".join(text.lower().split())
+
+
+def _remove_prefix(text: str, prefix: str) -> str:
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    return text
 
 
 def build_parser() -> argparse.ArgumentParser:
