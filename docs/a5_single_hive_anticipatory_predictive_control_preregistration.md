@@ -36,6 +36,14 @@ reconfirms that the preregistration, existing deterministic smoke scaffold, and
 read-only residual accounting are the complete authorized surface for this A5
 pass.
 
+2026-06-30 00:05 PDT checkpoint: the recurring A5 automation prompt still
+selects this bounded single-hive anticipatory predictive-control stage. The
+preregistered hypothesis, predictor/null grid, accounting locks, guardrails,
+and fail-closed interpretation rules below remain unchanged; the current run
+may reconcile status and verify the checked-in scaffold, but must not add broad
+mechanics, dashboards, integrations, A7-family work, or downstream multi-hive
+coupling.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
