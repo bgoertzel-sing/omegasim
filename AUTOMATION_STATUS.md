@@ -5,47 +5,35 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the bounded A5 single-hive anticipatory predictive-
-control verification requested by Ben's current automation prompt has been
-rechecked on 2026-06-29 21:58 PDT. That authorization was narrow: preserve and
-verify the concise A5 preregistration, confirm the smallest deterministic
-checked-in scaffold, and do not broaden simulator mechanics. The preregistration
-and scaffold are present and remain the active A5 record for this prompt.
+Source-of-truth status: Ben's latest 2026-06-29 instruction says OmegaSim
+should proceed, not pause, with a new round of experiments; A7.3 is good for
+now. This opens A7.3 one-hive dimensionless delayed dynamics as the active next
+OmegaSim gate.
 
-Current concise A5 gate: explicit single-hive A5 reopening and preregistration
-summary are recorded in
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`. The
-document already defines the deterministic single-hive setup, reactive/linear/
-nonlinear/high-budget/oracle/timing-broken predictor conditions, resource-
-bounded prediction hypothesis, matched accounting locks, primary endpoints,
-guardrails, and fail-closed decision rules requested for A5. The 2026-06-29
-evening note freezes this as the concise preregistration artifact requested
-before any broad A5 mechanics.
+This supersedes the previous awaiting-preregistration posture and does not
+reopen A7.2 or the three-hive ring. The prior A5/A7.3 validation outcomes
+remain negative evidence and guardrails, not a reason for the cron loop to sit
+idle.
 
-Current A5 implementation boundary: the existing single-hive deterministic
-scaffold was the only authorized smoke/pilot surface for this prompt. It
-already compares reactive, low-budget linear, medium-budget nonlinear,
-high-budget nonlinear, oracle, and timing-broken null conditions under matched
-arrival, service-capacity, action-opportunity, and work-budget accounting. Do
-not run further A5 simulator work without a fresh preregistration.
+Current implementation boundary: start with a concise preregistration and
+minimal implementation gate for the next A7.3-family one-hive mechanism round.
+The experiment should use dimensionless delayed nonlinear self-coupling,
+bounded prediction spend, artifact readiness/risk/contradiction feedback, and
+the existing null-accounting discipline. Do not rerun broad A5 sweeps.
 
-Current A5 interpretation boundary: repeated bounded seed `5,6`
-smoke/analyzer runs improved forecast skill for intermediate predictors, but
-no intermediate predictor passed all residual/null, oracle-nontriviality,
-compression, and guardrail promotion criteria. A5 remains fail-closed for
-residual-structure, strange-attractor-like, lobe-like, or phase-structure
-claims unless a future preregistered axis changes the scientific design.
-
-External GPT-5.5-Pro strategy review direction accepted on 2026-06-29 remains
-scientifically sensible after the bounded A5 preregistration/scaffold check:
-once this explicit A5 verification run is recorded, the next scientific move
-should be a fresh preregistered mechanism-rich endogenous delayed
-prediction-spend axis before any further A5 simulator runs. The review header
-was `strategic_change_level: major` and `notify_ben: true`; Ben should be
-notified of this direction shift.
+Current interpretation boundary: older smoke/validation artifacts do not
+support residual-structure, strange-attractor-like, lobe-like, semantic-dynamic,
+or phase-structure claims. Any new positive claim must pass the preregistered
+residual, surrogate-null, local-divergence, compression, source-ledger, and
+productivity gates.
 
 ## Latest Changes
 
+- 2026-06-29 22:54 PDT Ben-direction unblock: recorded Ben's latest instruction
+  that OmegaSim should proceed, not pause, with a new round of experiments and
+  that A7.3 is good for now. Restored A7.3 one-hive dimensionless delayed
+  dynamics as the active next OmegaSim gate while keeping older A5/A7.3 results
+  as negative evidence and guardrails.
 - 2026-06-29 21:58 PDT A5 bounded verification pass: reread the automation
   memory, `README.md`, this status file,
   `docs/structured_strange_attractor_research_note.md`, the concise A5
@@ -287,19 +275,16 @@ notified of this direction shift.
 
 ## Recommended Next Step
 
-- Recommended next step: preregister a mechanism-rich endogenous delayed
-  prediction-spend axis before any further A5 simulator runs.
+- Recommended next step: draft and freeze the A7.3 one-hive dimensionless
+  delayed dynamics follow-up preregistration and minimal implementation gate,
+  then run the smallest deterministic smoke/null check.
 
 ## Blockers
 
-No environment blocker. The current scientific blocker is evidential and
-governance-related: existing A5 seed `5,6` smoke runs improved forecast skill
-but stayed fail-closed for residual structure after preregistered accounting
-controls and surrogate nulls, and the latest major external review recommends a
-fresh mechanism-rich endogenous delayed prediction-spend preregistration before
-any further A5 simulator runs. A7.3 validation, broad A5 tuning, longer seed
-sweeps, and downstream multi-hive coupling remain out of scope for this A5
-automation run.
+No environment blocker. The scientific challenge is to make the next one-hive
+round mechanism-rich enough to test endogenous delayed nonlinear self-coupling,
+while preserving the source-ledger, null-control, and productivity discipline
+that made the earlier negative results useful.
 
 ## Verification
 
