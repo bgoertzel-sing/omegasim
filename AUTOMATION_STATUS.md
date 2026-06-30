@@ -33,6 +33,12 @@ scientific runs were added because the guard still closes further A5 work until
 Ben explicitly chooses whether to implement the preregistered A5.2 smoke
 scaffold.
 
+2026-06-30 05:06 PDT status check: the requested concise A5 preregistration
+already exists and remains the active bounded source of truth. The existing
+deterministic single-hive smoke/pilot scaffold was reverified under `/tmp`;
+residual accounting again failed closed. No new simulator mechanics,
+dashboards, integrations, broad seed sweeps, or multi-hive coupling were added.
+
 ## Latest Changes
 
 - 2026-06-30 02:05 PDT preregistration checkpoint: refreshed the concise A5
@@ -52,6 +58,10 @@ scaffold.
   preregistration already exists, the checked-in deterministic scaffold remains
   the complete authorized implementation surface, and A5.2 remains a
   preregistered but unimplemented decision gate.
+- 2026-06-30 05:06 PDT bounded verification checkpoint: reverified the existing
+  A5 single-hive preregistration/scaffold surface and recorded no new mechanics
+  because the guard remains closed pending an explicit A5.2 implementation
+  decision.
 
 ## Verification
 
@@ -101,6 +111,28 @@ scaffold.
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
   passed (`29 passed, 651 deselected`).
 - 2026-06-30 04:06 PDT whitespace check: `git diff --check` passed.
+- 2026-06-30 05:06 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, and recommended Ben decide whether to authorize
+  the minimal deterministic A5.2 smoke scaffold.
+- 2026-06-30 05:06 PDT focused regression/smoke tests:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-06-30 05:06 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260630_0506`
+  completed.
+- 2026-06-30 05:06 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_0506`
+  completed with 16 single-hive matched-demand run artifacts.
+- 2026-06-30 05:06 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_0506 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260630_0506`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-06-30 05:06 PDT final guard regression slice:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`29 passed, 651 deselected`).
+- 2026-06-30 05:06 PDT whitespace check: `git diff --check` passed.
 
 ## Blockers
 
