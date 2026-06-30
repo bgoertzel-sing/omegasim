@@ -7,7 +7,7 @@ checked from GitHub, including from a phone.
 
 Source-of-truth status: the bounded A5 single-hive anticipatory predictive-
 control verification requested by Ben's current automation prompt has been
-rechecked on 2026-06-29 18:58 PDT. That authorization was narrow: preserve and
+rechecked on 2026-06-29 19:58 PDT. That authorization was narrow: preserve and
 verify the concise A5 preregistration, confirm the smallest deterministic
 checked-in scaffold, and do not broaden simulator mechanics. The preregistration
 and scaffold are present and remain the active A5 record for this prompt.
@@ -46,6 +46,23 @@ notified of this direction shift.
 
 ## Latest Changes
 
+- 2026-06-29 19:58 PDT A5 bounded verification pass: reread the automation
+  memory, `README.md`, this status file,
+  `docs/structured_strange_attractor_research_note.md`, the concise A5
+  preregistration, and the checked-in A5 comparison/residual scaffold. Confirmed
+  the preregistration remains the requested concise single-hive A5 record and
+  already covers the deterministic setup, predictor/null grid,
+  resource-bounded prediction hypothesis, matched accounting locks, primary
+  endpoints, guardrails, and fail-closed interpretation boundary.
+- 2026-06-29 19:58 PDT A5 bounded verification pass: honored
+  `ohdyn.automation_guard` state `closed_awaiting_preregistration` with
+  `repo_write_allowed=false` for further A5 simulator work. No simulator
+  mechanics, A5 smoke rerun, dashboard, external integration, A7-family work,
+  or downstream multi-hive coupling was added.
+- 2026-06-29 19:58 PDT verification: A5/guard regression slice passed
+  (`29 passed, 647 deselected`), A5-relevant modules compiled, `git diff
+  --check` passed, and `ohdyn.automation_guard` remained
+  `closed_awaiting_preregistration` with `repo_write_allowed=false`.
 - 2026-06-29 18:58 PDT A5 preregistration verification: reread the missing
   automation memory state, `README.md`, this status file,
   `docs/structured_strange_attractor_research_note.md`, the A5 completion
