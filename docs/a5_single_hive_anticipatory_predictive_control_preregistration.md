@@ -106,6 +106,15 @@ prediction is a smoothing positive control rather than target dynamics
 evidence. This is audit/provenance metadata only; it does not add simulator
 mechanics, predictor families, broader seeds, or promotion language.
 
+2026-06-30 16:15 PDT checkpoint: the comparison design manifest must also carry
+a compact fail-closed decision checklist. The checklist ties accounting locks,
+forecast skill per budget, lead-lag evidence, nonzero structured forecast
+errors, residual recurrence/null survival, high-level predictability or
+compressibility, guardrails, and oracle non-target status to a single
+intermediate-budget promotion rule. This is reviewer-facing audit metadata
+only; it does not add simulator mechanics, predictor families, broader seeds,
+or promotion language.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -242,9 +251,12 @@ explicit by separating the zero-budget reactive baseline, intermediate-budget
 candidate conditions, their budget-matched timing-broken nulls, and oracle
 smoothing. It must also include an endpoint evidence map that links every
 preregistered endpoint family to the required comparison or residual accounting
-artifact fields and null/control context. This manifest is not a new mechanic;
-it is an accounting artifact that makes the preregistered design surface
-explicit before residual analysis.
+artifact fields and null/control context. It must also include a fail-closed
+decision checklist showing that all promotion requirements must pass for the
+same intermediate-budget condition before residual-structure or
+strange-attractor-like language can be considered. This manifest is not a new
+mechanic; it is an accounting artifact that makes the preregistered design
+surface explicit before residual analysis.
 
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The

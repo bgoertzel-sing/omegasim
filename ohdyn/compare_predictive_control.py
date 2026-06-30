@@ -599,6 +599,7 @@ def _design_manifest(
         },
         "promotion_gate": _promotion_gate_manifest(generated_configs),
         "endpoint_evidence_map": _endpoint_evidence_map(),
+        "fail_closed_decision_checklist": _fail_closed_decision_checklist(),
         "timing_broken_null_controls": [
             _null_control_manifest_row(label, config_path)
             for label, config_path in generated_configs
@@ -868,6 +869,80 @@ def _endpoint_evidence_map() -> dict[str, dict[str, Any]]:
     }
 
 
+def _fail_closed_decision_checklist() -> dict[str, Any]:
+    return {
+        "claim_scope": "secondary_residual_structure_or_strange_attractor_like_language",
+        "default_decision": "fail_closed",
+        "minimum_promotion_requirements": [
+            {
+                "requirement": "accounting_locks_pass",
+                "artifact": "predictive_control_accounting_locks.csv",
+                "pass_condition": "all rows have status=pass",
+            },
+            {
+                "requirement": "forecast_skill_per_budget_positive",
+                "endpoint_family": "forecast_skill_per_prediction_budget",
+                "pass_condition": (
+                    "same intermediate condition beats reactive and its "
+                    "budget-matched timing-broken null"
+                ),
+            },
+            {
+                "requirement": "attention_leads_future_demand",
+                "endpoint_family": "attention_service_leads_future_demand",
+                "pass_condition": (
+                    "allocation/service shift improves future-demand alignment "
+                    "rather than only current backlog tracking"
+                ),
+            },
+            {
+                "requirement": "structured_nonzero_forecast_error",
+                "endpoint_family": "nonzero_structured_forecast_errors",
+                "pass_condition": (
+                    "residual forecast errors remain nonzero and structured after "
+                    "full accounting controls"
+                ),
+            },
+            {
+                "requirement": "residual_recurrence_survives_nulls",
+                "endpoint_family": "residual_phase_or_recurrence_after_full_accounting",
+                "pass_condition": (
+                    "full-accounting recurrence or phase endpoints exceed "
+                    "budget-matched timing-broken surrogate nulls"
+                ),
+            },
+            {
+                "requirement": "high_level_state_predictability_survives_nulls",
+                "endpoint_family": "high_level_state_predictability_or_compressibility",
+                "pass_condition": (
+                    "emergent high-level states are more predictable or compressible "
+                    "than surrogate null expectations"
+                ),
+            },
+            {
+                "requirement": "guardrails_hold",
+                "endpoint_family": "backlog_age_completion_starvation_and_volatility_guardrails",
+                "pass_condition": (
+                    "backlog, queued age, completion, starvation, and prediction/work "
+                    "budget volatility stay within preregistered tolerances"
+                ),
+            },
+            {
+                "requirement": "oracle_not_target_evidence",
+                "artifact": "predictive_control_comparison_metrics.csv",
+                "pass_condition": (
+                    "candidate remains dynamically nontrivial relative to oracle "
+                    "smoothing; oracle is not treated as target dynamics evidence"
+                ),
+            },
+        ],
+        "single_condition_rule": (
+            "All requirements must pass for the same intermediate-budget condition "
+            "before any residual-structure claim can be promoted."
+        ),
+    }
+
+
 def _null_control_manifest_row(label: str, config_path: Path) -> dict[str, Any]:
     cfg = load_config(config_path)
     assert cfg.predictive_control is not None
@@ -974,6 +1049,8 @@ def _summary(
                 "null prediction-spend checks"
             ),
             "- artifact: predictive_control_accounting_locks.csv",
+            "- decision checklist: predictive_control_design_manifest.yaml "
+            "section `fail_closed_decision_checklist`",
         ]
     )
     lines.extend(

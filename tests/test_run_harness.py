@@ -5848,6 +5848,32 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         design_manifest["promotion_gate"]["claim_policy"]
         == "fail_closed_until_all_checks_pass"
     )
+    checklist = design_manifest["fail_closed_decision_checklist"]
+    assert checklist["default_decision"] == "fail_closed"
+    assert checklist["claim_scope"] == (
+        "secondary_residual_structure_or_strange_attractor_like_language"
+    )
+    checklist_requirements = {
+        row["requirement"]: row
+        for row in checklist["minimum_promotion_requirements"]
+    }
+    assert list(checklist_requirements) == [
+        "accounting_locks_pass",
+        "forecast_skill_per_budget_positive",
+        "attention_leads_future_demand",
+        "structured_nonzero_forecast_error",
+        "residual_recurrence_survives_nulls",
+        "high_level_state_predictability_survives_nulls",
+        "guardrails_hold",
+        "oracle_not_target_evidence",
+    ]
+    assert checklist_requirements["accounting_locks_pass"]["artifact"] == (
+        "predictive_control_accounting_locks.csv"
+    )
+    assert checklist_requirements["forecast_skill_per_budget_positive"][
+        "endpoint_family"
+    ] == "forecast_skill_per_prediction_budget"
+    assert "same intermediate-budget condition" in checklist["single_condition_rule"]
     assert set(design_manifest["endpoint_evidence_map"]) == set(
         design_manifest["promotion_gate"]["required_endpoint_families"]
     )
@@ -5889,6 +5915,7 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert "nonlinear_high_budget_shuffled" in summary
     assert "## Accounting Locks" in summary
     assert "- pass rows: 16/16" in summary
+    assert "fail_closed_decision_checklist" in summary
 
 
 def test_a5_residual_accounting_analyzes_existing_comparison(
