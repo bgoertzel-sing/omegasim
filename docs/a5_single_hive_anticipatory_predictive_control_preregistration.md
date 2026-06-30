@@ -29,6 +29,13 @@ families, parameter sweeps, longer seed grids, dashboards, integrations,
 downstream three-hive coupling, or promotion language require a fresh
 preregistration.
 
+2026-06-29 23:04 PDT reconciliation note: the current automation prompt again
+selects this A5 single-hive anticipatory predictive-control stage over the
+intervening A7.3 status text. This update does not broaden mechanics. It
+reconfirms that the preregistration, existing deterministic smoke scaffold, and
+read-only residual accounting are the complete authorized surface for this A5
+pass.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero

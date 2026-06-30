@@ -5,30 +5,47 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's latest 2026-06-29 instruction says OmegaSim
-should proceed, not pause, with a new round of experiments; A7.3 is good for
-now. This opens A7.3 one-hive dimensionless delayed dynamics as the active next
-OmegaSim gate.
+Source-of-truth status: the current automation prompt explicitly requests A5
+anticipatory predictive-control dynamics as the bounded next scientific stage.
+This supersedes the immediately prior A7.3 active-focus text for this run only
+and restores the concise A5 single-hive preregistration/scaffold focus.
 
-This supersedes the previous awaiting-preregistration posture and does not
-reopen A7.2 or the three-hive ring. The prior A5/A7.3 validation outcomes
-remain negative evidence and guardrails, not a reason for the cron loop to sit
-idle.
+Current concise A5 gate: explicit single-hive A5 reopening and active
+preregistration summary are recorded in
+`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+That document already defines the deterministic single-hive setup,
+reactive/linear/nonlinear/high-budget/oracle/timing-broken predictor grid,
+resource-bounded prediction hypothesis, matched accounting locks, primary
+endpoints, guardrails, and fail-closed interpretation boundary requested for
+this stage.
 
-Current implementation boundary: start with a concise preregistration and
-minimal implementation gate for the next A7.3-family one-hive mechanism round.
-The experiment should use dimensionless delayed nonlinear self-coupling,
-bounded prediction spend, artifact readiness/risk/contradiction feedback, and
-the existing null-accounting discipline. Do not rerun broad A5 sweeps.
+Current implementation boundary: preserve the smallest checked-in deterministic
+A5 smoke/pilot scaffold and read-only residual diagnostics only. Do not add
+broader A5 tuning, new predictor families, dashboards, external integrations,
+A7-family mechanics, live systems, or downstream multi-hive coupling during
+this A5 preregistration/scaffold pass.
 
-Current interpretation boundary: older smoke/validation artifacts do not
-support residual-structure, strange-attractor-like, lobe-like, semantic-dynamic,
-or phase-structure claims. Any new positive claim must pass the preregistered
-residual, surrogate-null, local-divergence, compression, source-ledger, and
-productivity gates.
+Current interpretation boundary: the existing bounded seed `5,6` smoke/analyzer
+result remains negative evidence for A5 promotion. Forecast skill improved for
+intermediate predictors, but residual/null, oracle-nontriviality, compression,
+and guardrail criteria remained fail-closed; no residual-structure,
+strange-attractor-like, lobe-like, or phase-structure claim is supported.
 
 ## Latest Changes
 
+- 2026-06-29 23:04 PDT A5 bounded preregistration/scaffold reconciliation:
+  reread the automation memory, `README.md`, this status file,
+  `docs/structured_strange_attractor_research_note.md`, the concise A5
+  preregistration, and the checked-in A5 comparison/residual scaffold. Restored
+  the active top-level focus from the intervening A7.3 text to the current
+  explicitly requested bounded A5 single-hive preregistration/scaffold stage.
+- 2026-06-29 23:04 PDT A5 bounded preregistration/scaffold reconciliation:
+  confirmed that the concise A5 preregistration already covers the requested
+  deterministic setup, predictor/null grid, resource-bounded prediction
+  hypothesis, matched arrival/service/action-opportunity/work-budget locks,
+  primary endpoints, guardrails, and fail-closed strange-attractor/lobe
+  boundary. No simulator mechanics, smoke rerun, dashboard, external
+  integration, A7-family work, or downstream multi-hive coupling was added.
 - 2026-06-29 22:54 PDT Ben-direction unblock: recorded Ben's latest instruction
   that OmegaSim should proceed, not pause, with a new round of experiments and
   that A7.3 is good for now. Restored A7.3 one-hive dimensionless delayed
@@ -275,19 +292,35 @@ productivity gates.
 
 ## Recommended Next Step
 
-- Recommended next step: draft and freeze the A7.3 one-hive dimensionless
-  delayed dynamics follow-up preregistration and minimal implementation gate,
-  then run the smallest deterministic smoke/null check.
+- Recommended next step: review the bounded A5 seed `5,6` smoke/analyzer result
+  before authorizing any larger A5 holdout.
 
 ## Blockers
 
-No environment blocker. The scientific challenge is to make the next one-hive
-round mechanism-rich enough to test endogenous delayed nonlinear self-coupling,
-while preserving the source-ledger, null-control, and productivity discipline
-that made the earlier negative results useful.
+No environment blocker. The scientific blocker is that the bounded A5 smoke
+still shows forecast-skill gains without residual/null evidence strong enough
+for promotion. Broader A5/A5.1 seed work, A7-family mechanics, and multi-hive
+mechanics remain out of scope for this A5 preregistration/scaffold pass.
 
 ## Verification
 
+- 2026-06-29 23:04 PDT A5 bounded preregistration/scaffold reconciliation:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `29 passed, 647 deselected`.
+- 2026-06-29 23:04 PDT A5 bounded preregistration/scaffold reconciliation:
+  `.venv-conda/bin/python -m py_compile ohdyn/config.py ohdyn/sim.py
+  ohdyn/io.py ohdyn/compare_predictive_control.py
+  ohdyn/analyze_a5_residual_accounting.py ohdyn/automation_guard.py` passed.
+- 2026-06-29 23:04 PDT A5 bounded preregistration/scaffold reconciliation:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `a5_preregistration_active=true`, `state=open`, `should_noop=false`,
+  `repo_write_allowed=true`, `closed_reasons=[]`, `notify_ben=true`,
+  `strategic_change_level=major`, and the single next action to review the
+  bounded A5 seed `5,6` smoke/analyzer result before authorizing any larger A5
+  holdout.
+- 2026-06-29 23:04 PDT A5 bounded preregistration/scaffold reconciliation:
+  `git diff --check` passed after the status and preregistration updates.
 - 2026-06-29 21:58 PDT A5 bounded verification pass:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
