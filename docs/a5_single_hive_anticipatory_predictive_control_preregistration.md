@@ -52,6 +52,14 @@ preregistration before any broad mechanics. The existing deterministic
 single-hive smoke scaffold and read-only residual accounting are still the only
 authorized implementation surface for this pass.
 
+2026-06-30 02:05 PDT checkpoint: the current automation request again selects
+A5 anticipatory predictive-control dynamics as the explicitly requested
+scientific stage. This checkpoint preserves the same bounded scope: deterministic
+single-hive preregistration, matched accounting controls, existing smoke/pilot
+scaffold, and fail-closed interpretation. It does not authorize broad predictor
+tuning, broader seed sweeps, dashboards, integrations, A7-family mechanics, or
+three-hive delayed anticipatory coupling.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero

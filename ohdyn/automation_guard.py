@@ -67,6 +67,13 @@ def read_automation_state(
         and not current_line_closed
     ):
         closed_reasons = []
+    if (
+        closed_reasons == ["strategy_review_a5_recovery_required"]
+        and status_overrides_a5_recovery_close
+        and not _status_closes_active_a5(current_status)
+        and not current_line_closed
+    ):
+        closed_reasons = []
     roadmap_reopens_a7 = _roadmap_reopens_after_a5(roadmap) and not (
         _status_supersedes_roadmap(current_status)
     )
@@ -321,6 +328,7 @@ def _status_closes_active_a5(status: str) -> bool:
             or "the current a5 anticipatory predictive-control loop" in normalized_status
             or "a5-family automation" in normalized_status
             or "a5 remains fail-closed" in normalized_status
+            or "reopened bounded a5 pass" in normalized_status
         )
         and "closed" in normalized_status
         and (
@@ -367,6 +375,8 @@ def _status_closes_active_a5(status: str) -> bool:
                 and "before any further a5 simulator runs" in normalized_status
             )
             or "current a5 post-smoke state is closed/no-op"
+            in normalized_status
+            or "reopened bounded a5 pass is now closed/no-op"
             in normalized_status
             or (
                 (
