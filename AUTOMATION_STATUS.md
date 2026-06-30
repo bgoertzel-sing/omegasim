@@ -5,24 +5,29 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's current 2026-06-30 automation prompt explicitly
-reopens the bounded A5 single-hive anticipatory predictive-control stage.
+Source-of-truth status: Ben's 2026-06-30 instruction selects the analytic
+delayed-map pivot as the active next OmegaSim gate, not A5.2.
 
-This overrides the prior closed/no-op recommendation for this bounded
-preregistration/scaffold stage only. The active source of truth is
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
+This supersedes the 2026-06-30 09:11 PDT bounded-A5 status reconciliation.
+Do not treat the bounded A5 prompt as the active next line. Prior A5
+smoke/analyzer evidence remains negative background: intermediate predictors
+improved forecast skill, but residual/null, oracle-nontriviality, compression,
+and guardrail criteria did not support residual-structure promotion.
 
-The concise A5 preregistration already exists and covers the deterministic
-single-hive setup, resource-bounded prediction hypothesis, reactive/linear/
-nonlinear/oracle/null condition grid, matched accounting locks, primary
-endpoints, guardrails, and fail-closed interpretation rules. The checked-in
-scaffold remains limited to the deterministic single-hive smoke/pilot and
-read-only residual accounting. No broad A5 tuning, A7-family work, dashboards,
-external integrations, live task systems, or three-hive coupling are authorized
-by this status.
+The active next work should use
+`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md` and the
+A5/A7 negative evidence to implement the smallest analytic delayed
+resource-bounded prediction map before adding simulator mechanics. The first
+map should expose the same dimensionless axes identified in the Hyperseed note:
+`rho`, `delta`, `mu`, `kappa`, and `nu`, with contraction/boundedness,
+recurrence, local-divergence, and surrogate-null diagnostics.
 
 ## Latest Changes
 
+- 2026-06-30 09:18 PDT Ben direction correction: restored the analytic
+  delayed-map pivot as the active next OmegaSim gate after the 09:11 PDT
+  bounded-A5 reconciliation. A5.2 is not authorized; the next step is the
+  minimal analytic resource-bounded delayed map over the Hyperseed axes.
 - 2026-06-30 09:11 PDT A5 status reconciliation: restored the current focus to
   the explicitly requested bounded A5 single-hive predictive-control stage after
   an intervening analytic delayed-map pivot note, and added a preregistration
@@ -235,13 +240,14 @@ by this status.
 
 ## Blockers
 
-No environment blocker. Broader A5 work, A5.2 implementation, A7-family work,
-dashboards, integrations, wider seed sweeps, and downstream three-hive coupling
-are not authorized by the current bounded A5 prompt. Existing bounded A5 smoke
-evidence remains fail-closed for residual-structure, lobe-like, or
-strange-attractor-like promotion.
+No environment blocker. Broader A5 work and A5.2 implementation are not
+authorized. The scientific challenge is now to make the analytic delayed-map
+pivot small enough to be mathematically interpretable while still exposing the
+delayed nonlinear self-coupling axes needed for strange-attractor-oriented
+search.
 
 ## Recommended Next Step
 
-- Recommended next step: review the bounded A5 preregistration plus accounting
-  locks, then decide whether to authorize a fresh A5.2 implementation gate.
+- Recommended next step: implement the smallest analytic delayed
+  resource-bounded prediction map over `rho`, `delta`, `mu`, `kappa`, and `nu`
+  before adding simulator mechanics.
