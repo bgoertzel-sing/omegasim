@@ -27,6 +27,12 @@ whether endogenous delayed prediction-spend decisions can produce useful,
 partially predictable residual collective dynamics after matched spend,
 work-budget, timing-broken, and accounting controls.
 
+2026-06-30 04:06 PDT status check: the A5 single-hive preregistration and
+minimal deterministic scaffold remain complete. No new simulator mechanics or
+scientific runs were added because the guard still closes further A5 work until
+Ben explicitly chooses whether to implement the preregistered A5.2 smoke
+scaffold.
+
 ## Latest Changes
 
 - 2026-06-30 02:05 PDT preregistration checkpoint: refreshed the concise A5
@@ -42,6 +48,10 @@ work-budget, timing-broken, and accounting controls.
 - 2026-06-30 03:06 PDT preregistration-only checkpoint: added the A5.2
   endogenous delayed prediction-spend preregistration as the next design gate,
   with no simulator mechanics or new scientific runs authorized.
+- 2026-06-30 04:06 PDT guard/status checkpoint: confirmed the requested A5
+  preregistration already exists, the checked-in deterministic scaffold remains
+  the complete authorized implementation surface, and A5.2 remains a
+  preregistered but unimplemented decision gate.
 
 ## Verification
 
@@ -82,6 +92,15 @@ work-budget, timing-broken, and accounting controls.
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
   passed (`29 passed, 651 deselected`).
 - 2026-06-30 03:06 PDT whitespace check: `git diff --check` passed.
+- 2026-06-30 04:06 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, and recommended Ben decide whether to authorize
+  the minimal deterministic A5.2 smoke scaffold.
+- 2026-06-30 04:06 PDT focused guard regression slice:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`29 passed, 651 deselected`).
+- 2026-06-30 04:06 PDT whitespace check: `git diff --check` passed.
 
 ## Blockers
 
