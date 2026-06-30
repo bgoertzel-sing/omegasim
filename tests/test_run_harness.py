@@ -3105,6 +3105,71 @@ def test_automation_guard_closes_for_current_a5_post_smoke_result_wording(
     assert state["recommended_next_action"] == action
 
 
+def test_automation_guard_closes_stale_a5_reopening_under_pause_recover_review(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    action = (
+        "review the bounded A5 seed `5,6` smoke/analyzer result before "
+        "authorizing any larger A5 holdout."
+    )
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: the current automation prompt explicitly "
+                "requests A5 anticipatory predictive-control dynamics as the "
+                "bounded next scientific stage.",
+                "Current concise A5 gate: explicit single-hive A5 reopening and "
+                "active preregistration summary are recorded in "
+                "`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.",
+                "Current interpretation boundary: the existing bounded seed "
+                "`5,6` smoke/analyzer result remains negative evidence for "
+                "A5 promotion. Forecast skill improved, but residual/null, "
+                "oracle-nontriviality, compression, and guardrail criteria "
+                "remained fail-closed.",
+                "",
+                "## Recommended Next Step",
+                "",
+                f"- Recommended next step: {action}",
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: major",
+                "notify_ben: true",
+                "recommended_next_action: Recover the stale/conflicting loop, "
+                "close A5/A7.3 as fail-closed evidence, and draft one non-active "
+                "preregistration for endogenous delayed prediction-spend before "
+                "any simulator run.",
+                "verdict: PAUSE-RECOVER",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == ["automation_status_a5_post_smoke_review"]
+    assert state["notify_ben"] is True
+    assert state["recommended_next_action"] == action
+
+
 def test_automation_guard_opens_when_ben_accepts_a7_2_then_three_hive(
     tmp_path: Path,
 ) -> None:

@@ -5,34 +5,49 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: the current automation prompt explicitly requests A5
-anticipatory predictive-control dynamics as the bounded next scientific stage.
-This supersedes the immediately prior A7.3 active-focus text for this run only
-and restores the concise A5 single-hive preregistration/scaffold focus.
+Source-of-truth status: recovery/no-op. The latest GPT-5.5-Pro strategic
+review is marked `strategic_change_level: major`, `notify_ben: true`, and
+`verdict: PAUSE-RECOVER`; its direction is accepted as scientifically sensible
+for the current stale/conflicting loop. A5 and A7.3 are treated as completed
+fail-closed evidence, not active run authorization.
 
-Current concise A5 gate: explicit single-hive A5 reopening and active
-preregistration summary are recorded in
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`.
-That document already defines the deterministic single-hive setup,
-reactive/linear/nonlinear/high-budget/oracle/timing-broken predictor grid,
-resource-bounded prediction hypothesis, matched accounting locks, primary
-endpoints, guardrails, and fail-closed interpretation boundary requested for
-this stage.
+Current guard boundary: `ohdyn.automation_guard` must report
+`closed_awaiting_preregistration`, `should_noop=true`, and
+`repo_write_allowed=false` for this status/review combination. Stale wording
+that mentions an active A5 preregistration must not reopen simulator or
+analyzer work after the repeated seed `5,6` fail-closed A5 result.
+Machine-readable guard marker: state: closed_awaiting_preregistration and
+should_noop: true.
 
-Current implementation boundary: preserve the smallest checked-in deterministic
-A5 smoke/pilot scaffold and read-only residual diagnostics only. Do not add
-broader A5 tuning, new predictor families, dashboards, external integrations,
-A7-family mechanics, live systems, or downstream multi-hive coupling during
-this A5 preregistration/scaffold pass.
+Current draft artifact: `docs/a5_2_endogenous_delayed_prediction_spend_preregistration.md`
+records one non-active possible next single-hive axis following the external
+review recommendation. It does not authorize simulator runs, analyzer runs,
+parameter sweeps, A5 rescue tuning, A7.3 reruns, dashboards, external
+integrations, real LLM calls, or downstream multi-hive coupling.
 
-Current interpretation boundary: the existing bounded seed `5,6` smoke/analyzer
-result remains negative evidence for A5 promotion. Forecast skill improved for
-intermediate predictors, but residual/null, oracle-nontriviality, compression,
-and guardrail criteria remained fail-closed; no residual-structure,
-strange-attractor-like, lobe-like, or phase-structure claim is supported.
+Current interpretation boundary: A5 forecast skill improved for intermediate
+predictors, but residual/null, oracle-nontriviality, compression, and guardrail
+criteria remained fail-closed. A7.3 fixed validation also failed its
+preregistered null gates. No residual-structure, strange-attractor-like,
+lobe-like, semantic-dynamics, or phase-structure claim is supported. Ben should
+be notified of the major recovery direction shift before any new active line is
+run.
 
 ## Latest Changes
 
+- 2026-06-29 23:16 PDT recovery/no-op guard repair: accepted the latest
+  GPT-5.5-Pro review direction (`strategic_change_level: major`,
+  `notify_ben: true`, `verdict: PAUSE-RECOVER`) as scientifically sensible.
+  Patched `ohdyn.automation_guard` so stale active-A5 wording plus the bounded
+  seed `5,6` fail-closed review action remains
+  `closed_awaiting_preregistration`, `should_noop=true`, and
+  `repo_write_allowed=false`.
+- 2026-06-29 23:16 PDT recovery/no-op guard repair: added
+  `docs/a5_2_endogenous_delayed_prediction_spend_preregistration.md` as a
+  non-active preregistration draft for a possible endogenous delayed
+  prediction-spend axis. This records the external review recommendation but
+  does not authorize simulator runs, analyzers, dashboards, integrations,
+  A7.3 reruns, or downstream multi-hive coupling.
 - 2026-06-29 23:04 PDT A5 bounded preregistration/scaffold reconciliation:
   reread the automation memory, `README.md`, this status file,
   `docs/structured_strange_attractor_research_note.md`, the concise A5
@@ -292,18 +307,36 @@ strange-attractor-like, lobe-like, or phase-structure claim is supported.
 
 ## Recommended Next Step
 
-- Recommended next step: review the bounded A5 seed `5,6` smoke/analyzer result
-  before authorizing any larger A5 holdout.
+- Recommended next step: notify Ben that the loop has been recovered to
+  closed/no-op after fail-closed A5 and A7.3 evidence, and ask whether the
+  non-active A5.2 endogenous delayed prediction-spend draft should become the
+  next active preregistered line.
 
 ## Blockers
 
-No environment blocker. The scientific blocker is that the bounded A5 smoke
-still shows forecast-skill gains without residual/null evidence strong enough
-for promotion. Broader A5/A5.1 seed work, A7-family mechanics, and multi-hive
-mechanics remain out of scope for this A5 preregistration/scaffold pass.
+No environment blocker. The scientific/governance blocker is that the latest
+external review marks the current loop as major PAUSE-RECOVER with Ben
+notification required. The repository is intentionally closed/no-op until Ben
+explicitly activates a fresh preregistered line.
 
 ## Verification
 
+- 2026-06-29 23:16 PDT recovery/no-op guard repair:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  automation_guard -q` passed with `26 passed, 651 deselected`.
+- 2026-06-29 23:16 PDT recovery/no-op guard repair:
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  tests/test_run_harness.py` passed.
+- 2026-06-29 23:16 PDT recovery/no-op guard repair:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `a5_preregistration_active=true`,
+  `closed_reasons=[automation_status_noop_guard]`,
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `notify_ben=true`,
+  `strategic_change_level=major`, and the review next action to recover the
+  stale/conflicting loop, close A5/A7.3 as fail-closed evidence, and draft one
+  non-active endogenous delayed prediction-spend preregistration before any
+  simulator run.
 - 2026-06-29 23:04 PDT A5 bounded preregistration/scaffold reconciliation:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'automation_guard or a5_predictive_control or a5_residual_accounting' -q`

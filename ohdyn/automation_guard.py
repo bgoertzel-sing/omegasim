@@ -54,11 +54,13 @@ def read_automation_state(
     if (
         a5_preregistration_active
         and not _status_closes_active_a5(current_status)
+        and not _review_recommends_a5_recovery_close(review_header)
         and not current_line_closed
     ):
         closed_reasons = []
     if (
         status_reopens_a5
+        and not _review_recommends_a5_recovery_close(review_header)
         and not current_line_closed
     ):
         closed_reasons = []
@@ -143,6 +145,17 @@ def _review_recommends_active_a7_3(review_header: dict[str, str]) -> bool:
             or "run" in normalized_action
             or "preregister" in normalized_action
         )
+    )
+
+
+def _review_recommends_a5_recovery_close(review_header: dict[str, str]) -> bool:
+    normalized_action = _normalize(review_header.get("recommended_next_action", ""))
+    normalized_verdict = _normalize(review_header.get("verdict", ""))
+    return (
+        normalized_verdict.startswith("pause")
+        and "close a5" in normalized_action
+        and "fail-closed" in normalized_action
+        and "before any simulator run" in normalized_action
     )
 
 
@@ -231,6 +244,8 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
             in normalized_status
             or "review the current bounded a5 seed `5,6` smoke/analyzer result"
             in normalized_status
+            or "review the bounded a5 seed `5,6` smoke/analyzer result"
+            in normalized_status
         )
         and "before authorizing any larger a5 holdout" in normalized_status
         and "fail-closed" in normalized_status
@@ -304,6 +319,8 @@ def _status_closes_active_a5(status: str) -> bool:
                     "review the bounded a5 seed `5,6` smoke/analyzer outcome"
                     in normalized_status
                     or "review the current bounded a5 seed `5,6` smoke/analyzer result"
+                    in normalized_status
+                    or "review the bounded a5 seed `5,6` smoke/analyzer result"
                     in normalized_status
                 )
                 and "before authorizing any larger a5 holdout"
