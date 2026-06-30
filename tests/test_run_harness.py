@@ -315,6 +315,11 @@ from ohdyn.analytic_delayed_map import (
     run_analytic_delayed_map,
     simulate_and_diagnose,
 )
+from ohdyn.analytic_delayed_map_grid_preflight import (
+    GRID_PREFLIGHT_FIELDS,
+    GRID_PREFLIGHT_STATUS,
+    run_analytic_delayed_map_grid_preflight,
+)
 from ohdyn.run import run_experiment
 
 
@@ -422,6 +427,9 @@ A7_2_ARTIFACT_OFF_SOURCE_LEDGER_NULL = Path(
 )
 A7_3_DIMENSIONLESS_SMOKE = Path("configs/a7_3_dimensionless_smoke.yaml")
 ANALYTIC_DELAYED_MAP_SMOKE = Path("configs/analytic_delayed_map_smoke.yaml")
+ANALYTIC_DELAYED_MAP_GRID_PREFLIGHT = Path(
+    "configs/analytic_delayed_map_grid_preflight.yaml"
+)
 THREE_HIVE_RING_CONTRACT_VALIDATION = Path(
     "configs/three_hive_ring_contract_validation.yaml"
 )
@@ -602,6 +610,63 @@ def test_analytic_delayed_map_cli_writes_diagnostic_artifacts(tmp_path: Path) ->
     assert rows[0]["diagnostic_status"] == MAP_STATUS
     summary = (out_dir / "summary.md").read_text()
     assert "standalone analytic sandbox" in summary
+    assert "strange-attractor-like claims" in summary
+
+
+def test_analytic_delayed_map_grid_preflight_is_tiny_and_deterministic(
+    tmp_path: Path,
+) -> None:
+    rows_a = run_analytic_delayed_map_grid_preflight(
+        config_path=ANALYTIC_DELAYED_MAP_GRID_PREFLIGHT,
+        out_dir=tmp_path / "grid_a",
+    )
+    rows_b = run_analytic_delayed_map_grid_preflight(
+        config_path=ANALYTIC_DELAYED_MAP_GRID_PREFLIGHT,
+        out_dir=tmp_path / "grid_b",
+    )
+
+    assert rows_a == rows_b
+    assert len(rows_a) == 4
+    assert {row["condition_id"] for row in rows_a} == {
+        "rho_0.2_delta_0",
+        "rho_0.2_delta_1",
+        "rho_3_delta_0",
+        "rho_3_delta_1",
+    }
+    assert {row["diagnostic_status"] for row in rows_a} == {MAP_STATUS}
+    assert {row["delay_ticks"] for row in rows_a} == {0, 8}
+    assert all(row["boundedness_status"] == "pass" for row in rows_a)
+
+
+def test_analytic_delayed_map_grid_preflight_writes_summary_only_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "analytic_delayed_map_grid_preflight"
+
+    rows = run_analytic_delayed_map_grid_preflight(
+        config_path=ANALYTIC_DELAYED_MAP_GRID_PREFLIGHT,
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == 4
+    for artifact in (
+        "config.yaml",
+        "manifest.yaml",
+        "grid_preflight.csv",
+        "summary.md",
+    ):
+        assert (out_dir / artifact).exists()
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "diagnostics.csv").exists()
+    with (out_dir / "grid_preflight.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(GRID_PREFLIGHT_FIELDS)
+        csv_rows = list(csv.DictReader(handle, fieldnames=GRID_PREFLIGHT_FIELDS))
+    assert len(csv_rows) == 4
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["status"] == GRID_PREFLIGHT_STATUS
+    assert manifest["rows"] == 4
+    summary = (out_dir / "summary.md").read_text()
+    assert "read-only preflight reports grid-level diagnostics only" in summary
     assert "strange-attractor-like claims" in summary
 
 

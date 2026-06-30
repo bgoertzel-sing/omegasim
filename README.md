@@ -106,6 +106,19 @@ The smoke fixture is diagnostic only. Passing boundedness or recurrence wiring
 does not support lobe-like, semantic-dynamics, or strange-attractor-like
 claims.
 
+The bounded grid preflight runs the existing analytic map in memory over the
+fixed low/high `rho` x no-delay/delay set and writes only summary diagnostics:
+
+```bash
+python -m ohdyn.analytic_delayed_map_grid_preflight \
+  --config configs/analytic_delayed_map_grid_preflight.yaml \
+  --out runs/analytic_delayed_map_grid_preflight_seed1
+```
+
+This preflight reports boundedness, recurrence-surrogate deltas, and paired
+local-divergence summaries only. It does not write per-tick simulator metrics
+or support attractor, lobe, or semantic-dynamics claims.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question

@@ -31,6 +31,14 @@ automation followed the analytic pivot despite the major review flag.
 
 ## Latest Changes
 
+- 2026-06-30 09:39 PDT analytic grid preflight: added a read-only
+  `rho` low/high x no-delay/delay grid preflight over the existing standalone
+  analytic delayed map. It writes only `grid_preflight.csv`, manifest, config,
+  and summary artifacts; it does not add simulator mechanics, per-tick
+  simulator artifacts, A5/A7 reruns, dashboards, external integrations, or
+  multi-hive coupling. The latest GPT-5.5-Pro major/notify-Ben review remains
+  recorded as negative A5 governance context, but Ben's newer status-file
+  analytic-pivot direction remains the active line.
 - 2026-06-30 09:20 PDT analytic delayed-map smoke: added a standalone
   analytic resource-bounded delayed prediction map over `rho`, `delta`, `mu`,
   `kappa`, and `nu`, plus the fixed seed-1 smoke config, README command, and
@@ -83,6 +91,30 @@ automation followed the analytic pivot despite the major review flag.
 
 ## Verification
 
+- 2026-06-30 09:39 PDT focused grid-preflight tests:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_analytic_delayed_map_grid_preflight_is_tiny_and_deterministic tests/test_run_harness.py::test_analytic_delayed_map_grid_preflight_writes_summary_only_artifacts -q`
+  passed (`2 passed`).
+- 2026-06-30 09:39 PDT syntax check:
+  `.venv-conda/bin/python -m py_compile ohdyn/analytic_delayed_map_grid_preflight.py tests/test_run_harness.py`
+  passed.
+- 2026-06-30 09:39 PDT analytic-map grid preflight:
+  `.venv-conda/bin/python -m ohdyn.analytic_delayed_map_grid_preflight --config configs/analytic_delayed_map_grid_preflight.yaml --out /tmp/omegasim_analytic_delayed_map_grid_preflight_seed1_20260630_0936`
+  completed with four bounded rows. Recurrence-surrogate deltas were
+  `0.081579`, `0.072149`, `0.075658`, and `0.064693`; finite-time
+  local-divergence summaries were `-0.171157`, `-0.133986`, `-0.150954`, and
+  `-0.043433`. This remains diagnostic sandbox evidence only, with no
+  attractor, lobe, or semantic-dynamics claim.
+- 2026-06-30 09:40 PDT final guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `should_noop=false`, `repo_write_allowed=true`,
+  `strategic_change_level=major`, and `notify_ben=true`; the recommended next
+  action is to preregister the next analytic-map refinement/null gate before any
+  larger grid.
+- 2026-06-30 09:40 PDT final focused regression/syntax checks:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_analytic_delayed_map_grid_preflight_is_tiny_and_deterministic tests/test_run_harness.py::test_analytic_delayed_map_grid_preflight_writes_summary_only_artifacts tests/test_run_harness.py -k automation_guard -q`
+  passed (`30 passed, 655 deselected`),
+  `.venv-conda/bin/python -m py_compile ohdyn/analytic_delayed_map.py ohdyn/analytic_delayed_map_grid_preflight.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
 - 2026-06-30 09:20 PDT guard check:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
   `should_noop=false`, `repo_write_allowed=true`,
@@ -285,7 +317,6 @@ direction authorizes the analytic pivot.
 
 ## Recommended Next Step
 
-- Recommended next step: add a read-only analytic-map grid preflight that runs
-  a tiny preregistered low/high `rho` x no-delay/delay set over the existing
-  standalone map and reports only boundedness, recurrence-surrogate delta, and
-  paired local-divergence summaries.
+- Recommended next step: preregister the next analytic-map refinement/null gate
+  before any larger grid, using the completed four-condition preflight as
+  diagnostic background only.
