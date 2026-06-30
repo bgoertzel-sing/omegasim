@@ -153,7 +153,10 @@ def _review_recommends_a5_recovery_close(review_header: dict[str, str]) -> bool:
     normalized_verdict = _normalize(review_header.get("verdict", ""))
     return (
         normalized_verdict.startswith("pause")
-        and "close a5" in normalized_action
+        and (
+            "close a5" in normalized_action
+            or "close a5/a7.3" in normalized_action
+        )
         and "fail-closed" in normalized_action
         and "before any simulator run" in normalized_action
     )
@@ -190,6 +193,7 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
     status_reasons = []
     normalized_status = _normalize(status)
     normalized_review = _normalize(review)
+    review_header = _parse_review_header(review)
 
     if "next step: leave omegasim closed" in normalized_status:
         status_reasons.append("automation_status_next_step_closed")
@@ -255,6 +259,13 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         status_reasons.append("automation_status_a5_closed")
     if _status_closes_after_a7_2_three_hive(status):
         status_reasons.append("automation_status_a7_2_three_hive_failed_closed")
+    if (
+        not status_reasons
+        and _review_recommends_a5_recovery_close(review_header)
+        and "a5" in normalized_status
+        and "fail-closed" in normalized_status
+    ):
+        status_reasons.append("strategy_review_a5_recovery_required")
 
     reasons = list(status_reasons)
     if not status_reasons:
