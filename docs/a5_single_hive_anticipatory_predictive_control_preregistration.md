@@ -91,6 +91,13 @@ smoothing positive control rather than a target dynamics condition, and the
 fail-closed endpoint families that must pass before residual-structure or
 strange-attractor-like language is considered.
 
+2026-06-30 14:15 PDT checkpoint: the comparison design manifest must also map
+each preregistered endpoint family to the concrete comparison or residual
+accounting artifacts, fields, endpoint values, control levels, and null
+contrasts that can support it. This is an audit/provenance contract only; it
+does not add simulator mechanics, predictor families, broader seeds, or
+promotion language.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -222,9 +229,11 @@ The comparison helper must also emit
 the fixed A5 condition grid, prediction-budget axis, budget-matched null
 pairings, preregistration path, fixed lead/signal/phase parameters, deterministic
 phase-shifted timing-broken null controls, oracle-positive-control role, and
-fail-closed promotion gate. This manifest is not a new mechanic; it is an
-accounting artifact that makes the preregistered design surface explicit before
-residual analysis.
+fail-closed promotion gate. It must also include an endpoint evidence map that
+links every preregistered endpoint family to the required comparison or residual
+accounting artifact fields and null/control context. This manifest is not a new
+mechanic; it is an accounting artifact that makes the preregistered design
+surface explicit before residual analysis.
 
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The

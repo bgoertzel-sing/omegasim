@@ -69,7 +69,9 @@ residual promotion gate for replay/audit. This is an accounting artifact only;
 it does not broaden A5 mechanics. The manifest now also records the
 lead/signal/phase parameters and the deterministic phase-shifted timing-broken
 null controls, making the shuffled/phase-randomized null surface auditable
-before residual interpretation.
+before residual interpretation. It also maps each preregistered endpoint family
+to the concrete comparison or residual-accounting artifacts, fields, endpoint
+values, control levels, and null contrasts that would have to support it.
 
 Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
 closed without a fresh preregistration. Ben's 2026-06-28 decision opened the

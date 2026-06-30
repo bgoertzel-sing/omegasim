@@ -595,6 +595,7 @@ def _design_manifest(
             "requires_surrogate_nulls": True,
         },
         "promotion_gate": _promotion_gate_manifest(generated_configs),
+        "endpoint_evidence_map": _endpoint_evidence_map(),
         "timing_broken_null_controls": [
             _null_control_manifest_row(label, config_path)
             for label, config_path in generated_configs
@@ -689,6 +690,96 @@ def _promotion_gate_manifest(
             "backlog_age_completion_starvation_and_volatility_guardrails",
         ],
         "claim_policy": "fail_closed_until_all_checks_pass",
+    }
+
+
+def _endpoint_evidence_map() -> dict[str, dict[str, Any]]:
+    return {
+        "forecast_skill_per_prediction_budget": {
+            "artifacts": [
+                "predictive_control_comparison_metrics.csv",
+                "predictive_control_effects.csv",
+            ],
+            "fields": [
+                "forecast_skill_final_mean",
+                "forecast_skill_per_budget_final_mean",
+                "prediction_budget",
+                "prediction_work_charged_final_mean",
+            ],
+            "required_contrasts": [
+                "condition_vs_reactive",
+                "condition_vs_budget_matched_shuffled",
+            ],
+        },
+        "attention_service_leads_future_demand": {
+            "artifacts": [
+                "predictive_control_comparison_metrics.csv",
+                "predictive_control_effects.csv",
+            ],
+            "fields": [
+                "lead_ticks",
+                "work_forecast_alignment_final_mean",
+                "work_future_demand_alignment_final_mean",
+                "allocation_future_residual_abs_final_mean",
+            ],
+            "required_contrasts": [
+                "condition_vs_reactive",
+                "condition_vs_budget_matched_shuffled",
+            ],
+        },
+        "nonzero_structured_forecast_errors": {
+            "artifact": "a5_residual_accounting_metrics.csv",
+            "produced_by": "ohdyn.analyze_a5_residual_accounting",
+            "endpoint_values": [
+                "forecast_error_abs_mean",
+                "residual_state_lag1_autocorr",
+                "residual_state_lag2_autocorr",
+            ],
+            "control_levels": ["raw", "clock_demand", "load_opportunity", "full_accounting"],
+        },
+        "residual_phase_or_recurrence_after_full_accounting": {
+            "artifact": "a5_residual_accounting_effects.csv",
+            "produced_by": "ohdyn.analyze_a5_residual_accounting",
+            "endpoint_values": [
+                "residual_state_lag1_autocorr",
+                "residual_state_lag2_autocorr",
+                "residual_state_return_distance_mean",
+                "residual_state_return_time_mean",
+                "residual_state_return_time_entropy",
+            ],
+            "control_levels": ["full_accounting"],
+            "required_nulls": [
+                "shuffled",
+                "nonlinear_shuffled",
+                "nonlinear_high_budget_shuffled",
+            ],
+        },
+        "high_level_state_predictability_or_compressibility": {
+            "artifact": "a5_residual_accounting_effects.csv",
+            "produced_by": "ohdyn.analyze_a5_residual_accounting",
+            "endpoint_values": [
+                "residual_state_predictability_r2",
+                "residual_state_compression_ratio",
+            ],
+            "fields": [
+                "label_permutation_ci_low",
+                "label_permutation_ci_high",
+                "outside_label_permutation_ci",
+            ],
+            "control_levels": ["full_accounting"],
+        },
+        "backlog_age_completion_starvation_and_volatility_guardrails": {
+            "artifact": "predictive_control_comparison_metrics.csv",
+            "fields": [
+                "completion_fraction_mean",
+                "queue_depth_mean",
+                "queued_task_age_mean_final_mean",
+                "attention_capture_pressure_max_final_mean",
+                "prediction_work_charged_final_mean",
+                "work_budget_remaining_final_mean",
+            ],
+            "must_not_be_interpreted_as_dynamics_evidence": True,
+        },
     }
 
 

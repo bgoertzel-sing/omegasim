@@ -5817,6 +5817,24 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         design_manifest["promotion_gate"]["claim_policy"]
         == "fail_closed_until_all_checks_pass"
     )
+    assert set(design_manifest["endpoint_evidence_map"]) == set(
+        design_manifest["promotion_gate"]["required_endpoint_families"]
+    )
+    assert design_manifest["endpoint_evidence_map"][
+        "forecast_skill_per_prediction_budget"
+    ]["artifacts"] == [
+        "predictive_control_comparison_metrics.csv",
+        "predictive_control_effects.csv",
+    ]
+    assert (
+        "residual_state_return_time_entropy"
+        in design_manifest["endpoint_evidence_map"][
+            "residual_phase_or_recurrence_after_full_accounting"
+        ]["endpoint_values"]
+    )
+    assert design_manifest["endpoint_evidence_map"][
+        "backlog_age_completion_starvation_and_volatility_guardrails"
+    ]["must_not_be_interpreted_as_dynamics_evidence"] is True
     assert {row["status"] for row in accounting_rows} == {"pass"}
     assert {row["matches_reactive_task_stream"] for row in accounting_rows} == {"true"}
     assert {row["matches_reactive_demand_stream"] for row in accounting_rows} == {"true"}
