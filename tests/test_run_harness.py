@@ -308,6 +308,13 @@ from ohdyn.synthesize_service_capacity_decision import (
     DECISION_SYNTHESIS_FIELDS,
     run_service_capacity_decision_synthesis,
 )
+from ohdyn.analytic_delayed_map import (
+    DIAGNOSTIC_FIELDS,
+    MAP_STATUS,
+    METRIC_FIELDS,
+    run_analytic_delayed_map,
+    simulate_and_diagnose,
+)
 from ohdyn.run import run_experiment
 
 
@@ -414,6 +421,7 @@ A7_2_ARTIFACT_OFF_SOURCE_LEDGER_NULL = Path(
     "configs/a7_2_artifact_off_source_ledger_null_smoke.yaml"
 )
 A7_3_DIMENSIONLESS_SMOKE = Path("configs/a7_3_dimensionless_smoke.yaml")
+ANALYTIC_DELAYED_MAP_SMOKE = Path("configs/analytic_delayed_map_smoke.yaml")
 THREE_HIVE_RING_CONTRACT_VALIDATION = Path(
     "configs/three_hive_ring_contract_validation.yaml"
 )
@@ -549,6 +557,52 @@ OUTPUT_FIXTURE_ARTIFACTS = {
     NO_MANIFEST: NO_MANIFEST_ARTIFACTS,
     NO_MANIFEST_REORDERED_ACTIONS: NO_MANIFEST_ARTIFACTS,
 }
+
+
+def test_analytic_delayed_map_smoke_is_bounded_and_reproducible() -> None:
+    config = yaml.safe_load(ANALYTIC_DELAYED_MAP_SMOKE.read_text())
+
+    metrics_a, diagnostics_a = simulate_and_diagnose(config)
+    metrics_b, diagnostics_b = simulate_and_diagnose(config)
+
+    assert metrics_a == metrics_b
+    assert diagnostics_a == diagnostics_b
+    assert len(metrics_a) == config["run"]["ticks"]
+    assert set(METRIC_FIELDS).issubset(metrics_a[0].keys())
+    assert diagnostics_a["diagnostic_status"] == MAP_STATUS
+    assert diagnostics_a["boundedness_status"] == "pass"
+    assert 0.0 <= diagnostics_a["state_min"] <= diagnostics_a["state_max"] <= 1.0
+    assert diagnostics_a["delay_ticks"] == 4
+
+
+def test_analytic_delayed_map_cli_writes_diagnostic_artifacts(tmp_path: Path) -> None:
+    out_dir = tmp_path / "analytic_delayed_map"
+
+    diagnostics = run_analytic_delayed_map(
+        config_path=ANALYTIC_DELAYED_MAP_SMOKE,
+        out_dir=out_dir,
+    )
+
+    assert diagnostics["diagnostic_status"] == MAP_STATUS
+    for artifact in (
+        "config.yaml",
+        "manifest.yaml",
+        "metrics.csv",
+        "diagnostics.csv",
+        "summary.md",
+    ):
+        assert (out_dir / artifact).exists()
+    with (out_dir / "metrics.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(METRIC_FIELDS)
+        assert len(list(csv.DictReader(handle, fieldnames=METRIC_FIELDS))) == 96
+    with (out_dir / "diagnostics.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(DIAGNOSTIC_FIELDS)
+        rows = list(csv.DictReader(handle, fieldnames=DIAGNOSTIC_FIELDS))
+    assert len(rows) == 1
+    assert rows[0]["diagnostic_status"] == MAP_STATUS
+    summary = (out_dir / "summary.md").read_text()
+    assert "standalone analytic sandbox" in summary
+    assert "strange-attractor-like claims" in summary
 
 
 def _expected_artifacts(config_path: Path) -> list[str]:

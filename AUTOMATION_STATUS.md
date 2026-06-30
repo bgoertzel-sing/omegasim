@@ -22,8 +22,20 @@ map should expose the same dimensionless axes identified in the Hyperseed note:
 `rho`, `delta`, `mu`, `kappa`, and `nu`, with contraction/boundedness,
 recurrence, local-divergence, and surrogate-null diagnostics.
 
+External strategy review note: the latest GPT-5.5-Pro review is marked
+`strategic_change_level: major` and `notify_ben: true`. Its governance recovery
+recommendation is accepted as negative A5 context, but its request to pause for
+an A5.2-vs-analytic decision is superseded by Ben's newer status-file direction
+selecting the analytic delayed-map pivot. Ben should still be notified that the
+automation followed the analytic pivot despite the major review flag.
+
 ## Latest Changes
 
+- 2026-06-30 09:20 PDT analytic delayed-map smoke: added a standalone
+  analytic resource-bounded delayed prediction map over `rho`, `delta`, `mu`,
+  `kappa`, and `nu`, plus the fixed seed-1 smoke config, README command, and
+  regression coverage. This did not add simulator mechanics, A5/A7 reruns,
+  dashboards, external integrations, or multi-hive coupling.
 - 2026-06-30 09:18 PDT Ben direction correction: restored the analytic
   delayed-map pivot as the active next OmegaSim gate after the 09:11 PDT
   bounded-A5 reconciliation. A5.2 is not authorized; the next step is the
@@ -71,6 +83,29 @@ recurrence, local-divergence, and surrogate-null diagnostics.
 
 ## Verification
 
+- 2026-06-30 09:20 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `should_noop=false`, `repo_write_allowed=true`,
+  `strategic_change_level=major`, and `notify_ben=true`; the recommended next
+  action was the analytic delayed-map pivot.
+- 2026-06-30 09:20 PDT external loop check: `tail -120
+  ../outputs/omegasim-cli-loop.log` showed the prior 09:16 loop's strategy
+  review helper failed with HTTP 429 quota before continuing; `ps -ef | grep
+  '[o]megasim-cli-loop'` showed the current non-interactive automation command
+  as the live loop process.
+- 2026-06-30 09:20 PDT focused analytic-map tests:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_analytic_delayed_map_smoke_is_bounded_and_reproducible tests/test_run_harness.py::test_analytic_delayed_map_cli_writes_diagnostic_artifacts -q`
+  passed (`2 passed`).
+- 2026-06-30 09:20 PDT final focused regression/syntax checks:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_analytic_delayed_map_smoke_is_bounded_and_reproducible tests/test_run_harness.py::test_analytic_delayed_map_cli_writes_diagnostic_artifacts tests/test_run_harness.py -k automation_guard -q`
+  passed (`30 passed, 653 deselected`),
+  `.venv-conda/bin/python -m py_compile ohdyn/analytic_delayed_map.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
+- 2026-06-30 09:20 PDT analytic-map smoke:
+  `.venv-conda/bin/python -m ohdyn.analytic_delayed_map --config configs/analytic_delayed_map_smoke.yaml --out /tmp/omegasim_analytic_delayed_map_smoke_seed1_20260630`
+  completed. Diagnostics: boundedness `pass`, state range `0.289562`,
+  recurrence delta versus shuffled surrogate `0.070395`, finite-time local
+  divergence `-0.120137`; status remains diagnostic sandbox only.
 - 2026-06-30 09:11 PDT guard check after A5 status reconciliation:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
   `should_noop=false`, `repo_write_allowed=true`, and recommended review of the
@@ -244,10 +279,13 @@ No environment blocker. Broader A5 work and A5.2 implementation are not
 authorized. The scientific challenge is now to make the analytic delayed-map
 pivot small enough to be mathematically interpretable while still exposing the
 delayed nonlinear self-coupling axes needed for strange-attractor-oriented
-search.
+search. The latest external strategy review carries a major/notify-Ben flag;
+that notification remains outstanding even though Ben's newer status-file
+direction authorizes the analytic pivot.
 
 ## Recommended Next Step
 
-- Recommended next step: implement the smallest analytic delayed
-  resource-bounded prediction map over `rho`, `delta`, `mu`, `kappa`, and `nu`
-  before adding simulator mechanics.
+- Recommended next step: add a read-only analytic-map grid preflight that runs
+  a tiny preregistered low/high `rho` x no-delay/delay set over the existing
+  standalone map and reports only boundedness, recurrence-surrogate delta, and
+  paired local-divergence summaries.

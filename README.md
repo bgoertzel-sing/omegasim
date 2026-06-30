@@ -86,6 +86,26 @@ authorizes only a residual-compression diagnostic report over existing
 A5-family artifacts. It does not authorize new simulator mechanics, new runs,
 broader seeds, A7.2 mechanics, or multi-hive coupling.
 
+## Analytic Delayed Resource-Bounded Map
+
+Ben's 2026-06-30 direction selects a minimal analytic delayed-map pivot before
+adding more simulator mechanics. The first checked-in sandbox is standalone: it
+does not call the OmegaSim agent simulator, A5 helpers, A7 helpers, dashboards,
+external integrations, or multi-hive coupling. It exposes the Hyperseed axes
+`rho`, `delta`, `mu`, `kappa`, and `nu`, emits deterministic trajectories from
+a fixed seed, and writes boundedness, recurrence-vs-shuffled-surrogate, and
+paired local-divergence diagnostics.
+
+```bash
+python -m ohdyn.analytic_delayed_map \
+  --config configs/analytic_delayed_map_smoke.yaml \
+  --out runs/analytic_delayed_map_smoke_seed1
+```
+
+The smoke fixture is diagnostic only. Passing boundedness or recurrence wiring
+does not support lobe-like, semantic-dynamics, or strange-attractor-like
+claims.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question

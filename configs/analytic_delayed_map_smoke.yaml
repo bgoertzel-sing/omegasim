@@ -1,0 +1,14 @@
+run:
+  experiment_id: analytic_delayed_resource_bounded_map_smoke
+  seed: 1
+  ticks: 96
+analytic_delayed_map:
+  rho: 1.15
+  delta: 0.5
+  mu: 3.0
+  kappa: 0.15
+  nu: 0.01
+  relaxation_time_ticks: 8
+  initial_state: [0.42, 0.55, 0.35]
+  perturbation_epsilon: 0.00001
+  nontrivial_range_min: 0.01
