@@ -83,6 +83,14 @@ deterministic phase-shifted timing-broken null controls used for
 shuffled/phase-randomized predictor checks. This is replay/provenance metadata,
 not a new predictor family or simulator mechanic.
 
+2026-06-30 13:15 PDT checkpoint: the bounded scaffold audit surface now also
+requires a machine-readable promotion gate in the comparison design manifest.
+The manifest must identify intermediate-budget candidate conditions, their
+budget-matched timing-broken nulls, the reactive baseline, oracle as a
+smoothing positive control rather than a target dynamics condition, and the
+fail-closed endpoint families that must pass before residual-structure or
+strange-attractor-like language is considered.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -213,8 +221,8 @@ The comparison helper must also emit
 `predictive_control_design_manifest.yaml`, a compact replay/audit manifest for
 the fixed A5 condition grid, prediction-budget axis, budget-matched null
 pairings, preregistration path, fixed lead/signal/phase parameters, deterministic
-phase-shifted timing-broken null controls, and fail-closed
-residual-interpretation rule. This manifest is not a new mechanic; it is an
+phase-shifted timing-broken null controls, oracle-positive-control role, and
+fail-closed promotion gate. This manifest is not a new mechanic; it is an
 accounting artifact that makes the preregistered design surface explicit before
 residual analysis.
 

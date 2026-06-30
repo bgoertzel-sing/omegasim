@@ -64,11 +64,12 @@ and budget-matched null prediction-spend checks are visible before residual
 interpretation.
 It also writes `predictive_control_design_manifest.yaml`, which records the
 fixed A5 condition grid, prediction-budget axis, preregistration pointer,
-budget-matched null pairings, and fail-closed residual-interpretation rule for
-replay/audit. This is an accounting artifact only; it does not broaden A5
-mechanics. The manifest now also records the lead/signal/phase parameters and
-the deterministic phase-shifted timing-broken null controls, making the
-shuffled/phase-randomized null surface auditable before residual interpretation.
+budget-matched null pairings, oracle-positive-control role, and fail-closed
+residual promotion gate for replay/audit. This is an accounting artifact only;
+it does not broaden A5 mechanics. The manifest now also records the
+lead/signal/phase parameters and the deterministic phase-shifted timing-broken
+null controls, making the shuffled/phase-randomized null surface auditable
+before residual interpretation.
 
 Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
 closed without a fresh preregistration. Ben's 2026-06-28 decision opened the

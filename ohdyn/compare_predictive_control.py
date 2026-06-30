@@ -594,6 +594,7 @@ def _design_manifest(
             "strange_attractor_like_claims": "secondary_fail_closed",
             "requires_surrogate_nulls": True,
         },
+        "promotion_gate": _promotion_gate_manifest(generated_configs),
         "timing_broken_null_controls": [
             _null_control_manifest_row(label, config_path)
             for label, config_path in generated_configs
@@ -649,6 +650,46 @@ def _prediction_budget_axis(
             }
         )
     return axis
+
+
+def _promotion_gate_manifest(
+    generated_configs: tuple[tuple[str, Path], ...],
+) -> dict[str, Any]:
+    labels = [label for label, _ in generated_configs]
+    null_map = _budget_null_map(set(labels))
+    intermediate_labels = [label for label in labels if label in null_map]
+    return {
+        "primary_question": (
+            "Do intermediate prediction budgets produce richer but still "
+            "partially predictable residual collective dynamics than "
+            "zero-budget reactive control or oracle smoothing?"
+        ),
+        "reactive_baseline": "reactive" if "reactive" in labels else None,
+        "oracle_role": (
+            "smoothing_positive_control_not_target_dynamics_condition"
+            if "oracle" in labels
+            else "not_in_this_comparison"
+        ),
+        "candidate_intermediate_conditions": intermediate_labels,
+        "required_condition_checks": {
+            label: {
+                "must_beat_reactive": "reactive" in labels,
+                "must_beat_budget_matched_timing_broken_null": null_label,
+                "must_remain_more_nontrivial_than_oracle_smoothing": "oracle" in labels,
+            }
+            for label, null_label in null_map.items()
+            if label in labels
+        },
+        "required_endpoint_families": [
+            "forecast_skill_per_prediction_budget",
+            "attention_service_leads_future_demand",
+            "nonzero_structured_forecast_errors",
+            "residual_phase_or_recurrence_after_full_accounting",
+            "high_level_state_predictability_or_compressibility",
+            "backlog_age_completion_starvation_and_volatility_guardrails",
+        ],
+        "claim_policy": "fail_closed_until_all_checks_pass",
+    }
 
 
 def _null_control_manifest_row(label: str, config_path: Path) -> dict[str, Any]:

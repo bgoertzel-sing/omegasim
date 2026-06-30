@@ -5800,6 +5800,23 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         design_manifest["residual_interpretation"]["strange_attractor_like_claims"]
         == "secondary_fail_closed"
     )
+    assert design_manifest["promotion_gate"]["oracle_role"] == (
+        "smoothing_positive_control_not_target_dynamics_condition"
+    )
+    assert design_manifest["promotion_gate"]["candidate_intermediate_conditions"] == [
+        "linear",
+        "nonlinear",
+        "nonlinear_high_budget",
+    ]
+    assert design_manifest["promotion_gate"]["required_condition_checks"]["linear"] == {
+        "must_beat_reactive": True,
+        "must_beat_budget_matched_timing_broken_null": "shuffled",
+        "must_remain_more_nontrivial_than_oracle_smoothing": True,
+    }
+    assert (
+        design_manifest["promotion_gate"]["claim_policy"]
+        == "fail_closed_until_all_checks_pass"
+    )
     assert {row["status"] for row in accounting_rows} == {"pass"}
     assert {row["matches_reactive_task_stream"] for row in accounting_rows} == {"true"}
     assert {row["matches_reactive_demand_stream"] for row in accounting_rows} == {"true"}
