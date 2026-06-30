@@ -119,6 +119,15 @@ This preflight reports boundedness, recurrence-surrogate deltas, and paired
 local-divergence summaries only. It does not write per-tick simulator metrics
 or support attractor, lobe, or semantic-dynamics claims.
 
+The next analytic-map refinement/null gate is preregistered, but not yet
+implemented, in
+`docs/analytic_delayed_map_refinement_null_gate_preregistration.md`. It freezes
+a four-condition standalone sandbox check over active delayed nonlinear,
+no-delay, linearized-response, and delay-shuffled-history conditions before any
+larger grid. It does not authorize simulator mechanics, A5/A7 reruns,
+dashboards, external integrations, broader seeds, multi-hive coupling, or
+promotion language.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question

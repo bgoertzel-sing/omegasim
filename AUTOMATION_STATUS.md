@@ -31,6 +31,16 @@ automation followed the analytic pivot despite the major review flag.
 
 ## Latest Changes
 
+- 2026-06-30 09:56 PDT analytic null-gate preregistration: added
+  `docs/analytic_delayed_map_refinement_null_gate_preregistration.md` as the
+  next bounded analytic-map refinement/null gate. It freezes a four-condition
+  standalone sandbox check over active delayed nonlinear, no-delay,
+  linearized-response, and delay-shuffled-history conditions before any larger
+  grid. No simulator mechanics, A5/A7 reruns, dashboards, external
+  integrations, broader seeds, multi-hive coupling, or promotion language were
+  added. The latest GPT-5.5-Pro major/notify-Ben review remains recorded as
+  negative A5 governance context, and Ben still should be notified that the
+  automation followed the newer analytic-pivot status direction.
 - 2026-06-30 09:39 PDT analytic grid preflight: added a read-only
   `rho` low/high x no-delay/delay grid preflight over the existing standalone
   analytic delayed map. It writes only `grid_preflight.csv`, manifest, config,
@@ -91,6 +101,18 @@ automation followed the analytic pivot despite the major review flag.
 
 ## Verification
 
+- 2026-06-30 09:56 PDT final guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `should_noop=false`, `repo_write_allowed=true`,
+  `strategic_change_level=major`, and `notify_ben=true`; the recommended next
+  action is to implement the preregistered four-condition standalone analytic
+  delayed-map refinement/null scaffold without running a larger grid or adding
+  simulator mechanics.
+- 2026-06-30 09:56 PDT focused guard/syntax checks:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`30 passed, 655 deselected`),
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
 - 2026-06-30 09:39 PDT focused grid-preflight tests:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_analytic_delayed_map_grid_preflight_is_tiny_and_deterministic tests/test_run_harness.py::test_analytic_delayed_map_grid_preflight_writes_summary_only_artifacts -q`
   passed (`2 passed`).
@@ -317,6 +339,6 @@ direction authorizes the analytic pivot.
 
 ## Recommended Next Step
 
-- Recommended next step: preregister the next analytic-map refinement/null gate
-  before any larger grid, using the completed four-condition preflight as
-  diagnostic background only.
+- Recommended next step: implement the preregistered four-condition standalone
+  analytic delayed-map refinement/null scaffold, without running a larger grid
+  or adding simulator mechanics.
