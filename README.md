@@ -43,10 +43,10 @@ remains in
 constrain interpretation: do not make residual-structure, lobe-like, or
 strange-attractor-like claims from A5-family artifacts.
 
-The renewed 2026-06-29 A5 automation directive keeps this concise single-hive
+The renewed 2026-06-30 A5 automation directive keeps this concise single-hive
 preregistration as the active source of truth for the bounded A5 stage. That
-directive overrides the prior closed/no-op posture only for preserving this
-preregistration and exercising the smallest checked-in deterministic
+directive overrides the prior closed/no-op recommendation only for preserving
+this preregistration and exercising the smallest checked-in deterministic
 smoke/pilot scaffold. It does not authorize broad A5 tuning, A7-family
 mechanics, dashboards, external integrations, or downstream multi-hive
 coupling.
@@ -62,8 +62,10 @@ Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
 closed without a fresh preregistration. Ben's 2026-06-28 decision opened the
 A7.2 delayed artifact-mediated endogenous-prediction direction, now historical:
 `docs/a5_family_exit_and_a7_2_decision_preregistration.md`. Ben's 2026-06-29
-follow-up opens A7.3 one-hive dimensionless delayed dynamics as the active
-OmegaSim direction; it does not reopen A5 rescue tuning.
+follow-up opened A7.3 one-hive dimensionless delayed dynamics as a later
+historical direction. The current 2026-06-30 automation prompt explicitly
+selects the bounded A5 single-hive preregistration/scaffold stage again; it
+does not reopen A5 rescue tuning beyond that surface.
 
 The current bounded read-only follow-up is preregistered in
 `docs/a5_resource_bounded_residual_compression_preregistration.md`. It

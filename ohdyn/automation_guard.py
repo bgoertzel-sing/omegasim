@@ -38,6 +38,9 @@ def read_automation_state(
         and _status_reopens_active_a5(current_status)
         and not _status_closes_active_a5(current_status)
     )
+    status_overrides_a5_recovery_close = _status_overrides_a5_recovery_close(
+        current_status
+    )
     active_a7_3 = status_opens_a7_3 or review_opens_a7_3
     closed_after_a7_2_three_hive = _status_closes_after_a7_2_three_hive(
         current_status
@@ -54,13 +57,19 @@ def read_automation_state(
     if (
         a5_preregistration_active
         and not _status_closes_active_a5(current_status)
-        and not _review_recommends_a5_recovery_close(review_header)
+        and (
+            not _review_recommends_a5_recovery_close(review_header)
+            or status_overrides_a5_recovery_close
+        )
         and not current_line_closed
     ):
         closed_reasons = []
     if (
         status_reopens_a5
-        and not _review_recommends_a5_recovery_close(review_header)
+        and (
+            not _review_recommends_a5_recovery_close(review_header)
+            or status_overrides_a5_recovery_close
+        )
         and not current_line_closed
     ):
         closed_reasons = []
@@ -377,9 +386,32 @@ def _status_closes_active_a5(status: str) -> bool:
 def _status_reopens_active_a5(status: str) -> bool:
     normalized_status = _normalize(status)
     return (
-        "current concise a5 gate" in normalized_status
-        and "explicit single-hive a5 reopening" in normalized_status
-        and "active preregistration summary" in normalized_status
+        (
+            "current concise a5 gate" in normalized_status
+            and "explicit single-hive a5 reopening" in normalized_status
+            and "active preregistration summary" in normalized_status
+        )
+        or (
+            "explicitly reopens the bounded a5 single-hive anticipatory predictive-control stage"
+            in normalized_status
+            and "active source of truth" in normalized_status
+            and "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+            in normalized_status
+        )
+    )
+
+
+def _status_overrides_a5_recovery_close(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "explicitly reopens the bounded a5 single-hive anticipatory predictive-control stage"
+        in normalized_status
+        and (
+            "overrides the prior closed/no-op recommendation" in normalized_status
+            or "overrides prior closed/no-op recommendation" in normalized_status
+        )
+        and "for this bounded preregistration/scaffold stage only"
+        in normalized_status
     )
 
 

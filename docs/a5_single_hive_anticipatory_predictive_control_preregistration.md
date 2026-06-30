@@ -44,6 +44,14 @@ may reconcile status and verify the checked-in scaffold, but must not add broad
 mechanics, dashboards, integrations, A7-family work, or downstream multi-hive
 coupling.
 
+2026-06-30 01:05 PDT checkpoint: Ben's current automation prompt explicitly
+reopens the bounded A5 single-hive anticipatory predictive-control stage and
+overrides the prior closed/no-op recommendation for this bounded
+preregistration/scaffold stage only. The first priority remains this concise
+preregistration before any broad mechanics. The existing deterministic
+single-hive smoke scaffold and read-only residual accounting are still the only
+authorized implementation surface for this pass.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
