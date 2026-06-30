@@ -594,6 +594,12 @@ def _design_manifest(
             "strange_attractor_like_claims": "secondary_fail_closed",
             "requires_surrogate_nulls": True,
         },
+        "timing_broken_null_controls": [
+            _null_control_manifest_row(label, config_path)
+            for label, config_path in generated_configs
+            if _condition_manifest_row(label, config_path)["predictive_condition"]
+            in {"shuffled", "nonlinear_shuffled", "nonlinear_high_budget_shuffled"}
+        ],
     }
 
 
@@ -605,7 +611,11 @@ def _condition_manifest_row(label: str, config_path: Path) -> dict[str, Any]:
         "config": str(Path("configs") / config_path.name),
         "predictive_condition": cfg.predictive_control.condition,
         "prediction_budget": cfg.predictive_control.prediction_budget,
+        "lead_ticks": cfg.predictive_control.lead_ticks,
+        "signal_period": cfg.predictive_control.signal_period,
+        "signal_amplitude": cfg.predictive_control.signal_amplitude,
         "memory_window": cfg.predictive_control.memory_window,
+        "phase_shift_ticks": cfg.predictive_control.phase_shift_ticks,
         "prediction_cost_scale": cfg.predictive_control.prediction_cost_scale,
         "max_prediction_work_fraction_per_tick": (
             cfg.predictive_control.max_prediction_work_fraction_per_tick
@@ -639,6 +649,30 @@ def _prediction_budget_axis(
             }
         )
     return axis
+
+
+def _null_control_manifest_row(label: str, config_path: Path) -> dict[str, Any]:
+    cfg = load_config(config_path)
+    assert cfg.predictive_control is not None
+    return {
+        "label": label,
+        "predictive_condition": cfg.predictive_control.condition,
+        "prediction_budget": cfg.predictive_control.prediction_budget,
+        "phase_shift_ticks": cfg.predictive_control.phase_shift_ticks,
+        "null_type": "deterministic_phase_shifted_timing_broken_predictor",
+        "preserves": [
+            "prediction_budget",
+            "signal_period",
+            "signal_amplitude",
+            "memory_window",
+            "task_arrival_stream",
+            "demand_share_stream",
+            "service_capacity",
+            "action_opportunity",
+            "work_opportunity",
+        ],
+        "breaks": "useful forecast timing",
+    }
 
 
 def _same_fields(

@@ -76,6 +76,13 @@ complete authorized A5 surface; no additional predictor families, broad seed
 sweeps, dashboards, integrations, A7-family mechanics, or downstream multi-hive
 coupling are authorized.
 
+2026-06-30 12:15 PDT checkpoint: the current automation pass kept the same
+A5 single-hive scope and hardened only the comparison audit surface. The design
+manifest must now expose the fixed lead/signal/phase parameters and the
+deterministic phase-shifted timing-broken null controls used for
+shuffled/phase-randomized predictor checks. This is replay/provenance metadata,
+not a new predictor family or simulator mechanic.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -205,9 +212,11 @@ fails.
 The comparison helper must also emit
 `predictive_control_design_manifest.yaml`, a compact replay/audit manifest for
 the fixed A5 condition grid, prediction-budget axis, budget-matched null
-pairings, preregistration path, and fail-closed residual-interpretation rule.
-This manifest is not a new mechanic; it is an accounting artifact that makes
-the preregistered design surface explicit before residual analysis.
+pairings, preregistration path, fixed lead/signal/phase parameters, deterministic
+phase-shifted timing-broken null controls, and fail-closed
+residual-interpretation rule. This manifest is not a new mechanic; it is an
+accounting artifact that makes the preregistered design surface explicit before
+residual analysis.
 
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The

@@ -5779,6 +5779,19 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         "nonlinear": "nonlinear_shuffled",
         "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
     }
+    assert design_manifest["conditions"][1]["lead_ticks"] == 2
+    assert design_manifest["conditions"][1]["signal_period"] == 12
+    assert design_manifest["conditions"][1]["signal_amplitude"] == 0.35
+    assert design_manifest["conditions"][1]["phase_shift_ticks"] == 5
+    assert [
+        row["label"] for row in design_manifest["timing_broken_null_controls"]
+    ] == ["shuffled", "nonlinear_shuffled", "nonlinear_high_budget_shuffled"]
+    assert {
+        row["null_type"] for row in design_manifest["timing_broken_null_controls"]
+    } == {"deterministic_phase_shifted_timing_broken_predictor"}
+    assert {
+        row["phase_shift_ticks"] for row in design_manifest["timing_broken_null_controls"]
+    } == {5}
     assert (
         design_manifest["accounting_locks"]["artifact"]
         == "predictive_control_accounting_locks.csv"
