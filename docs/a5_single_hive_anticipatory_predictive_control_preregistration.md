@@ -21,6 +21,14 @@ closed/no-op automation posture only far enough to preserve this document and
 exercise the smallest checked-in single-hive smoke scaffold. It does not reopen
 broad A5 tuning, A7-family mechanics, or downstream multi-hive coupling.
 
+Bounded 2026-06-29 evening verification note: this document is the concise
+preregistration artifact requested before any broad new A5 mechanics. The
+checked-in simulator scaffold is sufficient only for a deterministic
+single-hive smoke/pilot and read-only residual accounting. Additional predictor
+families, parameter sweeps, longer seed grids, dashboards, integrations,
+downstream three-hive coupling, or promotion language require a fresh
+preregistration.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -66,8 +74,9 @@ capacity.
 The comparison must include budget-matched timing-broken nulls for every
 intermediate predictor being interpreted. A positive intermediate-budget claim
 is invalid if it can be reproduced by a shuffled, phase-randomized, or
-spend-only replay null that preserves prediction spend while breaking useful
-forecast timing.
+spend-only replay null that preserves prediction spend, marginal forecast
+structure, and work-opportunity accounting while breaking useful forecast
+timing.
 
 ## Conditions
 

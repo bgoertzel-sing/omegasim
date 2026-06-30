@@ -7,11 +7,10 @@ checked from GitHub, including from a phone.
 
 Source-of-truth status: the bounded A5 single-hive anticipatory predictive-
 control verification requested by Ben's current automation prompt has been
-rechecked on 2026-06-29 17:57 PDT. That authorization was narrow: preserve and
+rechecked on 2026-06-29 18:58 PDT. That authorization was narrow: preserve and
 verify the concise A5 preregistration, confirm the smallest deterministic
 checked-in scaffold, and do not broaden simulator mechanics. The preregistration
-and scaffold are already present, and A5 remains closed at the repeated seed
-`5,6` fail-closed boundary.
+and scaffold are present and remain the active A5 record for this prompt.
 
 Current concise A5 gate: explicit single-hive A5 reopening and preregistration
 summary are recorded in
@@ -19,8 +18,9 @@ summary are recorded in
 document already defines the deterministic single-hive setup, reactive/linear/
 nonlinear/high-budget/oracle/timing-broken predictor conditions, resource-
 bounded prediction hypothesis, matched accounting locks, primary endpoints,
-guardrails, and fail-closed decision rules requested for A5. That document is
-now a completed A5 record, not authorization for more A5 simulator runs.
+guardrails, and fail-closed decision rules requested for A5. The 2026-06-29
+evening note freezes this as the concise preregistration artifact requested
+before any broad A5 mechanics.
 
 Current A5 implementation boundary: the existing single-hive deterministic
 scaffold was the only authorized smoke/pilot surface for this prompt. It
@@ -34,8 +34,7 @@ smoke/analyzer runs improved forecast skill for intermediate predictors, but
 no intermediate predictor passed all residual/null, oracle-nontriviality,
 compression, and guardrail promotion criteria. A5 remains fail-closed for
 residual-structure, strange-attractor-like, lobe-like, or phase-structure
-claims. A7.3 remains historical context, not an active line for this A5
-automation request.
+claims unless a future preregistered axis changes the scientific design.
 
 External GPT-5.5-Pro strategy review direction accepted on 2026-06-29 remains
 scientifically sensible after the bounded A5 preregistration/scaffold check:
@@ -47,6 +46,18 @@ notified of this direction shift.
 
 ## Latest Changes
 
+- 2026-06-29 18:58 PDT A5 preregistration verification: reread the missing
+  automation memory state, `README.md`, this status file,
+  `docs/structured_strange_attractor_research_note.md`, the A5 completion
+  decision note, the concise A5 preregistration, and the checked-in A5
+  comparison/residual scaffold. Added a dated freeze note to the preregistration
+  and tightened the null-control wording so shuffled, phase-randomized, and
+  spend-only replay nulls must preserve prediction-spend and work-opportunity
+  accounting while breaking useful forecast timing.
+- 2026-06-29 18:58 PDT A5 preregistration verification: no simulator mechanics,
+  dashboards, external integrations, A7-family work, or multi-hive coupling were
+  added. The existing deterministic single-hive scaffold remains the smallest
+  authorized A5 smoke/pilot surface.
 - 2026-06-29 17:57 PDT A5 bounded verification pass: reread the automation
   memory, `README.md`, this status file,
   `docs/structured_strange_attractor_research_note.md`, the A4 closure/decision
@@ -250,6 +261,31 @@ automation run.
 
 ## Verification
 
+- 2026-06-29 18:58 PDT A5 preregistration verification:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
+  'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
+  passed with `29 passed, 647 deselected`.
+- 2026-06-29 18:58 PDT A5 preregistration verification: bounded smoke/analyzer
+  command passed under `/tmp/omegasim_a5_prereg_20260629_6WVDe9`:
+  `.venv-conda/bin/python -m ohdyn.run --config
+  configs/a5_predictive_linear_smoke.yaml --seed 5 --out
+  /tmp/omegasim_a5_prereg_20260629_6WVDe9/single_smoke_seed5`,
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6
+  --out /tmp/omegasim_a5_prereg_20260629_6WVDe9/compare_seed5_6`, and
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting
+  --compare-dir /tmp/omegasim_a5_prereg_20260629_6WVDe9/compare_seed5_6
+  --out /tmp/omegasim_a5_prereg_20260629_6WVDe9/residual_accounting_seed5_6`.
+  The analyzer emitted 1280 metric rows and 720 effect rows; promotion remained
+  fail-closed for `linear`, `nonlinear`, and `nonlinear_high_budget`.
+- 2026-06-29 18:58 PDT A5 preregistration verification: `git diff --check`,
+  `.venv-conda/bin/python -m py_compile ohdyn/automation_guard.py
+  ohdyn/compare_predictive_control.py ohdyn/analyze_a5_residual_accounting.py
+  ohdyn/config.py ohdyn/sim.py tests/test_run_harness.py`, and
+  `.venv-conda/bin/python -m ohdyn.automation_guard` passed. The guard reported
+  `a5_preregistration_active=true`, `state=closed_awaiting_preregistration`,
+  `should_noop=true`, `repo_write_allowed=false`, and the next action to
+  preregister a mechanism-rich endogenous delayed prediction-spend axis before
+  further A5 simulator runs.
 - 2026-06-29 17:57 PDT A5 bounded verification pass:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k
   'automation_guard or a5_predictive_control or a5_residual_accounting' -q`
