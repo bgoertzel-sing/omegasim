@@ -217,6 +217,20 @@ recurrence-null, and Lyapunov-style checks. It does not authorize simulator
 mechanics, broader sweeps, dashboards, external integrations, multi-hive
 coupling, or promotion language.
 
+The checked-in nonlinear-dynamics workbench runs the frozen four-row
+diagnostic panel and writes only summary artifacts:
+
+```bash
+python -m ohdyn.nonlinear_dynamics_workbench \
+  --config configs/nonlinear_dynamics_workbench.yaml \
+  --out runs/nonlinear_dynamics_workbench_seed1
+```
+
+The seed-1 smoke is diagnostic only. It emits `config.yaml`, `manifest.yaml`,
+`workbench_summary.csv`, and `summary.md`; it does not write simulator
+`metrics.csv` or `events.csv` artifacts and does not support attractor, lobe,
+semantic-dynamics, or promotion claims.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question

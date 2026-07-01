@@ -334,6 +334,15 @@ from ohdyn.analytic_micro_society_map import (
     MICRO_SOCIETY_STATUS,
     run_analytic_micro_society_map,
 )
+from ohdyn.nonlinear_dynamics_workbench import (
+    WORKBENCH_FIELDS,
+    WORKBENCH_LABELS,
+    WORKBENCH_NULL_FAMILIES,
+    WORKBENCH_PANEL,
+    WORKBENCH_SCIENTIFIC_STATUS,
+    WORKBENCH_STATUS,
+    run_nonlinear_dynamics_workbench,
+)
 from ohdyn.run import run_experiment
 
 
@@ -446,6 +455,7 @@ ANALYTIC_DELAYED_MAP_GRID_PREFLIGHT = Path(
 )
 ANALYTIC_DELAYED_MAP_NULL_GATE = Path("configs/analytic_delayed_map_null_gate.yaml")
 ANALYTIC_MICRO_SOCIETY_MAP = Path("configs/analytic_micro_society_map.yaml")
+NONLINEAR_DYNAMICS_WORKBENCH = Path("configs/nonlinear_dynamics_workbench.yaml")
 THREE_HIVE_RING_CONTRACT_VALIDATION = Path(
     "configs/three_hive_ring_contract_validation.yaml"
 )
@@ -845,6 +855,91 @@ def test_analytic_micro_society_map_rejects_changed_conditions(tmp_path: Path) -
         run_analytic_micro_society_map(
             config_path=config_path,
             out_dir=tmp_path / "changed_conditions",
+        )
+
+
+def test_nonlinear_dynamics_workbench_emits_preregistered_panel(
+    tmp_path: Path,
+) -> None:
+    rows_a = run_nonlinear_dynamics_workbench(
+        config_path=NONLINEAR_DYNAMICS_WORKBENCH,
+        out_dir=tmp_path / "workbench_a",
+    )
+    rows_b = run_nonlinear_dynamics_workbench(
+        config_path=NONLINEAR_DYNAMICS_WORKBENCH,
+        out_dir=tmp_path / "workbench_b",
+    )
+
+    assert rows_a == rows_b
+    assert (
+        tmp_path / "workbench_a" / "workbench_summary.csv"
+    ).read_bytes() == (
+        tmp_path / "workbench_b" / "workbench_summary.csv"
+    ).read_bytes()
+    assert [row["panel_id"] for row in rows_a] == list(WORKBENCH_PANEL)
+    assert len(rows_a) == 4
+    assert {row["diagnostic_status"] for row in rows_a} == {WORKBENCH_STATUS}
+    assert {row["seed"] for row in rows_a} == {1}
+    assert {row["ticks"] for row in rows_a} == {96}
+    assert {row["regime_label"] for row in rows_a} <= set(WORKBENCH_LABELS)
+    assert rows_a[0]["delta"] == 0.0
+    assert rows_a[0]["delay_ticks"] == 0
+    assert all(0.0 <= float(row["saturation_fraction"]) <= 1.0 for row in rows_a)
+    assert all(float(row["local_spectral_radius"]) >= 0.0 for row in rows_a)
+
+
+def test_nonlinear_dynamics_workbench_writes_summary_only_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "nonlinear_dynamics_workbench"
+
+    rows = run_nonlinear_dynamics_workbench(
+        config_path=NONLINEAR_DYNAMICS_WORKBENCH,
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == 4
+    for artifact in (
+        "config.yaml",
+        "manifest.yaml",
+        "workbench_summary.csv",
+        "summary.md",
+    ):
+        assert (out_dir / artifact).exists()
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "events.csv").exists()
+    with (out_dir / "workbench_summary.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(WORKBENCH_FIELDS)
+        csv_rows = list(csv.DictReader(handle, fieldnames=WORKBENCH_FIELDS))
+    assert len(csv_rows) == 4
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["status"] == WORKBENCH_STATUS
+    assert manifest["scientific_status"] == WORKBENCH_SCIENTIFIC_STATUS
+    assert manifest["panel"] == list(WORKBENCH_PANEL)
+    assert manifest["dimensionless_axes"] == ["rho", "delta", "mu", "kappa", "nu"]
+    assert manifest["null_families"] == list(WORKBENCH_NULL_FAMILIES)
+    assert manifest["regime_labels"] == list(WORKBENCH_LABELS)
+    assert "diagnostic only" in manifest["diagnostic_only_boundary"]
+    assert manifest["no_simulator_artifacts"] == ["metrics.csv", "events.csv"]
+    summary = (out_dir / "summary.md").read_text()
+    normalized_summary = " ".join(summary.split())
+    assert "standalone workbench writes summary diagnostics" in normalized_summary
+    assert "does not write per-tick simulator metrics or events" in normalized_summary
+    assert "promotion claims" in summary
+
+
+def test_nonlinear_dynamics_workbench_rejects_changed_panel(tmp_path: Path) -> None:
+    config = yaml.safe_load(NONLINEAR_DYNAMICS_WORKBENCH.read_text())
+    config["nonlinear_dynamics_workbench"]["panel"] = config[
+        "nonlinear_dynamics_workbench"
+    ]["panel"][:3]
+    config_path = tmp_path / "changed_panel.yaml"
+    config_path.write_text(yaml.safe_dump(config, sort_keys=True))
+
+    with pytest.raises(ValueError, match="preregistered workbench panel"):
+        run_nonlinear_dynamics_workbench(
+            config_path=config_path,
+            out_dir=tmp_path / "changed_panel",
         )
 
 

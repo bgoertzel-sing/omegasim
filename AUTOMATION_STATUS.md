@@ -20,27 +20,46 @@ analytic delayed map, grid preflight, null-gate preregistration, implemented
 four-condition null-gate runner, micro-society preregistration, implemented
 four-condition micro-society mechanism-screen runner, a preregistered
 post-micro decision gate, the completed read-only post-micro decision note, and
-the preregistered standalone nonlinear-dynamics workbench gate.
+the implemented standalone nonlinear-dynamics workbench gate.
 Continue from
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
 `docs/analytic_micro_society_map_preregistration.md`,
 `docs/analytic_post_micro_decision_gate_preregistration.md`,
 `docs/results/analytic_post_micro_decision_gate_20260701.md`,
-`docs/nonlinear_dynamics_workbench_preregistration.md`, and the existing
-analytic smoke/preflight/null-gate/micro-society artifacts. The next work
-should implement only the preregistered standalone nonlinear-dynamics
-workbench smoke runner and focused deterministic tests before any phase
-diagram, simulator mechanics, or broader sweep.
+`docs/nonlinear_dynamics_workbench_preregistration.md`, the checked-in
+`ohdyn.nonlinear_dynamics_workbench` runner, and the existing analytic
+smoke/preflight/null-gate/micro-society/workbench artifacts. The next work
+should be only a read-only nonlinear-workbench closure/decision note over the
+seed-1 smoke labels before any phase diagram, simulator mechanics, or broader
+sweep.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
-`strategic_change_level: minor` and `notify_ben: false`. Its recommendation to
-verify the guard and then implement only the preregistered four-condition
-standalone null runner was accepted. The guard opened for the analytic
-delayed-map null gate before this implementation.
+`strategic_change_level: none` and `notify_ben: false`. Its recommendation to
+verify the guard and implement only the preregistered standalone
+nonlinear-dynamics workbench runner and deterministic tests was accepted and
+implemented. The seed-1 smoke found only fail-closed contracting
+fixed/transient labels, so no phase diagram, simulator mechanics, promotion
+language, or Ben notification is triggered by this result.
 
 ## Latest Changes
 
+- 2026-07-01 10:05 PDT nonlinear-dynamics workbench implementation: added
+  `ohdyn.nonlinear_dynamics_workbench`,
+  `configs/nonlinear_dynamics_workbench.yaml`, README command documentation,
+  and focused deterministic regression coverage. The runner emits exactly the
+  preregistered four panel rows (`low_gain_no_delay`, `low_gain_delay`,
+  `active_reference`, `high_gain_delay`) over `rho`, `delta`, `mu`, `kappa`,
+  and `nu`; records boundedness, clipping, lifted-history, recurrence,
+  state-shuffled and phase-shuffled recurrence, matched no-delay/linearized/
+  delay-shuffled recurrence deltas, finite-time divergence,
+  periodic-renormalization Lyapunov-style estimates, and local spectral
+  radius; and writes only `config.yaml`, `manifest.yaml`,
+  `workbench_summary.csv`, and `summary.md`. The `/tmp` seed-1 smoke labeled
+  all four rows `fail_closed_contracting_fixed_or_transient`; no candidate
+  noncontractive bounded diagnostic row was found. No simulator mechanics,
+  A5/A7 reruns, dashboards, external integrations, broad sweeps, promotion
+  language, phase diagram, or multi-hive coupling were added.
 - 2026-07-01 09:30 PDT nonlinear-dynamics workbench preregistration: added
   `docs/nonlinear_dynamics_workbench_preregistration.md` and a README pointer.
   The preregistration freezes a four-row smoke-scale diagnostic panel over
@@ -418,6 +437,27 @@ delayed-map null gate before this implementation.
 
 ## Verification
 
+- 2026-07-01 10:05 PDT guard and loop health check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `should_noop=false`, `repo_write_allowed=true`,
+  `strategic_change_level=none`, `notify_ben=false`, and recommended only the
+  preregistered standalone nonlinear-dynamics workbench smoke runner and
+  deterministic tests. The loop log showed the 09:44 PDT run in progress and
+  `ps` showed the current non-interactive Codex invocation.
+- 2026-07-01 10:05 PDT focused nonlinear workbench regression:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k nonlinear_dynamics_workbench -q`
+  passed (`3 passed, 690 deselected`).
+- 2026-07-01 10:05 PDT syntax check:
+  `.venv-conda/bin/python -m py_compile ohdyn/nonlinear_dynamics_workbench.py tests/test_run_harness.py`
+  passed.
+- 2026-07-01 10:05 PDT nonlinear workbench smoke:
+  `.venv-conda/bin/python -m ohdyn.nonlinear_dynamics_workbench --config configs/nonlinear_dynamics_workbench.yaml --out /tmp/omegasim_nonlinear_dynamics_workbench_seed1_20260701`
+  completed with exactly `config.yaml`, `manifest.yaml`,
+  `workbench_summary.csv`, and `summary.md`. All four rows were labeled
+  `fail_closed_contracting_fixed_or_transient`; renormalized Lyapunov-style
+  estimates were negative and local spectral radii were below one for
+  `low_gain_no_delay`, `low_gain_delay`, `active_reference`, and
+  `high_gain_delay`.
 - 2026-07-01 09:30 PDT nonlinear-dynamics workbench preregistration guard
   check: `.venv-conda/bin/python -m ohdyn.automation_guard` reported
   `state=open`, `should_noop=false`, `repo_write_allowed=true`,
@@ -1339,13 +1379,14 @@ micro-society active condition was bounded and unsaturated, but the
 active-vs-null diagnostics were mixed/null-equivalent and finite-time local
 divergence was negative; this does not justify a phase diagram, simulator
 mechanics, or promotion language. The nonlinear-dynamics workbench is now
-preregistered, but only as a standalone smoke-scale diagnostic gate; phase
-diagrams, simulator mechanics, broader sweeps, and promotion language remain
-unauthorized.
+implemented only as a standalone smoke-scale diagnostic gate. Its seed-1 smoke
+also closed conservatively with all four rows labeled
+`fail_closed_contracting_fixed_or_transient`; phase diagrams, simulator
+mechanics, broader sweeps, and promotion language remain unauthorized.
 
 ## Recommended Next Step
 
-- Recommended next step: implement only the preregistered standalone
-  nonlinear-dynamics workbench smoke runner and focused deterministic tests,
-  preserving the summary-only artifact contract and fail-closed interpretation
-  rules.
+- Recommended next step: write only a read-only nonlinear-workbench
+  closure/decision note interpreting the seed-1 fail-closed contracting labels
+  and deciding whether analytic-map churn should stop before any phase
+  diagram, simulator mechanics, or broader sweep.

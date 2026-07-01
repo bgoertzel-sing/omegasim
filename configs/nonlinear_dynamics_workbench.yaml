@@ -1,0 +1,50 @@
+run:
+  experiment_id: nonlinear_dynamics_workbench_smoke
+  seed: 1
+  ticks: 96
+nonlinear_dynamics_workbench:
+  relaxation_time_ticks: 8
+  initial_state: [0.42, 0.55, 0.35]
+  perturbation_epsilon: 0.00001
+  renormalization_interval: 8
+  nontrivial_range_min: 0.01
+  saturation_epsilon: 0.02
+  saturation_fraction_max: 0.05
+  panel:
+    - panel_id: low_gain_no_delay
+      rho: 0.4
+      delta: 0.0
+      mu: 3.0
+      kappa: 0.05
+      nu: 0.0
+    - panel_id: low_gain_delay
+      rho: 0.4
+      delta: 0.5
+      mu: 3.0
+      kappa: 0.05
+      nu: 0.0
+    - panel_id: active_reference
+      rho: 1.35
+      delta: 0.5
+      mu: 3.0
+      kappa: 0.2
+      nu: 0.01
+    - panel_id: high_gain_delay
+      rho: 2.2
+      delta: 1.0
+      mu: 3.0
+      kappa: 0.2
+      nu: 0.01
+  null_families:
+    - no_delay_control
+    - linearized_response_control
+    - delay_shuffled_history_control
+    - state_shuffled_recurrence_surrogate
+    - phase_shuffled_recurrence_surrogate
+  regime_labels:
+    - fail_closed_unbounded_or_nonfinite
+    - fail_closed_trivial_saturation
+    - fail_closed_contracting_fixed_or_transient
+    - fail_closed_null_equivalent_recurrence
+    - fail_closed_noise_or_finite_horizon_irregularity
+    - candidate_noncontractive_bounded_diagnostic_only
