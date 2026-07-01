@@ -18,15 +18,18 @@ residual-structure promotion.
 The active analytic-map surface now includes the standalone deterministic
 analytic delayed map, grid preflight, null-gate preregistration, implemented
 four-condition null-gate runner, micro-society preregistration, implemented
-four-condition micro-society mechanism-screen runner, and a preregistered
-post-micro decision gate. Continue from
+four-condition micro-society mechanism-screen runner, a preregistered
+post-micro decision gate, and the completed read-only post-micro decision note.
+Continue from
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
 `docs/analytic_micro_society_map_preregistration.md`,
-`docs/analytic_post_micro_decision_gate_preregistration.md`, and the existing
+`docs/analytic_post_micro_decision_gate_preregistration.md`,
+`docs/results/analytic_post_micro_decision_gate_20260701.md`, and the existing
 analytic smoke/preflight/null-gate/micro-society artifacts. The next work
-should be a read-only decision synthesis before adding any new analytic runner,
-workbench, or simulator mechanics.
+should be a preregistration for a standalone nonlinear-dynamics workbench
+before adding any new analytic runner, workbench implementation, or simulator
+mechanics.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
 `strategic_change_level: minor` and `notify_ben: false`. Its recommendation to
@@ -36,6 +39,16 @@ delayed-map null gate before this implementation.
 
 ## Latest Changes
 
+- 2026-07-01 09:28 PDT post-micro decision synthesis: added
+  `docs/results/analytic_post_micro_decision_gate_20260701.md` and a README
+  pointer. The read-only decision selects a future separately preregistered
+  nonlinear-dynamics workbench because both standalone analytic gates were
+  bounded and unsaturated but contractive or mixed/null-equivalent against
+  their preregistered nulls. This folds in the scientifically sensible
+  GPT-5.5-Pro contingency recommendation while noting that its immediate
+  null-runner task was already completed. No result-bearing runner, simulator
+  mechanics, A5/A7 reruns, dashboards, external integrations, broad sweeps,
+  promotion language, or multi-hive coupling were added.
 - 2026-07-01 08:52 PDT post-micro decision-gate preregistration: added
   `docs/analytic_post_micro_decision_gate_preregistration.md` and README
   documentation after both standalone analytic gates closed conservatively.
@@ -1304,11 +1317,13 @@ the analytic micro-society seed-1 gate both closed conservatively. The
 micro-society active condition was bounded and unsaturated, but the
 active-vs-null diagnostics were mixed/null-equivalent and finite-time local
 divergence was negative; this does not justify a phase diagram, simulator
-mechanics, or promotion language.
+mechanics, or promotion language. The post-micro decision note selected only a
+future preregistered nonlinear-dynamics workbench; workbench implementation is
+not authorized until that preregistration exists.
 
 ## Recommended Next Step
 
-- Recommended next step: write one bounded read-only post-micro decision note
-  under `docs/results/` choosing whether to stop analytic-map churn,
-  preregister a nonlinear-dynamics workbench, or preregister exactly one more
-  mechanism-rich standalone map before any further implementation.
+- Recommended next step: preregister the standalone nonlinear-dynamics
+  workbench, including fixed diagnostics, null families, output contract,
+  verification commands, and fail-closed interpretation rules, before any
+  workbench implementation.

@@ -203,6 +203,12 @@ more mechanism-rich standalone map. It does not authorize simulator mechanics,
 A5/A7 reruns, dashboards, external integrations, broader sweeps, multi-hive
 coupling, or promotion language.
 
+The completed post-micro decision note is recorded in
+`docs/results/analytic_post_micro_decision_gate_20260701.md`. It selects a
+future separately preregistered nonlinear-dynamics workbench as the next
+bounded direction, before any further analytic runner or OmegaSim simulator
+mechanics.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question
