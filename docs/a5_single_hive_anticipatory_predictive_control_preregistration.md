@@ -155,6 +155,17 @@ that any candidate effect reproduced by a matched surrogate remains
 uninterpretable. This is audit/provenance metadata only; it does not add a new
 predictor family, seed sweep, simulator mechanic, or promotion claim.
 
+2026-07-01 03:22 PDT current-run checkpoint: Ben's current automation request
+again selects A5 single-hive anticipatory predictive-control dynamics as the
+next explicitly requested stage. The preregistered surface below already
+defines the deterministic single-hive controller/null grid, the
+resource-bounded prediction hypothesis, matched accounting locks, guardrails,
+and fail-closed residual-structure rules requested for this stage. This
+checkpoint authorizes only a fresh verification of the existing smoke/analyzer
+scaffold; it does not authorize broader predictor tuning, new simulator
+mechanics, A5.2 implementation, A7-family mechanics, dashboards, integrations,
+or downstream three-hive coupling.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero

@@ -21,7 +21,7 @@ tuning, A5.2 implementation, A7-family work, dashboards, external
 integrations, broader seed sweeps, or downstream three-hive coupling are
 authorized.
 
-Fresh 2026-07-01 02:22 PDT verification again found the concise A5
+Fresh 2026-07-01 03:22 PDT verification again found the concise A5
 preregistration already covers the requested deterministic single-hive design
 surface and that the checked-in smoke/analyzer scaffold remains fail-closed for
 residual-structure promotion.
@@ -39,6 +39,19 @@ the preregistered bounded scaffold in the current request.
 
 ## Latest Changes
 
+- 2026-07-01 03:22 PDT bounded A5 preregistration checkpoint: added a
+  current-run checkpoint to the concise A5 single-hive preregistration and
+  reverified the existing deterministic scaffold. The requested surface remains
+  present: deterministic single hive, reactive/linear/nonlinear/high-budget/
+  oracle/null condition roles, resource-bounded prediction as scarce managed
+  resource, matched arrivals/capacity/action/work accounting, surrogate nulls,
+  residual/recurrence/compression endpoints, guardrails, fail-closed
+  strange-attractor-like language, and downstream three-hive boundary. Reran
+  the focused tests, deterministic smoke, paired seed `5,6` comparison,
+  residual accounting analyzer, guard checks, syntax check, and whitespace
+  check. No simulator mechanics, predictor families, broader seed sweeps,
+  dashboards, integrations, A7-family mechanics, or multi-hive coupling were
+  added.
 - 2026-07-01 02:22 PDT bounded A5 verification checkpoint: re-read the
   concise A5 single-hive preregistration and checked the generated
   design-manifest implementation against Ben's current anticipatory
@@ -284,6 +297,35 @@ the preregistered bounded scaffold in the current request.
 
 ## Verification
 
+- 2026-07-01 03:22 PDT focused A5/guard regression set:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-07-01 03:22 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260701_0322`
+  completed.
+- 2026-07-01 03:22 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260701_0322`
+  completed with 8 comparison rows, 16 single-hive matched-demand run
+  artifacts, 16/16 passing accounting-lock rows, and a design manifest
+  containing the resource-bounded prediction axis, endpoint evidence map,
+  fail-closed decision checklist, comparison-readiness contract, downstream
+  boundary, and surrogate-null requirements.
+- 2026-07-01 03:22 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260701_0322 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260701_0322`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-07-01 03:22 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`,
+  `closed_reasons=["strategy_review_a5_recovery_required"]`,
+  `strategic_change_level=major`, and `notify_ben=true`; this remains a
+  blocker for broader A5 mechanics after the current bounded checkpoint.
+- 2026-07-01 03:22 PDT final guard regression slice, syntax check, and
+  whitespace check: `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`30 passed, 655 deselected`),
+  `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
 - 2026-07-01 02:22 PDT guard check:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported
   `state=closed_awaiting_preregistration`, `should_noop=true`,
@@ -1003,7 +1045,7 @@ No environment blocker. Broader A5 work and A5.2 implementation are not
 authorized by the current request. The scientific blocker is interpretive:
 existing A5-family smoke/analyzer evidence remains fail-closed for residual
 structure and does not support strange-attractor-like, lobe-like, or
-phase-structure claims. The latest guard check also reports
+phase-structure claims. The latest guard check still reports
 `state=closed_awaiting_preregistration`, `repo_write_allowed=false`,
 `closed_reasons=["strategy_review_a5_recovery_required"]`, and
 `notify_ben=true`; treat that as a blocker for broader A5 mechanics after this
