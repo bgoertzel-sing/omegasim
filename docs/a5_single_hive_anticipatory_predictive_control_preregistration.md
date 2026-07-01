@@ -137,6 +137,16 @@ oracle prediction as a smoothing positive control that may erase the residual
 dynamics A5 is designed to test. This is not a new mechanic, predictor family,
 seed sweep, or promotion claim.
 
+2026-06-30 20:20 PDT checkpoint: the comparison design manifest must also
+record a downstream-extension boundary for three-hive delayed anticipatory
+coupling. The current A5 manifest may only state that such coupling,
+cross-hive prediction spend, and target/phase-shuffled transfer nulls are not
+authorized here. Any future three-hive extension needs a separate
+preregistration after single-hive A5 evidence passes accounting locks,
+residual accounting, budget-matched timing-broken nulls, and guardrails, with
+resource-bounded cross-hive prediction treated as its own scarce managed
+resource. This is scope-freezing audit metadata only.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -285,9 +295,13 @@ predict or compress its high-level regularities more cheaply than the raw
 task-pressure stream after full accounting and matched surrogate nulls. It must
 also include a comparison-readiness contract that marks which facts the paired
 comparison can evaluate directly and which residual-structure claims require
-the separate residual-accounting analyzer. This manifest is not a new mechanic;
-it is an accounting artifact that makes the preregistered design surface
-explicit before residual analysis.
+the separate residual-accounting analyzer. It must also include a
+downstream-extension boundary stating that three-hive delayed anticipatory
+coupling, resource-bounded cross-hive prediction, and target/phase-shuffled
+transfer nulls are out of scope until separately preregistered after
+single-hive A5 evidence passes the fail-closed accounting and residual gates.
+This manifest is not a new mechanic; it is an accounting artifact that makes
+the preregistered design surface explicit before residual analysis.
 
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The

@@ -5950,6 +5950,27 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         "python -m ohdyn.analyze_a5_residual_accounting "
         "--compare-dir <comparison_dir> --out <analysis_dir>"
     )
+    downstream_boundary = design_manifest["downstream_extension_boundary"]
+    assert downstream_boundary["current_stage"] == "single_hive_a5_only"
+    assert downstream_boundary["not_authorized_in_this_manifest"] == [
+        "three_hive_delayed_anticipatory_coupling",
+        "cross_hive_prediction_spend",
+        "target_shuffled_transfer_nulls",
+        "phase_shuffled_transfer_nulls",
+        "live_task_board_or_external_service_integrations",
+    ]
+    assert any(
+        "cross-hive prediction must be treated as its own scarce managed resource"
+        == item
+        for item in downstream_boundary["future_preregistration_requirements"]
+    )
+    assert any(
+        item.startswith("target-shuffled and phase-shuffled cross-hive nulls")
+        for item in downstream_boundary["future_preregistration_requirements"]
+    )
+    assert downstream_boundary["claim_policy"] == (
+        "three_hive_claims_fail_closed_until_separately_preregistered"
+    )
     assert {row["status"] for row in accounting_rows} == {"pass"}
     assert {row["matches_reactive_task_stream"] for row in accounting_rows} == {"true"}
     assert {row["matches_reactive_demand_stream"] for row in accounting_rows} == {"true"}
@@ -5976,6 +5997,7 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert "fail_closed_decision_checklist" in summary
     assert "cheap_high_level_regularities_contract" in summary
     assert "comparison_readiness_contract" in summary
+    assert "downstream_extension_boundary" in summary
 
 
 def test_a5_residual_accounting_analyzes_existing_comparison(

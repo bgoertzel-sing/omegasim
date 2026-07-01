@@ -603,6 +603,7 @@ def _design_manifest(
             _cheap_high_level_regularities_contract()
         ),
         "comparison_readiness_contract": _comparison_readiness_contract(),
+        "downstream_extension_boundary": _downstream_extension_boundary(),
         "fail_closed_decision_checklist": _fail_closed_decision_checklist(),
         "timing_broken_null_controls": [
             _null_control_manifest_row(label, config_path)
@@ -1035,6 +1036,29 @@ def _comparison_readiness_contract() -> dict[str, Any]:
     }
 
 
+def _downstream_extension_boundary() -> dict[str, Any]:
+    return {
+        "current_stage": "single_hive_a5_only",
+        "not_authorized_in_this_manifest": [
+            "three_hive_delayed_anticipatory_coupling",
+            "cross_hive_prediction_spend",
+            "target_shuffled_transfer_nulls",
+            "phase_shuffled_transfer_nulls",
+            "live_task_board_or_external_service_integrations",
+        ],
+        "future_preregistration_requirements": [
+            "single-hive A5 evidence must pass accounting locks, residual accounting, "
+            "budget-matched timing-broken nulls, and fail-closed guardrails first",
+            "cross-hive prediction must be treated as its own scarce managed resource",
+            "target-shuffled and phase-shuffled cross-hive nulls must be matched before "
+            "any delayed-coupling interpretation",
+            "service capacity, action opportunity, work budget, transfer opportunity, "
+            "and prediction spend must be locked across hive-coupling conditions",
+        ],
+        "claim_policy": "three_hive_claims_fail_closed_until_separately_preregistered",
+    }
+
+
 def _null_control_manifest_row(label: str, config_path: Path) -> dict[str, Any]:
     cfg = load_config(config_path)
     assert cfg.predictive_control is not None
@@ -1150,6 +1174,9 @@ def _summary(
             "- comparison readiness: predictive_control_design_manifest.yaml "
             "section `comparison_readiness_contract` marks residual-structure "
             "claims as analyzer-gated",
+            "- downstream extension boundary: predictive_control_design_manifest.yaml "
+            "section `downstream_extension_boundary` keeps three-hive delayed "
+            "anticipatory coupling out of scope until separately preregistered",
         ]
     )
     lines.extend(
