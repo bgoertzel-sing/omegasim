@@ -17,13 +17,16 @@ residual-structure promotion.
 
 The active analytic-map surface now includes the standalone deterministic
 analytic delayed map, grid preflight, null-gate preregistration, implemented
-four-condition null-gate runner, micro-society preregistration, and implemented
-four-condition micro-society mechanism-screen runner. Continue from
+four-condition null-gate runner, micro-society preregistration, implemented
+four-condition micro-society mechanism-screen runner, and a preregistered
+post-micro decision gate. Continue from
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
-`docs/analytic_micro_society_map_preregistration.md`, and the existing
+`docs/analytic_micro_society_map_preregistration.md`,
+`docs/analytic_post_micro_decision_gate_preregistration.md`, and the existing
 analytic smoke/preflight/null-gate/micro-society artifacts. The next work
-should remain mathematical and deterministic before adding simulator mechanics.
+should be a read-only decision synthesis before adding any new analytic runner,
+workbench, or simulator mechanics.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
 `strategic_change_level: minor` and `notify_ben: false`. Its recommendation to
@@ -33,6 +36,17 @@ delayed-map null gate before this implementation.
 
 ## Latest Changes
 
+- 2026-07-01 08:52 PDT post-micro decision-gate preregistration: added
+  `docs/analytic_post_micro_decision_gate_preregistration.md` and README
+  documentation after both standalone analytic gates closed conservatively.
+  This accepts the guard's post-micro recommendation while deferring the older
+  GPT-5.5-Pro null-runner recommendation because the null gate and subsequent
+  micro-society gate are already implemented and closed. The next authorized
+  step is only a read-only decision note choosing among stopping analytic-map
+  churn, preregistering a nonlinear-dynamics workbench, or preregistering
+  exactly one more mechanism-rich standalone map. No result-bearing runner,
+  simulator mechanics, A5/A7 reruns, dashboards, external integrations,
+  broader sweeps, promotion language, or multi-hive coupling were added.
 - 2026-07-01 08:32 PDT analytic micro-society implementation: added
   `ohdyn.analytic_micro_society_map`,
   `configs/analytic_micro_society_map.yaml`, README command documentation, and
@@ -378,6 +392,12 @@ delayed-map null gate before this implementation.
 
 ## Verification
 
+- 2026-07-01 08:52 PDT post-micro decision-gate guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `should_noop=false`, and `repo_write_allowed=true` with the post-micro
+  decision-gate next action.
+- 2026-07-01 08:52 PDT post-micro decision-gate whitespace check:
+  `git diff --check` passed.
 - 2026-07-01 08:32 PDT focused analytic regression:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'analytic_micro_society or analytic_delayed_map_null' -q`
   passed (`5 passed, 685 deselected`).
@@ -1288,7 +1308,7 @@ mechanics, or promotion language.
 
 ## Recommended Next Step
 
-- Recommended next step: preregister one bounded post-micro decision gate that
-  decides whether to stop analytic-map churn, build a nonlinear-dynamics
-  workbench, or define one more mechanism-rich standalone map before any
-  further implementation.
+- Recommended next step: write one bounded read-only post-micro decision note
+  under `docs/results/` choosing whether to stop analytic-map churn,
+  preregister a nonlinear-dynamics workbench, or preregister exactly one more
+  mechanism-rich standalone map before any further implementation.

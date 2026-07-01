@@ -194,6 +194,15 @@ The seed-1 smoke is diagnostic only. It does not write per-tick simulator
 or semantic-dynamics claims. Mixed or null-equivalent deltas close the gate
 conservatively.
 
+Because both standalone analytic gates closed conservatively, the next active
+decision gate is preregistered in
+`docs/analytic_post_micro_decision_gate_preregistration.md`. It authorizes only
+a read-only synthesis deciding whether to stop analytic-map churn, build a
+separately preregistered nonlinear-dynamics workbench, or define exactly one
+more mechanism-rich standalone map. It does not authorize simulator mechanics,
+A5/A7 reruns, dashboards, external integrations, broader sweeps, multi-hive
+coupling, or promotion language.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question
