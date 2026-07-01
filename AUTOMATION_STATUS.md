@@ -5,7 +5,7 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status for this automation run: Ben's current 2026-06-30
+Source-of-truth status for this automation run: Ben's current 2026-07-01
 instruction explicitly selects bounded A5 single-hive anticipatory
 predictive-control dynamics. That current prompt supersedes the later
 status-file analytic delayed-map pivot for this run only.
@@ -34,6 +34,16 @@ the preregistered bounded scaffold in the current request.
 
 ## Latest Changes
 
+- 2026-07-01 00:20 PDT bounded A5 current-run verification checkpoint:
+  confirmed the concise A5 single-hive preregistration already satisfies the
+  requested A5 predictive-control design surface, including the
+  resource-bounded prediction hypothesis, none/low/medium/high/oracle budget
+  axis, matched accounting locks, surrogate nulls, guardrails, fail-closed
+  residual-structure rules, and downstream three-hive boundary. Reran the
+  existing deterministic smoke, paired seed `5,6` comparison, residual
+  accounting analyzer, and guard. No simulator mechanics, predictor families,
+  broader seed sweeps, dashboards, integrations, A7-family mechanics, or
+  multi-hive coupling were added.
 - 2026-06-30 23:20 PDT bounded A5 verification checkpoint: reverified that
   the concise A5 preregistration and checked-in deterministic single-hive
   scaffold remain the complete authorized A5 surface. The fresh seed `5,6`
@@ -244,6 +254,29 @@ the preregistered bounded scaffold in the current request.
 
 ## Verification
 
+- 2026-07-01 00:20 PDT focused A5/guard regression set:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-07-01 00:20 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260701_0020`
+  completed.
+- 2026-07-01 00:20 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260701_0020`
+  completed with 8 comparison rows, 16 matched-demand run artifacts, 16/16
+  accounting-lock rows passing, and a design manifest containing the
+  resource-bounded prediction axis, `surrogate_null_requirements`,
+  `fail_closed_decision_checklist`, and `downstream_extension_boundary`.
+- 2026-07-01 00:20 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260701_0020 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260701_0020`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-07-01 00:20 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`,
+  `closed_reasons=["strategy_review_a5_recovery_required"]`,
+  `strategic_change_level=major`, and `notify_ben=true`; this blocks broader
+  A5 mechanics after the bounded verification checkpoint.
 - 2026-06-30 23:20 PDT focused A5/guard regression set:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
   passed (`5 passed`).
