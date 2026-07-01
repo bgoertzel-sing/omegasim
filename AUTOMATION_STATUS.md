@@ -21,7 +21,7 @@ tuning, A5.2 implementation, A7-family work, dashboards, external
 integrations, broader seed sweeps, or downstream three-hive coupling are
 authorized.
 
-Fresh 2026-07-01 06:24 PDT verification again found the concise A5
+Fresh 2026-07-01 07:25 PDT verification again found the concise A5
 preregistration already covers the requested deterministic single-hive design
 surface and that the checked-in smoke/analyzer scaffold remains the only
 authorized implementation surface. The scientific interpretation remains
@@ -40,6 +40,18 @@ the preregistered bounded scaffold in the current request.
 
 ## Latest Changes
 
+- 2026-07-01 07:25 PDT guarded verification checkpoint: added
+  `docs/results/a5_single_hive_guarded_verification_20260701_0725.md` after
+  rerunning only the bounded deterministic A5 smoke/comparison/analyzer surface.
+  The fresh paired seed `5,6` comparison produced 16 single-hive run artifacts
+  and 16/16 passing accounting-lock rows; the residual analyzer produced 1280
+  metric rows and 720 effect rows and failed closed for linear, nonlinear, and
+  high-budget nonlinear predictors. The automation guard still reports
+  `state=closed_awaiting_preregistration`, `repo_write_allowed=false`,
+  `strategic_change_level=major`, and `notify_ben=true`. No simulator
+  mechanics, predictor families, broader seed sweeps, dashboards,
+  integrations, A7-family mechanics, A5.2 implementation, or multi-hive
+  coupling were added.
 - 2026-07-01 06:24 PDT bounded verification checkpoint: added
   `docs/results/a5_single_hive_bounded_verification_20260701_0624.md` to
   record that the active concise A5 preregistration and checked-in
@@ -329,6 +341,30 @@ the preregistered bounded scaffold in the current request.
 
 ## Verification
 
+- 2026-07-01 07:25 PDT focused A5 regression slice:
+  `.venv-conda/bin/python3.11 -m pytest tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`3 passed`).
+- 2026-07-01 07:25 PDT single-run smoke:
+  `.venv-conda/bin/python3.11 -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out runs/a5_predictive_linear_seed5_20260701_0725`
+  completed.
+- 2026-07-01 07:25 PDT paired comparison:
+  `.venv-conda/bin/python3.11 -m ohdyn.compare_predictive_control --seeds 5 6 --out runs/a5_predictive_control_compare_seed5_6_20260701_0725`
+  completed with 16 single-hive matched-demand run artifacts and 16/16
+  passing accounting-lock audit rows.
+- 2026-07-01 07:25 PDT residual accounting:
+  `.venv-conda/bin/python3.11 -m ohdyn.analyze_a5_residual_accounting --compare-dir runs/a5_predictive_control_compare_seed5_6_20260701_0725 --out runs/a5_residual_accounting_seed5_6_20260701_0725`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-07-01 07:25 PDT guard check:
+  `.venv-conda/bin/python3.11 -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `strategic_change_level=major`, and
+  `notify_ben=true`; the recommended next action remains to decide whether to
+  authorize a fresh A5.2 implementation gate for endogenous delayed
+  prediction-spend dynamics.
+- 2026-07-01 07:25 PDT final guard regression slice:
+  `.venv-conda/bin/python3.11 -m pytest tests/test_run_harness.py -k automation_guard -q`
+  passed (`30 passed, 655 deselected`).
 - 2026-07-01 06:24 PDT focused A5/guard regression set:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
   passed (`5 passed`).
