@@ -5971,6 +5971,25 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert downstream_boundary["claim_policy"] == (
         "three_hive_claims_fail_closed_until_separately_preregistered"
     )
+    surrogate_nulls = design_manifest["surrogate_null_requirements"]
+    assert surrogate_nulls["required_pairings"] == {
+        "linear": "shuffled",
+        "nonlinear": "nonlinear_shuffled",
+        "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
+    }
+    assert surrogate_nulls["current_smoke_null_type"] == (
+        "deterministic_phase_shifted_timing_broken_predictor"
+    )
+    assert "prediction budget or charged prediction spend" in surrogate_nulls[
+        "preserve"
+    ]
+    assert "useful forecast timing" in surrogate_nulls["break"]
+    assert "phase-randomized predictor" in surrogate_nulls[
+        "future_allowed_null_families"
+    ]
+    assert "budget-matched surrogate null reproduces" in surrogate_nulls[
+        "invalidation_rule"
+    ]
     assert {row["status"] for row in accounting_rows} == {"pass"}
     assert {row["matches_reactive_task_stream"] for row in accounting_rows} == {"true"}
     assert {row["matches_reactive_demand_stream"] for row in accounting_rows} == {"true"}
@@ -5998,6 +6017,7 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert "cheap_high_level_regularities_contract" in summary
     assert "comparison_readiness_contract" in summary
     assert "downstream_extension_boundary" in summary
+    assert "surrogate_null_requirements" in summary
 
 
 def test_a5_residual_accounting_analyzes_existing_comparison(

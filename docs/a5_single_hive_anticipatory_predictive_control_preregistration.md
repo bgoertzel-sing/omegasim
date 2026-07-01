@@ -147,6 +147,14 @@ residual accounting, budget-matched timing-broken nulls, and guardrails, with
 resource-bounded cross-hive prediction treated as its own scarce managed
 resource. This is scope-freezing audit metadata only.
 
+2026-07-01 checkpoint: the comparison design manifest must also record the
+surrogate-null requirements used to invalidate intermediate-budget effects. The
+manifest should identify the budget-matched null pairings, what the nulls must
+preserve, what useful timing or target alignment they must break, and the rule
+that any candidate effect reproduced by a matched surrogate remains
+uninterpretable. This is audit/provenance metadata only; it does not add a new
+predictor family, seed sweep, simulator mechanic, or promotion claim.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -300,6 +308,10 @@ downstream-extension boundary stating that three-hive delayed anticipatory
 coupling, resource-bounded cross-hive prediction, and target/phase-shuffled
 transfer nulls are out of scope until separately preregistered after
 single-hive A5 evidence passes the fail-closed accounting and residual gates.
+It must also include surrogate-null requirements specifying budget-matched
+null pairings, preservation targets, timing/target-alignment breaks, allowed
+future null families, and the invalidation rule for any intermediate-budget
+effect reproduced by matched surrogates.
 This manifest is not a new mechanic; it is an accounting artifact that makes
 the preregistered design surface explicit before residual analysis.
 

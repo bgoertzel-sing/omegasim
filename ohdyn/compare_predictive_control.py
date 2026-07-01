@@ -611,6 +611,9 @@ def _design_manifest(
             if _condition_manifest_row(label, config_path)["predictive_condition"]
             in {"shuffled", "nonlinear_shuffled", "nonlinear_high_budget_shuffled"}
         ],
+        "surrogate_null_requirements": _surrogate_null_requirements(
+            generated_configs
+        ),
     }
 
 
@@ -1059,6 +1062,48 @@ def _downstream_extension_boundary() -> dict[str, Any]:
     }
 
 
+def _surrogate_null_requirements(
+    generated_configs: tuple[tuple[str, Path], ...],
+) -> dict[str, Any]:
+    labels = tuple(label for label, _ in generated_configs)
+    null_pairings = _budget_null_map(set(labels))
+    return {
+        "purpose": (
+            "Make the surrogate null surface auditable before any residual "
+            "phase-structure, recurrence, lobe-like, or strange-attractor-like "
+            "interpretation."
+        ),
+        "required_pairings": null_pairings,
+        "current_smoke_null_type": "deterministic_phase_shifted_timing_broken_predictor",
+        "preserve": [
+            "paired seed",
+            "task-arrival totals and stream signature",
+            "class-demand stream signature",
+            "service capacity",
+            "action opportunity",
+            "pre-prediction work opportunity",
+            "prediction budget or charged prediction spend",
+            "marginal forecast structure where applicable",
+        ],
+        "break": [
+            "useful forecast timing",
+            "target-aligned anticipatory advantage",
+        ],
+        "future_allowed_null_families": [
+            "shuffled predictor",
+            "phase-randomized predictor",
+            "phase-shifted timing-broken predictor",
+            "spend-only replay null when prediction is charged to work",
+        ],
+        "invalidation_rule": (
+            "A candidate intermediate-budget effect is not interpretable if a "
+            "budget-matched surrogate null reproduces the forecast, residual, "
+            "or high-level predictability/compressibility endpoint under the "
+            "same accounting locks."
+        ),
+    }
+
+
 def _null_control_manifest_row(label: str, config_path: Path) -> dict[str, Any]:
     cfg = load_config(config_path)
     assert cfg.predictive_control is not None
@@ -1177,6 +1222,10 @@ def _summary(
             "- downstream extension boundary: predictive_control_design_manifest.yaml "
             "section `downstream_extension_boundary` keeps three-hive delayed "
             "anticipatory coupling out of scope until separately preregistered",
+            "- surrogate null requirements: predictive_control_design_manifest.yaml "
+            "section `surrogate_null_requirements` records what nulls must "
+            "preserve, what timing they must break, and when they invalidate "
+            "an intermediate-budget effect",
         ]
     )
     lines.extend(

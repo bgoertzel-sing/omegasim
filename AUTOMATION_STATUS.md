@@ -34,6 +34,15 @@ the preregistered bounded scaffold in the current request.
 
 ## Latest Changes
 
+- 2026-06-30 22:22 PDT bounded A5 surrogate-null audit hardening: the concise
+  A5 preregistration, README, and paired comparison design manifest now record
+  explicit `surrogate_null_requirements`. The manifest names the
+  budget-matched null pairings, preservation targets, timing/target-alignment
+  breaks, future allowed null families, and the invalidation rule for any
+  intermediate-budget effect reproduced by matched surrogates. The generated
+  manifest was verified in a fresh seed `5,6` comparison. No predictor family,
+  simulator mechanic, broader seed sweep, dashboard, integration, A7-family
+  mechanic, or multi-hive coupling was added.
 - 2026-06-30 21:19 PDT bounded A5 verification checkpoint: re-read the
   concise A5 preregistration and checked-in comparison manifest/test surface,
   then reran the authorized deterministic single-hive smoke, paired seed `5,6`
@@ -225,6 +234,32 @@ the preregistered bounded scaffold in the current request.
 
 ## Verification
 
+- 2026-06-30 22:22 PDT focused A5/guard regression set:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-06-30 22:22 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260630_222223`
+  completed.
+- 2026-06-30 22:22 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_222223`
+  completed with 8 comparison rows, 16 matched-demand run artifacts, 16/16
+  accounting-lock rows, and `surrogate_null_requirements` present in
+  `predictive_control_design_manifest.yaml`.
+- 2026-06-30 22:22 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_222223 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260630_222223`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-06-30 22:22 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`,
+  `closed_reasons=["strategy_review_a5_recovery_required"]`,
+  `strategic_change_level=major`, and `notify_ben=true`; this blocks broader
+  A5 work but not this bounded audit/provenance checkpoint requested by the
+  automation prompt.
+- 2026-06-30 22:22 PDT syntax and whitespace checks:
+  `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
 - 2026-06-30 21:19 PDT focused A5/guard regression set:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
   passed (`5 passed`).
@@ -822,8 +857,11 @@ No environment blocker. Broader A5 work and A5.2 implementation are not
 authorized by the current request. The scientific blocker is interpretive:
 existing A5-family smoke/analyzer evidence remains fail-closed for residual
 structure and does not support strange-attractor-like, lobe-like, or
-phase-structure claims. The latest external strategy review carries a
-major/notify-Ben flag and remains governance context.
+phase-structure claims. The latest guard check also reports
+`state=closed_awaiting_preregistration`, `repo_write_allowed=false`,
+`closed_reasons=["strategy_review_a5_recovery_required"]`, and
+`notify_ben=true`; treat that as a blocker for broader A5 mechanics after this
+bounded audit/provenance checkpoint.
 
 ## Recommended Next Step
 

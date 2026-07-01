@@ -94,6 +94,10 @@ that keeps three-hive delayed anticipatory coupling, resource-bounded
 cross-hive prediction, and target/phase-shuffled transfer nulls out of scope
 until separately preregistered after single-hive A5 evidence passes the
 fail-closed accounting and residual gates.
+It also records surrogate-null requirements that make the budget-matched null
+pairings, preservation targets, timing/target-alignment breaks, future null
+families, and matched-surrogate invalidation rule explicit before residual
+interpretation.
 
 Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
 closed without a fresh preregistration. Ben's 2026-06-28 decision opened the
