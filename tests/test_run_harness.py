@@ -327,6 +327,13 @@ from ohdyn.analytic_delayed_map_null_gate import (
     NULL_GATE_STATUS,
     run_analytic_delayed_map_null_gate,
 )
+from ohdyn.analytic_micro_society_map import (
+    MICRO_SOCIETY_CONDITIONS,
+    MICRO_SOCIETY_FIELDS,
+    MICRO_SOCIETY_SCIENTIFIC_STATUS,
+    MICRO_SOCIETY_STATUS,
+    run_analytic_micro_society_map,
+)
 from ohdyn.run import run_experiment
 
 
@@ -438,6 +445,7 @@ ANALYTIC_DELAYED_MAP_GRID_PREFLIGHT = Path(
     "configs/analytic_delayed_map_grid_preflight.yaml"
 )
 ANALYTIC_DELAYED_MAP_NULL_GATE = Path("configs/analytic_delayed_map_null_gate.yaml")
+ANALYTIC_MICRO_SOCIETY_MAP = Path("configs/analytic_micro_society_map.yaml")
 THREE_HIVE_RING_CONTRACT_VALIDATION = Path(
     "configs/three_hive_ring_contract_validation.yaml"
 )
@@ -745,6 +753,99 @@ def test_analytic_delayed_map_null_gate_writes_summary_only_artifacts(
     assert "standalone analytic null gate" in summary
     assert "does not write per-tick simulator metrics" in summary
     assert "strange-attractor-like claims" in summary
+
+
+def test_analytic_micro_society_map_emits_preregistered_conditions(
+    tmp_path: Path,
+) -> None:
+    rows_a = run_analytic_micro_society_map(
+        config_path=ANALYTIC_MICRO_SOCIETY_MAP,
+        out_dir=tmp_path / "micro_society_a",
+    )
+    rows_b = run_analytic_micro_society_map(
+        config_path=ANALYTIC_MICRO_SOCIETY_MAP,
+        out_dir=tmp_path / "micro_society_b",
+    )
+
+    assert rows_a == rows_b
+    assert (
+        tmp_path / "micro_society_a" / "micro_society_summary.csv"
+    ).read_bytes() == (
+        tmp_path / "micro_society_b" / "micro_society_summary.csv"
+    ).read_bytes()
+    assert [row["condition_id"] for row in rows_a] == list(MICRO_SOCIETY_CONDITIONS)
+    assert len(rows_a) == 4
+    assert {row["diagnostic_status"] for row in rows_a} == {MICRO_SOCIETY_STATUS}
+    assert {row["seed"] for row in rows_a} == {1}
+    assert {row["ticks"] for row in rows_a} == {96}
+    assert rows_a[0]["condition_status"] in {
+        "candidate_for_preregistered_phase_diagram",
+        "fail_closed_active_saturated",
+        "fail_closed_active_unbounded_or_trivial",
+        "fail_closed_mixed_or_null_equivalent",
+    }
+    assert {row["condition_status"] for row in rows_a[1:]} == {"null_summary"}
+    assert rows_a[1]["delay_ticks"] == 0
+    assert all(0.0 <= float(row["saturation_fraction"]) <= 1.0 for row in rows_a)
+    assert all(0.0 <= float(row["work_transfer_mean"]) <= 0.55 for row in rows_a)
+
+
+def test_analytic_micro_society_map_writes_summary_only_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "analytic_micro_society_map"
+
+    rows = run_analytic_micro_society_map(
+        config_path=ANALYTIC_MICRO_SOCIETY_MAP,
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == 4
+    for artifact in (
+        "config.yaml",
+        "manifest.yaml",
+        "micro_society_summary.csv",
+        "summary.md",
+    ):
+        assert (out_dir / artifact).exists()
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "events.csv").exists()
+    with (out_dir / "micro_society_summary.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(MICRO_SOCIETY_FIELDS)
+        csv_rows = list(csv.DictReader(handle, fieldnames=MICRO_SOCIETY_FIELDS))
+    assert len(csv_rows) == 4
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["status"] == MICRO_SOCIETY_STATUS
+    assert manifest["scientific_status"] == MICRO_SOCIETY_SCIENTIFIC_STATUS
+    assert manifest["conditions"] == list(MICRO_SOCIETY_CONDITIONS)
+    assert manifest["state_variables"] == [
+        "artifact_readiness",
+        "prediction_spend",
+        "prediction_error",
+        "fatigue_threshold",
+    ]
+    assert manifest["no_simulator_artifacts"] == ["metrics.csv", "events.csv"]
+    summary = (out_dir / "summary.md").read_text()
+    normalized_summary = " ".join(summary.split())
+    assert "standalone analytic mechanism screen" in normalized_summary
+    assert "does not write per-tick simulator metrics or events" in normalized_summary
+    assert "strange-attractor-like claims" in summary
+
+
+def test_analytic_micro_society_map_rejects_changed_conditions(tmp_path: Path) -> None:
+    config = yaml.safe_load(ANALYTIC_MICRO_SOCIETY_MAP.read_text())
+    config["micro_society_gate"]["conditions"] = [
+        "active_delayed_micro_society",
+        "no_delay",
+    ]
+    config_path = tmp_path / "changed_conditions.yaml"
+    config_path.write_text(yaml.safe_dump(config, sort_keys=True))
+
+    with pytest.raises(ValueError, match="preregistered micro-society conditions"):
+        run_analytic_micro_society_map(
+            config_path=config_path,
+            out_dir=tmp_path / "changed_conditions",
+        )
 
 
 def _expected_artifacts(config_path: Path) -> list[str]:

@@ -174,11 +174,25 @@ attractor, lobe, or semantic-dynamics claims.
 
 Because that null gate closed conservatively, the next active analytic-map
 design gate is preregistered in
-`docs/analytic_micro_society_map_preregistration.md`. It allows only a future
+`docs/analytic_micro_society_map_preregistration.md`. It allows only a
 standalone four-state analytic micro-society mechanism screen over artifact
 readiness, prediction spend/error, and fatigue/adaptive threshold state. It
 does not authorize simulator mechanics, A5/A7 reruns, dashboards, external
 integrations, multi-hive coupling, broader sweeps, or promotion language.
+
+The checked-in micro-society gate runs those four preregistered conditions and
+writes only summary diagnostics plus manifest artifacts:
+
+```bash
+python -m ohdyn.analytic_micro_society_map \
+  --config configs/analytic_micro_society_map.yaml \
+  --out runs/analytic_micro_society_map_seed1
+```
+
+The seed-1 smoke is diagnostic only. It does not write per-tick simulator
+`metrics.csv` or `events.csv` artifacts and does not support attractor, lobe,
+or semantic-dynamics claims. Mixed or null-equivalent deltas close the gate
+conservatively.
 
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed

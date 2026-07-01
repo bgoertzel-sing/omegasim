@@ -1,0 +1,21 @@
+run:
+  experiment_id: analytic_micro_society_map_gate
+  seed: 1
+  ticks: 96
+analytic_micro_society_map:
+  rho: 1.35
+  delta: 0.5
+  mu: 3.0
+  kappa: 0.2
+  nu: 0.01
+  relaxation_time_ticks: 8
+  initial_state: [0.42, 0.34, 0.28, 0.36]
+  perturbation_epsilon: 0.00001
+  nontrivial_range_min: 0.01
+  saturation_epsilon: 0.02
+micro_society_gate:
+  conditions:
+    - active_delayed_micro_society
+    - no_delay
+    - linearized_response
+    - delay_shuffled_history

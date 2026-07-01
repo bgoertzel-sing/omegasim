@@ -16,13 +16,14 @@ oracle-nontriviality, compression, and guardrail criteria did not support
 residual-structure promotion.
 
 The active analytic-map surface now includes the standalone deterministic
-analytic delayed map, grid preflight, null-gate preregistration, and the
-implemented four-condition null-gate runner. Continue from
+analytic delayed map, grid preflight, null-gate preregistration, implemented
+four-condition null-gate runner, micro-society preregistration, and implemented
+four-condition micro-society mechanism-screen runner. Continue from
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
 `docs/analytic_micro_society_map_preregistration.md`, and the existing
-analytic smoke/preflight/null-gate artifacts. The next work should remain
-mathematical and deterministic before adding simulator mechanics.
+analytic smoke/preflight/null-gate/micro-society artifacts. The next work
+should remain mathematical and deterministic before adding simulator mechanics.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
 `strategic_change_level: minor` and `notify_ben: false`. Its recommendation to
@@ -32,6 +33,22 @@ delayed-map null gate before this implementation.
 
 ## Latest Changes
 
+- 2026-07-01 08:32 PDT analytic micro-society implementation: added
+  `ohdyn.analytic_micro_society_map`,
+  `configs/analytic_micro_society_map.yaml`, README command documentation, and
+  focused deterministic regression coverage, plus
+  `docs/results/analytic_micro_society_map_gate_seed1_20260701.md`. The runner
+  emits exactly the preregistered four conditions
+  (`active_delayed_micro_society`, `no_delay`, `linearized_response`,
+  `delay_shuffled_history`) over four bounded state variables: artifact
+  readiness, prediction spend, prediction error, and fatigue/adaptive
+  threshold. It writes only `config.yaml`, `manifest.yaml`,
+  `micro_society_summary.csv`, and `summary.md`; no simulator `metrics.csv` or
+  `events.csv`, A5/A7 reruns, dashboards, external integrations, broader
+  sweeps, promotion language, or multi-hive coupling were added. The seed-1
+  smoke was bounded and unsaturated but had negative finite-time local
+  divergence and mixed/null-equivalent active-vs-null deltas, so the gate
+  closes conservatively as `fail_closed_mixed_or_null_equivalent`.
 - 2026-07-01 08:10 PDT analytic micro-society preregistration: added
   `docs/analytic_micro_society_map_preregistration.md` after the completed
   four-condition analytic delayed-map null gate closed conservatively as
@@ -361,6 +378,20 @@ delayed-map null gate before this implementation.
 
 ## Verification
 
+- 2026-07-01 08:32 PDT focused analytic regression:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'analytic_micro_society or analytic_delayed_map_null' -q`
+  passed (`5 passed, 685 deselected`).
+- 2026-07-01 08:32 PDT analytic micro-society smoke:
+  `.venv-conda/bin/python -m ohdyn.analytic_micro_society_map --config configs/analytic_micro_society_map.yaml --out runs/analytic_micro_society_map_seed1_20260701_1430`
+  completed with four summary rows and only `config.yaml`, `manifest.yaml`,
+  `micro_society_summary.csv`, and `summary.md`. Active row: boundedness
+  `pass`, saturation fraction `0.0`, recurrence-surrogate delta `0.076096`,
+  finite-time local divergence `-0.171099`, and gate status
+  `fail_closed_mixed_or_null_equivalent`.
+- 2026-07-01 08:32 PDT syntax check:
+  `.venv-conda/bin/python -m py_compile ohdyn/analytic_micro_society_map.py ohdyn/analytic_delayed_map.py tests/test_run_harness.py`
+  passed.
+- 2026-07-01 08:32 PDT whitespace check: `git diff --check` passed.
 - 2026-07-01 08:10 PDT preregistration-only guard check:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
   `should_noop=false`, and `repo_write_allowed=true` for the analytic pivot.
@@ -1248,17 +1279,16 @@ delayed-map null gate before this implementation.
 
 No environment blocker. Broader A5 work, A5.2 implementation, A7-family work,
 dashboards, external integrations, downstream multi-hive coupling, and
-promotion language remain unauthorized. The current analytic null-gate seed-1
-result is conservative: active dynamics are bounded and unsaturated, but the
-no-delay, linearized-response, and delay-shuffled-history deltas are mixed, so
-this gate does not justify a phase diagram. The new analytic micro-society
-preregistration is a mechanism rationale only; it does not itself authorize
-promotion language or simulator mechanics.
+promotion language remain unauthorized. The analytic delayed-map null gate and
+the analytic micro-society seed-1 gate both closed conservatively. The
+micro-society active condition was bounded and unsaturated, but the
+active-vs-null diagnostics were mixed/null-equivalent and finite-time local
+divergence was negative; this does not justify a phase diagram, simulator
+mechanics, or promotion language.
 
 ## Recommended Next Step
 
-- Recommended next step: implement only the preregistered standalone analytic
-  micro-society map runner and focused deterministic tests from
-  `docs/analytic_micro_society_map_preregistration.md`, with no A5/A7
-  simulator calls, dashboards, integrations, broader sweeps, or multi-hive
-  coupling.
+- Recommended next step: preregister one bounded post-micro decision gate that
+  decides whether to stop analytic-map churn, build a nonlinear-dynamics
+  workbench, or define one more mechanism-rich standalone map before any
+  further implementation.
