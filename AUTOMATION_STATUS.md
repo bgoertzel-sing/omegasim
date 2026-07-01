@@ -5,27 +5,22 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status for this automation run: Ben's current 2026-07-01
-instruction explicitly selects bounded A5 single-hive anticipatory
-predictive-control dynamics. That current prompt supersedes the later
-status-file analytic delayed-map pivot for this run only.
+Source-of-truth status: Ben's 2026-06-30 instruction selects the analytic
+delayed-map pivot as the active next OmegaSim gate, not A5.2.
 
-The active A5 surface remains narrow:
-`docs/a5_single_hive_anticipatory_predictive_control_preregistration.md`, the
-checked-in deterministic single-hive smoke scaffold, paired seed `5,6`
-comparison, design-manifest audit including resource-bounded prediction-axis
-roles, endpoint evidence mapping, and the fail-closed decision checklist,
-cheap-high-level-regularities contract, comparison-readiness contract,
-accounting-lock audit, and read-only residual accounting analyzer. No broad A5
-tuning, A5.2 implementation, A7-family work, dashboards, external
-integrations, broader seed sweeps, or downstream three-hive coupling are
-authorized.
+This supersedes the stale bounded-A5 automation prompt and the 2026-07-01
+bounded-A5 verification checkpoints. It does not reopen A5.2 or authorize broad
+A5 simulator work. Prior A5 smoke/analyzer evidence remains negative
+background: intermediate predictors improved forecast skill, but residual/null,
+oracle-nontriviality, compression, and guardrail criteria did not support
+residual-structure promotion.
 
-Fresh 2026-07-01 07:25 PDT verification again found the concise A5
-preregistration already covers the requested deterministic single-hive design
-surface and that the checked-in smoke/analyzer scaffold remains the only
-authorized implementation surface. The scientific interpretation remains
-fail-closed for residual-structure promotion.
+The active analytic-map surface now includes the standalone deterministic
+analytic delayed map, grid preflight, and null-gate preregistration. Continue
+from `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
+`docs/analytic_delayed_map_refinement_null_gate_preregistration.md`, and the
+existing analytic smoke/preflight artifacts. The next work should remain
+mathematical and deterministic before adding simulator mechanics.
 
 Prior A5 smoke/analyzer evidence remains negative background: intermediate
 predictors improved forecast skill, but residual/null,
@@ -52,6 +47,10 @@ the preregistered bounded scaffold in the current request.
   mechanics, predictor families, broader seed sweeps, dashboards,
   integrations, A7-family mechanics, A5.2 implementation, or multi-hive
   coupling were added.
+- 2026-07-01 07:31 PDT Ben direction correction: updated the automation prompt
+  outside the repo and restored this status file to the analytic delayed-map
+  pivot as the active OmegaSim gate. The bounded-A5 checkpoints above remain
+  negative background only; A5.2 is not authorized.
 - 2026-07-01 06:24 PDT bounded verification checkpoint: added
   `docs/results/a5_single_hive_bounded_verification_20260701_0624.md` to
   record that the active concise A5 preregistration and checked-in
@@ -1200,13 +1199,13 @@ the preregistered bounded scaffold in the current request.
 ## Blockers
 
 No environment blocker. Broader A5 work and A5.2 implementation are not
-authorized by the current request. The scientific blocker is interpretive:
-existing A5-family smoke/analyzer evidence remains fail-closed for residual
-structure and does not support strange-attractor-like, lobe-like, or
-phase-structure claims. Treat the guard's closed/review posture as a blocker
-for broader A5 mechanics after this bounded audit/provenance checkpoint.
+authorized. The scientific challenge is now to make the analytic delayed-map
+pivot small enough to be mathematically interpretable while still exposing the
+delayed nonlinear self-coupling axes needed for strange-attractor-oriented
+search.
 
 ## Recommended Next Step
 
-- Recommended next step: decide whether to authorize a fresh A5.2
-  implementation gate for endogenous delayed prediction-spend dynamics.
+- Recommended next step: run the analytic delayed-map null-gate refinement
+  specified in
+  `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`.

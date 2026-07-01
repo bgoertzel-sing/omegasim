@@ -43,13 +43,12 @@ remains in
 constrain interpretation: do not make residual-structure, lobe-like, or
 strange-attractor-like claims from A5-family artifacts.
 
-The renewed 2026-06-30 A5 automation directive keeps this concise single-hive
-preregistration as the active source of truth for the bounded A5 stage. That
-directive overrides the prior closed/no-op recommendation only for preserving
-this preregistration and exercising the smallest checked-in deterministic
-smoke/pilot scaffold. It does not authorize broad A5 tuning, A7-family
-mechanics, dashboards, external integrations, or downstream multi-hive
-coupling.
+The older renewed 2026-06-30 A5 automation directive is no longer the active
+scientific line. Ben subsequently selected the analytic delayed-map pivot, not
+A5.2. The concise A5 preregistration and scaffold remain negative background
+and accounting guardrails only; they do not authorize broad A5 tuning, A5.2
+implementation, A7-family mechanics, dashboards, external integrations, or
+downstream multi-hive coupling.
 
 The scaffold remains intentionally single-hive and deterministic. It keeps the
 existing action set and artifact contract, adds a hidden periodic demand-share
@@ -99,22 +98,17 @@ pairings, preservation targets, timing/target-alignment breaks, future null
 families, and matched-surrogate invalidation rule explicit before residual
 interpretation.
 
-Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
-closed without a fresh preregistration. Ben's 2026-06-28 decision opened the
-A7.2 delayed artifact-mediated endogenous-prediction direction, now historical:
+Broader A5 seed sweeps, new A5 predictor knobs, A5 rescue diagnostics, and A5.2
+implementation remain closed. Ben's 2026-06-28 decision opened the A7.2 delayed
+artifact-mediated endogenous-prediction direction, now historical:
 `docs/a5_family_exit_and_a7_2_decision_preregistration.md`. Ben's 2026-06-29
-follow-up opened A7.3 one-hive dimensionless delayed dynamics as a later
-historical direction. The current 2026-06-30 automation prompt explicitly
-selects the bounded A5 single-hive preregistration/scaffold stage again; it
-does not reopen A5 rescue tuning beyond that surface.
+follow-up opened A7.3 one-hive dimensionless delayed dynamics as later
+historical context. The active line is now the analytic delayed-map pivot
+described below.
 
-The next bounded A5 design gate is preregistered, but not implemented, in
-`docs/a5_2_endogenous_delayed_prediction_spend_preregistration.md`. A5.2 asks
-whether endogenous, delayed prediction-spend decisions can create useful
-partially predictable residual collective states after spend, work-budget,
-timing-broken, and accounting controls. It does not authorize simulator
-mechanics, seed sweeps, dashboards, integrations, A7 mechanics, or multi-hive
-coupling until Ben explicitly selects A5.2 for implementation.
+The A5.2 design gate remains preregistered, but not implemented, in
+`docs/a5_2_endogenous_delayed_prediction_spend_preregistration.md`. It is not
+the current next step.
 
 The current bounded read-only follow-up is preregistered in
 `docs/a5_resource_bounded_residual_compression_preregistration.md`. It
