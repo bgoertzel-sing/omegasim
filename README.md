@@ -158,6 +158,20 @@ larger grid. It does not authorize simulator mechanics, A5/A7 reruns,
 dashboards, external integrations, broader seeds, multi-hive coupling, or
 promotion language.
 
+The checked-in null gate runs those four preregistered conditions and writes
+only summary diagnostics plus manifest artifacts:
+
+```bash
+python -m ohdyn.analytic_delayed_map_null_gate \
+  --config configs/analytic_delayed_map_null_gate.yaml \
+  --out runs/analytic_delayed_map_null_gate_seed1
+```
+
+It does not write per-tick simulator `metrics.csv` or `events.csv` artifacts.
+The seed-1 smoke is diagnostic only; bounded unsaturated active dynamics with
+mixed null deltas close the gate conservatively rather than supporting
+attractor, lobe, or semantic-dynamics claims.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question

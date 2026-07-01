@@ -16,25 +16,34 @@ oracle-nontriviality, compression, and guardrail criteria did not support
 residual-structure promotion.
 
 The active analytic-map surface now includes the standalone deterministic
-analytic delayed map, grid preflight, and null-gate preregistration. Continue
-from `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
+analytic delayed map, grid preflight, null-gate preregistration, and the
+implemented four-condition null-gate runner. Continue from
+`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`, and the
-existing analytic smoke/preflight artifacts. The next work should remain
-mathematical and deterministic before adding simulator mechanics.
-
-Prior A5 smoke/analyzer evidence remains negative background: intermediate
-predictors improved forecast skill, but residual/null,
-oracle-nontriviality, compression, and guardrail criteria did not support
-residual-structure promotion. The analytic delayed-map work at 09:18-09:56 PDT
-remains prior context, not the active line for this A5 automation pass.
+existing analytic smoke/preflight/null-gate artifacts. The next work should
+remain mathematical and deterministic before adding simulator mechanics.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
-`strategic_change_level: major` and `notify_ben: true`. Treat that as a
-governance warning and negative A5 context; do not use it to expand A5 beyond
-the preregistered bounded scaffold in the current request.
+`strategic_change_level: minor` and `notify_ben: false`. Its recommendation to
+verify the guard and then implement only the preregistered four-condition
+standalone null runner was accepted. The guard opened for the analytic
+delayed-map null gate before this implementation.
 
 ## Latest Changes
 
+- 2026-07-01 07:51 PDT analytic null-gate implementation: added
+  `ohdyn.analytic_delayed_map_null_gate`,
+  `configs/analytic_delayed_map_null_gate.yaml`, README command documentation,
+  and focused deterministic regression coverage. The runner emits exactly the
+  preregistered four conditions (`active_delayed_nonlinear`, `no_delay`,
+  `linearized_response`, `delay_shuffled_history`) with boundedness,
+  saturation, lifted-history, recurrence-surrogate, finite-time local
+  divergence, and active-vs-null delta diagnostics. It writes only
+  `config.yaml`, `manifest.yaml`, `null_gate_summary.csv`, and `summary.md`;
+  no simulator `metrics.csv`/`events.csv`, A5/A7 runs, dashboards,
+  integrations, broader seeds, or multi-hive coupling were added. The seed-1
+  smoke was bounded and unsaturated but mixed across null deltas, so the gate
+  closes conservatively as `fail_closed_mixed_or_null_equivalent`.
 - 2026-07-01 07:25 PDT guarded verification checkpoint: added
   `docs/results/a5_single_hive_guarded_verification_20260701_0725.md` after
   rerunning only the bounded deterministic A5 smoke/comparison/analyzer surface.
@@ -340,6 +349,25 @@ the preregistered bounded scaffold in the current request.
 
 ## Verification
 
+- 2026-07-01 07:51 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `should_noop=false`, `repo_write_allowed=true`,
+  `strategic_change_level=minor`, `notify_ben=false`, and recommended the
+  analytic delayed-map null-gate refinement.
+- 2026-07-01 07:51 PDT focused null-gate regression:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k analytic_delayed_map_null -q`
+  passed (`2 passed, 685 deselected`).
+- 2026-07-01 07:51 PDT null-gate smoke:
+  `.venv-conda/bin/python -m ohdyn.analytic_delayed_map_null_gate --config configs/analytic_delayed_map_null_gate.yaml --out /tmp/omegasim_analytic_null_gate_seed1_20260701`
+  completed with four summary rows and only `config.yaml`, `manifest.yaml`,
+  `null_gate_summary.csv`, and `summary.md`. Active row: boundedness `pass`,
+  saturation fraction `0.0`, recurrence-surrogate delta `0.074561`,
+  finite-time local divergence `-0.120137`, and gate status
+  `fail_closed_mixed_or_null_equivalent`.
+- 2026-07-01 07:51 PDT syntax check:
+  `.venv-conda/bin/python -m py_compile ohdyn/analytic_delayed_map.py ohdyn/analytic_delayed_map_null_gate.py tests/test_run_harness.py`
+  passed.
+- 2026-07-01 07:51 PDT whitespace check: `git diff --check` passed.
 - 2026-07-01 07:25 PDT focused A5 regression slice:
   `.venv-conda/bin/python3.11 -m pytest tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
   passed (`3 passed`).
@@ -1198,14 +1226,16 @@ the preregistered bounded scaffold in the current request.
 
 ## Blockers
 
-No environment blocker. Broader A5 work and A5.2 implementation are not
-authorized. The scientific challenge is now to make the analytic delayed-map
-pivot small enough to be mathematically interpretable while still exposing the
-delayed nonlinear self-coupling axes needed for strange-attractor-oriented
-search.
+No environment blocker. Broader A5 work, A5.2 implementation, A7-family work,
+dashboards, external integrations, downstream multi-hive coupling, and
+promotion language remain unauthorized. The current analytic null-gate seed-1
+result is conservative: active dynamics are bounded and unsaturated, but the
+no-delay, linearized-response, and delay-shuffled-history deltas are mixed, so
+this gate does not justify a phase diagram without a new preregistered
+mechanism rationale.
 
 ## Recommended Next Step
 
-- Recommended next step: run the analytic delayed-map null-gate refinement
-  specified in
-  `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`.
+- Recommended next step: preregister a small mechanism-rich analytic
+  micro-society map or close the analytic pivot, explicitly addressing why the
+  current null-gate failed closed before adding any new simulator mechanics.

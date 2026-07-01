@@ -320,6 +320,13 @@ from ohdyn.analytic_delayed_map_grid_preflight import (
     GRID_PREFLIGHT_STATUS,
     run_analytic_delayed_map_grid_preflight,
 )
+from ohdyn.analytic_delayed_map_null_gate import (
+    NULL_GATE_CONDITIONS,
+    NULL_GATE_FIELDS,
+    NULL_GATE_SCIENTIFIC_STATUS,
+    NULL_GATE_STATUS,
+    run_analytic_delayed_map_null_gate,
+)
 from ohdyn.run import run_experiment
 
 
@@ -430,6 +437,7 @@ ANALYTIC_DELAYED_MAP_SMOKE = Path("configs/analytic_delayed_map_smoke.yaml")
 ANALYTIC_DELAYED_MAP_GRID_PREFLIGHT = Path(
     "configs/analytic_delayed_map_grid_preflight.yaml"
 )
+ANALYTIC_DELAYED_MAP_NULL_GATE = Path("configs/analytic_delayed_map_null_gate.yaml")
 THREE_HIVE_RING_CONTRACT_VALIDATION = Path(
     "configs/three_hive_ring_contract_validation.yaml"
 )
@@ -667,6 +675,75 @@ def test_analytic_delayed_map_grid_preflight_writes_summary_only_artifacts(
     assert manifest["rows"] == 4
     summary = (out_dir / "summary.md").read_text()
     assert "read-only preflight reports grid-level diagnostics only" in summary
+    assert "strange-attractor-like claims" in summary
+
+
+def test_analytic_delayed_map_null_gate_emits_preregistered_conditions(
+    tmp_path: Path,
+) -> None:
+    rows_a = run_analytic_delayed_map_null_gate(
+        config_path=ANALYTIC_DELAYED_MAP_NULL_GATE,
+        out_dir=tmp_path / "null_gate_a",
+    )
+    rows_b = run_analytic_delayed_map_null_gate(
+        config_path=ANALYTIC_DELAYED_MAP_NULL_GATE,
+        out_dir=tmp_path / "null_gate_b",
+    )
+
+    assert rows_a == rows_b
+    assert (
+        tmp_path / "null_gate_a" / "null_gate_summary.csv"
+    ).read_bytes() == (
+        tmp_path / "null_gate_b" / "null_gate_summary.csv"
+    ).read_bytes()
+    assert [row["condition_id"] for row in rows_a] == list(NULL_GATE_CONDITIONS)
+    assert len(rows_a) == 4
+    assert {row["diagnostic_status"] for row in rows_a} == {NULL_GATE_STATUS}
+    assert {row["seed"] for row in rows_a} == {1}
+    assert {row["ticks"] for row in rows_a} == {96}
+    assert rows_a[0]["condition_status"] in {
+        "candidate_for_preregistered_phase_diagram",
+        "fail_closed_active_saturated",
+        "fail_closed_active_unbounded_or_trivial",
+        "fail_closed_mixed_or_null_equivalent",
+    }
+    assert {row["condition_status"] for row in rows_a[1:]} == {"null_summary"}
+    assert rows_a[1]["delay_ticks"] == 0
+    assert all(0.0 <= float(row["saturation_fraction"]) <= 1.0 for row in rows_a)
+
+
+def test_analytic_delayed_map_null_gate_writes_summary_only_artifacts(
+    tmp_path: Path,
+) -> None:
+    out_dir = tmp_path / "analytic_delayed_map_null_gate"
+
+    rows = run_analytic_delayed_map_null_gate(
+        config_path=ANALYTIC_DELAYED_MAP_NULL_GATE,
+        out_dir=out_dir,
+    )
+
+    assert len(rows) == 4
+    for artifact in (
+        "config.yaml",
+        "manifest.yaml",
+        "null_gate_summary.csv",
+        "summary.md",
+    ):
+        assert (out_dir / artifact).exists()
+    assert not (out_dir / "metrics.csv").exists()
+    assert not (out_dir / "events.csv").exists()
+    with (out_dir / "null_gate_summary.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(NULL_GATE_FIELDS)
+        csv_rows = list(csv.DictReader(handle, fieldnames=NULL_GATE_FIELDS))
+    assert len(csv_rows) == 4
+    manifest = yaml.safe_load((out_dir / "manifest.yaml").read_text())
+    assert manifest["status"] == NULL_GATE_STATUS
+    assert manifest["scientific_status"] == NULL_GATE_SCIENTIFIC_STATUS
+    assert manifest["conditions"] == list(NULL_GATE_CONDITIONS)
+    assert manifest["no_simulator_artifacts"] == ["metrics.csv", "events.csv"]
+    summary = (out_dir / "summary.md").read_text()
+    assert "standalone analytic null gate" in summary
+    assert "does not write per-tick simulator metrics" in summary
     assert "strange-attractor-like claims" in summary
 
 
