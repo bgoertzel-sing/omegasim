@@ -599,6 +599,9 @@ def _design_manifest(
         },
         "promotion_gate": _promotion_gate_manifest(generated_configs),
         "endpoint_evidence_map": _endpoint_evidence_map(),
+        "cheap_high_level_regularities_contract": (
+            _cheap_high_level_regularities_contract()
+        ),
         "comparison_readiness_contract": _comparison_readiness_contract(),
         "fail_closed_decision_checklist": _fail_closed_decision_checklist(),
         "timing_broken_null_controls": [
@@ -944,6 +947,35 @@ def _fail_closed_decision_checklist() -> dict[str, Any]:
     }
 
 
+def _cheap_high_level_regularities_contract() -> dict[str, Any]:
+    return {
+        "hypothesis": (
+            "A structured residual pattern is scientifically useful only if it "
+            "offers high-level regularities that bounded agents can predict or "
+            "compress more cheaply than the raw task-pressure stream."
+        ),
+        "target_condition_role": "intermediate_budget_candidate",
+        "not_supported_by": [
+            "zero-budget reactive tracking alone",
+            "oracle smoothing alone",
+            "budget-matched timing-broken nulls",
+            "throughput or queue improvement without residual evidence",
+        ],
+        "required_evidence_families": [
+            "forecast_skill_per_prediction_budget",
+            "nonzero_structured_forecast_errors",
+            "residual_phase_or_recurrence_after_full_accounting",
+            "high_level_state_predictability_or_compressibility",
+        ],
+        "cost_test": (
+            "The same intermediate-budget condition must show cheaper "
+            "predictability or compression of emergent high-level states after "
+            "full accounting controls and matched surrogate nulls."
+        ),
+        "claim_policy": "fail_closed_until_costed_regularities_survive_nulls",
+    }
+
+
 def _comparison_readiness_contract() -> dict[str, Any]:
     return {
         "purpose": (
@@ -1092,6 +1124,10 @@ def _summary(
             "- artifact: predictive_control_accounting_locks.csv",
             "- decision checklist: predictive_control_design_manifest.yaml "
             "section `fail_closed_decision_checklist`",
+            "- cheap regularities: predictive_control_design_manifest.yaml "
+            "section `cheap_high_level_regularities_contract` keeps "
+            "intermediate-budget residual claims tied to costed predictability "
+            "or compression",
             "- comparison readiness: predictive_control_design_manifest.yaml "
             "section `comparison_readiness_contract` marks residual-structure "
             "claims as analyzer-gated",

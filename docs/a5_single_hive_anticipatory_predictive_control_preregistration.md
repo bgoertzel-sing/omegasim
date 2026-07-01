@@ -266,6 +266,10 @@ artifact fields and null/control context. It must also include a fail-closed
 decision checklist showing that all promotion requirements must pass for the
 same intermediate-budget condition before residual-structure or
 strange-attractor-like language can be considered. It must also include a
+cheap-high-level-regularities contract stating that a structured residual
+pattern is scientifically useful only if bounded agents can predict or compress
+its high-level regularities more cheaply than the raw task-pressure stream after
+full accounting and matched surrogate nulls. It must also include a
 comparison-readiness contract that marks which facts the paired comparison can
 evaluate directly and which residual-structure claims require the separate
 residual-accounting analyzer. This manifest is not a new mechanic; it is an

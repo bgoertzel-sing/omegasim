@@ -5892,6 +5892,27 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert design_manifest["endpoint_evidence_map"][
         "backlog_age_completion_starvation_and_volatility_guardrails"
     ]["must_not_be_interpreted_as_dynamics_evidence"] is True
+    cheap_regularities = design_manifest["cheap_high_level_regularities_contract"]
+    assert "bounded agents can predict or compress" in cheap_regularities["hypothesis"]
+    assert cheap_regularities["target_condition_role"] == (
+        "intermediate_budget_candidate"
+    )
+    assert cheap_regularities["not_supported_by"] == [
+        "zero-budget reactive tracking alone",
+        "oracle smoothing alone",
+        "budget-matched timing-broken nulls",
+        "throughput or queue improvement without residual evidence",
+    ]
+    assert cheap_regularities["required_evidence_families"] == [
+        "forecast_skill_per_prediction_budget",
+        "nonzero_structured_forecast_errors",
+        "residual_phase_or_recurrence_after_full_accounting",
+        "high_level_state_predictability_or_compressibility",
+    ]
+    assert "cheaper predictability or compression" in cheap_regularities["cost_test"]
+    assert cheap_regularities["claim_policy"] == (
+        "fail_closed_until_costed_regularities_survive_nulls"
+    )
     readiness_contract = design_manifest["comparison_readiness_contract"]
     assert "paired comparison can evaluate directly" in readiness_contract["purpose"]
     assert "predictive_control_accounting_locks.csv" in readiness_contract[
@@ -5933,6 +5954,7 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert "## Accounting Locks" in summary
     assert "- pass rows: 16/16" in summary
     assert "fail_closed_decision_checklist" in summary
+    assert "cheap_high_level_regularities_contract" in summary
     assert "comparison_readiness_contract" in summary
 
 

@@ -15,10 +15,11 @@ The active A5 surface remains narrow:
 checked-in deterministic single-hive smoke scaffold, paired seed `5,6`
 comparison, design-manifest audit including resource-bounded prediction-axis
 roles, endpoint evidence mapping, and the fail-closed decision checklist,
-comparison-readiness contract, accounting-lock audit, and read-only residual
-accounting analyzer. No broad A5 tuning, A5.2 implementation, A7-family work,
-dashboards, external integrations, broader seed sweeps, or downstream
-three-hive coupling are authorized.
+cheap-high-level-regularities contract, comparison-readiness contract,
+accounting-lock audit, and read-only residual accounting analyzer. No broad A5
+tuning, A5.2 implementation, A7-family work, dashboards, external
+integrations, broader seed sweeps, or downstream three-hive coupling are
+authorized.
 
 Prior A5 smoke/analyzer evidence remains negative background: intermediate
 predictors improved forecast skill, but residual/null,
@@ -33,6 +34,17 @@ the preregistered bounded scaffold in the current request.
 
 ## Latest Changes
 
+- 2026-06-30 18:20 PDT bounded A5 cheap-regularity audit hardening: the paired
+  A5 comparison design manifest now includes a
+  `cheap_high_level_regularities_contract` tying Ben's resource-bounded
+  prediction hypothesis to a costed evidence rule. A structured residual
+  pattern remains useful only if the same intermediate-budget condition yields
+  cheaper high-level predictability or compression than the raw pressure stream
+  after full accounting and matched surrogate nulls. The comparison summary,
+  concise A5 preregistration, and README now point to this as audit metadata
+  only. No simulator mechanics, new predictor families, broader seeds,
+  dashboards, integrations, A7-family mechanics, or downstream multi-hive
+  coupling were added.
 - 2026-06-30 17:18 PDT bounded A5 comparison-readiness audit hardening: the
   paired A5 comparison design manifest now includes a
   `comparison_readiness_contract` that separates checks directly evaluable from
@@ -175,6 +187,35 @@ the preregistered bounded scaffold in the current request.
 
 ## Verification
 
+- 2026-06-30 18:20 PDT focused cheap-regularity manifest regression:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions -q`
+  passed (`1 passed`).
+- 2026-06-30 18:20 PDT focused A5/guard regression set:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-06-30 18:20 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260701_0000`
+  completed.
+- 2026-06-30 18:20 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260701_0000`
+  completed with 8 comparison rows, 16 single-hive matched-demand run
+  artifacts, 16/16 passing accounting-lock rows, and a design manifest whose
+  `cheap_high_level_regularities_contract` gates intermediate-budget residual
+  claims on costed high-level predictability or compression.
+- 2026-06-30 18:20 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260701_0000 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260701_0000`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-06-30 18:20 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `strategic_change_level=major`, and
+  `notify_ben=true`; the recommended next action remains to review the A5
+  preregistration plus accounting-lock and residual-accounting evidence, then
+  decide whether to authorize a fresh A5.2 implementation gate.
+- 2026-06-30 18:20 PDT syntax and whitespace checks:
+  `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
 - 2026-06-30 17:18 PDT focused comparison-readiness manifest regression:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions -q`
   passed (`1 passed`).
