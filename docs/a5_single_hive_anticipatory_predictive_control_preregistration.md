@@ -166,6 +166,18 @@ scaffold; it does not authorize broader predictor tuning, new simulator
 mechanics, A5.2 implementation, A7-family mechanics, dashboards, integrations,
 or downstream three-hive coupling.
 
+2026-07-01 04:23 PDT current-run checkpoint: this automation pass again treats
+the concise A5 single-hive preregistration as the source of truth for the
+explicitly requested anticipatory predictive-control stage. The document and
+existing scaffold already define the deterministic single-hive setup,
+reactive/linear/nonlinear/high-budget/oracle/null condition roles, scarce
+prediction-budget hypothesis, accounting locks, residual endpoints, guardrails,
+surrogate nulls, and downstream three-hive boundary. This checkpoint permits
+only re-verification of that checked-in smoke/analyzer surface and status
+reconciliation; it does not authorize new mechanics, broader seed sweeps,
+dashboards, integrations, A7-family work, A5.2 implementation, or multi-hive
+coupling.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
