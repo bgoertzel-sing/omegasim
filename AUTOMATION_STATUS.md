@@ -19,9 +19,10 @@ The active analytic-map surface now includes the standalone deterministic
 analytic delayed map, grid preflight, null-gate preregistration, and the
 implemented four-condition null-gate runner. Continue from
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
-`docs/analytic_delayed_map_refinement_null_gate_preregistration.md`, and the
-existing analytic smoke/preflight/null-gate artifacts. The next work should
-remain mathematical and deterministic before adding simulator mechanics.
+`docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
+`docs/analytic_micro_society_map_preregistration.md`, and the existing
+analytic smoke/preflight/null-gate artifacts. The next work should remain
+mathematical and deterministic before adding simulator mechanics.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
 `strategic_change_level: minor` and `notify_ben: false`. Its recommendation to
@@ -31,6 +32,17 @@ delayed-map null gate before this implementation.
 
 ## Latest Changes
 
+- 2026-07-01 08:10 PDT analytic micro-society preregistration: added
+  `docs/analytic_micro_society_map_preregistration.md` after the completed
+  four-condition analytic delayed-map null gate closed conservatively as
+  `fail_closed_mixed_or_null_equivalent`. This accepts the GPT-5.5-Pro
+  recommendation to address the failed null gate before adding mechanics: the
+  first analytic map appears bounded and unsaturated but too contractive or
+  null-equivalent, so the next authorized step is only a future standalone
+  four-state analytic mechanism screen over artifact readiness, prediction
+  spend/error, and fatigue/adaptive threshold state. No implementation,
+  simulator mechanics, A5/A7 reruns, dashboards, external integrations,
+  broader sweeps, promotion language, or multi-hive coupling were added.
 - 2026-07-01 07:51 PDT analytic null-gate implementation: added
   `ohdyn.analytic_delayed_map_null_gate`,
   `configs/analytic_delayed_map_null_gate.yaml`, README command documentation,
@@ -349,6 +361,14 @@ delayed-map null gate before this implementation.
 
 ## Verification
 
+- 2026-07-01 08:10 PDT preregistration-only guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
+  `should_noop=false`, and `repo_write_allowed=true` for the analytic pivot.
+- 2026-07-01 08:10 PDT preregistration-only whitespace check:
+  `git diff --check` passed.
+- 2026-07-01 08:10 PDT focused analytic null-gate regression:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k analytic_delayed_map_null -q`
+  passed (`2 passed, 685 deselected`).
 - 2026-07-01 07:51 PDT guard check:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
   `should_noop=false`, `repo_write_allowed=true`,
@@ -1231,11 +1251,14 @@ dashboards, external integrations, downstream multi-hive coupling, and
 promotion language remain unauthorized. The current analytic null-gate seed-1
 result is conservative: active dynamics are bounded and unsaturated, but the
 no-delay, linearized-response, and delay-shuffled-history deltas are mixed, so
-this gate does not justify a phase diagram without a new preregistered
-mechanism rationale.
+this gate does not justify a phase diagram. The new analytic micro-society
+preregistration is a mechanism rationale only; it does not itself authorize
+promotion language or simulator mechanics.
 
 ## Recommended Next Step
 
-- Recommended next step: preregister a small mechanism-rich analytic
-  micro-society map or close the analytic pivot, explicitly addressing why the
-  current null-gate failed closed before adding any new simulator mechanics.
+- Recommended next step: implement only the preregistered standalone analytic
+  micro-society map runner and focused deterministic tests from
+  `docs/analytic_micro_society_map_preregistration.md`, with no A5/A7
+  simulator calls, dashboards, integrations, broader sweeps, or multi-hive
+  coupling.

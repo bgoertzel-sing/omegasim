@@ -172,6 +172,14 @@ The seed-1 smoke is diagnostic only; bounded unsaturated active dynamics with
 mixed null deltas close the gate conservatively rather than supporting
 attractor, lobe, or semantic-dynamics claims.
 
+Because that null gate closed conservatively, the next active analytic-map
+design gate is preregistered in
+`docs/analytic_micro_society_map_preregistration.md`. It allows only a future
+standalone four-state analytic micro-society mechanism screen over artifact
+readiness, prediction spend/error, and fatigue/adaptive threshold state. It
+does not authorize simulator mechanics, A5/A7 reruns, dashboards, external
+integrations, multi-hive coupling, broader sweeps, or promotion language.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question
