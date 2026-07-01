@@ -703,11 +703,30 @@ def _resource_bounded_prediction_axis(
         )
     return {
         "hypothesis": (
-            "Prediction is a scarce managed resource: zero budget is reactive, "
-            "oracle prediction may smooth away interesting residual dynamics, "
-            "and intermediate budgets are interpretable only if their residuals "
-            "remain structured after accounting and budget-matched timing-broken nulls."
+            "Inter-agent or inter-role prediction is a scarce managed resource: "
+            "zero budget is reactive, oracle prediction may smooth away "
+            "interesting residual dynamics, and intermediate budgets are "
+            "interpretable only if their residuals remain structured after "
+            "accounting and budget-matched timing-broken nulls."
         ),
+        "scarce_resource_accounting": {
+            "managed_resource": "inter_agent_or_inter_role_prediction",
+            "budget_axis": "none_low_medium_high_oracle",
+            "scarcity_rule": (
+                "Useful anticipation must be evaluated per unit prediction "
+                "budget and, when charged to work, as an explicit transfer from "
+                "available work opportunity rather than hidden extra capacity."
+            ),
+            "intermediate_budget_role": (
+                "Candidate regimes may be interesting because limited prediction "
+                "creates structured forecast errors that agents can partly "
+                "predict or compress at high level."
+            ),
+            "oracle_role": (
+                "Perfect prediction is a smoothing positive control and may erase "
+                "the residual dynamics A5 is designed to test."
+            ),
+        },
         "primary_intermediate_budget_question": (
             "Do intermediate budgets, represented by low, medium, or high "
             "non-oracle prediction budgets, produce richer but still partially "

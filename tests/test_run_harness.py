@@ -5780,7 +5780,27 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
         "nonlinear_high_budget": "nonlinear_high_budget_shuffled",
     }
     resource_axis = design_manifest["resource_bounded_prediction_axis"]
-    assert "Prediction is a scarce managed resource" in resource_axis["hypothesis"]
+    assert "Inter-agent or inter-role prediction is a scarce managed resource" in (
+        resource_axis["hypothesis"]
+    )
+    assert resource_axis["scarce_resource_accounting"] == {
+        "managed_resource": "inter_agent_or_inter_role_prediction",
+        "budget_axis": "none_low_medium_high_oracle",
+        "scarcity_rule": (
+            "Useful anticipation must be evaluated per unit prediction budget and, "
+            "when charged to work, as an explicit transfer from available work "
+            "opportunity rather than hidden extra capacity."
+        ),
+        "intermediate_budget_role": (
+            "Candidate regimes may be interesting because limited prediction creates "
+            "structured forecast errors that agents can partly predict or compress "
+            "at high level."
+        ),
+        "oracle_role": (
+            "Perfect prediction is a smoothing positive control and may erase the "
+            "residual dynamics A5 is designed to test."
+        ),
+    }
     assert (
         "intermediate budgets"
         in resource_axis["primary_intermediate_budget_question"]

@@ -75,16 +75,21 @@ values, control levels, and null contrasts that would have to support it. The
 manifest also makes the resource-bounded prediction axis explicit: reactive is
 the zero-budget baseline, intermediate budgets are candidates only after
 budget-matched null and accounting checks, and oracle is a smoothing positive
-control rather than target dynamics evidence. The manifest now includes a
-cheap-high-level-regularities contract: any structured residual pattern is
-useful only if it gives bounded agents cheaper predictability or compression
-than the raw pressure stream after full accounting and matched surrogate nulls.
-The manifest also includes a fail-closed decision checklist that requires every
-promotion criterion to pass for the same intermediate-budget condition before
-any residual-structure or strange-attractor-like language can be considered. It
-also includes a comparison-readiness contract that separates directly auditable
-comparison facts from residual-structure claims that remain gated on the
-read-only residual-accounting analyzer.
+control rather than target dynamics evidence. It also records a
+scarce-resource accounting subcontract: inter-agent or inter-role prediction is
+the managed resource, useful anticipation must be judged per unit prediction
+budget, and charged prediction spend must be represented as explicit transfer
+from work opportunity rather than hidden extra capacity. The manifest now
+includes a cheap-high-level-regularities contract: any structured residual
+pattern is useful only if it gives bounded agents cheaper predictability or
+compression than the raw pressure stream after full accounting and matched
+surrogate nulls. The manifest also includes a fail-closed decision checklist
+that requires every promotion criterion to pass for the same
+intermediate-budget condition before any residual-structure or
+strange-attractor-like language can be considered. It also includes a
+comparison-readiness contract that separates directly auditable comparison
+facts from residual-structure claims that remain gated on the read-only
+residual-accounting analyzer.
 
 Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
 closed without a fresh preregistration. Ben's 2026-06-28 decision opened the

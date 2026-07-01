@@ -34,6 +34,19 @@ the preregistered bounded scaffold in the current request.
 
 ## Latest Changes
 
+- 2026-06-30 19:20 PDT bounded A5 scarce-resource manifest hardening: the
+  paired A5 comparison design manifest now preserves Ben's exact
+  resource-bounded prediction hypothesis as machine-readable audit metadata.
+  It names inter-agent or inter-role prediction as the scarce managed resource,
+  records the none/low/medium/high/oracle budget axis, requires per-budget
+  evaluation and explicit work-opportunity transfer when prediction is charged
+  to work, treats intermediate budgets as candidate regimes because limited
+  prediction can create structured forecast errors, and keeps oracle prediction
+  as a smoothing positive control rather than target evidence. The concise A5
+  preregistration, README, and focused manifest regression were updated. No
+  simulator mechanics, new predictor families, broader seeds, dashboards,
+  integrations, A7-family mechanics, or downstream multi-hive coupling were
+  added.
 - 2026-06-30 18:20 PDT bounded A5 cheap-regularity audit hardening: the paired
   A5 comparison design manifest now includes a
   `cheap_high_level_regularities_contract` tying Ben's resource-bounded
@@ -187,6 +200,33 @@ the preregistered bounded scaffold in the current request.
 
 ## Verification
 
+- 2026-06-30 19:20 PDT focused A5/guard regression set:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_automation_guard_opens_for_explicit_bounded_a5_override tests/test_run_harness.py::test_automation_guard_closes_current_a5_when_latest_review_blocks_scaffold tests/test_run_harness.py::test_a5_predictive_control_smoke_records_forecast_metrics tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions tests/test_run_harness.py::test_a5_residual_accounting_analyzes_existing_comparison -q`
+  passed (`5 passed`).
+- 2026-06-30 19:20 PDT single-run smoke:
+  `.venv-conda/bin/python -m ohdyn.run --config configs/a5_predictive_linear_smoke.yaml --seed 5 --out /tmp/omegasim_a5_bounded_linear_smoke_seed5_20260630_1920`
+  completed.
+- 2026-06-30 19:20 PDT paired comparison:
+  `.venv-conda/bin/python -m ohdyn.compare_predictive_control --seeds 5 6 --out /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_1920`
+  completed with 8 comparison rows, 16 matched-demand run artifacts, 16/16
+  accounting-lock rows, and a design manifest containing the
+  `scarce_resource_accounting` contract for inter-agent or inter-role
+  prediction as a scarce managed resource.
+- 2026-06-30 19:20 PDT residual accounting:
+  `.venv-conda/bin/python -m ohdyn.analyze_a5_residual_accounting --compare-dir /tmp/omegasim_a5_bounded_predictive_compare_seed5_6_20260630_1920 --out /tmp/omegasim_a5_bounded_residual_accounting_seed5_6_20260630_1920`
+  completed with 1280 metric rows and 720 effect rows; promotion decision was
+  fail closed for linear, nonlinear, and high-budget nonlinear predictors.
+- 2026-06-30 19:20 PDT guard check:
+  `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=closed_awaiting_preregistration`, `should_noop=true`,
+  `repo_write_allowed=false`, `closed_reasons=["strategy_review_a5_recovery_required"]`,
+  `strategic_change_level=major`, and `notify_ben=true`; the recommended next
+  action remains to review the A5 preregistration plus accounting-lock and
+  residual-accounting evidence, then decide whether to authorize a fresh A5.2
+  implementation gate.
+- 2026-06-30 19:20 PDT syntax and whitespace checks:
+  `.venv-conda/bin/python -m py_compile ohdyn/compare_predictive_control.py tests/test_run_harness.py`
+  passed, and `git diff --check` passed.
 - 2026-06-30 18:20 PDT focused cheap-regularity manifest regression:
   `.venv-conda/bin/python -m pytest tests/test_run_harness.py::test_a5_predictive_control_comparison_runs_matched_conditions -q`
   passed (`1 passed`).

@@ -126,6 +126,17 @@ audit/provenance metadata only; it does not add simulator mechanics, predictor
 families, broader seeds, dashboards, integrations, A7-family work, or
 multi-hive coupling.
 
+2026-06-30 19:20 PDT checkpoint: the comparison design manifest must preserve
+Ben's exact resource-bounded prediction hypothesis as machine-readable
+audit/provenance metadata. It must name inter-agent or inter-role prediction as
+the scarce managed resource, record the none/low/medium/high/oracle budget
+axis, require per-budget evaluation and explicit work-opportunity transfer when
+prediction is charged to work, treat intermediate budgets as candidate regimes
+because limited prediction can create structured forecast errors, and keep
+oracle prediction as a smoothing positive control that may erase the residual
+dynamics A5 is designed to test. This is not a new mechanic, predictor family,
+seed sweep, or promotion claim.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -260,21 +271,23 @@ phase-shifted timing-broken null controls, oracle-positive-control role, and
 fail-closed promotion gate. It must make the resource-bounded prediction axis
 explicit by separating the zero-budget reactive baseline, intermediate-budget
 candidate conditions, their budget-matched timing-broken nulls, and oracle
-smoothing. It must also include an endpoint evidence map that links every
-preregistered endpoint family to the required comparison or residual accounting
-artifact fields and null/control context. It must also include a fail-closed
-decision checklist showing that all promotion requirements must pass for the
-same intermediate-budget condition before residual-structure or
-strange-attractor-like language can be considered. It must also include a
-cheap-high-level-regularities contract stating that a structured residual
-pattern is scientifically useful only if bounded agents can predict or compress
-its high-level regularities more cheaply than the raw task-pressure stream after
-full accounting and matched surrogate nulls. It must also include a
-comparison-readiness contract that marks which facts the paired comparison can
-evaluate directly and which residual-structure claims require the separate
-residual-accounting analyzer. This manifest is not a new mechanic; it is an
-accounting artifact that makes the preregistered design surface explicit before
-residual analysis.
+smoothing. It must also include a scarce-resource accounting subcontract that
+names inter-agent or inter-role prediction as the managed resource and records
+the per-budget/work-transfer interpretation rule. It must also include an
+endpoint evidence map that links every preregistered endpoint family to the
+required comparison or residual accounting artifact fields and null/control
+context. It must also include a fail-closed decision checklist showing that all
+promotion requirements must pass for the same intermediate-budget condition
+before residual-structure or strange-attractor-like language can be considered.
+It must also include a cheap-high-level-regularities contract stating that a
+structured residual pattern is scientifically useful only if bounded agents can
+predict or compress its high-level regularities more cheaply than the raw
+task-pressure stream after full accounting and matched surrogate nulls. It must
+also include a comparison-readiness contract that marks which facts the paired
+comparison can evaluate directly and which residual-structure claims require
+the separate residual-accounting analyzer. This manifest is not a new mechanic;
+it is an accounting artifact that makes the preregistered design surface
+explicit before residual analysis.
 
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The
