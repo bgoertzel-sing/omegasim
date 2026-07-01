@@ -599,6 +599,7 @@ def _design_manifest(
         },
         "promotion_gate": _promotion_gate_manifest(generated_configs),
         "endpoint_evidence_map": _endpoint_evidence_map(),
+        "comparison_readiness_contract": _comparison_readiness_contract(),
         "fail_closed_decision_checklist": _fail_closed_decision_checklist(),
         "timing_broken_null_controls": [
             _null_control_manifest_row(label, config_path)
@@ -943,6 +944,46 @@ def _fail_closed_decision_checklist() -> dict[str, Any]:
     }
 
 
+def _comparison_readiness_contract() -> dict[str, Any]:
+    return {
+        "purpose": (
+            "Separate what the paired comparison can evaluate directly from "
+            "claims that require the residual-accounting analyzer before review."
+        ),
+        "comparison_artifacts": [
+            "predictive_control_comparison_metrics.csv",
+            "predictive_control_effects.csv",
+            "predictive_control_accounting_locks.csv",
+            "predictive_control_design_manifest.yaml",
+        ],
+        "directly_evaluable_in_comparison": [
+            "matched task-arrival, demand, service-capacity, action-opportunity, "
+            "and work-opportunity locks",
+            "prediction budget and prediction-work accounting",
+            "reactive, oracle, and budget-matched timing-broken null condition roles",
+            "forecast skill and future-demand alignment summary contrasts",
+            "backlog, queued-age, completion, starvation, and volatility guardrail "
+            "summaries",
+        ],
+        "requires_residual_accounting_analyzer": [
+            "structured nonzero forecast-error residuals after full accounting controls",
+            "delay-embedding recurrence or return-map structure in residual "
+            "predictive-state variables",
+            "predictability or compressibility of emergent high-level collective states",
+            "any residual phase-structure, lobe-like, or strange-attractor-like interpretation",
+        ],
+        "required_analyzer_command": (
+            "python -m ohdyn.analyze_a5_residual_accounting "
+            "--compare-dir <comparison_dir> --out <analysis_dir>"
+        ),
+        "review_rule": (
+            "The comparison alone can verify accounting readiness but cannot promote "
+            "residual-structure claims; those remain fail-closed until analyzer "
+            "artifacts and matched null contrasts pass the decision checklist."
+        ),
+    }
+
+
 def _null_control_manifest_row(label: str, config_path: Path) -> dict[str, Any]:
     cfg = load_config(config_path)
     assert cfg.predictive_control is not None
@@ -1051,6 +1092,9 @@ def _summary(
             "- artifact: predictive_control_accounting_locks.csv",
             "- decision checklist: predictive_control_design_manifest.yaml "
             "section `fail_closed_decision_checklist`",
+            "- comparison readiness: predictive_control_design_manifest.yaml "
+            "section `comparison_readiness_contract` marks residual-structure "
+            "claims as analyzer-gated",
         ]
     )
     lines.extend(

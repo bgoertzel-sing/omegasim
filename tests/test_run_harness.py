@@ -5892,6 +5892,23 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert design_manifest["endpoint_evidence_map"][
         "backlog_age_completion_starvation_and_volatility_guardrails"
     ]["must_not_be_interpreted_as_dynamics_evidence"] is True
+    readiness_contract = design_manifest["comparison_readiness_contract"]
+    assert "paired comparison can evaluate directly" in readiness_contract["purpose"]
+    assert "predictive_control_accounting_locks.csv" in readiness_contract[
+        "comparison_artifacts"
+    ]
+    assert any(
+        "prediction budget and prediction-work accounting" == item
+        for item in readiness_contract["directly_evaluable_in_comparison"]
+    )
+    assert any(
+        "strange-attractor-like interpretation" in item
+        for item in readiness_contract["requires_residual_accounting_analyzer"]
+    )
+    assert readiness_contract["required_analyzer_command"] == (
+        "python -m ohdyn.analyze_a5_residual_accounting "
+        "--compare-dir <comparison_dir> --out <analysis_dir>"
+    )
     assert {row["status"] for row in accounting_rows} == {"pass"}
     assert {row["matches_reactive_task_stream"] for row in accounting_rows} == {"true"}
     assert {row["matches_reactive_demand_stream"] for row in accounting_rows} == {"true"}
@@ -5916,6 +5933,7 @@ def test_a5_predictive_control_comparison_runs_matched_conditions(
     assert "## Accounting Locks" in summary
     assert "- pass rows: 16/16" in summary
     assert "fail_closed_decision_checklist" in summary
+    assert "comparison_readiness_contract" in summary
 
 
 def test_a5_residual_accounting_analyzes_existing_comparison(

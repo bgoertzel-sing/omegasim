@@ -115,6 +115,17 @@ intermediate-budget promotion rule. This is reviewer-facing audit metadata
 only; it does not add simulator mechanics, predictor families, broader seeds,
 or promotion language.
 
+2026-06-30 17:18 PDT checkpoint: the comparison design manifest must also
+separate comparison-level readiness checks from analyzer-gated residual claims.
+The paired comparison may directly audit matched streams, budgets, condition
+roles, forecast summaries, and guardrail summaries, but recurrence,
+return-map, compression, residual phase-structure, lobe-like, or
+strange-attractor-like interpretation remains fail-closed until the separate
+residual-accounting analyzer artifacts and null contrasts pass. This is
+audit/provenance metadata only; it does not add simulator mechanics, predictor
+families, broader seeds, dashboards, integrations, A7-family work, or
+multi-hive coupling.
+
 ## Hypothesis
 
 Inter-agent or inter-role prediction is itself a scarce managed resource. Zero
@@ -254,9 +265,12 @@ preregistered endpoint family to the required comparison or residual accounting
 artifact fields and null/control context. It must also include a fail-closed
 decision checklist showing that all promotion requirements must pass for the
 same intermediate-budget condition before residual-structure or
-strange-attractor-like language can be considered. This manifest is not a new
-mechanic; it is an accounting artifact that makes the preregistered design
-surface explicit before residual analysis.
+strange-attractor-like language can be considered. It must also include a
+comparison-readiness contract that marks which facts the paired comparison can
+evaluate directly and which residual-structure claims require the separate
+residual-accounting analyzer. This manifest is not a new mechanic; it is an
+accounting artifact that makes the preregistered design surface explicit before
+residual analysis.
 
 As of the renewed 2026-06-29 A5 automation request, this document is the active
 single-hive preregistration for the bounded predictive-control stage. The

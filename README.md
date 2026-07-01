@@ -78,7 +78,10 @@ budget-matched null and accounting checks, and oracle is a smoothing positive
 control rather than target dynamics evidence. The manifest now includes a
 fail-closed decision checklist that requires every promotion criterion to pass
 for the same intermediate-budget condition before any residual-structure or
-strange-attractor-like language can be considered.
+strange-attractor-like language can be considered. It also includes a
+comparison-readiness contract that separates directly auditable comparison
+facts from residual-structure claims that remain gated on the read-only
+residual-accounting analyzer.
 
 Broader A5 seed sweeps, new A5 predictor knobs, or A5 rescue diagnostics remain
 closed without a fresh preregistration. Ben's 2026-06-28 decision opened the
