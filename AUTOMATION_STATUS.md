@@ -19,17 +19,19 @@ The active analytic-map surface now includes the standalone deterministic
 analytic delayed map, grid preflight, null-gate preregistration, implemented
 four-condition null-gate runner, micro-society preregistration, implemented
 four-condition micro-society mechanism-screen runner, a preregistered
-post-micro decision gate, and the completed read-only post-micro decision note.
+post-micro decision gate, the completed read-only post-micro decision note, and
+the preregistered standalone nonlinear-dynamics workbench gate.
 Continue from
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
 `docs/analytic_micro_society_map_preregistration.md`,
 `docs/analytic_post_micro_decision_gate_preregistration.md`,
-`docs/results/analytic_post_micro_decision_gate_20260701.md`, and the existing
+`docs/results/analytic_post_micro_decision_gate_20260701.md`,
+`docs/nonlinear_dynamics_workbench_preregistration.md`, and the existing
 analytic smoke/preflight/null-gate/micro-society artifacts. The next work
-should be a preregistration for a standalone nonlinear-dynamics workbench
-before adding any new analytic runner, workbench implementation, or simulator
-mechanics.
+should implement only the preregistered standalone nonlinear-dynamics
+workbench smoke runner and focused deterministic tests before any phase
+diagram, simulator mechanics, or broader sweep.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
 `strategic_change_level: minor` and `notify_ben: false`. Its recommendation to
@@ -39,6 +41,17 @@ delayed-map null gate before this implementation.
 
 ## Latest Changes
 
+- 2026-07-01 09:30 PDT nonlinear-dynamics workbench preregistration: added
+  `docs/nonlinear_dynamics_workbench_preregistration.md` and a README pointer.
+  The preregistration freezes a four-row smoke-scale diagnostic panel over
+  `rho`, `delta`, `mu`, `kappa`, and `nu`; required boundedness, clipping,
+  lifted-history, recurrence-surrogate, phase-shuffled, finite-time divergence,
+  periodic-renormalization Lyapunov-style, and local spectral-radius checks;
+  matched no-delay, linearized-response, delay-shuffled-history,
+  state-shuffled, and phase-shuffled controls; fail-closed regime labels; and
+  a summary-only artifact contract. It does not implement the runner and does
+  not authorize simulator mechanics, A5/A7 reruns, dashboards, external
+  integrations, broad sweeps, promotion language, or multi-hive coupling.
 - 2026-07-01 09:28 PDT post-micro decision synthesis: added
   `docs/results/analytic_post_micro_decision_gate_20260701.md` and a README
   pointer. The read-only decision selects a future separately preregistered
@@ -405,6 +418,14 @@ delayed-map null gate before this implementation.
 
 ## Verification
 
+- 2026-07-01 09:30 PDT nonlinear-dynamics workbench preregistration guard
+  check: `.venv-conda/bin/python -m ohdyn.automation_guard` reported
+  `state=open`, `should_noop=false`, `repo_write_allowed=true`,
+  `strategic_change_level=minor`, `notify_ben=false`, and recommended only the
+  preregistered standalone nonlinear-dynamics workbench smoke runner plus
+  focused deterministic tests.
+- 2026-07-01 09:30 PDT nonlinear-dynamics workbench preregistration whitespace
+  check: `git diff --check` passed.
 - 2026-07-01 08:52 PDT post-micro decision-gate guard check:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
   `should_noop=false`, and `repo_write_allowed=true` with the post-micro
@@ -1317,13 +1338,14 @@ the analytic micro-society seed-1 gate both closed conservatively. The
 micro-society active condition was bounded and unsaturated, but the
 active-vs-null diagnostics were mixed/null-equivalent and finite-time local
 divergence was negative; this does not justify a phase diagram, simulator
-mechanics, or promotion language. The post-micro decision note selected only a
-future preregistered nonlinear-dynamics workbench; workbench implementation is
-not authorized until that preregistration exists.
+mechanics, or promotion language. The nonlinear-dynamics workbench is now
+preregistered, but only as a standalone smoke-scale diagnostic gate; phase
+diagrams, simulator mechanics, broader sweeps, and promotion language remain
+unauthorized.
 
 ## Recommended Next Step
 
-- Recommended next step: preregister the standalone nonlinear-dynamics
-  workbench, including fixed diagnostics, null families, output contract,
-  verification commands, and fail-closed interpretation rules, before any
-  workbench implementation.
+- Recommended next step: implement only the preregistered standalone
+  nonlinear-dynamics workbench smoke runner and focused deterministic tests,
+  preserving the summary-only artifact contract and fail-closed interpretation
+  rules.

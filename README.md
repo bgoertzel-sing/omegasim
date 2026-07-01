@@ -209,6 +209,14 @@ future separately preregistered nonlinear-dynamics workbench as the next
 bounded direction, before any further analytic runner or OmegaSim simulator
 mechanics.
 
+That workbench is now preregistered in
+`docs/nonlinear_dynamics_workbench_preregistration.md`. It authorizes only a
+standalone smoke-scale diagnostic workbench over the existing dimensionless
+axes `rho`, `delta`, `mu`, `kappa`, and `nu`, with contraction, clipping,
+recurrence-null, and Lyapunov-style checks. It does not authorize simulator
+mechanics, broader sweeps, dashboards, external integrations, multi-hive
+coupling, or promotion language.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question
