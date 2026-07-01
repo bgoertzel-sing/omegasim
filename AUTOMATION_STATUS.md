@@ -20,7 +20,8 @@ analytic delayed map, grid preflight, null-gate preregistration, implemented
 four-condition null-gate runner, micro-society preregistration, implemented
 four-condition micro-society mechanism-screen runner, a preregistered
 post-micro decision gate, the completed read-only post-micro decision note, and
-the implemented standalone nonlinear-dynamics workbench gate.
+the implemented standalone nonlinear-dynamics workbench gate and completed
+workbench closure note.
 Continue from
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
@@ -28,11 +29,14 @@ Continue from
 `docs/analytic_post_micro_decision_gate_preregistration.md`,
 `docs/results/analytic_post_micro_decision_gate_20260701.md`,
 `docs/nonlinear_dynamics_workbench_preregistration.md`, the checked-in
-`ohdyn.nonlinear_dynamics_workbench` runner, and the existing analytic
-smoke/preflight/null-gate/micro-society/workbench artifacts. The next work
-should be only a read-only nonlinear-workbench closure/decision note over the
-seed-1 smoke labels before any phase diagram, simulator mechanics, or broader
-sweep.
+`ohdyn.nonlinear_dynamics_workbench` runner, and
+`docs/results/nonlinear_dynamics_workbench_closure_seed1_20260701.md`. The
+read-only closure decision stops analytic-map churn at this boundary because
+the seed-1 workbench found only fail-closed contracting fixed/transient labels.
+A5 remains fail-closed and closed; do not reopen A5. Do not start a phase
+diagram, simulator mechanics, broader sweep, A5/A7 rerun, promotion-language
+pass, or downstream multi-hive coupling without a fresh preregistered direction
+from Ben.
 
 External strategy review note: the latest GPT-5.5-Pro review is marked
 `strategic_change_level: none` and `notify_ben: false`. Its recommendation to
@@ -42,8 +46,28 @@ implemented. The seed-1 smoke found only fail-closed contracting
 fixed/transient labels, so no phase diagram, simulator mechanics, promotion
 language, or Ben notification is triggered by this result.
 
+## Recommended Next Step
+
+Recommended next step: remain in no-op/awaiting-preregistration state until
+Ben chooses exactly one fresh scientific direction, such as a formal nonlinear
+benchmark-analysis plan or a separately preregistered semantic/artifact
+simulator gate.
+
 ## Latest Changes
 
+- 2026-07-01 10:27 PDT nonlinear-dynamics workbench closure: added
+  `docs/results/nonlinear_dynamics_workbench_closure_seed1_20260701.md` and a
+  README pointer. The read-only closure reviewed the preregistered seed-1
+  workbench smoke and records that all four frozen panel rows were bounded and
+  unsaturated but labeled `fail_closed_contracting_fixed_or_transient`, with
+  negative renormalized Lyapunov-style estimates and local spectral radii below
+  one. The decision is to stop analytic-map churn at this boundary and remain
+  in no-op/awaiting-preregistration state until Ben chooses a fresh scientific
+  direction. The latest GPT-5.5-Pro recommendation was not rejected; its
+  workbench implementation/test recommendation had already been accepted and
+  completed. No phase diagram, simulator mechanics, A5/A7 reruns, dashboards,
+  external integrations, broad sweeps, promotion language, or multi-hive
+  coupling were added.
 - 2026-07-01 10:05 PDT nonlinear-dynamics workbench implementation: added
   `ohdyn.nonlinear_dynamics_workbench`,
   `configs/nonlinear_dynamics_workbench.yaml`, README command documentation,
@@ -437,6 +461,11 @@ language, or Ben notification is triggered by this result.
 
 ## Verification
 
+- 2026-07-01 10:27 PDT closure smoke check:
+  `.venv-conda/bin/python -m ohdyn.nonlinear_dynamics_workbench --config configs/nonlinear_dynamics_workbench.yaml --out /tmp/omegasim_nonlinear_dynamics_workbench_closure_seed1_20260701`
+  completed with exactly the summary-only workbench artifacts. All four rows
+  were labeled `fail_closed_contracting_fixed_or_transient`; no
+  `candidate_noncontractive_bounded_diagnostic_only` row was found.
 - 2026-07-01 10:05 PDT guard and loop health check:
   `.venv-conda/bin/python -m ohdyn.automation_guard` reported `state=open`,
   `should_noop=false`, `repo_write_allowed=true`,

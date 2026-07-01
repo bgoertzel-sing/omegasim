@@ -231,6 +231,14 @@ The seed-1 smoke is diagnostic only. It emits `config.yaml`, `manifest.yaml`,
 `metrics.csv` or `events.csv` artifacts and does not support attractor, lobe,
 semantic-dynamics, or promotion claims.
 
+The read-only closure decision is recorded in
+`docs/results/nonlinear_dynamics_workbench_closure_seed1_20260701.md`. The
+seed-1 workbench labeled all four preregistered panel rows
+`fail_closed_contracting_fixed_or_transient`, so analytic-map churn should stop
+at this boundary pending a fresh preregistered direction from Ben. This does
+not authorize phase diagrams, simulator mechanics, broad sweeps, A5/A7 reruns,
+promotion language, or downstream multi-hive coupling.
+
 The completed A5 follow-up gate is recorded in
 `docs/a5_1_prediction_spend_competition_preregistration.md`. A5.1 stayed
 single-hive and deterministic, but asked the narrower resource-bounded question
