@@ -11,10 +11,28 @@ Allowed work for the current loop: small local CPU implementation, deterministic
 
 ## Recommended Next Step
 
-Add a concise A6 matched-excess smoke result note documenting the seed `1,2` fail-closed component scores and no-promotion boundary.
+Preregister exactly one narrow A6 refinement-or-closure decision gate responding to the seed `1,2` matched-excess fail-closed result; do not add mechanics or run broader sweeps before that gate is written.
 
 ## Latest Changes
 
+- 2026-07-01 22:07 PDT A6 matched-excess result note: added
+  `docs/results/a6_matched_excess_smoke_seed1_2_20260701.md` after a fresh
+  bounded `/tmp` seed `1,2` A6 comparison plus read-only analysis. The
+  functional candidate gate remained fail-closed: logistic `candidate_rate=1.0`,
+  matched control `condition=linear`, matched control `candidate_rate=1.0`,
+  `matched_excess_candidate_rate=0.0`,
+  `matched_excess_role_nonperiodic_rate=0.0`,
+  `matched_excess_functional_movement_rate=0.0`,
+  `matched_excess_bounded_unsaturated_rate=0.0`,
+  `matched_excess_artifact_maturity_delta=0.0`,
+  `matched_excess_provenance_debt_improvement=0.0`,
+  `matched_excess_risk_improvement=0.0`,
+  `matched_excess_prediction_error_abs_improvement=0.009219`,
+  `matched_excess_functional_score=0.009219`, and
+  `gate_status=fail_closed_controls_match_or_exceed`. This accepts the
+  scientifically sensible GPT-5.5-Pro matched-control emphasis and records the
+  no-promotion boundary. No broad sweep, A5/A7/analytic-map rerun, dashboard,
+  external integration, real LLM call, or multi-hive coupling was added.
 - 2026-07-01 21:49 PDT A6 matched excess-over-control scoring: extended the
   read-only `a6_functional_candidate_gate.csv` artifact in
   `ohdyn.analyze_a6_logistic_appraisal` with the selected matched-control
