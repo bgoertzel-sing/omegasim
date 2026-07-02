@@ -5,54 +5,13 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-06-30 instruction selects the analytic
-delayed-map pivot as the active next OmegaSim gate, not A5.2.
+Source-of-truth status: Ben's 2026-07-01 21:00 PDT direction reopens OmegaSim on the A6 thresholded-appraisal single-hive path. Continue from `docs/a6_thresholded_appraisal_reboot_direction_20260701.md` and the existing A6/A7 preregistration notes. The old analytic delayed-map workbench line remains historical background; the active work is now a cognitively meaningful thresholded-appraisal model with artifact/provenance/risk/prediction-error dynamics and appraisal-vs-control comparisons.
 
-This supersedes the stale bounded-A5 automation prompt and the 2026-07-01
-bounded-A5 verification checkpoints. It does not reopen A5.2 or authorize broad
-A5 simulator work. Prior A5 smoke/analyzer evidence remains negative
-background: intermediate predictors improved forecast skill, but residual/null,
-oracle-nontriviality, compression, and guardrail criteria did not support
-residual-structure promotion.
-
-The active analytic-map surface now includes the standalone deterministic
-analytic delayed map with an explicit lifted-state contraction diagnostic,
-grid preflight with contraction summaries, null-gate preregistration,
-implemented four-condition null-gate runner, micro-society preregistration,
-implemented four-condition micro-society mechanism-screen runner, a
-preregistered post-micro decision gate, the completed read-only post-micro
-decision note, and the implemented standalone nonlinear-dynamics workbench
-gate and completed workbench closure note.
-Continue from
-`docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
-`docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
-`docs/analytic_micro_society_map_preregistration.md`,
-`docs/analytic_post_micro_decision_gate_preregistration.md`,
-`docs/results/analytic_post_micro_decision_gate_20260701.md`,
-`docs/nonlinear_dynamics_workbench_preregistration.md`, the checked-in
-`ohdyn.nonlinear_dynamics_workbench` runner, and
-`docs/results/nonlinear_dynamics_workbench_closure_seed1_20260701.md`. The
-read-only closure decision stops analytic-map churn at this boundary because
-the seed-1 workbench found only fail-closed contracting fixed/transient labels.
-A5 remains fail-closed and closed; do not reopen A5. Do not start a phase
-diagram, simulator mechanics, broader sweep, A5/A7 rerun, promotion-language
-pass, or downstream multi-hive coupling without a fresh preregistered direction
-from Ben.
-
-External strategy review note: the latest GPT-5.5-Pro review is marked
-`strategic_change_level: none` and `notify_ben: false`. Its recommendation to
-verify the guard and implement only the preregistered standalone
-nonlinear-dynamics workbench runner and deterministic tests was accepted and
-implemented. The seed-1 smoke found only fail-closed contracting
-fixed/transient labels, so no phase diagram, simulator mechanics, promotion
-language, or Ben notification is triggered by this result.
+Allowed work for the current loop: small local CPU implementation, deterministic tests, smoke-scale A6 sweeps, and concise result notes. Use controls and fail-closed interpretation. Do not use paid compute or broad GPU sweeps unless separately approved.
 
 ## Recommended Next Step
 
-Recommended next step: remain in no-op/awaiting-preregistration state until
-Ben chooses exactly one fresh scientific direction, such as a formal nonlinear
-benchmark-analysis plan or a separately preregistered semantic/artifact
-simulator gate.
+Implement or align the A6 functional candidate gate: require bounded nonperiodic role dynamics plus artifact/debt/risk/prediction-error tail movement, report appraisal/linear/shuffled candidate counts, and if controls pass at similar or higher rates, add matched excess-over-control scoring before any denser phase diagram or promotion language.
 
 ## Latest Changes
 
