@@ -41,6 +41,7 @@ def read_automation_state(
     status_overrides_a5_recovery_close = _status_overrides_a5_recovery_close(
         current_status
     )
+    status_awaits_fresh_direction = _status_awaits_fresh_direction(current_status)
     status_opens_analytic_pivot = _status_opens_analytic_delayed_map_pivot(
         current_status
     )
@@ -48,7 +49,9 @@ def read_automation_state(
     closed_after_a7_2_three_hive = _status_closes_after_a7_2_three_hive(
         current_status
     )
-    current_line_closed = closed_after_a7_2_three_hive and not active_a7_3
+    current_line_closed = (
+        closed_after_a7_2_three_hive or status_awaits_fresh_direction
+    ) and not active_a7_3
     if closed_reasons and active_a7_3 and not _status_closes_active_a5(current_status):
         closed_reasons = []
     if (
@@ -277,6 +280,8 @@ def _closed_reasons(*, status: str, review: str) -> list[str]:
         status_reasons.append("automation_status_a5_post_smoke_review")
     if not status_reasons and _status_closes_active_a5(status):
         status_reasons.append("automation_status_a5_closed")
+    if not status_reasons and _status_awaits_fresh_direction(status):
+        status_reasons.append("automation_status_awaiting_fresh_direction")
     if _status_closes_after_a7_2_three_hive(status):
         status_reasons.append("automation_status_a7_2_three_hive_failed_closed")
     if (
@@ -318,6 +323,27 @@ def _status_closes_after_a7_2_three_hive(status: str) -> bool:
             "one-hive dimensionless delayed-dynamics sweep" in normalized_status
             or "ben wants another scientific direction" in normalized_status
             or "ben should be notified" in normalized_status
+        )
+    )
+
+
+def _status_awaits_fresh_direction(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        (
+            "await ben's next scientific direction or explicit preregistration request"
+            in normalized_status
+            or "await bens next scientific direction or explicit preregistration request"
+            in normalized_status
+            or "until ben gives a fresh scientific direction or explicit preregistration request"
+            in normalized_status
+        )
+        and (
+            "no further omegasim mechanics or result runs" in normalized_status
+            or "no further mechanics or result runs" in normalized_status
+            or "do not broaden a6 seeds" in normalized_status
+            or "closed fail-closed at the current model boundary"
+            in normalized_status
         )
     )
 

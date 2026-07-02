@@ -3986,6 +3986,70 @@ def test_automation_guard_closes_after_a7_2_and_three_hive_fail_closed(
     )
 
 
+def test_automation_guard_closes_for_current_a6_model_boundary(
+    tmp_path: Path,
+) -> None:
+    status_path = tmp_path / "AUTOMATION_STATUS.md"
+    review_path = tmp_path / "latest-review.md"
+    a5_path = (
+        tmp_path
+        / "docs"
+        / "a5_single_hive_anticipatory_predictive_control_preregistration.md"
+    )
+    a5_path.parent.mkdir()
+    a5_path.write_text("# A5 Single-Hive Anticipatory Predictive-Control Preregistration\n")
+    action = (
+        "Await Ben's next scientific direction or explicit preregistration "
+        "request before adding further OmegaSim mechanics or runs."
+    )
+    status_path.write_text(
+        "\n".join(
+            [
+                "# OmegaSim Automation Status",
+                "",
+                "## Current Focus",
+                "",
+                "Source-of-truth status: the reopened A6 thresholded-appraisal "
+                "single-hive path has closed fail-closed at the current model "
+                "boundary.",
+                "",
+                "Allowed work for the current loop: no further OmegaSim mechanics "
+                "or result runs until Ben gives a fresh scientific direction or "
+                "explicit preregistration request. Do not broaden A6 seeds, add "
+                "A6 rescue mechanisms, rerun A5/A7/analytic-map gates, add "
+                "dashboards/external integrations/real LLM calls, or start "
+                "downstream multi-hive coupling from the closed A6 result.",
+                "",
+                "## Recommended Next Step",
+                "",
+                action,
+            ]
+        )
+    )
+    review_path.write_text(
+        "\n".join(
+            [
+                "strategic_change_level: minor",
+                "notify_ben: false",
+                "recommended_next_action: Recover guard/loop liveness, then "
+                "implement the smallest A6 thresholded-appraisal functional gate.",
+            ]
+        )
+    )
+
+    state = read_automation_state(status_path, review_path, a5_path)
+
+    assert state["state"] == "closed_awaiting_preregistration"
+    assert state["should_noop"] is True
+    assert state["repo_write_allowed"] is False
+    assert state["closed_reasons"] == ["automation_status_awaiting_fresh_direction"]
+    assert state["recommended_next_action"] == action
+    assert state["review_recommended_next_action"] == (
+        "Recover guard/loop liveness, then implement the smallest A6 "
+        "thresholded-appraisal functional gate."
+    )
+
+
 def test_automation_guard_current_a5_status_overrides_go_a7_3_review(
     tmp_path: Path,
 ) -> None:

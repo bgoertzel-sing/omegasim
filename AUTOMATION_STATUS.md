@@ -28,6 +28,22 @@ before adding further OmegaSim mechanics or runs.
 
 ## Latest Changes
 
+- 2026-07-01 23:01 PDT automation guard closure alignment: updated
+  `ohdyn.automation_guard` so the current source-of-truth A6 closure wording
+  (`Await Ben's next scientific direction or explicit preregistration request`)
+  is treated as an explicit closed/no-op state even when the historical A5
+  preregistration file still exists. Added a regression for the current A6
+  fail-closed model-boundary status. The live guard now reports
+  `state=closed_awaiting_preregistration`, `repo_write_allowed=false`,
+  `should_noop=true`, and
+  `closed_reasons=["automation_status_awaiting_fresh_direction"]`. The latest
+  GPT-5.5-Pro A6 implementation recommendation is deferred because the newer
+  repository status records that A6 was already implemented, matched-control
+  tested, and closed fail-closed. No OmegaSim mechanics, result runs, broad
+  sweeps, A5/A7/analytic-map reruns, dashboards, external integrations, real
+  LLM calls, paid compute, or multi-hive coupling were added. Focused guard
+  tests passed (`31 passed, 664 deselected`). The next step remains to await
+  Ben's next scientific direction or explicit preregistration request.
 - 2026-07-01 22:42 PDT A6 current-model closure decision: added
   `docs/results/a6_refinement_or_closure_decision_20260701.md` as the
   preregistered read-only synthesis after the seed `1,2` matched-excess A6
