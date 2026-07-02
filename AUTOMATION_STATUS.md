@@ -11,10 +11,28 @@ Allowed work for the current loop: small local CPU implementation, deterministic
 
 ## Recommended Next Step
 
-Implement or align the A6 functional candidate gate: require bounded nonperiodic role dynamics plus artifact/debt/risk/prediction-error tail movement, report appraisal/linear/shuffled candidate counts, and if controls pass at similar or higher rates, add matched excess-over-control scoring before any denser phase diagram or promotion language.
+Add matched excess-over-control scoring details for the A6 functional candidate gate, because the smoke fixture currently shows logistic candidates but linear/shuffled controls pass at the same candidate rate.
 
 ## Latest Changes
 
+- 2026-07-01 21:23 PDT A6 functional candidate gate alignment: added a
+  read-only `a6_functional_candidate_gate.csv` artifact to
+  `ohdyn.analyze_a6_logistic_appraisal`. The gate reports condition-level
+  candidate counts for logistic, linear, phase-shuffled, and
+  threshold-shuffled runs using bounded/unsaturated checks, nonperiodic
+  role/action traces, and artifact maturity / provenance debt / risk /
+  prediction-error movement. It also reports logistic matched control
+  candidate rate and matched excess candidate rate before any refinement or
+  promotion language. Focused A6 tests, `py_compile`, `git diff --check`, and
+  the full `tests/test_run_harness.py` suite passed. A bounded `/tmp` seed
+  `1,2` smoke comparison plus read-only analysis produced logistic
+  `candidate_rate=1.0`, matched control `candidate_rate=1.0`, and
+  `gate_status=fail_closed_controls_match_or_exceed`, so this run records the
+  GPT-5.5-Pro recommendation as accepted and fail-closed: controls matched the
+  appraisal gate at smoke scale, and the next step is matched
+  excess-over-control scoring rather than promotion language. No broad sweep,
+  A5/A7/analytic-map rerun, dashboard, external integration, real LLM call, or
+  multi-hive coupling was added.
 - 2026-07-01 17:41 PDT analytic delayed-map contraction hardening: added an
   explicit finite-difference local spectral-radius check over the lifted
   delayed state to `ohdyn.analytic_delayed_map`, exposed

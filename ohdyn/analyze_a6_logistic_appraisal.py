@@ -297,6 +297,23 @@ A6_1_PILOT_NULL_GATE_FIELDS = (
     "gate_status",
     "interpretation",
 )
+A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS = (
+    "condition",
+    "seed_count",
+    "role_nonperiodic_seed_count",
+    "functional_movement_seed_count",
+    "bounded_unsaturated_seed_count",
+    "candidate_seed_count",
+    "candidate_rate",
+    "mean_artifact_maturity_delta",
+    "mean_provenance_debt_delta",
+    "mean_risk_delta",
+    "mean_prediction_error_abs_delta",
+    "matched_control_candidate_rate",
+    "matched_excess_candidate_rate",
+    "gate_status",
+    "interpretation",
+)
 _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
@@ -311,6 +328,7 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_artifact_provenance.csv",
     "a6_logistic_appraisal_source_accounting.csv",
     "a6_1_pilot_null_gate.csv",
+    "a6_functional_candidate_gate.csv",
     "summary.md",
 )
 _A6_CONTROL_PAIRS = (
@@ -534,6 +552,7 @@ def run_a6_logistic_appraisal_analysis(
         source_accounting_rows,
         residual_contrast_rollup_rows,
     )
+    functional_candidate_gate_rows = _functional_candidate_gate_rows(compare_path)
     manifest_rows = [
         {
             "control_level": control_level,
@@ -617,6 +636,11 @@ def run_a6_logistic_appraisal_analysis(
         pilot_null_gate_rows,
         A6_1_PILOT_NULL_GATE_FIELDS,
     )
+    _write_csv(
+        output_path / "a6_functional_candidate_gate.csv",
+        functional_candidate_gate_rows,
+        A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             compare_path,
@@ -633,6 +657,7 @@ def run_a6_logistic_appraisal_analysis(
             artifact_provenance_rows,
             source_accounting_rows,
             pilot_null_gate_rows,
+            functional_candidate_gate_rows,
             missing_required_fields,
         )
     )
@@ -653,6 +678,7 @@ def run_a6_logistic_appraisal_analysis(
         "artifact_provenance_count": len(artifact_provenance_rows),
         "source_accounting_count": len(source_accounting_rows),
         "a6_1_pilot_null_gate_count": len(pilot_null_gate_rows),
+        "functional_candidate_gate_count": len(functional_candidate_gate_rows),
         "missing_required_fields": sorted(missing_required_fields),
     }
 
@@ -2421,6 +2447,217 @@ def _control_summary_interpretation(residual_status: str) -> str:
     return "residual contrast incomplete; do not interpret as mechanism evidence"
 
 
+def _functional_candidate_gate_rows(compare_path: Path) -> list[dict[str, Any]]:
+    per_seed: list[dict[str, Any]] = []
+    for run_dir in sorted(path for path in compare_path.iterdir() if path.is_dir()):
+        config_path = run_dir / "config.yaml"
+        metrics_path = run_dir / "metrics.csv"
+        manifest_path = run_dir / "manifest.yaml"
+        if not (config_path.exists() and metrics_path.exists() and manifest_path.exists()):
+            continue
+        config = yaml.safe_load(config_path.read_text()) or {}
+        logistic_appraisal = config.get("logistic_appraisal")
+        if not isinstance(logistic_appraisal, dict):
+            continue
+        metrics = [_with_a6_derived_fields(row) for row in _read_csv(metrics_path)]
+        if not metrics:
+            continue
+        per_seed.append(
+            _functional_candidate_seed_row(
+                condition=str(logistic_appraisal.get("condition", "")),
+                metrics=metrics,
+            )
+        )
+
+    rows: list[dict[str, Any]] = []
+    by_condition = {
+        condition: [row for row in per_seed if row["condition"] == condition]
+        for condition in sorted({str(row["condition"]) for row in per_seed})
+    }
+    control_rates = [
+        _candidate_rate(rows_for_condition)
+        for condition, rows_for_condition in by_condition.items()
+        if condition != "logistic"
+    ]
+    matched_control_candidate_rate = max(control_rates) if control_rates else 0.0
+    for condition, seed_rows in by_condition.items():
+        candidate_rate = _candidate_rate(seed_rows)
+        excess_rate = (
+            candidate_rate - matched_control_candidate_rate
+            if condition == "logistic"
+            else ""
+        )
+        gate_status = _functional_candidate_gate_status(
+            condition=condition,
+            candidate_rate=candidate_rate,
+            matched_control_candidate_rate=matched_control_candidate_rate,
+        )
+        rows.append(
+            {
+                "condition": condition,
+                "seed_count": len(seed_rows),
+                "role_nonperiodic_seed_count": _count_true(seed_rows, "role_nonperiodic"),
+                "functional_movement_seed_count": _count_true(seed_rows, "functional_movement"),
+                "bounded_unsaturated_seed_count": _count_true(seed_rows, "bounded_unsaturated"),
+                "candidate_seed_count": _count_true(seed_rows, "candidate"),
+                "candidate_rate": round(candidate_rate, 6),
+                "mean_artifact_maturity_delta": _rounded_mean(
+                    [float(row["artifact_maturity_delta"]) for row in seed_rows]
+                ),
+                "mean_provenance_debt_delta": _rounded_mean(
+                    [float(row["provenance_debt_delta"]) for row in seed_rows]
+                ),
+                "mean_risk_delta": _rounded_mean(
+                    [float(row["risk_delta"]) for row in seed_rows]
+                ),
+                "mean_prediction_error_abs_delta": _rounded_mean(
+                    [float(row["prediction_error_abs_delta"]) for row in seed_rows]
+                ),
+                "matched_control_candidate_rate": round(matched_control_candidate_rate, 6)
+                if condition == "logistic"
+                else "",
+                "matched_excess_candidate_rate": round(float(excess_rate), 6)
+                if excess_rate != ""
+                else "",
+                "gate_status": gate_status,
+                "interpretation": _functional_candidate_interpretation(gate_status),
+            }
+        )
+    return rows
+
+
+def _functional_candidate_seed_row(
+    *,
+    condition: str,
+    metrics: list[dict[str, str]],
+) -> dict[str, Any]:
+    first = metrics[0]
+    last = metrics[-1]
+    artifact_maturity_delta = _mean_values_float(
+        [
+            _number(last, "a6_artifact_readiness_tick")
+            - _number(first, "a6_artifact_readiness_tick"),
+            _number(last, "a6_artifact_implementation_maturity_tick")
+            - _number(first, "a6_artifact_implementation_maturity_tick"),
+            _number(last, "a6_artifact_communication_maturity_tick")
+            - _number(first, "a6_artifact_communication_maturity_tick"),
+        ]
+    )
+    provenance_debt_delta = (
+        _number(last, "a6_artifact_provenance_debt_tick")
+        - _number(first, "a6_artifact_provenance_debt_tick")
+    )
+    risk_delta = (
+        _number(last, "a6_artifact_risk_tick")
+        - _number(first, "a6_artifact_risk_tick")
+    )
+    prediction_error_abs_delta = abs(
+        _number(last, "a6_latent_prediction_error_mean_tick")
+    ) - abs(_number(first, "a6_latent_prediction_error_mean_tick"))
+    functional_movement = (
+        artifact_maturity_delta > 0.01
+        or provenance_debt_delta < -0.005
+        or risk_delta < -0.005
+        or prediction_error_abs_delta < -0.005
+    )
+    role_nonperiodic = _role_sequence_nonperiodic(metrics)
+    bounded_unsaturated = _bounded_unsaturated(metrics)
+    return {
+        "condition": condition,
+        "role_nonperiodic": role_nonperiodic,
+        "functional_movement": functional_movement,
+        "bounded_unsaturated": bounded_unsaturated,
+        "candidate": role_nonperiodic and functional_movement and bounded_unsaturated,
+        "artifact_maturity_delta": round(artifact_maturity_delta, 6),
+        "provenance_debt_delta": round(provenance_debt_delta, 6),
+        "risk_delta": round(risk_delta, 6),
+        "prediction_error_abs_delta": round(prediction_error_abs_delta, 6),
+    }
+
+
+def _role_sequence_nonperiodic(metrics: list[dict[str, str]]) -> bool:
+    dominant_actions = [
+        max(_A6_ACTIONS, key=lambda action: (_action_tick(row, action), action))
+        for row in metrics
+    ]
+    unique_actions = set(dominant_actions)
+    if len(unique_actions) < 3:
+        return False
+    most_common_share = max(dominant_actions.count(action) for action in unique_actions) / len(
+        dominant_actions
+    )
+    if most_common_share >= 0.75:
+        return False
+    for period in (1, 2, 3, 4):
+        if len(dominant_actions) > period * 2 and all(
+            action == dominant_actions[index % period]
+            for index, action in enumerate(dominant_actions)
+        ):
+            return False
+    return True
+
+
+def _bounded_unsaturated(metrics: list[dict[str, str]]) -> bool:
+    bounded_fields = (
+        "a6_latent_activation_mean_tick",
+        "a6_latent_focus_mean_tick",
+        "a6_latent_fatigue_mean_tick",
+        "a6_artifact_novelty_tick",
+        "a6_artifact_coherence_tick",
+        "a6_artifact_actionability_tick",
+        "a6_artifact_provenance_debt_tick",
+        "a6_artifact_risk_tick",
+        "a6_artifact_contradiction_tick",
+        "a6_artifact_readiness_tick",
+        "a6_artifact_implementation_maturity_tick",
+        "a6_artifact_communication_maturity_tick",
+    )
+    for row in metrics:
+        if any(not 0.0 <= _number(row, field) <= 1.0 for field in bounded_fields):
+            return False
+        if not -1.0 <= _number(row, "a6_latent_prediction_error_mean_tick") <= 1.0:
+            return False
+    final_values = [_number(metrics[-1], field) for field in bounded_fields]
+    return any(0.05 < value < 0.95 for value in final_values)
+
+
+def _candidate_rate(rows: list[dict[str, Any]]) -> float:
+    return _count_true(rows, "candidate") / len(rows) if rows else 0.0
+
+
+def _count_true(rows: list[dict[str, Any]], field: str) -> int:
+    return sum(1 for row in rows if bool(row[field]))
+
+
+def _mean_values_float(values: list[float]) -> float:
+    return sum(values) / len(values) if values else 0.0
+
+
+def _functional_candidate_gate_status(
+    *,
+    condition: str,
+    candidate_rate: float,
+    matched_control_candidate_rate: float,
+) -> str:
+    if condition != "logistic":
+        return "control_candidate_rate_reported"
+    if candidate_rate <= 0.0:
+        return "fail_closed_no_logistic_candidates"
+    if matched_control_candidate_rate >= candidate_rate:
+        return "fail_closed_controls_match_or_exceed"
+    return "candidate_exceeds_controls_smoke_only"
+
+
+def _functional_candidate_interpretation(gate_status: str) -> str:
+    if gate_status == "candidate_exceeds_controls_smoke_only":
+        return "functional candidate count exceeds controls, but smoke scale still bars promotion language"
+    if gate_status == "fail_closed_controls_match_or_exceed":
+        return "linear or shuffled controls pass at similar or higher rates; use matched excess-over-control scoring before refinement"
+    if gate_status == "fail_closed_no_logistic_candidates":
+        return "logistic appraisal produced no functional smoke candidates"
+    return "control candidate count reported for matched excess-over-control comparison"
+
+
 def _with_a6_derived_fields(row: dict[str, str]) -> dict[str, str]:
     enriched = dict(row)
     enriched["a6_artifact_utility_tick"] = str(_artifact_utility(row))
@@ -2567,6 +2804,7 @@ def _summary(
     artifact_provenance_rows: list[dict[str, Any]],
     source_accounting_rows: list[dict[str, Any]],
     pilot_null_gate_rows: list[dict[str, Any]],
+    functional_candidate_gate_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -2590,6 +2828,7 @@ def _summary(
         f"- artifact provenance rows: {len(artifact_provenance_rows)}",
         f"- source accounting rows: {len(source_accounting_rows)}",
         f"- A6.1 pilot null gate rows: {len(pilot_null_gate_rows)}",
+        f"- A6 functional candidate gate rows: {len(functional_candidate_gate_rows)}",
         "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
@@ -2615,6 +2854,7 @@ def _summary(
             "- Artifact provenance rows attribute same-tick artifact field deltas to recorded A6 events/actions for alias-risk audit only.",
             "- Source accounting rows audit A6.1 required fields, artifact-delta reconstruction, and per-source shares for schema/control eligibility only.",
             "- A6.1 pilot null gate rows compare logistic endpoints to source-preserving nulls with backlog-adjusted productivity; they are smoke-scale gate diagnostics only.",
+            "- A6 functional candidate gate rows require bounded unsaturated dynamics, nonperiodic role/action traces, and artifact/debt/risk/prediction-error movement before matched excess-over-control scoring.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",

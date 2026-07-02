@@ -42,6 +42,7 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_CONTROL_DELTA_FIELDS,
     A6_CONTROL_SUMMARY_FIELDS,
     A6_EFFECTS_CONSISTENCY_FIELDS,
+    A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS,
     A6_RESIDUAL_PREFLIGHT_FIELDS,
     A6_RESIDUAL_CONTRAST_ROLLUP_FIELDS,
     A6_RESIDUAL_CONTRAST_SUMMARY_FIELDS,
@@ -19348,10 +19349,16 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     with (out_dir / "a6_logistic_appraisal_source_accounting.csv").open() as handle:
         assert next(csv.reader(handle)) == list(A6_SOURCE_ACCOUNTING_FIELDS)
         source_rows = list(csv.DictReader(handle, fieldnames=A6_SOURCE_ACCOUNTING_FIELDS))
+    with (out_dir / "a6_functional_candidate_gate.csv").open() as handle:
+        assert next(csv.reader(handle)) == list(A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS)
+        functional_gate_rows = list(
+            csv.DictReader(handle, fieldnames=A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS)
+        )
     assert {row["status"] for row in consistency_rows} == {"missing_comparison_csv"}
     assert {row["status"] for row in effects_rows} == {"missing_effects_csv"}
     assert result["artifact_provenance_count"] == 20
     assert result["source_accounting_count"] == 20
+    assert result["functional_candidate_gate_count"] == 2
     assert {row["artifact_field"] for row in provenance_rows} >= {
         "a6_artifact_readiness_tick",
         "a6_artifact_utility_tick",
@@ -19362,6 +19369,16 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     }
     assert result["comparison_consistency_count"] == 2
     assert result["effects_consistency_count"] == 3
+    assert {row["condition"] for row in functional_gate_rows} == {"logistic", "linear"}
+    logistic_gate = next(row for row in functional_gate_rows if row["condition"] == "logistic")
+    assert logistic_gate["candidate_seed_count"] != ""
+    assert logistic_gate["matched_control_candidate_rate"] != ""
+    assert logistic_gate["matched_excess_candidate_rate"] != ""
+    assert logistic_gate["gate_status"] in {
+        "candidate_exceeds_controls_smoke_only",
+        "fail_closed_controls_match_or_exceed",
+        "fail_closed_no_logistic_candidates",
+    }
     summary = (out_dir / "summary.md").read_text()
     assert "- reran simulations: no" in summary
     assert "## Control Levels" in summary
@@ -19369,6 +19386,7 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     assert "- effects consistency rows: 3" in summary
     assert "- artifact provenance rows: 20" in summary
     assert "- source accounting rows: 20" in summary
+    assert "- A6 functional candidate gate rows: 2" in summary
 
 
 def test_a6_read_only_analysis_writes_paired_control_deltas(
@@ -19908,6 +19926,55 @@ def test_a6_read_only_analysis_writes_source_accounting_audit(
     summary = (out_dir / "summary.md").read_text()
     assert "- source accounting rows: 40" in summary
     assert "artifact-delta reconstruction" in summary
+
+
+def test_a6_functional_candidate_gate_reports_matched_control_counts(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "compare"
+    for config_path in (
+        A6_LOGISTIC_APPRAISAL,
+        A6_LINEAR_APPRAISAL,
+        A6_THRESHOLD_SHUFFLED,
+        A6_PHASE_SHUFFLED,
+    ):
+        run_experiment(config_path, seed=4, out_dir=compare_dir / config_path.stem)
+
+    out_dir = tmp_path / "analysis"
+    result = run_a6_logistic_appraisal_analysis(compare_dir, out_dir)
+
+    assert result["functional_candidate_gate_count"] == 4
+    with (out_dir / "a6_functional_candidate_gate.csv").open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert list(rows[0]) == list(A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS)
+    assert [row["condition"] for row in rows] == [
+        "linear",
+        "logistic",
+        "phase_shuffled",
+        "threshold_shuffled",
+    ]
+    assert {row["seed_count"] for row in rows} == {"1"}
+    assert all(row["candidate_rate"] != "" for row in rows)
+    assert all(row["functional_movement_seed_count"] != "" for row in rows)
+    assert all(row["bounded_unsaturated_seed_count"] != "" for row in rows)
+
+    logistic_row = next(row for row in rows if row["condition"] == "logistic")
+    assert logistic_row["matched_control_candidate_rate"] != ""
+    assert logistic_row["matched_excess_candidate_rate"] != ""
+    assert logistic_row["gate_status"] in {
+        "candidate_exceeds_controls_smoke_only",
+        "fail_closed_controls_match_or_exceed",
+        "fail_closed_no_logistic_candidates",
+    }
+    for control_row in (row for row in rows if row["condition"] != "logistic"):
+        assert control_row["matched_control_candidate_rate"] == ""
+        assert control_row["matched_excess_candidate_rate"] == ""
+        assert control_row["gate_status"] == "control_candidate_rate_reported"
+
+    summary = (out_dir / "summary.md").read_text()
+    assert "- A6 functional candidate gate rows: 4" in summary
+    assert "matched excess-over-control scoring" in summary
 
 
 def test_a6_smoke_comparison_helper_runs_only_preregistered_fixtures(
