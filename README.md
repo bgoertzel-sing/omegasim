@@ -305,6 +305,15 @@ narrow decision gate is preregistered in
 only a read-only closure-or-one-refinement decision note before any additional
 A6 mechanics or runs.
 
+The current bounded follow-up design gate is preregistered in
+`docs/a6_bounded_prediction_resource_gate_preregistration.md`. It accepts the
+2026-07-02 GPT-5.5-Pro recommendation to avoid a dense A6 phase diagram after
+matched controls closed the current model, and instead freezes a tiny
+prediction-resource axis with residual controls and budget-matched replay
+nulls. This is a design artifact only; it does not authorize broad sweeps,
+promotion language, dashboards, external integrations, or downstream
+multi-hive coupling.
+
 The four checked-in smoke fixtures are:
 
 ```bash

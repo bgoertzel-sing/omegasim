@@ -25,21 +25,46 @@ actions, or true scientific ambiguity.
 
 Allowed work for the current loop: proceed locally with a fail-closed bounded
 next slice that does not claim strange attractors unless matched controls are
-beaten. The next mandate is to add residual-state/lobe discovery beyond
-`argmax(role_prob)` and run a denser high-gain/moderate-coupling A6 phase
-diagram around the matched-excess region (`gain=5.0`, `coupling in {0.35,0.60}`,
-`delay in {0,3,7}`), with appraisal/linear/shuffled controls, recurrence or
-compressibility summaries, exact commands, artifacts, and a RUN note.
+beaten. The 2026-07-02 GPT-5.5-Pro strategic review marked the dense
+high-gain/moderate-coupling A6 phase diagram as a major direction-shift risk
+after the current model closed control-equivalent, with `notify_ben: true`.
+That recommendation is accepted as scientifically sensible: replace the dense
+A6 tuning mandate with the tiny preregistered bounded prediction-resource gate
+in `docs/a6_bounded_prediction_resource_gate_preregistration.md`, plus residual
+controls and budget-matched replay nulls. Ben should be notified that this run
+changed direction away from the dense A6 phase diagram before result-bearing
+runs.
 
 ## Recommended Next Step
 
-Run the next collective-loop mandate locally: residual-state/lobe discovery
-beyond role argmax plus a denser high-gain/moderate-coupling A6 phase diagram
-around the matched-excess region, preserving matched controls and fail-closed
-claim language.
+Implement only the schema/analyzer scaffolding needed for the
+`a6_bounded_prediction_resource_gate_preregistration.md` residual-state summary
+and budget-matched replay controls; run a tiny deterministic smoke only if the
+status file still authorizes that bounded prediction-resource gate.
 
 ## Latest Changes
 
+- 2026-07-02 12:25 PDT A6 bounded prediction-resource pivot preregistration:
+  accepted the latest GPT-5.5-Pro major strategic review recommendation to
+  avoid the dense high-gain/moderate-coupling A6 phase diagram after the
+  current A6 thresholded-appraisal model closed control-equivalent. Added
+  `docs/a6_bounded_prediction_resource_gate_preregistration.md` as a
+  design-only gate freezing a tiny zero/intermediate/high-oracle prediction
+  budget axis, amplitude-matched linear, phase-shuffled, threshold-shuffled,
+  budget-matched replay, and role/agent-shuffled controls, plus residual
+  confound checks and budget-efficiency endpoints. Updated the automation guard
+  with an explicit reopened A6 collective-loop recognizer so current scoped
+  mandate language can override historical closure text while older explicit
+  A6 closure wording still closes, and added a focused regression. Ben should
+  be notified because the strategy review header records
+  `strategic_change_level: major` and `notify_ben: true`. No dense phase
+  diagram, simulator result run, A5/A7/analytic rerun, dashboard, external
+  integration, real LLM call, paid compute, or multi-hive coupling was added.
+  Verification passed: focused automation-guard tests
+  (`32 passed, 664 deselected`), `py_compile` for `ohdyn/automation_guard.py`,
+  `git diff --check`, and the live automation guard reporting `state=open`,
+  `repo_write_allowed=true`, `strategic_change_level=major`, and
+  `notify_ben=true`.
 - 2026-07-01 23:01 PDT automation guard closure alignment: updated
   `ohdyn.automation_guard` so the current source-of-truth A6 closure wording
   (`Await Ben's next scientific direction or explicit preregistration request`)

@@ -45,6 +45,9 @@ def read_automation_state(
     status_opens_analytic_pivot = _status_opens_analytic_delayed_map_pivot(
         current_status
     )
+    status_opens_a6_collective_loop = _status_opens_active_a6_collective_loop(
+        current_status
+    )
     active_a7_3 = status_opens_a7_3 or review_opens_a7_3
     closed_after_a7_2_three_hive = _status_closes_after_a7_2_three_hive(
         current_status
@@ -59,6 +62,8 @@ def read_automation_state(
         and _status_opens_active_a7_2_then_three_hive(current_status)
         and not current_line_closed
     ):
+        closed_reasons = []
+    if closed_reasons and status_opens_a6_collective_loop and not current_line_closed:
         closed_reasons = []
     if (
         a5_preregistration_active
@@ -463,6 +468,18 @@ def _status_opens_analytic_delayed_map_pivot(status: str) -> bool:
         and "active next omegasim gate" in normalized_status
         and "not a5.2" in normalized_status
         and "does not reopen a5.2" in normalized_status
+    )
+
+
+def _status_opens_active_a6_collective_loop(status: str) -> bool:
+    normalized_status = _normalize(status)
+    return (
+        "operating mode correction" in normalized_status
+        and "omegasim should not stall after each experiment waiting for him"
+        in normalized_status
+        and "use the collective experiment loop" in normalized_status
+        and "allowed work for the current loop: proceed locally" in normalized_status
+        and "reopened a6 thresholded-appraisal single-hive path" in normalized_status
     )
 
 
