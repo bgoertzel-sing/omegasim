@@ -59,6 +59,8 @@ DIAGNOSTIC_FIELDS = (
     "recurrence_surrogate_delta",
     "finite_time_local_divergence",
     "paired_final_separation",
+    "local_lifted_spectral_radius",
+    "contraction_status",
     "diagnostic_status",
 )
 
@@ -125,42 +127,17 @@ def _simulate_path(
 
     for tick in range(ticks):
         delayed = history[-delay_ticks] if delay_ticks > 0 and len(history) >= delay_ticks else state
-        nonlinear_drive = math.tanh(
-            controls["rho"] * (delayed[0] - 0.5)
-            + controls["kappa"] * (delayed[2] - delayed[1])
-        )
         demand_wave = math.sin((tick + seed) / 7.0)
-        prediction_target = _sigmoid(
-            nonlinear_drive
-            + 0.35 * (state[2] - 0.5)
-            - 0.25 * state[1]
-            + 0.10 * demand_wave
-            + noise[tick, 0]
+        next_state, prediction_spend, lost_work_fraction = _next_state(
+            state=state,
+            delayed=delayed,
+            demand_wave=demand_wave,
+            controls=controls,
+            noise_tick=noise[tick],
+            relaxation_weight=relaxation_weight,
+            memory_persistence=memory_persistence,
+            memory_update=memory_update,
         )
-        prediction_spend = min(0.65, max(0.0, prediction_target))
-        lost_work_fraction = min(0.60, 0.35 * prediction_spend)
-        resource_target = _sigmoid(
-            0.70
-            + 0.25 * demand_wave
-            - lost_work_fraction
-            - 0.30 * state[0]
-            + controls["kappa"] * (delayed[1] - 0.5)
-            + noise[tick, 1]
-        )
-        memory_target = np.clip(
-            0.55 * state[0] + 0.25 * delayed[0] + 0.20 * (1.0 - state[1]) + noise[tick, 2],
-            0.0,
-            1.0,
-        )
-        next_state = np.array(
-            [
-                (1.0 - relaxation_weight) * state[0] + relaxation_weight * prediction_target,
-                (1.0 - relaxation_weight) * state[1] + relaxation_weight * resource_target,
-                memory_persistence * state[2] + memory_update * memory_target,
-            ],
-            dtype=float,
-        )
-        next_state = np.clip(next_state, 0.0, 1.0)
         drift_norm = float(np.linalg.norm(next_state - state))
         noise_norm = float(np.linalg.norm(noise[tick]))
         rows.append(
@@ -206,6 +183,14 @@ def _diagnostics(
     initial_sep = float(np.linalg.norm(paired_states[0] - states[0]))
     final_sep = float(np.linalg.norm(paired_states[-1] - states[-1]))
     divergence = math.log(max(final_sep, 1e-12) / max(initial_sep, 1e-12)) / max(ticks - 1, 1)
+    spectral_radius = _local_lifted_spectral_radius(
+        states=states,
+        controls=controls,
+        delay_ticks=delay_ticks,
+        seed=seed,
+        ticks=ticks,
+        epsilon=max(float(map_config.get("perturbation_epsilon", 1e-5)), 1e-6),
+    )
     return {
         "seed": seed,
         "ticks": ticks,
@@ -221,8 +206,118 @@ def _diagnostics(
         "recurrence_surrogate_delta": round(float(recurrence_rate - surrogate_rate), 6),
         "finite_time_local_divergence": round(float(divergence), 6),
         "paired_final_separation": round(final_sep, 9),
+        "local_lifted_spectral_radius": round(float(spectral_radius), 6),
+        "contraction_status": (
+            "local_contracting" if spectral_radius < 1.0 else "not_locally_contracting"
+        ),
         "diagnostic_status": MAP_STATUS,
     }
+
+
+def _next_state(
+    *,
+    state: np.ndarray,
+    delayed: np.ndarray,
+    demand_wave: float,
+    controls: dict[str, float],
+    noise_tick: np.ndarray,
+    relaxation_weight: float,
+    memory_persistence: float,
+    memory_update: float,
+) -> tuple[np.ndarray, float, float]:
+    nonlinear_drive = math.tanh(
+        controls["rho"] * (delayed[0] - 0.5)
+        + controls["kappa"] * (delayed[2] - delayed[1])
+    )
+    prediction_target = _sigmoid(
+        nonlinear_drive
+        + 0.35 * (state[2] - 0.5)
+        - 0.25 * state[1]
+        + 0.10 * demand_wave
+        + noise_tick[0]
+    )
+    prediction_spend = min(0.65, max(0.0, prediction_target))
+    lost_work_fraction = min(0.60, 0.35 * prediction_spend)
+    resource_target = _sigmoid(
+        0.70
+        + 0.25 * demand_wave
+        - lost_work_fraction
+        - 0.30 * state[0]
+        + controls["kappa"] * (delayed[1] - 0.5)
+        + noise_tick[1]
+    )
+    memory_target = np.clip(
+        0.55 * state[0] + 0.25 * delayed[0] + 0.20 * (1.0 - state[1]) + noise_tick[2],
+        0.0,
+        1.0,
+    )
+    next_state = np.array(
+        [
+            (1.0 - relaxation_weight) * state[0] + relaxation_weight * prediction_target,
+            (1.0 - relaxation_weight) * state[1] + relaxation_weight * resource_target,
+            memory_persistence * state[2] + memory_update * memory_target,
+        ],
+        dtype=float,
+    )
+    return np.clip(next_state, 0.0, 1.0), float(prediction_spend), float(lost_work_fraction)
+
+
+def _local_lifted_spectral_radius(
+    *,
+    states: np.ndarray,
+    controls: dict[str, float],
+    delay_ticks: int,
+    seed: int,
+    ticks: int,
+    epsilon: float,
+) -> float:
+    """Finite-difference contraction check on the delayed lifted state."""
+
+    lifted_width = max(1, delay_ticks + 1)
+    history = _terminal_lifted_state(states, lifted_width)
+    relaxation_weight = 1.0 / (1.0 + max(controls["delta"], 0.0) + 1.0)
+    memory_update = 1.0 / (1.0 + max(controls["mu"], 1e-9))
+    memory_persistence = 1.0 - memory_update
+    demand_wave = math.sin((ticks + seed) / 7.0)
+    noise_tick = np.zeros(3, dtype=float)
+
+    def evaluate(flat_lifted: np.ndarray) -> np.ndarray:
+        lifted = flat_lifted.reshape((lifted_width, states.shape[1]))
+        current = lifted[0]
+        delayed = lifted[delay_ticks] if delay_ticks > 0 else current
+        next_current, _, _ = _next_state(
+            state=current,
+            delayed=delayed,
+            demand_wave=demand_wave,
+            controls=controls,
+            noise_tick=noise_tick,
+            relaxation_weight=relaxation_weight,
+            memory_persistence=memory_persistence,
+            memory_update=memory_update,
+        )
+        if lifted_width == 1:
+            return next_current
+        return np.vstack([next_current, lifted[:-1]]).reshape(-1)
+
+    center = history.reshape(-1)
+    columns: list[np.ndarray] = []
+    for index in range(len(center)):
+        delta = np.zeros_like(center)
+        delta[index] = epsilon
+        plus = evaluate(np.clip(center + delta, 0.0, 1.0))
+        minus = evaluate(np.clip(center - delta, 0.0, 1.0))
+        columns.append((plus - minus) / (2.0 * epsilon))
+    jacobian = np.column_stack(columns)
+    eigenvalues = np.linalg.eigvals(jacobian)
+    return float(np.max(np.abs(eigenvalues)))
+
+
+def _terminal_lifted_state(states: np.ndarray, lifted_width: int) -> np.ndarray:
+    rows: list[np.ndarray] = []
+    for offset in range(lifted_width):
+        index = max(0, len(states) - 1 - offset)
+        rows.append(states[index].copy())
+    return np.vstack(rows)
 
 
 def _recurrence_rate(states: np.ndarray) -> tuple[float, float]:
@@ -334,6 +429,8 @@ def _summary(diagnostics: dict[str, Any]) -> str:
             f"- Boundedness: `{diagnostics['boundedness_status']}`",
             f"- Recurrence delta vs shuffled surrogate: `{diagnostics['recurrence_surrogate_delta']}`",
             f"- Finite-time local divergence: `{diagnostics['finite_time_local_divergence']}`",
+            f"- Local lifted spectral radius: `{diagnostics['local_lifted_spectral_radius']}`",
+            f"- Contraction status: `{diagnostics['contraction_status']}`",
             "",
             "This is a standalone analytic sandbox. It does not run simulator mechanics,",
             "perform a parameter sweep, or support lobe-like or strange-attractor-like claims.",

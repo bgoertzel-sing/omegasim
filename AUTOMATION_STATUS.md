@@ -16,12 +16,13 @@ oracle-nontriviality, compression, and guardrail criteria did not support
 residual-structure promotion.
 
 The active analytic-map surface now includes the standalone deterministic
-analytic delayed map, grid preflight, null-gate preregistration, implemented
-four-condition null-gate runner, micro-society preregistration, implemented
-four-condition micro-society mechanism-screen runner, a preregistered
-post-micro decision gate, the completed read-only post-micro decision note, and
-the implemented standalone nonlinear-dynamics workbench gate and completed
-workbench closure note.
+analytic delayed map with an explicit lifted-state contraction diagnostic,
+grid preflight with contraction summaries, null-gate preregistration,
+implemented four-condition null-gate runner, micro-society preregistration,
+implemented four-condition micro-society mechanism-screen runner, a
+preregistered post-micro decision gate, the completed read-only post-micro
+decision note, and the implemented standalone nonlinear-dynamics workbench
+gate and completed workbench closure note.
 Continue from
 `docs/hyperseed_strange_attractor_tuning_formalization_20260628.md`,
 `docs/analytic_delayed_map_refinement_null_gate_preregistration.md`,
@@ -55,6 +56,18 @@ simulator gate.
 
 ## Latest Changes
 
+- 2026-07-01 17:41 PDT analytic delayed-map contraction hardening: added an
+  explicit finite-difference local spectral-radius check over the lifted
+  delayed state to `ohdyn.analytic_delayed_map`, exposed
+  `local_lifted_spectral_radius` and `contraction_status` in
+  `diagnostics.csv`, threaded the same fields into the read-only grid preflight
+  summary, updated focused regression coverage, and refreshed README wording.
+  The `/tmp` seed-1 smoke was bounded but locally contracting
+  (`local_lifted_spectral_radius=0.890094`), and the four-row grid preflight
+  was `4/4` locally contracting with spectral radius range `0.799422` to
+  `0.953811`. This hardens the initial analytic delayed-map surface only; it
+  does not reopen A5/A7, add simulator mechanics, broaden sweeps, add
+  dashboards/integrations, or support promotion language.
 - 2026-07-01 10:27 PDT nonlinear-dynamics workbench closure: added
   `docs/results/nonlinear_dynamics_workbench_closure_seed1_20260701.md` and a
   README pointer. The read-only closure reviewed the preregistered seed-1
@@ -461,6 +474,23 @@ simulator gate.
 
 ## Verification
 
+- 2026-07-01 17:41 PDT focused analytic-map regression:
+  `.venv-conda/bin/python -m pytest tests/test_run_harness.py -k 'analytic_delayed_map_smoke or analytic_delayed_map_cli or analytic_delayed_map_grid_preflight' -q`
+  passed (`4 passed, 689 deselected`).
+- 2026-07-01 17:41 PDT syntax check:
+  `.venv-conda/bin/python -m py_compile ohdyn/analytic_delayed_map.py ohdyn/analytic_delayed_map_grid_preflight.py tests/test_run_harness.py`
+  passed.
+- 2026-07-01 17:41 PDT analytic delayed-map smoke:
+  `.venv-conda/bin/python -m ohdyn.analytic_delayed_map --config configs/analytic_delayed_map_smoke.yaml --out /tmp/omegasim_analytic_delayed_map_contraction_seed1_20260702`
+  completed with boundedness `pass`, recurrence-surrogate delta `0.070395`,
+  finite-time local divergence `-0.120137`, local lifted spectral radius
+  `0.890094`, and contraction status `local_contracting`.
+- 2026-07-01 17:41 PDT analytic grid preflight smoke:
+  `.venv-conda/bin/python -m ohdyn.analytic_delayed_map_grid_preflight --config configs/analytic_delayed_map_grid_preflight.yaml --out /tmp/omegasim_analytic_delayed_map_grid_contraction_seed1_20260702`
+  completed with `4/4` bounded rows, `4/4` locally contracting rows,
+  recurrence-surrogate delta range `0.064693` to `0.081579`, finite-time
+  local-divergence range `-0.171157` to `-0.043433`, and local lifted
+  spectral-radius range `0.799422` to `0.953811`.
 - 2026-07-01 10:27 PDT closure smoke check:
   `.venv-conda/bin/python -m ohdyn.nonlinear_dynamics_workbench --config configs/nonlinear_dynamics_workbench.yaml --out /tmp/omegasim_nonlinear_dynamics_workbench_closure_seed1_20260701`
   completed with exactly the summary-only workbench artifacts. All four rows
@@ -1402,20 +1432,9 @@ simulator gate.
 
 No environment blocker. Broader A5 work, A5.2 implementation, A7-family work,
 dashboards, external integrations, downstream multi-hive coupling, and
-promotion language remain unauthorized. The analytic delayed-map null gate and
-the analytic micro-society seed-1 gate both closed conservatively. The
-micro-society active condition was bounded and unsaturated, but the
-active-vs-null diagnostics were mixed/null-equivalent and finite-time local
-divergence was negative; this does not justify a phase diagram, simulator
-mechanics, or promotion language. The nonlinear-dynamics workbench is now
-implemented only as a standalone smoke-scale diagnostic gate. Its seed-1 smoke
-also closed conservatively with all four rows labeled
-`fail_closed_contracting_fixed_or_transient`; phase diagrams, simulator
-mechanics, broader sweeps, and promotion language remain unauthorized.
-
-## Recommended Next Step
-
-- Recommended next step: write only a read-only nonlinear-workbench
-  closure/decision note interpreting the seed-1 fail-closed contracting labels
-  and deciding whether analytic-map churn should stop before any phase
-  diagram, simulator mechanics, or broader sweep.
+promotion language remain unauthorized. The initial analytic delayed-map smoke
+and tiny grid preflight now expose explicit contraction diagnostics and remain
+locally contracting. The analytic delayed-map null gate, analytic
+micro-society seed-1 gate, and nonlinear-dynamics workbench all closed
+conservatively; this does not justify a phase diagram, simulator mechanics,
+broader sweeps, or promotion language.

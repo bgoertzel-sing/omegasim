@@ -124,7 +124,9 @@ does not call the OmegaSim agent simulator, A5 helpers, A7 helpers, dashboards,
 external integrations, or multi-hive coupling. It exposes the Hyperseed axes
 `rho`, `delta`, `mu`, `kappa`, and `nu`, emits deterministic trajectories from
 a fixed seed, and writes boundedness, recurrence-vs-shuffled-surrogate, and
-paired local-divergence diagnostics.
+paired local-divergence diagnostics. The smoke diagnostics also include an
+explicit finite-difference local spectral-radius check on the lifted delayed
+state as a contraction screen.
 
 ```bash
 python -m ohdyn.analytic_delayed_map \
@@ -145,9 +147,10 @@ python -m ohdyn.analytic_delayed_map_grid_preflight \
   --out runs/analytic_delayed_map_grid_preflight_seed1
 ```
 
-This preflight reports boundedness, recurrence-surrogate deltas, and paired
-local-divergence summaries only. It does not write per-tick simulator metrics
-or support attractor, lobe, or semantic-dynamics claims.
+This preflight reports boundedness, recurrence-surrogate deltas, paired
+local-divergence summaries, and local lifted spectral-radius contraction
+summaries only. It does not write per-tick simulator metrics or support
+attractor, lobe, or semantic-dynamics claims.
 
 The next analytic-map refinement/null gate is preregistered, but not yet
 implemented, in

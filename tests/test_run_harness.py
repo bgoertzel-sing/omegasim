@@ -607,6 +607,11 @@ def test_analytic_delayed_map_smoke_is_bounded_and_reproducible() -> None:
     assert diagnostics_a["boundedness_status"] == "pass"
     assert 0.0 <= diagnostics_a["state_min"] <= diagnostics_a["state_max"] <= 1.0
     assert diagnostics_a["delay_ticks"] == 4
+    assert diagnostics_a["local_lifted_spectral_radius"] > 0.0
+    assert diagnostics_a["contraction_status"] in {
+        "local_contracting",
+        "not_locally_contracting",
+    }
 
 
 def test_analytic_delayed_map_cli_writes_diagnostic_artifacts(tmp_path: Path) -> None:
@@ -636,6 +641,7 @@ def test_analytic_delayed_map_cli_writes_diagnostic_artifacts(tmp_path: Path) ->
     assert rows[0]["diagnostic_status"] == MAP_STATUS
     summary = (out_dir / "summary.md").read_text()
     assert "standalone analytic sandbox" in summary
+    assert "Local lifted spectral radius" in summary
     assert "strange-attractor-like claims" in summary
 
 
@@ -662,6 +668,10 @@ def test_analytic_delayed_map_grid_preflight_is_tiny_and_deterministic(
     assert {row["diagnostic_status"] for row in rows_a} == {MAP_STATUS}
     assert {row["delay_ticks"] for row in rows_a} == {0, 8}
     assert all(row["boundedness_status"] == "pass" for row in rows_a)
+    assert all(float(row["local_lifted_spectral_radius"]) > 0.0 for row in rows_a)
+    assert {row["contraction_status"] for row in rows_a}.issubset(
+        {"local_contracting", "not_locally_contracting"}
+    )
 
 
 def test_analytic_delayed_map_grid_preflight_writes_summary_only_artifacts(
@@ -693,6 +703,7 @@ def test_analytic_delayed_map_grid_preflight_writes_summary_only_artifacts(
     assert manifest["rows"] == 4
     summary = (out_dir / "summary.md").read_text()
     assert "read-only preflight reports grid-level diagnostics only" in summary
+    assert "Local lifted spectral-radius range" in summary
     assert "strange-attractor-like claims" in summary
 
 

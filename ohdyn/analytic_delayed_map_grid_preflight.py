@@ -29,6 +29,8 @@ GRID_PREFLIGHT_FIELDS = (
     "boundedness_status",
     "recurrence_surrogate_delta",
     "finite_time_local_divergence",
+    "local_lifted_spectral_radius",
+    "contraction_status",
     "diagnostic_status",
 )
 
@@ -85,6 +87,8 @@ def _preflight_row(
         "boundedness_status": diagnostics["boundedness_status"],
         "recurrence_surrogate_delta": diagnostics["recurrence_surrogate_delta"],
         "finite_time_local_divergence": diagnostics["finite_time_local_divergence"],
+        "local_lifted_spectral_radius": diagnostics["local_lifted_spectral_radius"],
+        "contraction_status": diagnostics["contraction_status"],
         "diagnostic_status": MAP_STATUS,
     }
 
@@ -155,6 +159,11 @@ def _summary(rows: list[dict[str, Any]]) -> str:
         float(row["finite_time_local_divergence"])
         for row in rows
     ]
+    spectral_values = [
+        float(row["local_lifted_spectral_radius"])
+        for row in rows
+    ]
+    contraction_rows = sum(1 for row in rows if row["contraction_status"] == "local_contracting")
     return "\n".join(
         [
             "# Analytic Delayed Map Grid Preflight",
@@ -165,6 +174,8 @@ def _summary(rows: list[dict[str, Any]]) -> str:
             f"- Boundedness pass rows: `{bounded}/{len(rows)}`",
             f"- Recurrence-surrogate delta range: `{min(recurrence_values):.6f}` to `{max(recurrence_values):.6f}`",
             f"- Finite-time local-divergence range: `{min(divergence_values):.6f}` to `{max(divergence_values):.6f}`",
+            f"- Local lifted spectral-radius range: `{min(spectral_values):.6f}` to `{max(spectral_values):.6f}`",
+            f"- Local contraction rows: `{contraction_rows}/{len(rows)}`",
             "",
             "This read-only preflight reports grid-level diagnostics only. It does not",
             "write per-tick simulator artifacts or support lobe-like, semantic-dynamics,",
