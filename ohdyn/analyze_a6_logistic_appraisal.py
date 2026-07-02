@@ -326,6 +326,24 @@ A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS = (
     "gate_status",
     "interpretation",
 )
+A6_BOUNDED_PREDICTION_RESOURCE_FIELDS = (
+    "condition",
+    "resource_gate_condition",
+    "seed_count",
+    "observed_resource_conditions",
+    "missing_resource_conditions",
+    "primary_residual_vector_fields",
+    "control_fields_used",
+    "mean_confound_r2",
+    "residual_recurrence_excess_vs_linear",
+    "residual_compression_excess_vs_linear",
+    "nonlinear_vs_linear_forecast_delta",
+    "budget_efficiency_per_prediction_spend",
+    "budget_efficiency_per_work_opportunity_sacrificed",
+    "budget_matched_replay_control_status",
+    "gate_status",
+    "interpretation",
+)
 _OUTPUT_NAMES = (
     "a6_logistic_appraisal_endpoints.csv",
     "a6_logistic_appraisal_manifest.csv",
@@ -341,6 +359,7 @@ _OUTPUT_NAMES = (
     "a6_logistic_appraisal_source_accounting.csv",
     "a6_1_pilot_null_gate.csv",
     "a6_functional_candidate_gate.csv",
+    "a6_bounded_prediction_resource_residual_state_summary.csv",
     "summary.md",
 )
 _A6_CONTROL_PAIRS = (
@@ -394,6 +413,31 @@ _A6_RESIDUAL_OUTCOME_FIELDS = (
     "a6_artifact_implementation_maturity_tick",
     "a6_artifact_communication_maturity_tick",
     "a6_artifact_utility_tick",
+)
+_A6_BOUNDED_RESOURCE_REQUIRED_CONDITIONS = (
+    "zero_budget_reactive",
+    "intermediate_budget_delayed_logistic",
+    "high_oracle_budget_smoothing_comparator",
+    "amplitude_matched_linear_prediction",
+    "phase_shuffled_delayed_signal",
+    "threshold_shuffled_thresholds",
+    "budget_matched_prediction_replay",
+    "role_or_agent_shuffled_appraisal",
+)
+_A6_BOUNDED_RESOURCE_CONDITION_MAP = {
+    "logistic": "intermediate_budget_delayed_logistic",
+    "linear": "amplitude_matched_linear_prediction",
+    "phase_shuffled": "phase_shuffled_delayed_signal",
+    "threshold_shuffled": "threshold_shuffled_thresholds",
+    "source_label_shuffled_within_tick": "role_or_agent_shuffled_appraisal",
+}
+_A6_BOUNDED_RESOURCE_PRIMARY_VECTOR_FIELDS = (
+    "a6_artifact_readiness_tick",
+    "a6_artifact_provenance_debt_tick",
+    "a6_artifact_risk_tick",
+    "a6_prediction_budget_spent_tick",
+    "a6_latent_prediction_error_mean_tick",
+    "a6_latent_fatigue_mean_tick",
 )
 _A6_ARTIFACT_AUDIT_FIELDS = (
     "a6_artifact_novelty_tick",
@@ -565,6 +609,11 @@ def run_a6_logistic_appraisal_analysis(
         residual_contrast_rollup_rows,
     )
     functional_candidate_gate_rows = _functional_candidate_gate_rows(compare_path)
+    bounded_prediction_resource_rows = _bounded_prediction_resource_rows(
+        runs,
+        residual_preflight_rows,
+        residual_contrast_rollup_rows,
+    )
     manifest_rows = [
         {
             "control_level": control_level,
@@ -653,6 +702,11 @@ def run_a6_logistic_appraisal_analysis(
         functional_candidate_gate_rows,
         A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS,
     )
+    _write_csv(
+        output_path / "a6_bounded_prediction_resource_residual_state_summary.csv",
+        bounded_prediction_resource_rows,
+        A6_BOUNDED_PREDICTION_RESOURCE_FIELDS,
+    )
     (output_path / "summary.md").write_text(
         _summary(
             compare_path,
@@ -670,6 +724,7 @@ def run_a6_logistic_appraisal_analysis(
             source_accounting_rows,
             pilot_null_gate_rows,
             functional_candidate_gate_rows,
+            bounded_prediction_resource_rows,
             missing_required_fields,
         )
     )
@@ -691,6 +746,9 @@ def run_a6_logistic_appraisal_analysis(
         "source_accounting_count": len(source_accounting_rows),
         "a6_1_pilot_null_gate_count": len(pilot_null_gate_rows),
         "functional_candidate_gate_count": len(functional_candidate_gate_rows),
+        "bounded_prediction_resource_summary_count": len(
+            bounded_prediction_resource_rows
+        ),
         "missing_required_fields": sorted(missing_required_fields),
     }
 
@@ -2810,6 +2868,171 @@ def _functional_candidate_interpretation(gate_status: str) -> str:
     return "control candidate count reported for matched excess-over-control comparison"
 
 
+def _bounded_prediction_resource_rows(
+    runs: list[dict[str, Any]],
+    residual_preflight_rows: list[dict[str, Any]],
+    residual_contrast_rollup_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    observed_resource_conditions = sorted(
+        {
+            _A6_BOUNDED_RESOURCE_CONDITION_MAP.get(str(row["condition"]), "")
+            for row in runs
+        }
+        - {""}
+    )
+    missing_resource_conditions = [
+        condition
+        for condition in _A6_BOUNDED_RESOURCE_REQUIRED_CONDITIONS
+        if condition not in observed_resource_conditions
+    ]
+    replay_status = (
+        "present"
+        if "budget_matched_prediction_replay" in observed_resource_conditions
+        else "missing_required_budget_matched_replay_control"
+    )
+    gate_status = (
+        "schema_only_fail_closed_missing_resource_conditions"
+        if missing_resource_conditions
+        else "schema_ready_requires_preregistered_result_run"
+    )
+    by_condition = {
+        condition: [row for row in runs if str(row["condition"]) == condition]
+        for condition in sorted({str(row["condition"]) for row in runs})
+    }
+    residual_by_condition = {
+        condition: [
+            row
+            for row in residual_preflight_rows
+            if str(row["condition"]) == condition
+            and str(row["outcome_field"])
+            in _A6_BOUNDED_RESOURCE_PRIMARY_VECTOR_FIELDS
+        ]
+        for condition in by_condition
+    }
+    linear_runs = by_condition.get("linear", [])
+    logistic_runs = by_condition.get("logistic", [])
+    linear_prediction_error = _mean_available(
+        [row.get("final_latent_prediction_error_abs_mean", "") for row in linear_runs]
+    )
+    logistic_prediction_error = _mean_available(
+        [row.get("final_latent_prediction_error_abs_mean", "") for row in logistic_runs]
+    )
+    forecast_delta = (
+        round(float(linear_prediction_error) - float(logistic_prediction_error), 6)
+        if linear_prediction_error != "" and logistic_prediction_error != ""
+        else ""
+    )
+    linear_rollups = [
+        row
+        for row in residual_contrast_rollup_rows
+        if row["contrast"] == "logistic_vs_linear"
+        and row["outcome_field"] in _A6_BOUNDED_RESOURCE_PRIMARY_VECTOR_FIELDS
+    ]
+    recurrence_excess = _rounded_mean(
+        [
+            float(row["mean_residual_lag1_autocorrelation_delta"])
+            for row in linear_rollups
+            if row.get("mean_residual_lag1_autocorrelation_delta", "") != ""
+        ]
+    )
+    compression_excess = _rounded_mean(
+        [
+            -float(row["mean_residual_sign_change_count_delta"])
+            for row in linear_rollups
+            if row.get("mean_residual_sign_change_count_delta", "") != ""
+        ]
+    )
+    rows: list[dict[str, Any]] = []
+    for condition, condition_runs in by_condition.items():
+        seed_count = len({int(row["seed"]) for row in condition_runs})
+        confound_r2_values = []
+        control_fields = set()
+        for residual_row in residual_by_condition.get(condition, []):
+            raw_variance = residual_row.get("raw_variance", "")
+            residual_variance = residual_row.get("residual_variance", "")
+            if raw_variance not in {"", None} and residual_variance not in {"", None}:
+                raw_value = float(raw_variance)
+                if raw_value > 0:
+                    confound_r2_values.append(
+                        max(0.0, min(1.0, 1.0 - float(residual_variance) / raw_value))
+                    )
+            control_fields.update(
+                field
+                for field in str(residual_row.get("control_fields_used", "")).split("|")
+                if field
+            )
+        prediction_spend = _mean_available(
+            [row.get("prediction_budget_spent_total", "") for row in condition_runs]
+        )
+        action_opportunity = _mean_available(
+            [row.get("action_opportunity_total", "") for row in condition_runs]
+        )
+        artifact_utility = _mean_available(
+            [row.get("final_artifact_utility", "") for row in condition_runs]
+        )
+        rows.append(
+            {
+                "condition": condition,
+                "resource_gate_condition": _A6_BOUNDED_RESOURCE_CONDITION_MAP.get(
+                    condition,
+                    "unmapped_existing_a6_condition",
+                ),
+                "seed_count": seed_count,
+                "observed_resource_conditions": "|".join(observed_resource_conditions),
+                "missing_resource_conditions": "|".join(missing_resource_conditions),
+                "primary_residual_vector_fields": "|".join(
+                    _A6_BOUNDED_RESOURCE_PRIMARY_VECTOR_FIELDS
+                ),
+                "control_fields_used": "|".join(sorted(control_fields)),
+                "mean_confound_r2": _rounded_mean(confound_r2_values),
+                "residual_recurrence_excess_vs_linear": recurrence_excess
+                if condition == "logistic"
+                else "",
+                "residual_compression_excess_vs_linear": compression_excess
+                if condition == "logistic"
+                else "",
+                "nonlinear_vs_linear_forecast_delta": forecast_delta
+                if condition == "logistic"
+                else "",
+                "budget_efficiency_per_prediction_spend": _resource_efficiency(
+                    artifact_utility,
+                    prediction_spend,
+                ),
+                "budget_efficiency_per_work_opportunity_sacrificed": _resource_efficiency(
+                    artifact_utility,
+                    action_opportunity,
+                ),
+                "budget_matched_replay_control_status": replay_status,
+                "gate_status": gate_status,
+                "interpretation": _bounded_prediction_resource_interpretation(
+                    gate_status,
+                    replay_status,
+                ),
+            }
+        )
+    return rows
+
+
+def _resource_efficiency(numerator: Any, denominator: Any) -> str:
+    if numerator in {"", None} or denominator in {"", None}:
+        return ""
+    denominator_value = float(denominator)
+    if denominator_value == 0:
+        return ""
+    return str(round(float(numerator) / denominator_value, 6))
+
+
+def _bounded_prediction_resource_interpretation(
+    gate_status: str,
+    replay_status: str,
+) -> str:
+    if replay_status != "present":
+        return "bounded prediction-resource gate is schema-only here; required budget-matched replay control is absent"
+    if gate_status == "schema_ready_requires_preregistered_result_run":
+        return "schema has required condition labels; result-bearing run still requires preregistered execution"
+    return "bounded prediction-resource gate remains fail-closed until all preregistered resource conditions are present"
+
+
 def _with_a6_derived_fields(row: dict[str, str]) -> dict[str, str]:
     enriched = dict(row)
     enriched["a6_artifact_utility_tick"] = str(_artifact_utility(row))
@@ -2957,6 +3180,7 @@ def _summary(
     source_accounting_rows: list[dict[str, Any]],
     pilot_null_gate_rows: list[dict[str, Any]],
     functional_candidate_gate_rows: list[dict[str, Any]],
+    bounded_prediction_resource_rows: list[dict[str, Any]],
     missing_required_fields: set[str],
 ) -> str:
     conditions = sorted({str(row["condition"]) for row in runs})
@@ -2981,6 +3205,8 @@ def _summary(
         f"- source accounting rows: {len(source_accounting_rows)}",
         f"- A6.1 pilot null gate rows: {len(pilot_null_gate_rows)}",
         f"- A6 functional candidate gate rows: {len(functional_candidate_gate_rows)}",
+        "- A6 bounded prediction-resource residual-state summary rows: "
+        f"{len(bounded_prediction_resource_rows)}",
         "- status: read-only control/residual preflight; not promotion evidence",
         "- missing required fields: "
         + ("none" if not missing_required_fields else ", ".join(sorted(missing_required_fields))),
@@ -3007,6 +3233,7 @@ def _summary(
             "- Source accounting rows audit A6.1 required fields, artifact-delta reconstruction, and per-source shares for schema/control eligibility only.",
             "- A6.1 pilot null gate rows compare logistic endpoints to source-preserving nulls with backlog-adjusted productivity; they are smoke-scale gate diagnostics only.",
             "- A6 functional candidate gate rows require bounded unsaturated dynamics, nonperiodic role/action traces, artifact/debt/risk/prediction-error movement, and component matched excess-over-control scoring.",
+            "- A6 bounded prediction-resource rows are schema/analyzer scaffolding for the 2026-07-02 pivot; missing zero/high/replay resource controls keep the gate fail-closed.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",

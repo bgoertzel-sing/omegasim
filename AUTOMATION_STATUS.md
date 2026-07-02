@@ -37,13 +37,36 @@ runs.
 
 ## Recommended Next Step
 
-Implement only the schema/analyzer scaffolding needed for the
-`a6_bounded_prediction_resource_gate_preregistration.md` residual-state summary
-and budget-matched replay controls; run a tiny deterministic smoke only if the
-status file still authorizes that bounded prediction-resource gate.
+Implement the minimal deterministic A6 bounded prediction-resource replay
+control contract needed by
+`docs/a6_bounded_prediction_resource_gate_preregistration.md`, so
+`budget_matched_prediction_replay` can be represented and tested without a
+phase diagram, broad sweep, downstream multi-hive coupling, or promotion
+language.
 
 ## Latest Changes
 
+- 2026-07-02 12:39 PDT A6 bounded prediction-resource analyzer scaffolding:
+  added a read-only
+  `a6_bounded_prediction_resource_residual_state_summary.csv` artifact to
+  `ohdyn.analyze_a6_logistic_appraisal`. The summary maps existing A6
+  conditions onto the preregistered bounded prediction-resource labels where
+  possible, reports the primary residual vector fields, confound R2,
+  linear-control residual recurrence/compression placeholders, forecast delta,
+  budget-efficiency fields, and an explicit
+  `budget_matched_replay_control_status`. Existing A6 smoke artifacts remain
+  fail-closed for the new gate because zero-budget, high/oracle, and
+  budget-matched replay resource conditions are absent. This incorporates the
+  2026-07-02 GPT-5.5-Pro major-review recommendation as schema/control
+  hardening only; Ben should still be notified that the dense A6 phase diagram
+  was replaced by the bounded prediction-resource gate. No dense phase diagram,
+  broad sweep, simulator result gate, A5/A7/analytic rerun, dashboard,
+  external integration, real LLM call, paid compute, or multi-hive coupling was
+  added. Verification passed: focused A6 analyzer tests (`6 passed, 690
+  deselected`), `py_compile` for `ohdyn/analyze_a6_logistic_appraisal.py`,
+  `git diff --check`, and the live automation guard reporting `state=open`,
+  `repo_write_allowed=true`, `strategic_change_level=major`, and
+  `notify_ben=true`.
 - 2026-07-02 12:25 PDT A6 bounded prediction-resource pivot preregistration:
   accepted the latest GPT-5.5-Pro major strategic review recommendation to
   avoid the dense high-gain/moderate-coupling A6 phase diagram after the

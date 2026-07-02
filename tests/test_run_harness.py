@@ -38,6 +38,7 @@ from ohdyn.analyze_a6_logistic_appraisal import (
     A6_ANALYSIS_ENDPOINT_FIELDS,
     A6_ANALYSIS_MANIFEST_FIELDS,
     A6_ARTIFACT_PROVENANCE_FIELDS,
+    A6_BOUNDED_PREDICTION_RESOURCE_FIELDS,
     A6_COMPARISON_CONSISTENCY_FIELDS,
     A6_CONTROL_DELTA_FIELDS,
     A6_CONTROL_SUMMARY_FIELDS,
@@ -19488,6 +19489,16 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
         functional_gate_rows = list(
             csv.DictReader(handle, fieldnames=A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS)
         )
+    with (
+        out_dir / "a6_bounded_prediction_resource_residual_state_summary.csv"
+    ).open() as handle:
+        assert next(csv.reader(handle)) == list(A6_BOUNDED_PREDICTION_RESOURCE_FIELDS)
+        resource_rows = list(
+            csv.DictReader(
+                handle,
+                fieldnames=A6_BOUNDED_PREDICTION_RESOURCE_FIELDS,
+            )
+        )
     assert {row["status"] for row in consistency_rows} == {"missing_comparison_csv"}
     assert {row["status"] for row in effects_rows} == {"missing_effects_csv"}
     assert result["artifact_provenance_count"] == 20
@@ -19503,8 +19514,11 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     }
     assert result["comparison_consistency_count"] == 2
     assert result["effects_consistency_count"] == 3
+    assert result["bounded_prediction_resource_summary_count"] == 2
     assert {row["condition"] for row in functional_gate_rows} == {"logistic", "linear"}
+    assert {row["condition"] for row in resource_rows} == {"logistic", "linear"}
     logistic_gate = next(row for row in functional_gate_rows if row["condition"] == "logistic")
+    logistic_resource = next(row for row in resource_rows if row["condition"] == "logistic")
     assert logistic_gate["candidate_seed_count"] != ""
     assert logistic_gate["matched_control_condition"] != ""
     assert logistic_gate["matched_control_seed_count"] != ""
@@ -19517,6 +19531,21 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
         "fail_closed_controls_match_or_exceed",
         "fail_closed_no_logistic_candidates",
     }
+    assert (
+        logistic_resource["resource_gate_condition"]
+        == "intermediate_budget_delayed_logistic"
+    )
+    assert (
+        logistic_resource["budget_matched_replay_control_status"]
+        == "missing_required_budget_matched_replay_control"
+    )
+    assert "budget_matched_prediction_replay" in logistic_resource[
+        "missing_resource_conditions"
+    ]
+    assert (
+        logistic_resource["gate_status"]
+        == "schema_only_fail_closed_missing_resource_conditions"
+    )
     summary = (out_dir / "summary.md").read_text()
     assert "- reran simulations: no" in summary
     assert "## Control Levels" in summary
@@ -19525,6 +19554,7 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     assert "- artifact provenance rows: 20" in summary
     assert "- source accounting rows: 20" in summary
     assert "- A6 functional candidate gate rows: 2" in summary
+    assert "- A6 bounded prediction-resource residual-state summary rows: 2" in summary
 
 
 def test_a6_read_only_analysis_writes_paired_control_deltas(
