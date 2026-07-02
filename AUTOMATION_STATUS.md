@@ -11,10 +11,29 @@ Allowed work for the current loop: small local CPU implementation, deterministic
 
 ## Recommended Next Step
 
-Add matched excess-over-control scoring details for the A6 functional candidate gate, because the smoke fixture currently shows logistic candidates but linear/shuffled controls pass at the same candidate rate.
+Add a concise A6 matched-excess smoke result note documenting the seed `1,2` fail-closed component scores and no-promotion boundary.
 
 ## Latest Changes
 
+- 2026-07-01 21:49 PDT A6 matched excess-over-control scoring: extended the
+  read-only `a6_functional_candidate_gate.csv` artifact in
+  `ohdyn.analyze_a6_logistic_appraisal` with the selected matched-control
+  condition, matched control seed/candidate counts, component excess rates for
+  role nonperiodicity / functional movement / bounded-unsaturated checks, and
+  component excess scores for artifact maturity, provenance-debt improvement,
+  risk improvement, prediction-error improvement, and a simple functional
+  score. Focused A6 analysis tests passed, `py_compile` passed,
+  `git diff --check` passed, and the full `tests/test_run_harness.py` suite
+  passed (`694 passed in 416.03s`). A bounded `/tmp` seed `1,2` A6
+  comparison plus read-only analysis populated the new fields and kept the
+  gate fail-closed: logistic `candidate_rate=1.0`, matched control
+  `condition=linear`, matched control `candidate_rate=1.0`,
+  `matched_excess_candidate_rate=0.0`, and
+  `gate_status=fail_closed_controls_match_or_exceed`. This accepts the current
+  guard recommendation and the sensible GPT-5.5-Pro control-emphasis advice as
+  analysis hardening only; it does not support promotion language. No broad
+  sweep, A5/A7/analytic-map rerun, dashboard, external integration, real LLM
+  call, or multi-hive coupling was added.
 - 2026-07-01 21:23 PDT A6 functional candidate gate alignment: added a
   read-only `a6_functional_candidate_gate.csv` artifact to
   `ohdyn.analyze_a6_logistic_appraisal`. The gate reports condition-level

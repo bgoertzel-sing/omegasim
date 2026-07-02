@@ -19372,8 +19372,12 @@ def test_a6_read_only_analysis_skeleton_consumes_existing_artifacts(
     assert {row["condition"] for row in functional_gate_rows} == {"logistic", "linear"}
     logistic_gate = next(row for row in functional_gate_rows if row["condition"] == "logistic")
     assert logistic_gate["candidate_seed_count"] != ""
+    assert logistic_gate["matched_control_condition"] != ""
+    assert logistic_gate["matched_control_seed_count"] != ""
+    assert logistic_gate["matched_control_candidate_seed_count"] != ""
     assert logistic_gate["matched_control_candidate_rate"] != ""
     assert logistic_gate["matched_excess_candidate_rate"] != ""
+    assert logistic_gate["matched_excess_functional_score"] != ""
     assert logistic_gate["gate_status"] in {
         "candidate_exceeds_controls_smoke_only",
         "fail_closed_controls_match_or_exceed",
@@ -19960,16 +19964,36 @@ def test_a6_functional_candidate_gate_reports_matched_control_counts(
     assert all(row["bounded_unsaturated_seed_count"] != "" for row in rows)
 
     logistic_row = next(row for row in rows if row["condition"] == "logistic")
+    assert logistic_row["mean_functional_score"] != ""
+    assert logistic_row["matched_control_condition"] in {
+        "linear",
+        "phase_shuffled",
+        "threshold_shuffled",
+    }
+    assert logistic_row["matched_control_seed_count"] == "1"
+    assert logistic_row["matched_control_candidate_seed_count"] != ""
     assert logistic_row["matched_control_candidate_rate"] != ""
     assert logistic_row["matched_excess_candidate_rate"] != ""
+    assert logistic_row["matched_excess_role_nonperiodic_rate"] != ""
+    assert logistic_row["matched_excess_functional_movement_rate"] != ""
+    assert logistic_row["matched_excess_bounded_unsaturated_rate"] != ""
+    assert logistic_row["matched_excess_artifact_maturity_delta"] != ""
+    assert logistic_row["matched_excess_provenance_debt_improvement"] != ""
+    assert logistic_row["matched_excess_risk_improvement"] != ""
+    assert logistic_row["matched_excess_prediction_error_abs_improvement"] != ""
+    assert logistic_row["matched_excess_functional_score"] != ""
     assert logistic_row["gate_status"] in {
         "candidate_exceeds_controls_smoke_only",
         "fail_closed_controls_match_or_exceed",
         "fail_closed_no_logistic_candidates",
     }
     for control_row in (row for row in rows if row["condition"] != "logistic"):
+        assert control_row["matched_control_condition"] == ""
+        assert control_row["matched_control_seed_count"] == ""
+        assert control_row["matched_control_candidate_seed_count"] == ""
         assert control_row["matched_control_candidate_rate"] == ""
         assert control_row["matched_excess_candidate_rate"] == ""
+        assert control_row["matched_excess_functional_score"] == ""
         assert control_row["gate_status"] == "control_candidate_rate_reported"
 
     summary = (out_dir / "summary.md").read_text()

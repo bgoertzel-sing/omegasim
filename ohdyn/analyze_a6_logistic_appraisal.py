@@ -309,8 +309,20 @@ A6_FUNCTIONAL_CANDIDATE_GATE_FIELDS = (
     "mean_provenance_debt_delta",
     "mean_risk_delta",
     "mean_prediction_error_abs_delta",
+    "mean_functional_score",
+    "matched_control_condition",
+    "matched_control_seed_count",
+    "matched_control_candidate_seed_count",
     "matched_control_candidate_rate",
     "matched_excess_candidate_rate",
+    "matched_excess_role_nonperiodic_rate",
+    "matched_excess_functional_movement_rate",
+    "matched_excess_bounded_unsaturated_rate",
+    "matched_excess_artifact_maturity_delta",
+    "matched_excess_provenance_debt_improvement",
+    "matched_excess_risk_improvement",
+    "matched_excess_prediction_error_abs_improvement",
+    "matched_excess_functional_score",
     "gate_status",
     "interpretation",
 )
@@ -2474,18 +2486,36 @@ def _functional_candidate_gate_rows(compare_path: Path) -> list[dict[str, Any]]:
         condition: [row for row in per_seed if row["condition"] == condition]
         for condition in sorted({str(row["condition"]) for row in per_seed})
     }
-    control_rates = [
-        _candidate_rate(rows_for_condition)
-        for condition, rows_for_condition in by_condition.items()
-        if condition != "logistic"
-    ]
-    matched_control_candidate_rate = max(control_rates) if control_rates else 0.0
+    matched_control_condition = ""
+    matched_control_rows: list[dict[str, Any]] = []
+    matched_control_candidate_rate = 0.0
+    for condition, rows_for_condition in by_condition.items():
+        if condition == "logistic":
+            continue
+        candidate_rate = _candidate_rate(rows_for_condition)
+        if (
+            not matched_control_rows
+            or candidate_rate > matched_control_candidate_rate
+            or (
+                candidate_rate == matched_control_candidate_rate
+                and condition < matched_control_condition
+            )
+        ):
+            matched_control_condition = condition
+            matched_control_rows = rows_for_condition
+            matched_control_candidate_rate = candidate_rate
+
     for condition, seed_rows in by_condition.items():
         candidate_rate = _candidate_rate(seed_rows)
         excess_rate = (
             candidate_rate - matched_control_candidate_rate
             if condition == "logistic"
             else ""
+        )
+        logistic_matched_excess = (
+            _functional_candidate_matched_excess(seed_rows, matched_control_rows)
+            if condition == "logistic"
+            else {}
         )
         gate_status = _functional_candidate_gate_status(
             condition=condition,
@@ -2513,12 +2543,50 @@ def _functional_candidate_gate_rows(compare_path: Path) -> list[dict[str, Any]]:
                 "mean_prediction_error_abs_delta": _rounded_mean(
                     [float(row["prediction_error_abs_delta"]) for row in seed_rows]
                 ),
+                "mean_functional_score": _rounded_mean(
+                    [float(row["functional_score"]) for row in seed_rows]
+                ),
+                "matched_control_condition": matched_control_condition
+                if condition == "logistic"
+                else "",
+                "matched_control_seed_count": len(matched_control_rows)
+                if condition == "logistic"
+                else "",
+                "matched_control_candidate_seed_count": _count_true(
+                    matched_control_rows, "candidate"
+                )
+                if condition == "logistic"
+                else "",
                 "matched_control_candidate_rate": round(matched_control_candidate_rate, 6)
                 if condition == "logistic"
                 else "",
                 "matched_excess_candidate_rate": round(float(excess_rate), 6)
                 if excess_rate != ""
                 else "",
+                "matched_excess_role_nonperiodic_rate": logistic_matched_excess.get(
+                    "role_nonperiodic_rate", ""
+                ),
+                "matched_excess_functional_movement_rate": logistic_matched_excess.get(
+                    "functional_movement_rate", ""
+                ),
+                "matched_excess_bounded_unsaturated_rate": logistic_matched_excess.get(
+                    "bounded_unsaturated_rate", ""
+                ),
+                "matched_excess_artifact_maturity_delta": logistic_matched_excess.get(
+                    "artifact_maturity_delta", ""
+                ),
+                "matched_excess_provenance_debt_improvement": logistic_matched_excess.get(
+                    "provenance_debt_improvement", ""
+                ),
+                "matched_excess_risk_improvement": logistic_matched_excess.get(
+                    "risk_improvement", ""
+                ),
+                "matched_excess_prediction_error_abs_improvement": logistic_matched_excess.get(
+                    "prediction_error_abs_improvement", ""
+                ),
+                "matched_excess_functional_score": logistic_matched_excess.get(
+                    "functional_score", ""
+                ),
                 "gate_status": gate_status,
                 "interpretation": _functional_candidate_interpretation(gate_status),
             }
@@ -2560,6 +2628,12 @@ def _functional_candidate_seed_row(
         or risk_delta < -0.005
         or prediction_error_abs_delta < -0.005
     )
+    functional_score = (
+        artifact_maturity_delta
+        - provenance_debt_delta
+        - risk_delta
+        - prediction_error_abs_delta
+    )
     role_nonperiodic = _role_sequence_nonperiodic(metrics)
     bounded_unsaturated = _bounded_unsaturated(metrics)
     return {
@@ -2572,6 +2646,56 @@ def _functional_candidate_seed_row(
         "provenance_debt_delta": round(provenance_debt_delta, 6),
         "risk_delta": round(risk_delta, 6),
         "prediction_error_abs_delta": round(prediction_error_abs_delta, 6),
+        "functional_score": round(functional_score, 6),
+    }
+
+
+def _functional_candidate_matched_excess(
+    logistic_rows: list[dict[str, Any]],
+    control_rows: list[dict[str, Any]],
+) -> dict[str, float | str]:
+    if not control_rows:
+        return {
+            "role_nonperiodic_rate": "",
+            "functional_movement_rate": "",
+            "bounded_unsaturated_rate": "",
+            "artifact_maturity_delta": "",
+            "provenance_debt_improvement": "",
+            "risk_improvement": "",
+            "prediction_error_abs_improvement": "",
+            "functional_score": "",
+        }
+    return {
+        "role_nonperiodic_rate": round(
+            _boolean_rate(logistic_rows, "role_nonperiodic")
+            - _boolean_rate(control_rows, "role_nonperiodic"),
+            6,
+        ),
+        "functional_movement_rate": round(
+            _boolean_rate(logistic_rows, "functional_movement")
+            - _boolean_rate(control_rows, "functional_movement"),
+            6,
+        ),
+        "bounded_unsaturated_rate": round(
+            _boolean_rate(logistic_rows, "bounded_unsaturated")
+            - _boolean_rate(control_rows, "bounded_unsaturated"),
+            6,
+        ),
+        "artifact_maturity_delta": _matched_mean_delta(
+            logistic_rows, control_rows, "artifact_maturity_delta"
+        ),
+        "provenance_debt_improvement": _matched_mean_improvement(
+            logistic_rows, control_rows, "provenance_debt_delta"
+        ),
+        "risk_improvement": _matched_mean_improvement(
+            logistic_rows, control_rows, "risk_delta"
+        ),
+        "prediction_error_abs_improvement": _matched_mean_improvement(
+            logistic_rows, control_rows, "prediction_error_abs_delta"
+        ),
+        "functional_score": _matched_mean_delta(
+            logistic_rows, control_rows, "functional_score"
+        ),
     }
 
 
@@ -2625,12 +2749,40 @@ def _candidate_rate(rows: list[dict[str, Any]]) -> float:
     return _count_true(rows, "candidate") / len(rows) if rows else 0.0
 
 
+def _boolean_rate(rows: list[dict[str, Any]], field: str) -> float:
+    return _count_true(rows, field) / len(rows) if rows else 0.0
+
+
 def _count_true(rows: list[dict[str, Any]], field: str) -> int:
     return sum(1 for row in rows if bool(row[field]))
 
 
 def _mean_values_float(values: list[float]) -> float:
     return sum(values) / len(values) if values else 0.0
+
+
+def _matched_mean_delta(
+    logistic_rows: list[dict[str, Any]],
+    control_rows: list[dict[str, Any]],
+    field: str,
+) -> float:
+    return round(
+        _mean_values_float([float(row[field]) for row in logistic_rows])
+        - _mean_values_float([float(row[field]) for row in control_rows]),
+        6,
+    )
+
+
+def _matched_mean_improvement(
+    logistic_rows: list[dict[str, Any]],
+    control_rows: list[dict[str, Any]],
+    field: str,
+) -> float:
+    return round(
+        _mean_values_float([float(row[field]) for row in control_rows])
+        - _mean_values_float([float(row[field]) for row in logistic_rows]),
+        6,
+    )
 
 
 def _functional_candidate_gate_status(
@@ -2854,7 +3006,7 @@ def _summary(
             "- Artifact provenance rows attribute same-tick artifact field deltas to recorded A6 events/actions for alias-risk audit only.",
             "- Source accounting rows audit A6.1 required fields, artifact-delta reconstruction, and per-source shares for schema/control eligibility only.",
             "- A6.1 pilot null gate rows compare logistic endpoints to source-preserving nulls with backlog-adjusted productivity; they are smoke-scale gate diagnostics only.",
-            "- A6 functional candidate gate rows require bounded unsaturated dynamics, nonperiodic role/action traces, and artifact/debt/risk/prediction-error movement before matched excess-over-control scoring.",
+            "- A6 functional candidate gate rows require bounded unsaturated dynamics, nonperiodic role/action traces, artifact/debt/risk/prediction-error movement, and component matched excess-over-control scoring.",
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",
