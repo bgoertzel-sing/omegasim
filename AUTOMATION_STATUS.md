@@ -11,10 +11,22 @@ Allowed work for the current loop: small local CPU implementation, deterministic
 
 ## Recommended Next Step
 
-Preregister exactly one narrow A6 refinement-or-closure decision gate responding to the seed `1,2` matched-excess fail-closed result; do not add mechanics or run broader sweeps before that gate is written.
+Write only the read-only A6 refinement-or-closure decision note from `docs/a6_refinement_or_closure_decision_gate_preregistration.md`; do not add mechanics, run broader sweeps, or promote A6.
 
 ## Latest Changes
 
+- 2026-07-01 22:24 PDT A6 refinement-or-closure gate preregistration: added
+  `docs/a6_refinement_or_closure_decision_gate_preregistration.md` after the
+  seed `1,2` matched-excess gate failed closed with logistic and the
+  amplitude-matched linear control tied on candidate rate and core functional
+  component rates. The preregistration accepts the scientifically sensible
+  GPT-5.5-Pro matched-control emphasis; the older external review's guard/A6
+  implementation recommendation is now complete, so this run follows the newer
+  source-of-truth status rather than duplicating completed work. The next
+  allowed step is a read-only decision note choosing closure or exactly one
+  separately preregistered A6 refinement. No mechanics, broad sweep, A5/A7/
+  analytic-map rerun, dashboard, external integration, real LLM call, or
+  multi-hive coupling was added.
 - 2026-07-01 22:07 PDT A6 matched-excess result note: added
   `docs/results/a6_matched_excess_smoke_seed1_2_20260701.md` after a fresh
   bounded `/tmp` seed `1,2` A6 comparison plus read-only analysis. The

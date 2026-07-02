@@ -292,6 +292,19 @@ source-accounting and pilot/null gates are recorded in
 abstract/numeric: no real LLM calls, Lean, Slack, browser, Atomspace,
 dashboard, or downstream multi-hive integration.
 
+Ben's 2026-07-01 21:00 PDT direction reopened the A6 thresholded-appraisal
+single-hive path after the analytic delayed-map line closed conservatively.
+That reboot is recorded in
+`docs/a6_thresholded_appraisal_reboot_direction_20260701.md`. The first
+reopened A6 matched-excess smoke result is recorded in
+`docs/results/a6_matched_excess_smoke_seed1_2_20260701.md`: logistic and the
+amplitude-matched linear control both passed the smoke candidate screen, so the
+gate failed closed as `fail_closed_controls_match_or_exceed`. The current
+narrow decision gate is preregistered in
+`docs/a6_refinement_or_closure_decision_gate_preregistration.md`; it authorizes
+only a read-only closure-or-one-refinement decision note before any additional
+A6 mechanics or runs.
+
 The four checked-in smoke fixtures are:
 
 ```bash
