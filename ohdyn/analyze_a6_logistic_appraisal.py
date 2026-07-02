@@ -26,6 +26,7 @@ A6_ANALYSIS_CONTROL_LEVELS = (
     "threshold_shuffled",
     "source_label_shuffled_within_tick",
     "handoff_success_timing_broken_matched_counts",
+    "budget_matched_prediction_replay",
     "paired_seed_uncertainty",
     "promotion_closure_rules",
 )
@@ -371,10 +372,18 @@ _A6_CONTROL_PAIRS = (
         "logistic_vs_handoff_success_timing_broken_matched_counts",
         "handoff_success_timing_broken_matched_counts",
     ),
+    (
+        "logistic_vs_budget_matched_prediction_replay",
+        "budget_matched_prediction_replay",
+    ),
 )
 _A6_1_SOURCE_NULL_CONDITIONS = (
     "source_label_shuffled_within_tick",
     "handoff_success_timing_broken_matched_counts",
+)
+_A6_OPTIONAL_DERIVED_CONTROL_CONDITIONS = (
+    *_A6_1_SOURCE_NULL_CONDITIONS,
+    "budget_matched_prediction_replay",
 )
 _A6_1_PILOT_ENDPOINTS = (
     ("final_artifact_readiness", "a6_artifact_readiness_tick"),
@@ -430,6 +439,7 @@ _A6_BOUNDED_RESOURCE_CONDITION_MAP = {
     "phase_shuffled": "phase_shuffled_delayed_signal",
     "threshold_shuffled": "threshold_shuffled_thresholds",
     "source_label_shuffled_within_tick": "role_or_agent_shuffled_appraisal",
+    "budget_matched_prediction_replay": "budget_matched_prediction_replay",
 }
 _A6_BOUNDED_RESOURCE_PRIMARY_VECTOR_FIELDS = (
     "a6_artifact_readiness_tick",
@@ -859,7 +869,7 @@ def _control_delta_rows(
             control = by_condition_seed.get((control_condition, seed))
             if logistic is None and control is None:
                 continue
-            if control is None and control_condition in _A6_1_SOURCE_NULL_CONDITIONS:
+            if control is None and control_condition in _A6_OPTIONAL_DERIVED_CONTROL_CONDITIONS:
                 continue
             row: dict[str, Any] = {
                 "contrast": contrast,
@@ -905,6 +915,11 @@ def _control_level_status(
         if any(row["contrast"] == expected_contrast for row in complete_pairs):
             return "a6_1_source_preserving_null_delta_complete"
         return "a6_1_source_preserving_null_not_present"
+    if control_level == "budget_matched_prediction_replay":
+        expected_contrast = "logistic_vs_budget_matched_prediction_replay"
+        if any(row["contrast"] == expected_contrast for row in complete_pairs):
+            return "budget_matched_prediction_replay_delta_complete"
+        return "budget_matched_prediction_replay_not_present"
     if control_level == "clock_queue_residualized":
         statuses = {str(row["status"]) for row in residual_preflight_rows}
         if not residual_preflight_rows:
@@ -2045,7 +2060,7 @@ def _residual_contrast_summary_rows(
     outcomes = sorted({outcome for _, _, outcome in by_condition_seed_outcome})
     rows: list[dict[str, Any]] = []
     for contrast, control_condition in _A6_CONTROL_PAIRS:
-        if control_condition in _A6_1_SOURCE_NULL_CONDITIONS and not any(
+        if control_condition in _A6_OPTIONAL_DERIVED_CONTROL_CONDITIONS and not any(
             condition == control_condition for condition, _, _ in by_condition_seed_outcome
         ):
             continue
@@ -2396,7 +2411,7 @@ def _control_summary_rows(
             for row in control_delta_rows
             if row["contrast"] == contrast and row["paired"] == "true"
         ]
-        if control_condition in _A6_1_SOURCE_NULL_CONDITIONS and not endpoint_rows:
+        if control_condition in _A6_OPTIONAL_DERIVED_CONTROL_CONDITIONS and not endpoint_rows:
             continue
         paired_seeds = sorted(int(row["seed"]) for row in endpoint_rows)
         endpoint_means = {

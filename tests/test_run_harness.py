@@ -20286,6 +20286,104 @@ def test_a6_1_comparison_derives_source_preserving_nulls_and_gate(
     assert "backlog-adjusted productivity" in summary
 
 
+def test_a6_bounded_prediction_resource_replay_control_contract(
+    tmp_path: Path,
+) -> None:
+    compare_dir = tmp_path / "a6_resource_compare"
+
+    rows = run_a6_logistic_appraisal_comparison(
+        seeds=(1,),
+        out_dir=compare_dir,
+        include_bounded_resource_replay=True,
+    )
+
+    assert [row["condition"] for row in rows] == [
+        "logistic",
+        "linear",
+        "threshold_shuffled",
+        "phase_shuffled",
+        "budget_matched_prediction_replay",
+    ]
+    replay_dir = compare_dir / "budget_matched_prediction_replay_seed1"
+    config = yaml.safe_load((replay_dir / "config.yaml").read_text())
+    assert (
+        config["logistic_appraisal"]["condition"]
+        == "budget_matched_prediction_replay"
+    )
+    _assert_artifacts_match_output_directory(replay_dir, A0_FULL_ARTIFACTS)
+
+    logistic_metrics = list(
+        csv.DictReader((compare_dir / "logistic_seed1" / "metrics.csv").open())
+    )
+    replay_metrics = list(csv.DictReader((replay_dir / "metrics.csv").open()))
+    assert [
+        row["a6_prediction_budget_spent_tick"] for row in replay_metrics
+    ] == [
+        row["a6_prediction_budget_spent_tick"] for row in logistic_metrics
+    ]
+    assert [
+        row["a6_prediction_actions_tick"] for row in replay_metrics
+    ] == [
+        row["a6_prediction_actions_tick"] for row in logistic_metrics
+    ]
+    assert [
+        row["a6_latent_prediction_error_mean_tick"] for row in replay_metrics
+    ] != [
+        row["a6_latent_prediction_error_mean_tick"] for row in logistic_metrics
+    ]
+
+    replay_events = list(csv.DictReader((replay_dir / "events.csv").open()))
+    assert any(
+        row["a6_artifact_update_source"] == "budget_matched_prediction_replay"
+        for row in replay_events
+        if row["event_type"] == "a6_artifact_update"
+    )
+
+    analysis_dir = tmp_path / "a6_resource_analysis"
+    result = run_a6_logistic_appraisal_analysis(compare_dir, analysis_dir)
+
+    assert result["condition_count"] == 5
+    assert result["control_delta_count"] == 4
+    with (
+        analysis_dir / "a6_bounded_prediction_resource_residual_state_summary.csv"
+    ).open() as handle:
+        resource_rows = list(csv.DictReader(handle))
+    logistic_resource = next(
+        row for row in resource_rows if row["condition"] == "logistic"
+    )
+    assert (
+        logistic_resource["budget_matched_replay_control_status"]
+        == "present"
+    )
+    assert "budget_matched_prediction_replay" not in logistic_resource[
+        "missing_resource_conditions"
+    ]
+    assert (
+        logistic_resource["gate_status"]
+        == "schema_only_fail_closed_missing_resource_conditions"
+    )
+    with (analysis_dir / "a6_logistic_appraisal_control_deltas.csv").open() as handle:
+        control_rows = list(csv.DictReader(handle))
+    replay_delta = next(
+        row
+        for row in control_rows
+        if row["contrast"] == "logistic_vs_budget_matched_prediction_replay"
+    )
+    assert replay_delta["paired"] == "true"
+    assert replay_delta["prediction_budget_spent_total_delta"] == "0.0"
+    with (analysis_dir / "a6_logistic_appraisal_manifest.csv").open() as handle:
+        manifest_rows = list(csv.DictReader(handle))
+    replay_manifest = next(
+        row
+        for row in manifest_rows
+        if row["control_level"] == "budget_matched_prediction_replay"
+    )
+    assert (
+        replay_manifest["status"]
+        == "budget_matched_prediction_replay_delta_complete"
+    )
+
+
 def test_a6_2_long_horizon_comparison_uses_fixed_configs_and_seeds(
     tmp_path: Path,
 ) -> None:

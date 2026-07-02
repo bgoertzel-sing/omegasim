@@ -34,6 +34,7 @@ A6_1_SOURCE_NULL_CONDITIONS = (
     "source_label_shuffled_within_tick",
     "handoff_success_timing_broken_matched_counts",
 )
+A6_BOUNDED_RESOURCE_REPLAY_CONDITION = "budget_matched_prediction_replay"
 _A6_ARTIFACT_EVENT_FIELDS = (
     "artifact_novelty",
     "artifact_coherence",
@@ -115,6 +116,7 @@ def run_a6_logistic_appraisal_comparison(
     seeds: tuple[int, ...] = DEFAULT_A6_SEEDS,
     out_dir: str | Path = DEFAULT_A6_COMPARE_DIR,
     include_a6_1_nulls: bool = False,
+    include_bounded_resource_replay: bool = False,
     config_specs: tuple[tuple[str, Path], ...] = A6_SMOKE_CONFIGS,
     summary_title: str = "A6 Logistic-Appraisal Smoke Comparison",
     scope_line: str = "four checked-in single-hive smoke fixtures only; no broad sweep",
@@ -172,6 +174,38 @@ def run_a6_logistic_appraisal_comparison(
                     results,
                 )
             )
+    if include_bounded_resource_replay:
+        results = []
+        for seed in seeds:
+            source_dir = output_path / f"logistic_seed{seed}"
+            run_dir = output_path / f"{A6_BOUNDED_RESOURCE_REPLAY_CONDITION}_seed{seed}"
+            _write_budget_matched_prediction_replay_run(
+                source_dir=source_dir,
+                out_dir=run_dir,
+                seed=seed,
+            )
+            base_result = logistic_results_by_seed[seed]
+            results.append(
+                SimulationResult(
+                    config=base_result.config,
+                    seed=base_result.seed,
+                    bus_graph=base_result.bus_graph,
+                    agents=base_result.agents,
+                    metrics=_read_csv(run_dir / "metrics.csv"),
+                    events=_read_csv(run_dir / "events.csv"),
+                )
+            )
+        rows.append(
+            _aggregate_row(
+                A6_BOUNDED_RESOURCE_REPLAY_CONDITION,
+                Path(
+                    "derived:"
+                    f"{A6_BOUNDED_RESOURCE_REPLAY_CONDITION}:"
+                    f"{_logistic_config_path(config_specs)}"
+                ),
+                results,
+            )
+        )
 
     effect_rows = _effect_rows(rows)
     _write_csv(
@@ -338,6 +372,14 @@ def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for null_condition in A6_1_SOURCE_NULL_CONDITIONS:
         if null_condition in by_condition:
             pairs.append((f"logistic_vs_{null_condition}", null_condition, "logistic"))
+    if A6_BOUNDED_RESOURCE_REPLAY_CONDITION in by_condition:
+        pairs.append(
+            (
+                f"logistic_vs_{A6_BOUNDED_RESOURCE_REPLAY_CONDITION}",
+                A6_BOUNDED_RESOURCE_REPLAY_CONDITION,
+                "logistic",
+            )
+        )
     return [
         _effect_row(effect_axis, by_condition[low_label], by_condition[high_label])
         for effect_axis, low_label, high_label in pairs
@@ -419,6 +461,40 @@ def _write_a6_1_null_run(
     )
 
 
+def _write_budget_matched_prediction_replay_run(
+    *,
+    source_dir: Path,
+    out_dir: Path,
+    seed: int,
+) -> None:
+    if out_dir.exists():
+        raise FileExistsError(f"Output path {out_dir} already exists.")
+    shutil.copytree(source_dir, out_dir)
+    _rewrite_null_config(out_dir / "config.yaml", A6_BOUNDED_RESOURCE_REPLAY_CONDITION)
+    events = _prediction_replay_events(_read_csv(out_dir / "events.csv"), seed)
+    metrics = _prediction_replay_metrics(
+        metrics=_read_csv(out_dir / "metrics.csv"),
+        original_events=_read_csv(source_dir / "events.csv"),
+        transformed_events=events,
+        seed=seed,
+    )
+    _write_dict_csv(out_dir / "events.csv", events)
+    _write_dict_csv(out_dir / "metrics.csv", metrics)
+    summary_path = out_dir / "summary.md"
+    summary_path.write_text(
+        summary_path.read_text()
+        + "\n\n"
+        + "## A6 Bounded Prediction-Resource Replay Null\n\n"
+        + f"- derived_condition: {A6_BOUNDED_RESOURCE_REPLAY_CONDITION}\n"
+        + "- source_run: logistic with the same deterministic seed\n"
+        + "- prediction spend/action ticks: preserved exactly from source run\n"
+        + "- replay transform: deterministic phase rotation of prediction-derived "
+        + "artifact deltas and prediction-error traces\n"
+        + "- scientific status: budget-matched replay control artifact; not a "
+        + "new simulator mechanism or promotion run\n"
+    )
+
+
 def _rewrite_null_config(path: Path, condition: str) -> None:
     config = yaml.safe_load(path.read_text()) or {}
     logistic_appraisal = config.setdefault("logistic_appraisal", {})
@@ -482,6 +558,34 @@ def _handoff_success_timing_broken_events(
     return rows
 
 
+def _prediction_replay_events(
+    events: list[dict[str, str]],
+    seed: int,
+) -> list[dict[str, str]]:
+    rows = [dict(row) for row in events]
+    by_field: dict[str, list[dict[str, str]]] = {}
+    for row in rows:
+        if row.get("event_type") == "a6_artifact_update":
+            by_field.setdefault(str(row.get("a6_artifact_field", "")), []).append(row)
+    for field, field_rows in by_field.items():
+        for row in field_rows:
+            row["a6_artifact_update_source"] = A6_BOUNDED_RESOURCE_REPLAY_CONDITION
+        for column in (
+            "a6_artifact_delta_prediction_expenditure",
+            "a6_artifact_delta_prediction_error",
+        ):
+            values = [row.get(column, "") for row in field_rows]
+            if len([value for value in values if _float(value) != 0.0]) < 2:
+                continue
+            shift = 1 + ((seed + len(field) + len(column)) % (len(field_rows) - 1))
+            rotated = values[-shift:] + values[:-shift]
+            for row, value in zip(field_rows, rotated, strict=True):
+                row[column] = value
+        for row in field_rows:
+            _refresh_event_total(row)
+    return rows
+
+
 def _refresh_event_total(row: dict[str, str]) -> None:
     unclipped = round(sum(_float(row.get(column, "")) for column in _A6_SOURCE_DELTA_COLUMNS), 6)
     row["a6_artifact_delta_unclipped"] = str(unclipped)
@@ -516,6 +620,39 @@ def _metrics_with_transformed_artifacts(
             )
             row[metric_field] = str(round(values[metric_field], 6))
     return rows
+
+
+def _prediction_replay_metrics(
+    *,
+    metrics: list[dict[str, str]],
+    original_events: list[dict[str, str]],
+    transformed_events: list[dict[str, str]],
+    seed: int,
+) -> list[dict[str, str]]:
+    rows = _metrics_with_transformed_artifacts(
+        metrics=metrics,
+        original_events=original_events,
+        transformed_events=transformed_events,
+    )
+    _rotate_metric_column(rows, "a6_prediction_error_mean_tick", seed + 3)
+    _rotate_metric_column(rows, "a6_latent_prediction_error_mean_tick", seed + 5)
+    for row in rows:
+        row["a6_condition"] = A6_BOUNDED_RESOURCE_REPLAY_CONDITION
+    return rows
+
+
+def _rotate_metric_column(
+    rows: list[dict[str, str]],
+    field: str,
+    salt: int,
+) -> None:
+    if len(rows) < 2 or field not in rows[0]:
+        return
+    values = [row.get(field, "") for row in rows]
+    shift = 1 + (salt % (len(rows) - 1))
+    rotated = values[-shift:] + values[:-shift]
+    for row, value in zip(rows, rotated, strict=True):
+        row[field] = value
 
 
 def _event_deltas_by_tick_field(events: list[dict[str, str]]) -> dict[tuple[int, str], float]:
@@ -631,6 +768,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Also derive the preregistered A6.1 source-preserving null artifact directories.",
     )
+    parser.add_argument(
+        "--include-bounded-resource-replay",
+        action="store_true",
+        help=(
+            "Also derive the A6 bounded prediction-resource budget-matched "
+            "prediction replay control artifact directory."
+        ),
+    )
     return parser
 
 
@@ -642,6 +787,7 @@ def main(argv: list[str] | None = None) -> int:
             seeds=tuple(args.seeds),
             out_dir=args.out,
             include_a6_1_nulls=args.include_a6_1_nulls,
+            include_bounded_resource_replay=args.include_bounded_resource_replay,
         )
     except (OSError, ValueError, yaml.YAMLError) as exc:
         parser.error(str(exc))

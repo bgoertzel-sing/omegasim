@@ -37,15 +37,41 @@ runs.
 
 ## Recommended Next Step
 
-Implement the minimal deterministic A6 bounded prediction-resource replay
-control contract needed by
-`docs/a6_bounded_prediction_resource_gate_preregistration.md`, so
-`budget_matched_prediction_replay` can be represented and tested without a
-phase diagram, broad sweep, downstream multi-hive coupling, or promotion
-language.
+Implement only the remaining fixed A6 bounded prediction-resource condition
+representation for `zero_budget_reactive`,
+`high_oracle_budget_smoothing_comparator`, and
+`role_or_agent_shuffled_appraisal`, keeping the work schema/accounting-focused
+and fail-closed before any result-bearing gate run.
 
 ## Latest Changes
 
+- 2026-07-02 13:06 PDT A6 bounded prediction-resource replay control contract:
+  implemented a deterministic derived
+  `budget_matched_prediction_replay` artifact in
+  `ohdyn.compare_a6_logistic_appraisal`, exposed by
+  `--include-bounded-resource-replay`. The replay control copies the paired
+  logistic seed run, preserves prediction spend/action ticks and work/action
+  opportunity accounting, rewrites the condition label, and phase-rotates
+  prediction-derived artifact deltas plus prediction-error traces so useful
+  timing is removed without adding simulator mechanics. The A6 analyzer now
+  treats `budget_matched_prediction_replay` as an optional derived control,
+  reports a paired logistic-vs-replay delta when present, maps it into the
+  bounded prediction-resource residual-state summary, and leaves older A6
+  comparisons unchanged when the replay artifact is absent. A `/tmp` seed-1
+  smoke with replay produced `budget_matched_replay_control_status=present`
+  and matched prediction spend (`prediction_budget_spent_total_delta=0.0`),
+  but the resource gate remains fail-closed because zero-budget, high/oracle,
+  and role/agent-shuffled resource conditions are still absent. This continues
+  the accepted 2026-07-02 GPT-5.5-Pro major-review pivot away from the dense
+  A6 phase diagram; Ben should still be notified of that direction shift. No
+  dense phase diagram, broad sweep, A5/A7/analytic rerun, dashboard, external
+  integration, real LLM call, paid compute, downstream multi-hive coupling, or
+  promotion language was added. Verification passed: focused replay/analyzer
+  regression tests (`4 passed, 693 deselected`), broader A6 test slice (`21
+  passed, 676 deselected`), `py_compile` for touched Python files, `git diff
+  --check`, `/tmp` comparison/analyzer smoke, and the live automation guard
+  reporting `state=open`, `repo_write_allowed=true`,
+  `strategic_change_level=major`, and `notify_ben=true`.
 - 2026-07-02 12:39 PDT A6 bounded prediction-resource analyzer scaffolding:
   added a read-only
   `a6_bounded_prediction_resource_residual_state_summary.csv` artifact to
