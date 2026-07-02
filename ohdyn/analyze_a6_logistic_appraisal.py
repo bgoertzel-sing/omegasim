@@ -3272,13 +3272,45 @@ def _summary(
             "- Source accounting rows audit A6.1 required fields, artifact-delta reconstruction, and per-source shares for schema/control eligibility only.",
             "- A6.1 pilot null gate rows compare logistic endpoints to source-preserving nulls with backlog-adjusted productivity; they are smoke-scale gate diagnostics only.",
             "- A6 functional candidate gate rows require bounded unsaturated dynamics, nonperiodic role/action traces, artifact/debt/risk/prediction-error movement, and component matched excess-over-control scoring.",
-            "- A6 bounded prediction-resource rows are schema/analyzer scaffolding for the 2026-07-02 pivot; missing zero/high/replay resource controls keep the gate fail-closed.",
+            _bounded_prediction_resource_summary_reminder(
+                bounded_prediction_resource_rows
+            ),
             "- Residual latent/artifact recurrence must beat linear, phase-shuffled, and threshold-shuffled controls.",
             "- Load, service, action opportunity, work budget, clock trend, and queue variables remain accounting controls.",
             "",
         ]
     )
     return "\n".join(lines)
+
+
+def _bounded_prediction_resource_summary_reminder(
+    bounded_prediction_resource_rows: list[dict[str, Any]],
+) -> str:
+    missing_conditions = {
+        condition
+        for row in bounded_prediction_resource_rows
+        for condition in str(row.get("missing_resource_conditions", "")).split("|")
+        if condition
+    }
+    gate_statuses = {
+        str(row.get("gate_status", "")) for row in bounded_prediction_resource_rows
+    }
+    if missing_conditions:
+        return (
+            "- A6 bounded prediction-resource rows are schema/analyzer scaffolding "
+            "for the 2026-07-02 pivot; missing resource controls keep the gate "
+            "fail-closed."
+        )
+    if gate_statuses == {"schema_ready_requires_preregistered_result_run"}:
+        return (
+            "- A6 bounded prediction-resource rows have all fixed resource labels "
+            "present, but remain smoke-scale schema/control diagnostics rather "
+            "than promotion evidence."
+        )
+    return (
+        "- A6 bounded prediction-resource rows are schema/analyzer scaffolding "
+        "for the 2026-07-02 pivot and do not promote A6."
+    )
 
 
 def _ensure_output_paths_available(output_path: Path) -> None:

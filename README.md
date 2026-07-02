@@ -314,6 +314,12 @@ nulls. This is a design artifact only; it does not authorize broad sweeps,
 promotion language, dashboards, external integrations, or downstream
 multi-hive coupling.
 
+The paired seed `1,2` bounded-resource smoke result is recorded in
+`docs/results/a6_bounded_prediction_resource_smoke_seed1_2_20260702.md`. All
+fixed resource labels were present, but the budget-matched replay control
+matched or exceeded the logistic candidate on the smoke gate, so the slice
+closed fail-closed with no promotion language.
+
 The four checked-in smoke fixtures are:
 
 ```bash

@@ -37,12 +37,39 @@ runs.
 
 ## Recommended Next Step
 
-Run one tiny paired-seed A6 bounded prediction-resource comparison/analyzer
-smoke with the fixed schema controls and write a fail-closed/no-promotion
-result note; do not broaden seeds, add mechanics, or run a dense phase diagram.
+Write one bounded A6 post-smoke decision note choosing whether to stop the A6
+current-model line again or preregister a stricter implementation gate with
+real, non-derived prediction-budget mechanics before any further
+result-bearing runs; do not broaden seeds, add mechanics, or run a dense phase
+diagram.
 
 ## Latest Changes
 
+- 2026-07-02 13:50 PDT A6 bounded prediction-resource paired-seed smoke:
+  ran the status-authorized tiny seed `1,2` A6 bounded-resource comparison and
+  read-only analyzer in `/tmp` with the fixed resource labels present. Added
+  `docs/results/a6_bounded_prediction_resource_smoke_seed1_2_20260702.md`.
+  The smoke closed conservatively: the analyzer observed all eight resource
+  labels and `budget_matched_replay_control_status=present`, but the logistic
+  intermediate-budget row had `mean_confound_r2=0.995713`,
+  `residual_recurrence_excess_vs_linear=-0.120242`,
+  `residual_compression_excess_vs_linear=-0.5`,
+  `nonlinear_vs_linear_forecast_delta=0.009219`, and the functional candidate
+  gate selected `budget_matched_prediction_replay` as the matched control with
+  matched control `candidate_rate=1.0`, `matched_excess_candidate_rate=0.0`,
+  `matched_excess_prediction_error_abs_improvement=-0.07518`,
+  `matched_excess_functional_score=-0.09518`, and
+  `gate_status=fail_closed_controls_match_or_exceed`. Fixed a stale analyzer
+  summary reminder so resource-present smoke artifacts are described as
+  smoke-scale schema/control diagnostics rather than as missing-control
+  failures. This continues the accepted 2026-07-02 GPT-5.5-Pro major-review
+  pivot away from the dense A6 phase diagram; Ben should still be notified of
+  that direction shift. No dense phase diagram, broad sweep, A5/A7/analytic
+  rerun, dashboard, external integration, real LLM call, paid compute,
+  downstream multi-hive coupling, or promotion language was added.
+  Verification passed: focused bounded-resource regression (`1 passed, 696
+  deselected`), `/tmp` seed `1,2` comparison/analyzer smoke, and corrected
+  analyzer summary audit.
 - 2026-07-02 13:34 PDT A6 bounded prediction-resource fixed condition
   representations: implemented deterministic derived schema/control artifacts
   for `zero_budget_reactive`,

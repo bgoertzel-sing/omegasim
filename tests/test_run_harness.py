@@ -20464,6 +20464,12 @@ def test_a6_bounded_prediction_resource_replay_control_contract(
     assert set(resource_manifest_rows.values()) == {
         "bounded_prediction_resource_control_delta_complete"
     }
+    summary = (analysis_dir / "summary.md").read_text()
+    assert (
+        "- A6 bounded prediction-resource rows have all fixed resource labels "
+        "present, but remain smoke-scale schema/control diagnostics rather "
+        "than promotion evidence."
+    ) in summary
 
 
 def test_a6_2_long_horizon_comparison_uses_fixed_configs_and_seeds(
