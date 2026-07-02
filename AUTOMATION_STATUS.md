@@ -5,16 +5,43 @@ checked from GitHub, including from a phone.
 
 ## Current Focus
 
-Source-of-truth status: Ben's 2026-07-01 21:00 PDT direction reopens OmegaSim on the A6 thresholded-appraisal single-hive path. Continue from `docs/a6_thresholded_appraisal_reboot_direction_20260701.md` and the existing A6/A7 preregistration notes. The old analytic delayed-map workbench line remains historical background; the active work is now a cognitively meaningful thresholded-appraisal model with artifact/provenance/risk/prediction-error dynamics and appraisal-vs-control comparisons.
+Source-of-truth status: the reopened A6 thresholded-appraisal single-hive path
+has closed fail-closed at the current model boundary. The read-only decision
+note in `docs/results/a6_refinement_or_closure_decision_20260701.md` applies
+the preregistered rules from
+`docs/a6_refinement_or_closure_decision_gate_preregistration.md`: linear
+matched the logistic candidate rate and core functional component rates,
+shuffled controls passed the simple candidate screen, and the only logistic
+matched excess was small prediction-error movement. The old analytic delayed-map
+workbench line and older A5/A7 documents remain historical background only.
 
-Allowed work for the current loop: small local CPU implementation, deterministic tests, smoke-scale A6 sweeps, and concise result notes. Use controls and fail-closed interpretation. Do not use paid compute or broad GPU sweeps unless separately approved.
+Allowed work for the current loop: no further OmegaSim mechanics or result runs
+until Ben gives a fresh scientific direction or explicit preregistration
+request. Do not broaden A6 seeds, add A6 rescue mechanisms, rerun A5/A7/
+analytic-map gates, add dashboards/external integrations/real LLM calls, or
+start downstream multi-hive coupling from the closed A6 result.
 
 ## Recommended Next Step
 
-Write only the read-only A6 refinement-or-closure decision note from `docs/a6_refinement_or_closure_decision_gate_preregistration.md`; do not add mechanics, run broader sweeps, or promote A6.
+Await Ben's next scientific direction or explicit preregistration request
+before adding further OmegaSim mechanics or runs.
 
 ## Latest Changes
 
+- 2026-07-01 22:42 PDT A6 current-model closure decision: added
+  `docs/results/a6_refinement_or_closure_decision_20260701.md` as the
+  preregistered read-only synthesis after the seed `1,2` matched-excess A6
+  gate failed closed. The decision status is `close_a6_current_model`:
+  logistic and amplitude-matched linear tied on candidate rate and all core
+  functional component rates, phase-shuffled and threshold-shuffled controls
+  passed the simple candidate screen, and the only logistic matched excess was
+  small prediction-error movement. GPT-5.5-Pro matched-control and fail-closed
+  recommendations were accepted; the budget-matched prediction replay null was
+  deferred because this decision gate was read-only and the existing controls
+  already closed the model. No mechanics, broad sweep, A5/A7/analytic-map
+  rerun, dashboard, external integration, real LLM call, paid compute, or
+  multi-hive coupling was added. The next step is to await Ben's next
+  scientific direction or explicit preregistration request.
 - 2026-07-01 22:24 PDT A6 refinement-or-closure gate preregistration: added
   `docs/a6_refinement_or_closure_decision_gate_preregistration.md` after the
   seed `1,2` matched-excess gate failed closed with logistic and the
