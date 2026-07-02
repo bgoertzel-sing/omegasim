@@ -6,25 +6,37 @@ checked from GitHub, including from a phone.
 ## Current Focus
 
 Source-of-truth status: the reopened A6 thresholded-appraisal single-hive path
-has closed fail-closed at the current model boundary. The read-only decision
-note in `docs/results/a6_refinement_or_closure_decision_20260701.md` applies
-the preregistered rules from
-`docs/a6_refinement_or_closure_decision_gate_preregistration.md`: linear
-matched the logistic candidate rate and core functional component rates,
-shuffled controls passed the simple candidate screen, and the only logistic
-matched excess was small prediction-error movement. The old analytic delayed-map
+has closed fail-closed at the current model boundary for broad strange-attractor
+claims. The read-only decision note in
+`docs/results/a6_refinement_or_closure_decision_20260701.md` applies the
+preregistered rules from
+`docs/a6_refinement_or_closure_decision_gate_preregistration.md`: linear matched
+the logistic candidate rate and core functional component rates, shuffled
+controls passed the simple candidate screen, and the only logistic matched
+excess was small prediction-error movement. The old analytic delayed-map
 workbench line and older A5/A7 documents remain historical background only.
 
-Allowed work for the current loop: no further OmegaSim mechanics or result runs
-until Ben gives a fresh scientific direction or explicit preregistration
-request. Do not broaden A6 seeds, add A6 rescue mechanisms, rerun A5/A7/
-analytic-map gates, add dashboards/external integrations/real LLM calls, or
-start downstream multi-hive coupling from the closed A6 result.
+Operating mode correction, 2026-07-02: Ben confirmed that OmegaSim should not
+stall after each experiment waiting for him. Use the collective experiment loop:
+a bounded worker run, a concise ProtoCosmoBot report, a short
+ProtomegaTron/ProtoCosmoBot discussion, then a new concrete mandate from
+ProtoCosmoBot. Ben is only needed for paid compute, destructive/publication
+actions, or true scientific ambiguity.
+
+Allowed work for the current loop: proceed locally with a fail-closed bounded
+next slice that does not claim strange attractors unless matched controls are
+beaten. The next mandate is to add residual-state/lobe discovery beyond
+`argmax(role_prob)` and run a denser high-gain/moderate-coupling A6 phase
+diagram around the matched-excess region (`gain=5.0`, `coupling in {0.35,0.60}`,
+`delay in {0,3,7}`), with appraisal/linear/shuffled controls, recurrence or
+compressibility summaries, exact commands, artifacts, and a RUN note.
 
 ## Recommended Next Step
 
-Await Ben's next scientific direction or explicit preregistration request
-before adding further OmegaSim mechanics or runs.
+Run the next collective-loop mandate locally: residual-state/lobe discovery
+beyond role argmax plus a denser high-gain/moderate-coupling A6 phase diagram
+around the matched-excess region, preserving matched controls and fail-closed
+claim language.
 
 ## Latest Changes
 
