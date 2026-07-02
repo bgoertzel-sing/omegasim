@@ -20302,8 +20302,21 @@ def test_a6_bounded_prediction_resource_replay_control_contract(
         "linear",
         "threshold_shuffled",
         "phase_shuffled",
+        "zero_budget_reactive",
+        "high_oracle_budget_smoothing_comparator",
         "budget_matched_prediction_replay",
+        "role_or_agent_shuffled_appraisal",
     ]
+    for condition in (
+        "zero_budget_reactive",
+        "high_oracle_budget_smoothing_comparator",
+        "budget_matched_prediction_replay",
+        "role_or_agent_shuffled_appraisal",
+    ):
+        run_dir = compare_dir / f"{condition}_seed1"
+        config = yaml.safe_load((run_dir / "config.yaml").read_text())
+        assert config["logistic_appraisal"]["condition"] == condition
+        _assert_artifacts_match_output_directory(run_dir, A0_FULL_ARTIFACTS)
     replay_dir = compare_dir / "budget_matched_prediction_replay_seed1"
     config = yaml.safe_load((replay_dir / "config.yaml").read_text())
     assert (
@@ -20316,6 +20329,20 @@ def test_a6_bounded_prediction_resource_replay_control_contract(
         csv.DictReader((compare_dir / "logistic_seed1" / "metrics.csv").open())
     )
     replay_metrics = list(csv.DictReader((replay_dir / "metrics.csv").open()))
+    zero_metrics = list(
+        csv.DictReader(
+            (compare_dir / "zero_budget_reactive_seed1" / "metrics.csv").open()
+        )
+    )
+    oracle_metrics = list(
+        csv.DictReader(
+            (
+                compare_dir
+                / "high_oracle_budget_smoothing_comparator_seed1"
+                / "metrics.csv"
+            ).open()
+        )
+    )
     assert [
         row["a6_prediction_budget_spent_tick"] for row in replay_metrics
     ] == [
@@ -20331,6 +20358,13 @@ def test_a6_bounded_prediction_resource_replay_control_contract(
     ] != [
         row["a6_latent_prediction_error_mean_tick"] for row in logistic_metrics
     ]
+    assert {row["a6_prediction_budget_spent_tick"] for row in zero_metrics} == {"0"}
+    assert {row["a6_prediction_actions_tick"] for row in zero_metrics} == {"0"}
+    assert [
+        row["a6_latent_prediction_error_mean_tick"] for row in oracle_metrics
+    ] != [
+        row["a6_latent_prediction_error_mean_tick"] for row in logistic_metrics
+    ]
 
     replay_events = list(csv.DictReader((replay_dir / "events.csv").open()))
     assert any(
@@ -20338,12 +20372,26 @@ def test_a6_bounded_prediction_resource_replay_control_contract(
         for row in replay_events
         if row["event_type"] == "a6_artifact_update"
     )
+    role_shuffle_events = list(
+        csv.DictReader(
+            (
+                compare_dir
+                / "role_or_agent_shuffled_appraisal_seed1"
+                / "events.csv"
+            ).open()
+        )
+    )
+    assert any(
+        row["a6_artifact_update_source"] == "role_or_agent_shuffled_appraisal"
+        for row in role_shuffle_events
+        if row["event_type"] == "a6_artifact_update"
+    )
 
     analysis_dir = tmp_path / "a6_resource_analysis"
     result = run_a6_logistic_appraisal_analysis(compare_dir, analysis_dir)
 
-    assert result["condition_count"] == 5
-    assert result["control_delta_count"] == 4
+    assert result["condition_count"] == 8
+    assert result["control_delta_count"] == 7
     with (
         analysis_dir / "a6_bounded_prediction_resource_residual_state_summary.csv"
     ).open() as handle:
@@ -20355,12 +20403,23 @@ def test_a6_bounded_prediction_resource_replay_control_contract(
         logistic_resource["budget_matched_replay_control_status"]
         == "present"
     )
+    assert logistic_resource["missing_resource_conditions"] == ""
+    assert logistic_resource["observed_resource_conditions"] == (
+        "amplitude_matched_linear_prediction|"
+        "budget_matched_prediction_replay|"
+        "high_oracle_budget_smoothing_comparator|"
+        "intermediate_budget_delayed_logistic|"
+        "phase_shuffled_delayed_signal|"
+        "role_or_agent_shuffled_appraisal|"
+        "threshold_shuffled_thresholds|"
+        "zero_budget_reactive"
+    )
     assert "budget_matched_prediction_replay" not in logistic_resource[
         "missing_resource_conditions"
     ]
     assert (
         logistic_resource["gate_status"]
-        == "schema_only_fail_closed_missing_resource_conditions"
+        == "schema_ready_requires_preregistered_result_run"
     )
     with (analysis_dir / "a6_logistic_appraisal_control_deltas.csv").open() as handle:
         control_rows = list(csv.DictReader(handle))
@@ -20371,6 +20430,16 @@ def test_a6_bounded_prediction_resource_replay_control_contract(
     )
     assert replay_delta["paired"] == "true"
     assert replay_delta["prediction_budget_spent_total_delta"] == "0.0"
+    assert {
+        row["contrast"]
+        for row in control_rows
+        if row["contrast"].startswith("logistic_vs_")
+    } >= {
+        "logistic_vs_zero_budget_reactive",
+        "logistic_vs_high_oracle_budget_smoothing_comparator",
+        "logistic_vs_budget_matched_prediction_replay",
+        "logistic_vs_role_or_agent_shuffled_appraisal",
+    }
     with (analysis_dir / "a6_logistic_appraisal_manifest.csv").open() as handle:
         manifest_rows = list(csv.DictReader(handle))
     replay_manifest = next(
@@ -20382,6 +20451,19 @@ def test_a6_bounded_prediction_resource_replay_control_contract(
         replay_manifest["status"]
         == "budget_matched_prediction_replay_delta_complete"
     )
+    resource_manifest_rows = {
+        row["control_level"]: row["status"]
+        for row in manifest_rows
+        if row["control_level"]
+        in {
+            "zero_budget_reactive",
+            "high_oracle_budget_smoothing_comparator",
+            "role_or_agent_shuffled_appraisal",
+        }
+    }
+    assert set(resource_manifest_rows.values()) == {
+        "bounded_prediction_resource_control_delta_complete"
+    }
 
 
 def test_a6_2_long_horizon_comparison_uses_fixed_configs_and_seeds(

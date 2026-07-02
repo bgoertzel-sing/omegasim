@@ -26,7 +26,10 @@ A6_ANALYSIS_CONTROL_LEVELS = (
     "threshold_shuffled",
     "source_label_shuffled_within_tick",
     "handoff_success_timing_broken_matched_counts",
+    "zero_budget_reactive",
+    "high_oracle_budget_smoothing_comparator",
     "budget_matched_prediction_replay",
+    "role_or_agent_shuffled_appraisal",
     "paired_seed_uncertainty",
     "promotion_closure_rules",
 )
@@ -376,6 +379,12 @@ _A6_CONTROL_PAIRS = (
         "logistic_vs_budget_matched_prediction_replay",
         "budget_matched_prediction_replay",
     ),
+    ("logistic_vs_zero_budget_reactive", "zero_budget_reactive"),
+    (
+        "logistic_vs_high_oracle_budget_smoothing_comparator",
+        "high_oracle_budget_smoothing_comparator",
+    ),
+    ("logistic_vs_role_or_agent_shuffled_appraisal", "role_or_agent_shuffled_appraisal"),
 )
 _A6_1_SOURCE_NULL_CONDITIONS = (
     "source_label_shuffled_within_tick",
@@ -383,7 +392,10 @@ _A6_1_SOURCE_NULL_CONDITIONS = (
 )
 _A6_OPTIONAL_DERIVED_CONTROL_CONDITIONS = (
     *_A6_1_SOURCE_NULL_CONDITIONS,
+    "zero_budget_reactive",
+    "high_oracle_budget_smoothing_comparator",
     "budget_matched_prediction_replay",
+    "role_or_agent_shuffled_appraisal",
 )
 _A6_1_PILOT_ENDPOINTS = (
     ("final_artifact_readiness", "a6_artifact_readiness_tick"),
@@ -439,7 +451,10 @@ _A6_BOUNDED_RESOURCE_CONDITION_MAP = {
     "phase_shuffled": "phase_shuffled_delayed_signal",
     "threshold_shuffled": "threshold_shuffled_thresholds",
     "source_label_shuffled_within_tick": "role_or_agent_shuffled_appraisal",
+    "zero_budget_reactive": "zero_budget_reactive",
+    "high_oracle_budget_smoothing_comparator": "high_oracle_budget_smoothing_comparator",
     "budget_matched_prediction_replay": "budget_matched_prediction_replay",
+    "role_or_agent_shuffled_appraisal": "role_or_agent_shuffled_appraisal",
 }
 _A6_BOUNDED_RESOURCE_PRIMARY_VECTOR_FIELDS = (
     "a6_artifact_readiness_tick",
@@ -920,6 +935,15 @@ def _control_level_status(
         if any(row["contrast"] == expected_contrast for row in complete_pairs):
             return "budget_matched_prediction_replay_delta_complete"
         return "budget_matched_prediction_replay_not_present"
+    if control_level in {
+        "zero_budget_reactive",
+        "high_oracle_budget_smoothing_comparator",
+        "role_or_agent_shuffled_appraisal",
+    }:
+        expected_contrast = f"logistic_vs_{control_level}"
+        if any(row["contrast"] == expected_contrast for row in complete_pairs):
+            return "bounded_prediction_resource_control_delta_complete"
+        return "bounded_prediction_resource_control_not_present"
     if control_level == "clock_queue_residualized":
         statuses = {str(row["status"]) for row in residual_preflight_rows}
         if not residual_preflight_rows:

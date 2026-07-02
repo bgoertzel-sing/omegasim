@@ -35,6 +35,12 @@ A6_1_SOURCE_NULL_CONDITIONS = (
     "handoff_success_timing_broken_matched_counts",
 )
 A6_BOUNDED_RESOURCE_REPLAY_CONDITION = "budget_matched_prediction_replay"
+A6_BOUNDED_RESOURCE_DERIVED_CONDITIONS = (
+    "zero_budget_reactive",
+    "high_oracle_budget_smoothing_comparator",
+    A6_BOUNDED_RESOURCE_REPLAY_CONDITION,
+    "role_or_agent_shuffled_appraisal",
+)
 _A6_ARTIFACT_EVENT_FIELDS = (
     "artifact_novelty",
     "artifact_coherence",
@@ -175,37 +181,38 @@ def run_a6_logistic_appraisal_comparison(
                 )
             )
     if include_bounded_resource_replay:
-        results = []
-        for seed in seeds:
-            source_dir = output_path / f"logistic_seed{seed}"
-            run_dir = output_path / f"{A6_BOUNDED_RESOURCE_REPLAY_CONDITION}_seed{seed}"
-            _write_budget_matched_prediction_replay_run(
-                source_dir=source_dir,
-                out_dir=run_dir,
-                seed=seed,
-            )
-            base_result = logistic_results_by_seed[seed]
-            results.append(
-                SimulationResult(
-                    config=base_result.config,
-                    seed=base_result.seed,
-                    bus_graph=base_result.bus_graph,
-                    agents=base_result.agents,
-                    metrics=_read_csv(run_dir / "metrics.csv"),
-                    events=_read_csv(run_dir / "events.csv"),
+        for derived_condition in A6_BOUNDED_RESOURCE_DERIVED_CONDITIONS:
+            results = []
+            for seed in seeds:
+                source_dir = output_path / f"logistic_seed{seed}"
+                run_dir = output_path / f"{derived_condition}_seed{seed}"
+                _write_bounded_resource_derived_run(
+                    source_dir=source_dir,
+                    out_dir=run_dir,
+                    condition=derived_condition,
+                    seed=seed,
+                )
+                base_result = logistic_results_by_seed[seed]
+                results.append(
+                    SimulationResult(
+                        config=base_result.config,
+                        seed=base_result.seed,
+                        bus_graph=base_result.bus_graph,
+                        agents=base_result.agents,
+                        metrics=_read_csv(run_dir / "metrics.csv"),
+                        events=_read_csv(run_dir / "events.csv"),
+                    )
+                )
+            rows.append(
+                _aggregate_row(
+                    derived_condition,
+                    Path(
+                        f"derived:{derived_condition}:"
+                        f"{_logistic_config_path(config_specs)}"
+                    ),
+                    results,
                 )
             )
-        rows.append(
-            _aggregate_row(
-                A6_BOUNDED_RESOURCE_REPLAY_CONDITION,
-                Path(
-                    "derived:"
-                    f"{A6_BOUNDED_RESOURCE_REPLAY_CONDITION}:"
-                    f"{_logistic_config_path(config_specs)}"
-                ),
-                results,
-            )
-        )
 
     effect_rows = _effect_rows(rows)
     _write_csv(
@@ -380,6 +387,11 @@ def _effect_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "logistic",
             )
         )
+    for condition in A6_BOUNDED_RESOURCE_DERIVED_CONDITIONS:
+        if condition == A6_BOUNDED_RESOURCE_REPLAY_CONDITION:
+            continue
+        if condition in by_condition:
+            pairs.append((f"logistic_vs_{condition}", condition, "logistic"))
     return [
         _effect_row(effect_axis, by_condition[low_label], by_condition[high_label])
         for effect_axis, low_label, high_label in pairs
@@ -461,38 +473,81 @@ def _write_a6_1_null_run(
     )
 
 
-def _write_budget_matched_prediction_replay_run(
+def _write_bounded_resource_derived_run(
     *,
     source_dir: Path,
     out_dir: Path,
+    condition: str,
     seed: int,
 ) -> None:
     if out_dir.exists():
         raise FileExistsError(f"Output path {out_dir} already exists.")
+    if condition not in A6_BOUNDED_RESOURCE_DERIVED_CONDITIONS:
+        raise ValueError(f"Unknown A6 bounded resource condition: {condition}")
     shutil.copytree(source_dir, out_dir)
-    _rewrite_null_config(out_dir / "config.yaml", A6_BOUNDED_RESOURCE_REPLAY_CONDITION)
-    events = _prediction_replay_events(_read_csv(out_dir / "events.csv"), seed)
-    metrics = _prediction_replay_metrics(
-        metrics=_read_csv(out_dir / "metrics.csv"),
-        original_events=_read_csv(source_dir / "events.csv"),
-        transformed_events=events,
-        seed=seed,
-    )
+    _rewrite_null_config(out_dir / "config.yaml", condition)
+    source_events = _read_csv(source_dir / "events.csv")
+    if condition == A6_BOUNDED_RESOURCE_REPLAY_CONDITION:
+        events = _prediction_replay_events(_read_csv(out_dir / "events.csv"), seed)
+        metrics = _prediction_replay_metrics(
+            metrics=_read_csv(out_dir / "metrics.csv"),
+            original_events=source_events,
+            transformed_events=events,
+            seed=seed,
+        )
+    elif condition == "zero_budget_reactive":
+        events = _condition_labeled_artifact_events(_read_csv(out_dir / "events.csv"), condition)
+        metrics = _zero_budget_reactive_metrics(_read_csv(out_dir / "metrics.csv"))
+    elif condition == "high_oracle_budget_smoothing_comparator":
+        events = _condition_labeled_artifact_events(_read_csv(out_dir / "events.csv"), condition)
+        metrics = _high_oracle_smoothing_metrics(_read_csv(out_dir / "metrics.csv"))
+    elif condition == "role_or_agent_shuffled_appraisal":
+        events = _source_label_shuffled_events(_read_csv(out_dir / "events.csv"), seed)
+        for row in events:
+            if row.get("event_type") == "a6_artifact_update":
+                row["a6_artifact_update_source"] = condition
+        metrics = _metrics_with_transformed_artifacts(
+            metrics=_read_csv(out_dir / "metrics.csv"),
+            original_events=source_events,
+            transformed_events=events,
+        )
     _write_dict_csv(out_dir / "events.csv", events)
     _write_dict_csv(out_dir / "metrics.csv", metrics)
     summary_path = out_dir / "summary.md"
+    detail = _bounded_resource_summary_detail(condition)
     summary_path.write_text(
         summary_path.read_text()
         + "\n\n"
-        + "## A6 Bounded Prediction-Resource Replay Null\n\n"
-        + f"- derived_condition: {A6_BOUNDED_RESOURCE_REPLAY_CONDITION}\n"
+        + "## A6 Bounded Prediction-Resource Derived Control\n\n"
+        + f"- derived_condition: {condition}\n"
         + "- source_run: logistic with the same deterministic seed\n"
-        + "- prediction spend/action ticks: preserved exactly from source run\n"
-        + "- replay transform: deterministic phase rotation of prediction-derived "
-        + "artifact deltas and prediction-error traces\n"
-        + "- scientific status: budget-matched replay control artifact; not a "
-        + "new simulator mechanism or promotion run\n"
+        + detail
+        + "- scientific status: bounded prediction-resource schema/control "
+        + "artifact; not a new simulator mechanism or promotion run\n"
     )
+
+
+def _bounded_resource_summary_detail(condition: str) -> str:
+    details = {
+        "zero_budget_reactive": (
+            "- representation: prediction spend/action ticks are set to zero "
+            "for a reactive baseline label\n"
+        ),
+        "high_oracle_budget_smoothing_comparator": (
+            "- representation: prediction-error traces are deterministically "
+            "smoothed as an oracle/high-budget comparator label\n"
+        ),
+        A6_BOUNDED_RESOURCE_REPLAY_CONDITION: (
+            "- prediction spend/action ticks: preserved exactly from source run\n"
+            "- replay transform: deterministic phase rotation of prediction-derived "
+            "artifact deltas and prediction-error traces\n"
+        ),
+        "role_or_agent_shuffled_appraisal": (
+            "- representation: artifact source labels are deterministically "
+            "shuffled within the same seed artifact stream\n"
+        ),
+    }
+    return details[condition]
 
 
 def _rewrite_null_config(path: Path, condition: str) -> None:
@@ -641,6 +696,55 @@ def _prediction_replay_metrics(
     return rows
 
 
+def _condition_labeled_artifact_events(
+    events: list[dict[str, str]],
+    condition: str,
+) -> list[dict[str, str]]:
+    rows = [dict(row) for row in events]
+    for row in rows:
+        if row.get("event_type") == "a6_artifact_update":
+            row["a6_artifact_update_source"] = condition
+    return rows
+
+
+def _zero_budget_reactive_metrics(metrics: list[dict[str, str]]) -> list[dict[str, str]]:
+    rows = [dict(row) for row in metrics]
+    for row in rows:
+        row["a6_condition"] = "zero_budget_reactive"
+        for field in (
+            "a6_prediction_budget_spent_tick",
+            "a6_prediction_budget_available_tick",
+            "a6_prediction_actions_tick",
+        ):
+            if field in row:
+                row[field] = "0"
+        for field in row:
+            if field.startswith("role_") and field.endswith("_predict_tick"):
+                row[field] = "0"
+    return rows
+
+
+def _high_oracle_smoothing_metrics(metrics: list[dict[str, str]]) -> list[dict[str, str]]:
+    rows = [dict(row) for row in metrics]
+    for field in ("a6_prediction_error_mean_tick", "a6_latent_prediction_error_mean_tick"):
+        _smooth_metric_column(rows, field)
+    for row in rows:
+        row["a6_condition"] = "high_oracle_budget_smoothing_comparator"
+    return rows
+
+
+def _smooth_metric_column(rows: list[dict[str, str]], field: str) -> None:
+    if not rows or field not in rows[0]:
+        return
+    values = [_float(row.get(field, "")) for row in rows]
+    smoothed: list[float] = []
+    for index, value in enumerate(values):
+        window = values[max(0, index - 1) : min(len(values), index + 2)]
+        smoothed.append(round(sum(window) / len(window), 6) if window else value)
+    for row, value in zip(rows, smoothed, strict=True):
+        row[field] = str(value)
+
+
 def _rotate_metric_column(
     rows: list[dict[str, str]],
     field: str,
@@ -772,8 +876,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--include-bounded-resource-replay",
         action="store_true",
         help=(
-            "Also derive the A6 bounded prediction-resource budget-matched "
-            "prediction replay control artifact directory."
+            "Also derive the fixed A6 bounded prediction-resource control "
+            "artifact directories, including budget-matched replay."
         ),
     )
     return parser

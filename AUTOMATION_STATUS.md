@@ -37,14 +37,40 @@ runs.
 
 ## Recommended Next Step
 
-Implement only the remaining fixed A6 bounded prediction-resource condition
-representation for `zero_budget_reactive`,
-`high_oracle_budget_smoothing_comparator`, and
-`role_or_agent_shuffled_appraisal`, keeping the work schema/accounting-focused
-and fail-closed before any result-bearing gate run.
+Run one tiny paired-seed A6 bounded prediction-resource comparison/analyzer
+smoke with the fixed schema controls and write a fail-closed/no-promotion
+result note; do not broaden seeds, add mechanics, or run a dense phase diagram.
 
 ## Latest Changes
 
+- 2026-07-02 13:34 PDT A6 bounded prediction-resource fixed condition
+  representations: implemented deterministic derived schema/control artifacts
+  for `zero_budget_reactive`,
+  `high_oracle_budget_smoothing_comparator`, and
+  `role_or_agent_shuffled_appraisal` alongside the existing
+  `budget_matched_prediction_replay` control in
+  `ohdyn.compare_a6_logistic_appraisal`. The existing
+  `--include-bounded-resource-replay` flag now emits the full fixed bounded
+  prediction-resource control set while preserving the intermediate logistic,
+  amplitude-matched linear, phase-shuffled, and threshold-shuffled A6 rows.
+  The analyzer now recognizes the explicit resource labels in control deltas,
+  manifest status rows, and
+  `a6_bounded_prediction_resource_residual_state_summary.csv`; when all fixed
+  labels are present it reports
+  `gate_status=schema_ready_requires_preregistered_result_run`, not promotion
+  evidence. A `/tmp` seed-1 schema smoke produced all eight required resource
+  labels, no missing resource conditions, and
+  `budget_matched_replay_control_status=present`. This continues the accepted
+  2026-07-02 GPT-5.5-Pro major-review pivot away from the dense A6 phase
+  diagram; Ben should still be notified of that direction shift. No broad
+  sweep, dense phase diagram, A5/A7/analytic rerun, dashboard, external
+  integration, real LLM call, paid compute, downstream multi-hive coupling, or
+  promotion language was added. Verification passed: focused bounded-resource
+  regression (`1 passed, 696 deselected`), broader A6 slice (`18 passed, 679
+  deselected`), `py_compile` for touched Python files, `git diff --check`,
+  `/tmp` comparison/analyzer smoke, and the live automation guard reporting
+  `state=open`, `repo_write_allowed=true`, `strategic_change_level=major`, and
+  `notify_ben=true`.
 - 2026-07-02 13:06 PDT A6 bounded prediction-resource replay control contract:
   implemented a deterministic derived
   `budget_matched_prediction_replay` artifact in
